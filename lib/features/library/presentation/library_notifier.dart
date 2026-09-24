@@ -11,6 +11,7 @@ import 'package:isar_community/isar.dart';
 import 'package:looper_player/features/settings/presentation/settings_notifier.dart';
 import 'package:looper_player/features/playback/data/lyrics_fetcher.dart';
 import 'package:looper_player/core/local_json_store.dart';
+import 'package:looper_player/core/storage_access.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'dart:async';
@@ -464,9 +465,19 @@ class Library extends _$Library {
             ).invokeMethod('rescanMedia', {'path': '/storage/emulated/0'});
           } catch (_) {}
 
-          // Raw traversal can no longer reach an arbitrary/whole-storage
-          // root or SD cards without MANAGE_EXTERNAL_STORAGE (removed for
-          // Play Store compliance - see AndroidManifest.xml). Scoped storage
+          // With All Files Access (github flavor only - see
+          // StorageAccess) the whole storage root and SD cards are walked
+          // directly; _isCoarseStorageRoot keeps those roots themselves out
+          // of libraryFolders after the scan.
+          if (await StorageAccess.hasAllFilesAccess()) {
+            for (final root in await StorageAccess.wholeStorageRoots()) {
+              if (!scanRoots.contains(root)) scanRoots.add(root);
+            }
+          }
+
+          // Without All Files Access (always the case on the Play build)
+          // raw traversal can't reach an arbitrary/whole-storage root or SD
+          // cards - see AndroidManifest.xml. Scoped storage
           // still allows raw listing of these specific top-level public
           // directories with just READ_MEDIA_AUDIO/READ_EXTERNAL_STORAGE;
           // everything else (custom folders, SD cards, formats MediaStore
@@ -483,9 +494,11 @@ class Library extends _$Library {
             '/storage/emulated/0/Recordings',
             '/storage/emulated/0/Bluetooth',
           ];
-          for (final cp in commonPaths) {
-            if (Directory(cp).existsSync() && !scanRoots.contains(cp)) {
-              scanRoots.add(cp);
+          if (scanRoots.isEmpty) {
+            for (final cp in commonPaths) {
+              if (Directory(cp).existsSync() && !scanRoots.contains(cp)) {
+                scanRoots.add(cp);
+              }
             }
           }
         } else if (Platform.isLinux) {
