@@ -25,6 +25,7 @@ import 'tabs/android_library_tab.dart';
 import 'tabs/android_songs_tab.dart';
 import 'package:looper_player/features/playback/presentation/playback_notifier.dart';
 import 'package:looper_player/core/player_expand_provider.dart';
+import 'package:looper_player/core/storage_access.dart';
 import 'widgets/premium_navbar.dart';
 import 'widgets/premium_section.dart';
 import 'package:looper_player/features/library/presentation/smart_views.dart';
@@ -240,7 +241,9 @@ class _AndroidMainScreenState extends ConsumerState<AndroidMainScreen>
 
       final hasAudio = await Permission.audio.isGranted;
       final hasStorage = sdkInt < 33 && await Permission.storage.isGranted;
-      final isGranted = hasAudio || hasStorage;
+      // hasAllFilesAccess() is always false on the Play build.
+      final isGranted =
+          hasAudio || hasStorage || await StorageAccess.hasAllFilesAccess();
       if (mounted && _permissionsGranted != isGranted) {
         setState(() {
           _permissionsGranted = isGranted;

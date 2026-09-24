@@ -410,6 +410,13 @@ class Library extends _$Library {
       return true;
     }
 
+    // github flavor only (always false on the Play build - see
+    // StorageAccess): All Files Access alone is enough to scan, so don't
+    // prompt for audio on top of it.
+    if (await StorageAccess.hasAllFilesAccess()) {
+      return true;
+    }
+
     if (sdkInt >= 33) {
       return await Permission.audio.request().isGranted;
     } else {

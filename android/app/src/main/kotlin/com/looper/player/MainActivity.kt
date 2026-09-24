@@ -137,6 +137,28 @@ class MainActivity : FlutterActivity() {
 
                 sendPlaybackBroadcast(title, artist, album, duration, isPlaying)
                 result.success(null)
+            } else if (call.method == "getAllFilesAccessInfo") {
+                // Read-only. "declared" comes from the installed manifest, so
+                // it is only ever true for the github flavor (see
+                // src/github/AndroidManifest.xml) - the Play build never
+                // declares MANAGE_EXTERNAL_STORAGE and so never offers it.
+                val declared = try {
+                    packageManager.getPackageInfo(packageName, android.content.pm.PackageManager.GET_PERMISSIONS)
+                        .requestedPermissions
+                        ?.contains("android.permission.MANAGE_EXTERNAL_STORAGE") == true
+                } catch (e: Exception) {
+                    false
+                }
+                val granted = declared &&
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+                    android.os.Environment.isExternalStorageManager()
+                result.success(
+                    mapOf(
+                        "sdkInt" to Build.VERSION.SDK_INT,
+                        "declared" to declared,
+                        "granted" to granted
+                    )
+                )
             } else if (call.method == "setStopOnTaskRemoved") {
                 val value = call.argument<Boolean>("value") ?: false
                 stopOnTaskRemoved = value

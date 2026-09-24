@@ -77,10 +77,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   WelcomeState _currentState = WelcomeState.initial;
   String _scanStatusMessage = "Initializing scanner...";
 
-  bool _permissionGranted = false; // true if standard audio/storage is granted
+  // True if standard audio/storage is granted, or (github flavor only) All
+  // Files Access - either is enough to scan.
+  bool _permissionGranted = false;
   bool _notificationGranted = false;
   bool _audioGranted = false;
   bool _allFilesGranted = false; // github flavor only, optional
+  bool _canOfferAllFiles = false; // github flavor on Android 11+
   bool _autoScanTriggered = false;
 
   @override
@@ -106,7 +109,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   Future<void> _checkPermissionStatus() async {
     bool notif = false;
     bool aud = false;
-    final all = await StorageAccess.hasAllFilesAccess();
+    final allFiles = await StorageAccess.allFilesStatus();
 
     if (Platform.isAndroid) {
       try {
@@ -127,8 +130,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       setState(() {
         _notificationGranted = notif;
         _audioGranted = aud;
-        _allFilesGranted = all;
-        _permissionGranted = aud;
+        _allFilesGranted = allFiles.granted;
+        _canOfferAllFiles = allFiles.canOffer;
+        _permissionGranted = aud || allFiles.granted;
       });
     }
   }
@@ -410,21 +414,32 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                 ),
 
                 // 3. All Files Access Row (github flavor, optional)
-                if (StorageAccess.canRequestAllFilesAccess) ...[
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12.0),
-                    child: Divider(height: 1, color: Colors.white10),
-                  ),
-                  _buildPermissionRow(
-                    title: l10n.allFilesAccess.toUpperCase(),
-                    description: l10n.welcomeAllFilesDesc,
-                    isGranted: _allFilesGranted,
-                    onGrant: _requestAllFilesPermission,
-                    colorScheme: colorScheme,
-                    accentColor: Color(settings.accentColor),
-                    l10n: l10n,
-                  ),
-                ],
+                // Its availability is only known after an async native
+                // check, so grow it in rather than letting the card jump.
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutCubic,
+                  alignment: Alignment.topCenter,
+                  child: _canOfferAllFiles
+                      ? Column(
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 12.0),
+                              child: Divider(height: 1, color: Colors.white10),
+                            ),
+                            _buildPermissionRow(
+                              title: l10n.allFilesAccess.toUpperCase(),
+                              description: l10n.welcomeAllFilesDesc,
+                              isGranted: _allFilesGranted,
+                              onGrant: _requestAllFilesPermission,
+                              colorScheme: colorScheme,
+                              accentColor: Color(settings.accentColor),
+                              l10n: l10n,
+                            ),
+                          ],
+                        )
+                      : const SizedBox(width: double.infinity),
+                ),
               ],
             ),
           ),
