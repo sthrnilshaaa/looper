@@ -11,6 +11,7 @@ import 'package:path/path.dart' as p;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
 import 'package:looper_player/core/providers.dart';
+import 'package:looper_player/core/storage_access.dart';
 import '../../features/library/presentation/library_notifier.dart';
 import '../../features/settings/presentation/settings_notifier.dart';
 import '../../features/playback/presentation/playback_notifier.dart';
@@ -79,6 +80,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   bool _permissionGranted = false; // true if standard audio/storage is granted
   bool _notificationGranted = false;
   bool _audioGranted = false;
+  bool _allFilesGranted = false; // github flavor only, optional
   bool _autoScanTriggered = false;
 
   @override
@@ -104,6 +106,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   Future<void> _checkPermissionStatus() async {
     bool notif = false;
     bool aud = false;
+    final all = await StorageAccess.hasAllFilesAccess();
 
     if (Platform.isAndroid) {
       try {
@@ -124,6 +127,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       setState(() {
         _notificationGranted = notif;
         _audioGranted = aud;
+        _allFilesGranted = all;
         _permissionGranted = aud;
       });
     }
@@ -146,6 +150,12 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       await Permission.audio.request();
       await Permission.storage.request();
     } catch (_) {}
+    await _checkPermissionStatus();
+  }
+
+  Future<void> _requestAllFilesPermission() async {
+    HapticFeedback.lightImpact();
+    await StorageAccess.requestAllFilesAccess();
     await _checkPermissionStatus();
   }
 
@@ -398,6 +408,23 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                   accentColor: Color(settings.accentColor),
                   l10n: l10n,
                 ),
+
+                // 3. All Files Access Row (github flavor, optional)
+                if (StorageAccess.canRequestAllFilesAccess) ...[
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12.0),
+                    child: Divider(height: 1, color: Colors.white10),
+                  ),
+                  _buildPermissionRow(
+                    title: l10n.allFilesAccess.toUpperCase(),
+                    description: l10n.welcomeAllFilesDesc,
+                    isGranted: _allFilesGranted,
+                    onGrant: _requestAllFilesPermission,
+                    colorScheme: colorScheme,
+                    accentColor: Color(settings.accentColor),
+                    l10n: l10n,
+                  ),
+                ],
               ],
             ),
           ),
@@ -890,10 +917,17 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         }
       } catch (_) {}
       scanRoots.add(defaultPath);
+    } else if (Platform.isAndroid && await StorageAccess.hasAllFilesAccess()) {
+      // github flavor with All Files Access: walk the whole internal storage
+      // root and every SD card. These are coarse roots - the real per-song
+      // folders are recorded after the scan instead (see below).
+      final roots = await StorageAccess.wholeStorageRoots();
+      scanRoots.addAll(roots);
+      coarseRoots.addAll(roots);
     } else if (Platform.isAndroid) {
-      // Raw traversal can no longer reach an arbitrary/whole-storage root or
-      // SD cards without MANAGE_EXTERNAL_STORAGE (removed for Play Store
-      // compliance - see AndroidManifest.xml). These specific top-level
+      // Without All Files Access (always the case on the Play build) raw
+      // traversal can't reach an arbitrary/whole-storage root or SD cards
+      // - see AndroidManifest.xml. These specific top-level
       // public directories are still listable with just
       // READ_MEDIA_AUDIO/READ_EXTERNAL_STORAGE; everything else (custom
       // folders, SD cards, formats MediaStore doesn't index) is covered by
@@ -933,15 +967,17 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     // library requery+rebuild cycles stacked into the first few seconds on
     // Home right after this screen hands off.
     //
-    // coarseRoots is currently never populated on Android (raw traversal
-    // can no longer reach a whole-storage root without All Files Access -
-    // see the comment on commonPaths above), so every root scanned here is
-    // always recorded as its own libraryFolders entry.
+    // coarseRoots is only populated with All Files Access (github flavor),
+    // and then every root is coarse - so either all roots are recorded as
+    // their own libraryFolders entries, or none are.
     final totalSongsDiscovered = existingRoots.isEmpty
         ? 0
         : await ref
               .read(libraryProvider.notifier)
-              .scanMultipleFolders(existingRoots, recordFolder: true);
+              .scanMultipleFolders(
+                existingRoots,
+                recordFolder: coarseRoots.isEmpty,
+              );
 
     if (!mounted) return;
 
