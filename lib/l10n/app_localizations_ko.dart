@@ -1479,4 +1479,21 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get selectWhenToPause => '음악 재생을 일시 중지할 시점을 선택하세요';
+
+  @override
+  String get selectAvatars => '아바타 선택';
+
+  @override
+  String get selectAvatarsDesc => '홈 화면에 표시할 아바타를 선택하세요';
+
+  @override
+  String get dynamicAvatarColor => '다이나믹 아바타 색상';
+
+  @override
+  String get dynamicAvatarColorDesc => '아바타의 강조 색상을 현재 테마에 맞춥니다';
+
+  @override
+  String enrichingSongs(int count) {
+    return '$count개 과 다양한 정보를 수집 중…';
+  }
 }

@@ -491,5 +491,10 @@
   "lyricsNotAvailableHint": "Importez un fichier .lrc ou .txt pour ajouter les paroles de ce morceau",
   "nextUp": "À suivre",
   "noEmbeddedArtworkFound": "Aucune pochette intégrée trouvée pour cet album",
-  "resetArtworkToDefault": "Réinitialiser par défaut"
+  "resetArtworkToDefault": "Réinitialiser par défaut",
+  "selectAvatars": "Choisir l'avatar",
+  "selectAvatarsDesc": "Choisissez l'avatar affiché sur votre écran d'accueil",
+  "dynamicAvatarColor": "Couleur dynamique de l'avatar",
+  "dynamicAvatarColorDesc": "Adapte la couleur d'accent de l'avatar à votre thème actuel",
+  "enrichingSongs": "Enrichissement de {count} morceaux…"
 }

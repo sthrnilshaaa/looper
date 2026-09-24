@@ -1,4 +1,6 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+part 'lyrics_selection_notifier.g.dart';
 
 /// A contiguous range of lyric-line indices the user has picked to share,
 /// e.g. via long-press-then-tap in [AdvancedLyricLine]. `null` bounds mean
@@ -22,10 +24,12 @@ class LyricsSelectionState {
 /// another line while a selection is active extends (or shrinks) the range
 /// towards it, capped at [maxLines] so the resulting share card stays
 /// legible.
-class LyricsSelectionNotifier extends StateNotifier<LyricsSelectionState> {
-  LyricsSelectionNotifier() : super(const LyricsSelectionState());
-
+@riverpod
+class LyricsSelection extends _$LyricsSelection {
   static const int maxLines = 6;
+
+  @override
+  LyricsSelectionState build() => const LyricsSelectionState();
 
   void startSelection(int index) {
     state = LyricsSelectionState(anchorIndex: index, startIndex: index, endIndex: index);
@@ -58,8 +62,3 @@ class LyricsSelectionNotifier extends StateNotifier<LyricsSelectionState> {
 
   void clear() => state = const LyricsSelectionState();
 }
-
-final lyricsSelectionProvider =
-    StateNotifierProvider.autoDispose<LyricsSelectionNotifier, LyricsSelectionState>(
-  (ref) => LyricsSelectionNotifier(),
-);

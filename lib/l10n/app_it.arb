@@ -491,5 +491,10 @@
   "lyricsNotAvailableHint": "Importa un file .lrc o .txt per aggiungere il testo a questo brano",
   "nextUp": "A seguire",
   "noEmbeddedArtworkFound": "Nessuna copertina incorporata trovata per questo album",
-  "resetArtworkToDefault": "Ripristina predefinito"
+  "resetArtworkToDefault": "Ripristina predefinito",
+  "selectAvatars": "Seleziona avatar",
+  "selectAvatarsDesc": "Scegli l'avatar mostrato nella schermata Home",
+  "dynamicAvatarColor": "Colore dinamico avatar",
+  "dynamicAvatarColorDesc": "Abbina il colore dell'avatar al tema attuale",
+  "enrichingSongs": "Arricchimento di {count} brani in corso…"
 }

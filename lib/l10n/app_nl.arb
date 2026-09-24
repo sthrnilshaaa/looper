@@ -491,5 +491,10 @@
   "lyricsNotAvailableHint": "Importeer een .lrc- of .txt-bestand om songtekst voor dit nummer toe te voegen",
   "nextUp": "Volgende",
   "noEmbeddedArtworkFound": "Geen ingesloten artwork gevonden voor dit album",
-  "resetArtworkToDefault": "Terugzetten naar standaard"
+  "resetArtworkToDefault": "Terugzetten naar standaard",
+  "selectAvatars": "Avatar selecteren",
+  "selectAvatarsDesc": "Kies de avatar die op je startscherm wordt getoond",
+  "dynamicAvatarColor": "Dynamische avatarkleur",
+  "dynamicAvatarColorDesc": "Past de accentkleur van de avatar aan je huidige thema aan",
+  "enrichingSongs": "{count} nummers worden verrijkt…"
 }

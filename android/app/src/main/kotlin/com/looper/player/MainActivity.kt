@@ -4,6 +4,8 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import android.app.Activity
+import android.app.RecoverableSecurityException
+import android.content.ContentValues
 import android.content.Intent
 import android.content.BroadcastReceiver
 import android.content.IntentFilter
@@ -23,13 +25,38 @@ class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.looper.player/broadcast"
     private val WIDGET_CHANNEL = "com.looper.player/widget"
     private val WAKELOCK_CHANNEL = "com.looper.player/wakelock"
+    private val UPDATE_CHANNEL = "com.looper.player/updates"
     private val AUDIO_FOCUS_CHANNEL = "com.looper.player/audio_focus"
     private val SAF_PICK_FOLDER_REQUEST_CODE = 9273
+    private val MEDIA_WRITE_REQUEST_CODE = 9274
+    private val MEDIA_BATCH_DELETE_REQUEST_CODE = 9275
     private var wakeLock: PowerManager.WakeLock? = null
     private var audioFocusManager: AudioFocusManager? = null
+    // Real Play In-App Updates in the play flavor, a no-op in the github one.
+    private var inAppUpdater: InAppUpdater? = null
     // Pending result for an in-flight pickSafFolder() call, bridged across
     // the async gap to the system folder-picker Activity in onActivityResult.
     private var pendingSafResult: MethodChannel.Result? = null
+    // Pending result/retry for an in-flight single-file MediaStore write or
+    // delete consent flow (RecoverableSecurityException's action intent -
+    // see requestConsentThenRetry). declineValue is returned as-is if the
+    // user dismisses the dialog, since callers expect different "not done"
+    // shapes (false for delete/tag-write, null for rename).
+    private var pendingMediaWriteResult: MethodChannel.Result? = null
+    private var pendingMediaWriteRetry: (() -> Unit)? = null
+    private var pendingMediaWriteDeclineValue: Any? = null
+    // Pending result/paths for an in-flight batch delete via
+    // MediaStore.createDeleteRequest (API 30+, one dialog for many files).
+    private var pendingBatchDeleteResult: MethodChannel.Result? = null
+    private var pendingBatchDeletePaths: List<String>? = null
+    // Embedded-picture and embedded-lyrics reads for library enrichment. A
+    // small fixed pool (not a thread per call) so a burst of requests queues
+    // instead of spawning dozens of threads all doing file I/O at once, and
+    // - the important part - never runs on the platform thread, which is
+    // also what delivers touch input and vsync to Flutter: a read there
+    // freezes the whole UI for as long as the file takes to open.
+    private val metadataExecutor: java.util.concurrent.ExecutorService =
+        java.util.concurrent.Executors.newFixedThreadPool(2)
 
 
     companion object {
@@ -133,12 +160,24 @@ class MainActivity : FlutterActivity() {
                 val minSizeBytes = (call.argument<Any>("minSizeBytes") as? Number)?.toLong() ?: 0L
                 val includeSystemAndMessagingAudio =
                     call.argument<Boolean>("includeSystemAndMessagingAudio") ?: false
-                val songs = queryMediaStoreAudio(
-                    minDurationMs,
-                    minSizeBytes,
-                    includeSystemAndMessagingAudio
-                )
-                result.success(songs)
+                // Walks the device-wide audio index - hundreds of ms or more
+                // on a big library - so it must not run on the platform
+                // thread (see metadataExecutor's comment). Always replies,
+                // even on failure: an unhandled exception in a background
+                // thread would otherwise leave the Dart await hanging forever.
+                Thread {
+                    val songs = try {
+                        queryMediaStoreAudio(
+                            minDurationMs,
+                            minSizeBytes,
+                            includeSystemAndMessagingAudio
+                        )
+                    } catch (e: Exception) {
+                        Log.e("MainActivity", "queryMediaStore failed", e)
+                        null
+                    }
+                    runOnUiThread { result.success(songs) }
+                }.start()
             } else if (call.method == "rescanMedia") {
                 try {
                     val path = call.argument<String>("path") ?: "/storage/emulated/0"
@@ -154,14 +193,21 @@ class MainActivity : FlutterActivity() {
             } else if (call.method == "getEmbeddedPicture") {
                 val path = call.argument<String>("path")
                 if (path != null) {
-                    try {
+                    metadataExecutor.execute {
+                        var artBytes: ByteArray? = null
                         val mmr = MediaMetadataRetriever()
-                        mmr.setDataSource(path)
-                        val artBytes = mmr.embeddedPicture
-                        mmr.release()
-                        result.success(artBytes)
-                    } catch (e: Exception) {
-                        result.success(null)
+                        try {
+                            mmr.setDataSource(path)
+                            artBytes = mmr.embeddedPicture
+                        } catch (e: Exception) {
+                            artBytes = null
+                        } finally {
+                            // Released on failure too - setDataSource throws
+                            // for files it can't open, and skipping release
+                            // there leaked a native retriever per bad file.
+                            try { mmr.release() } catch (e: Exception) {}
+                        }
+                        runOnUiThread { result.success(artBytes) }
                     }
                 } else {
                     result.success(null)
@@ -205,10 +251,47 @@ class MainActivity : FlutterActivity() {
                 } else {
                     // Tag parsing does real file I/O - keep it off the
                     // platform/UI thread, same as the SAF folder listing above.
-                    Thread {
-                        val lyrics = readEmbeddedLyrics(path)
+                    metadataExecutor.execute {
+                        val lyrics = try {
+                            readEmbeddedLyrics(path)
+                        } catch (e: Exception) {
+                            null
+                        }
                         runOnUiThread { result.success(lyrics) }
-                    }.start()
+                    }
+                }
+            } else if (call.method == "deleteMediaFile") {
+                val path = call.argument<String>("path")
+                if (path == null) {
+                    result.success(false)
+                } else {
+                    Thread { deleteMediaFile(path, result) }.start()
+                }
+            } else if (call.method == "deleteMediaFiles") {
+                val paths = call.argument<List<String>>("paths") ?: emptyList()
+                Thread { deleteMediaFilesBatch(paths, result) }.start()
+            } else if (call.method == "renameMediaFile") {
+                val path = call.argument<String>("path")
+                val newDisplayName = call.argument<String>("newDisplayName")
+                if (path == null || newDisplayName == null) {
+                    result.success(null)
+                } else {
+                    Thread { renameMediaFile(path, newDisplayName, result) }.start()
+                }
+            } else if (call.method == "writeMediaTags") {
+                val path = call.argument<String>("path")
+                if (path == null) {
+                    result.success(false)
+                } else {
+                    val tags = mapOf(
+                        "title" to call.argument<String>("title"),
+                        "artist" to call.argument<String>("artist"),
+                        "album" to call.argument<String>("album"),
+                        "genre" to call.argument<String>("genre"),
+                        "year" to (call.argument<Any>("year") as? Number)?.toInt(),
+                        "lyrics" to call.argument<String>("lyrics")
+                    )
+                    Thread { writeMediaTags(path, tags, result) }.start()
                 }
             } else {
                 result.notImplemented()
@@ -295,6 +378,33 @@ class MainActivity : FlutterActivity() {
                 }
             }
         }
+
+        val updateChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, UPDATE_CHANNEL)
+        inAppUpdater?.onDestroy() // configureFlutterEngine can run again for the same activity
+        val updater = InAppUpdater(this) { updateChannel.invokeMethod("onUpdateDownloaded", null) }
+        inAppUpdater = updater
+        updateChannel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "checkPlayUpdate" -> updater.checkAndStart(result)
+                "completePlayUpdate" -> {
+                    updater.completeUpdate()
+                    result.success(null)
+                }
+                "showUpdateNotification" -> {
+                    val title = call.argument<String>("title")
+                    val body = call.argument<String>("body")
+                    val url = call.argument<String>("url")
+                    if (title == null || body == null || url == null) {
+                        result.error("bad_args", "title, body and url are required", null)
+                    } else {
+                        result.success(UpdateNotifier.show(this, title, body, url))
+                    }
+                }
+                else -> {
+                    result.notImplemented()
+                }
+            }
+        }
     }
 
     private fun acquireWakeLock() {
@@ -326,6 +436,37 @@ class MainActivity : FlutterActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+
+        if (inAppUpdater?.onActivityResult(requestCode, resultCode) == true) return
+
+        if (requestCode == MEDIA_WRITE_REQUEST_CODE) {
+            val pending = pendingMediaWriteResult
+            val retry = pendingMediaWriteRetry
+            val declineValue = pendingMediaWriteDeclineValue
+            pendingMediaWriteResult = null
+            pendingMediaWriteRetry = null
+            pendingMediaWriteDeclineValue = null
+            if (resultCode == Activity.RESULT_OK) {
+                if (retry != null) retry.invoke() else pending?.success(true)
+            } else {
+                pending?.success(declineValue) // user declined the consent dialog
+            }
+            return
+        }
+
+        if (requestCode == MEDIA_BATCH_DELETE_REQUEST_CODE) {
+            val pending = pendingBatchDeleteResult
+            val paths = pendingBatchDeletePaths
+            pendingBatchDeleteResult = null
+            pendingBatchDeletePaths = null
+            if (resultCode == Activity.RESULT_OK) {
+                pending?.success(emptyList<String>()) // platform deleted every requested row
+            } else {
+                pending?.success(paths ?: emptyList<String>())
+            }
+            return
+        }
+
         if (requestCode != SAF_PICK_FOLDER_REQUEST_CODE) return
 
         val pending = pendingSafResult
@@ -496,9 +637,15 @@ class MainActivity : FlutterActivity() {
         return stopOnTaskRemoved
     }
 
+    override fun onResume() {
+        super.onResume()
+        inAppUpdater?.onResume()
+    }
+
     override fun onDestroy() {
         releaseWakeLock()
         audioFocusManager?.unregisterReceivers()
+        inAppUpdater?.onDestroy()
         activeEngine = null
         if (stopOnTaskRemoved) {
             io.flutter.embedding.engine.FlutterEngineCache.getInstance().remove("looper_cached_engine")
@@ -528,6 +675,286 @@ class MainActivity : FlutterActivity() {
             Log.e("EmbeddedLyrics", "jaudiotagger format module unavailable", e)
             null
         }
+    }
+
+    /// Resolves an audio file's absolute path to its MediaStore content Uri
+    /// (matched on the DATA column, same as queryMediaStoreAudio), or null if
+    /// it isn't MediaStore-indexed (e.g. an app-private file).
+    private fun resolveAudioUri(path: String): android.net.Uri? {
+        val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            android.provider.MediaStore.Audio.Media.getContentUri(android.provider.MediaStore.VOLUME_EXTERNAL)
+        } else {
+            android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+        }
+        return try {
+            contentResolver.query(
+                collection,
+                arrayOf(android.provider.MediaStore.Audio.Media._ID),
+                "${android.provider.MediaStore.Audio.Media.DATA} = ?",
+                arrayOf(path),
+                null
+            )?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val id = cursor.getLong(cursor.getColumnIndexOrThrow(android.provider.MediaStore.Audio.Media._ID))
+                    android.content.ContentUris.withAppendedId(collection, id)
+                } else {
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("MediaWrite", "Failed to resolve MediaStore uri for $path", e)
+            null
+        }
+    }
+
+    /// Stores [result]/[onGranted]/[declineValue], then launches the system
+    /// consent dialog carried by a RecoverableSecurityException - thrown by
+    /// MediaProvider (API 29+) when this app tries to modify or delete a
+    /// MediaStore row it doesn't own. [onGranted] re-attempts the operation
+    /// from onActivityResult if the user approves; [declineValue] is handed
+    /// back as-is if they dismiss it instead.
+    private fun requestConsentThenRetry(
+        e: RecoverableSecurityException,
+        result: MethodChannel.Result,
+        declineValue: Any?,
+        onGranted: () -> Unit
+    ) {
+        pendingMediaWriteResult = result
+        pendingMediaWriteRetry = onGranted
+        pendingMediaWriteDeclineValue = declineValue
+        runOnUiThread {
+            try {
+                startIntentSenderForResult(
+                    e.userAction.actionIntent.intentSender,
+                    MEDIA_WRITE_REQUEST_CODE, null, 0, 0, 0
+                )
+            } catch (e2: Exception) {
+                pendingMediaWriteResult = null
+                pendingMediaWriteRetry = null
+                pendingMediaWriteDeclineValue = null
+                result.error("CONSENT_REQUEST_FAILED", e2.message, null)
+            }
+        }
+    }
+
+    /// Deletes a single audio file under scoped storage. Tries a direct
+    /// ContentResolver delete first (works if this app owns the row, or a
+    /// grant from an earlier call is still active); falls back to the system
+    /// consent dialog otherwise. Returns false if declined or if it failed.
+    private fun deleteMediaFile(path: String, result: MethodChannel.Result) {
+        val uri = resolveAudioUri(path)
+        if (uri == null) {
+            val deleted = try { java.io.File(path).delete() } catch (e: Exception) { false }
+            runOnUiThread { result.success(deleted) }
+            return
+        }
+        try {
+            contentResolver.delete(uri, null, null)
+            runOnUiThread { result.success(true) }
+        } catch (e: RecoverableSecurityException) {
+            requestConsentThenRetry(e, result, false) {
+                Thread {
+                    val ok = try {
+                        contentResolver.delete(uri, null, null)
+                        true
+                    } catch (e2: Exception) {
+                        false
+                    }
+                    runOnUiThread { result.success(ok) }
+                }.start()
+            }
+        } catch (e: Exception) {
+            Log.e("MediaWrite", "Failed to delete $path", e)
+            runOnUiThread { result.success(false) }
+        }
+    }
+
+    /// Attempts to delete every path in [paths]. On API 30+, this uses
+    /// MediaStore.createDeleteRequest to show a single consent dialog
+    /// covering every resolvable file at once. There is no batch consent API
+    /// before Android 11, so on API 29 this only deletes files the app
+    /// already owns outright and hands back the rest untouched - the caller
+    /// falls back to deleteMediaFile() one at a time for those, each
+    /// prompting its own dialog. Returns the subset of [paths] NOT deleted.
+    private fun deleteMediaFilesBatch(paths: List<String>, result: MethodChannel.Result) {
+        val uriByPath = paths.mapNotNull { path -> resolveAudioUri(path)?.let { path to it } }.toMap()
+        if (uriByPath.isEmpty()) {
+            runOnUiThread { result.success(paths) }
+            return
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                val pendingIntent = android.provider.MediaStore.createDeleteRequest(
+                    contentResolver,
+                    uriByPath.values.toList()
+                )
+                pendingBatchDeleteResult = result
+                pendingBatchDeletePaths = paths
+                runOnUiThread {
+                    try {
+                        startIntentSenderForResult(
+                            pendingIntent.intentSender,
+                            MEDIA_BATCH_DELETE_REQUEST_CODE, null, 0, 0, 0
+                        )
+                    } catch (e2: Exception) {
+                        pendingBatchDeleteResult = null
+                        pendingBatchDeletePaths = null
+                        result.success(paths)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("MediaWrite", "Batch delete request failed", e)
+                runOnUiThread { result.success(paths) }
+            }
+        } else {
+            val remaining = mutableListOf<String>()
+            for ((filePath, uri) in uriByPath) {
+                try {
+                    contentResolver.delete(uri, null, null)
+                } catch (e: Exception) {
+                    remaining.add(filePath)
+                }
+            }
+            remaining.addAll(paths.filter { it !in uriByPath.keys })
+            runOnUiThread { result.success(remaining) }
+        }
+    }
+
+    /// Renames a single audio file's underlying DISPLAY_NAME (MediaProvider
+    /// performs the actual filesystem rename). Returns the new absolute path
+    /// on success, or null if declined/failed.
+    private fun renameMediaFile(path: String, newDisplayName: String, result: MethodChannel.Result) {
+        val uri = resolveAudioUri(path)
+        if (uri == null) {
+            val newPath = try {
+                val src = java.io.File(path)
+                val dst = java.io.File(src.parentFile, newDisplayName)
+                if (src.renameTo(dst)) dst.absolutePath else null
+            } catch (e: Exception) {
+                null
+            }
+            runOnUiThread { result.success(newPath) }
+            return
+        }
+
+        fun doRename(): String? {
+            val values = ContentValues().apply {
+                put(android.provider.MediaStore.Audio.Media.DISPLAY_NAME, newDisplayName)
+            }
+            contentResolver.update(uri, values, null, null)
+            return contentResolver.query(
+                uri,
+                arrayOf(android.provider.MediaStore.Audio.Media.DATA),
+                null, null, null
+            )?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    cursor.getString(cursor.getColumnIndexOrThrow(android.provider.MediaStore.Audio.Media.DATA))
+                } else {
+                    null
+                }
+            }
+        }
+
+        try {
+            val newPath = doRename()
+            runOnUiThread { result.success(newPath) }
+        } catch (e: RecoverableSecurityException) {
+            requestConsentThenRetry(e, result, null) {
+                Thread {
+                    val newPath = try { doRename() } catch (e2: Exception) { null }
+                    runOnUiThread { result.success(newPath) }
+                }.start()
+            }
+        } catch (e: Exception) {
+            Log.e("MediaWrite", "Failed to rename $path", e)
+            runOnUiThread { result.success(null) }
+        }
+    }
+
+    /// Writes ID3/Vorbis Comment/MP4 tags directly into the audio file via
+    /// jaudiotagger (already used read-only for embedded lyrics). Any [tags]
+    /// entry that is null/blank is left untouched. If the app doesn't yet
+    /// hold write access, a no-op ContentResolver update is used purely to
+    /// surface RecoverableSecurityException and drive the same consent
+    /// dialog as delete/rename - once approved, scoped storage also allows
+    /// raw filesystem writes to that file for the rest of this app session,
+    /// which is what jaudiotagger needs (it writes via java.io.File, not a
+    /// content Uri). Returns false if declined, unsupported, or failed.
+    private fun writeMediaTags(path: String, tags: Map<String, Any?>, result: MethodChannel.Result) {
+        fun applyTags(): Boolean {
+            val audioFile = org.jaudiotagger.audio.AudioFileIO.read(java.io.File(path))
+            val tag = audioFile.tagOrCreateAndSetDefault
+            (tags["title"] as? String)?.let { if (it.isNotBlank()) tag.setField(org.jaudiotagger.tag.FieldKey.TITLE, it) }
+            (tags["artist"] as? String)?.let { if (it.isNotBlank()) tag.setField(org.jaudiotagger.tag.FieldKey.ARTIST, it) }
+            (tags["album"] as? String)?.let { if (it.isNotBlank()) tag.setField(org.jaudiotagger.tag.FieldKey.ALBUM, it) }
+            (tags["genre"] as? String)?.let { if (it.isNotBlank()) tag.setField(org.jaudiotagger.tag.FieldKey.GENRE, it) }
+            (tags["year"] as? Int)?.let { if (it > 0) tag.setField(org.jaudiotagger.tag.FieldKey.YEAR, it.toString()) }
+            (tags["lyrics"] as? String)?.let { if (it.isNotBlank()) tag.setField(org.jaudiotagger.tag.FieldKey.LYRICS, it) }
+            audioFile.commit()
+            return true
+        }
+
+        fun retryAfterGrant() {
+            val ok = try { applyTags() } catch (e: Exception) { false }
+            if (ok) rescanFile(path)
+            runOnUiThread { result.success(ok) }
+        }
+
+        try {
+            val ok = applyTags()
+            if (ok) rescanFile(path)
+            runOnUiThread { result.success(ok) }
+        } catch (e: Exception) {
+            if (!isPermissionError(e)) {
+                Log.e("MediaWrite", "Failed to write tags for $path", e)
+                runOnUiThread { result.success(false) }
+                return
+            }
+            val uri = resolveAudioUri(path)
+            if (uri == null) {
+                runOnUiThread { result.success(false) }
+                return
+            }
+            try {
+                // Empty ContentValues: touches nothing, exists only to
+                // trigger the same permission check contentResolver.update
+                // would run for a real column change.
+                contentResolver.update(uri, ContentValues(), null, null)
+                retryAfterGrant()
+            } catch (rse: RecoverableSecurityException) {
+                requestConsentThenRetry(rse, result, false) { Thread { retryAfterGrant() }.start() }
+            } catch (e3: Exception) {
+                Log.e("MediaWrite", "Failed to write tags for $path", e3)
+                runOnUiThread { result.success(false) }
+            }
+        }
+    }
+
+    private fun rescanFile(path: String) {
+        try {
+            android.media.MediaScannerConnection.scanFile(applicationContext, arrayOf(path), null) { _, _ -> }
+        } catch (_: Exception) {}
+    }
+
+    /// Heuristic for "this failure means we need a write grant" - jaudiotagger
+    /// wraps the underlying denial in its own exception types (e.g.
+    /// CannotWriteException around an IOException), so this walks the cause
+    /// chain for either a SecurityException or an EACCES/permission message
+    /// rather than matching a single exception type.
+    private fun isPermissionError(e: Throwable?): Boolean {
+        var cur = e
+        var depth = 0
+        while (cur != null && depth < 6) {
+            if (cur is SecurityException) return true
+            val msg = cur.message
+            if (msg != null && (msg.contains("EACCES", true) || msg.contains("Permission denied", true))) {
+                return true
+            }
+            cur = cur.cause
+            depth++
+        }
+        return false
     }
 
     private fun sendPlaybackBroadcast(title: String?, artist: String?, album: String?, duration: Long, isPlaying: Boolean) {

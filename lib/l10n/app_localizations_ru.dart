@@ -1569,4 +1569,23 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get selectWhenToPause =>
       'Выберите, когда приостановить воспроизведение музыки';
+
+  @override
+  String get selectAvatars => 'Выбрать аватар';
+
+  @override
+  String get selectAvatarsDesc =>
+      'Выберите аватар, отображаемый на главном экране';
+
+  @override
+  String get dynamicAvatarColor => 'Динамический цвет аватара';
+
+  @override
+  String get dynamicAvatarColorDesc =>
+      'Согласовывает акцентный цвет аватара с текущей темой';
+
+  @override
+  String enrichingSongs(int count) {
+    return 'Обогащение $count песен…';
+  }
 }

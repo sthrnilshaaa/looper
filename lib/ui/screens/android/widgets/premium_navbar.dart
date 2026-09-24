@@ -7,6 +7,7 @@ import 'package:looper_player/core/app_icons.dart';
 import 'package:looper_player/features/settings/presentation/settings_notifier.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
+import 'package:looper_player/core/responsive.dart';
 import 'premium_section.dart';
 
 class PremiumNavbar extends ConsumerWidget {
@@ -31,12 +32,20 @@ class PremiumNavbar extends ConsumerWidget {
     final useBlur = settings.enableDynamicTheming;
     final l10n = AppLocalizations.of(context)!;
 
-
+    // Landscape phones are short - the portrait-tuned 72dp bar plus its
+    // padding (90dp total, see navbarHeight in android_main_screen.dart) ate
+    // a disproportionate slice of the little vertical room available there.
+    // Shrink the bar itself and its icon/label on a short window; untouched
+    // in portrait.
+    final bool isCompact = Responsive.isShort(MediaQuery.sizeOf(context));
+    final double navHeight = isCompact ? 56.0 : 72.0;
+    final double navIconSize = (isCompact ? AppIcons.navbarIcon * 0.78 : AppIcons.navbarIcon).s;
+    final double navFontSize = (isCompact ? 14.0 : 17.0).ts;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(16, 2, 16, 16 + bottomPadding),
+      padding: EdgeInsets.fromLTRB(16, 2, 16, (isCompact ? 8 : 16) + bottomPadding),
       child: SizedBox(
-        height: 72,
+        height: navHeight,
         child: LayoutBuilder(
           builder: (context, constraints) {
             final double gapSize = 6.s;
@@ -47,6 +56,8 @@ class PremiumNavbar extends ConsumerWidget {
               label: l10n.home,
               isSelected: currentIndex == 0,
               accentColor: accentColor,
+              iconSize: navIconSize,
+              fontSize: navFontSize,
             );
 
             final songs = _NavItem(
@@ -55,6 +66,8 @@ class PremiumNavbar extends ConsumerWidget {
               label: l10n.songs,
               isSelected: currentIndex == 1,
               accentColor: accentColor,
+              iconSize: navIconSize,
+              fontSize: navFontSize,
             );
 
             final library = _NavItem(
@@ -63,6 +76,8 @@ class PremiumNavbar extends ConsumerWidget {
               label: l10n.library,
               isSelected: currentIndex == 2,
               accentColor: accentColor,
+              iconSize: navIconSize,
+              fontSize: navFontSize,
             );
 
             List<Widget> children;
@@ -298,6 +313,8 @@ class _NavItem extends StatelessWidget {
   final String label;
   final bool isSelected;
   final Color accentColor;
+  final double iconSize;
+  final double fontSize;
 
   const _NavItem({
     super.key,
@@ -305,6 +322,8 @@ class _NavItem extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.accentColor,
+    required this.iconSize,
+    required this.fontSize,
   });
 
   @override
@@ -330,8 +349,8 @@ class _NavItem extends StatelessWidget {
                   color ?? inactiveColor,
                   BlendMode.srcIn,
                 ),
-                width: AppIcons.navbarIcon.s,
-                height: AppIcons.navbarIcon.s,
+                width: iconSize,
+                height: iconSize,
               );
             },
           ),
@@ -344,7 +363,7 @@ class _NavItem extends StatelessWidget {
             style: AppFonts.jostStyle(
               textStyle: const TextStyle(inherit: false),
               color: targetColor,
-              fontSize: 17.ts,
+              fontSize: fontSize,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               letterSpacing: 0.2,
             ),

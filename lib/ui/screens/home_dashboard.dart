@@ -238,7 +238,7 @@ class HomeDashboard extends ConsumerWidget {
   }
 
   Widget _buildRecentlyPlayed(WidgetRef ref, bool isNarrow, bool isDynamic, AppLocalizations l10n) {
-    final recentSongs = ref.watch(recentlyPlayedProvider).value ?? [];
+    final recentSongs = ref.watch(dashboardRecentlyPlayedProvider).value ?? [];
 
     if (recentSongs.isEmpty) return const SizedBox.shrink();
 

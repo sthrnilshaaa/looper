@@ -5,47 +5,64 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path/path.dart' as p;
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
 import 'package:looper_player/core/providers.dart';
-import '../../features/library/data/saf_folder_service.dart';
 import '../../features/library/presentation/library_notifier.dart';
 import '../../features/settings/presentation/settings_notifier.dart';
 import '../../features/playback/presentation/playback_notifier.dart';
+import '../widgets/folder_picker_helper.dart';
 
-enum WelcomeState { initial, scanning, noSongs }
+part 'welcome_screen.g.dart';
 
-final welcomeBypassedProvider = StateProvider<bool>((ref) {
-  final forceWelcome = ref.watch(forceWelcomeProvider);
-  if (forceWelcome) return false;
+enum WelcomeState { initial, scanning, indexing, noSongs }
 
-  // On desktop platforms (Linux, Windows, macOS), bypass mobile permission screen
-  if (!Platform.isAndroid && !Platform.isIOS) {
-    return true;
-  }
+@Riverpod(keepAlive: true)
+class WelcomeBypassed extends _$WelcomeBypassed {
+  @override
+  bool build() {
+    final forceWelcome = ref.watch(forceWelcomeProvider);
+    if (forceWelcome) return false;
 
-  final songs = ref.watch(libraryProvider).songs;
-  final settings = ref.watch(settingsProvider);
-
-  if (songs.isEmpty) {
-    return settings.libraryFolders.isNotEmpty;
-  }
-
-  try {
-    final checkCount = songs.length < 5 ? songs.length : 5;
-    for (int i = 0; i < checkCount; i++) {
-      if (File(songs[i].path).existsSync()) {
-        return true;
-      }
+    // On desktop platforms (Linux, Windows, macOS), bypass mobile permission screen
+    if (!Platform.isAndroid && !Platform.isIOS) {
+      return true;
     }
-    return false;
-  } catch (_) {
-    return false;
+
+    // Re-derive when forceWelcome changes, and once more when the library
+    // finishes its initial load (isInitialized flips false->true exactly
+    // once and never again) - not on every subsequent library write.
+    // Watching the full libraryProvider/songs list here previously made this
+    // whole StateProvider - including the synchronous File.existsSync() calls
+    // below - re-run on every library write, which happens routinely during
+    // normal playback (see PlaybackNotifier's ~20s listen-time checkpoint),
+    // stalling the UI thread with blocking filesystem I/O every time.
+    ref.watch(libraryProvider.select((s) => s.isInitialized));
+    final songs = ref.read(libraryProvider).songs;
+    final settings = ref.read(settingsProvider);
+
+    if (songs.isEmpty) {
+      return settings.libraryFolders.isNotEmpty;
+    }
+
+    try {
+      final checkCount = songs.length < 5 ? songs.length : 5;
+      for (int i = 0; i < checkCount; i++) {
+        if (File(songs[i].path).existsSync()) {
+          return true;
+        }
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
   }
-});
+
+  void set(bool value) => state = value;
+}
 
 class WelcomeScreen extends ConsumerStatefulWidget {
   const WelcomeScreen({super.key});
@@ -210,6 +227,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     switch (_currentState) {
       case WelcomeState.scanning:
         return _buildScanningState(colorScheme, l10n);
+      case WelcomeState.indexing:
+        return _buildIndexingState(colorScheme, l10n);
       case WelcomeState.noSongs:
         return _buildNoSongsState(colorScheme, l10n);
       case WelcomeState.initial:
@@ -447,24 +466,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
               ),
               const SizedBox(height: 24),
             ],
-
-            TextButton.icon(
-              onPressed: _permissionGranted ? _selectCustomFolder : null,
-              icon: Icon(
-                LucideIcons.folderSearch,
-                size: 16.s,
-                color: _permissionGranted ? Colors.white60 : Colors.white24,
-              ),
-              label: Text(
-                l10n.selectSpecificFolder,
-                style: TextStyle(
-                  fontSize: 12.ts,
-                  color: _permissionGranted ? Colors.white70 : Colors.white24,
-                  letterSpacing: 1.5,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
           ],
         ),
       ],
@@ -607,6 +608,44 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     );
   }
 
+  // State 2b: Brief final "Indexing..." beat shown after the scan itself
+  // finds songs but before handing off to Home - covers the moment Pass 2
+  // enrichment (tags/art/lyrics) is just getting started in the background,
+  // so the app doesn't cut straight from "scanning" to a Home screen full
+  // of half-populated song rows.
+  Widget _buildIndexingState(ColorScheme colorScheme, AppLocalizations l10n) {
+    return Column(
+      key: const ValueKey('indexing_state'),
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const _ScanningLottieAnimation(),
+        const SizedBox(height: 24),
+        Text(
+          "INDEXING YOUR LIBRARY...",
+          style: TextStyle(
+            fontSize: 16.ts,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            letterSpacing: 2,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Text(
+            "Filling in titles, artwork and lyrics for your songs.",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13.ts,
+              color: Colors.white.withValues(alpha: 0.4),
+              height: 1.5,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   // State 3: User Information / Instructions State when No Songs are Found
   Widget _buildNoSongsState(ColorScheme colorScheme, AppLocalizations l10n) {
     final settings = ref.watch(settingsProvider);
@@ -674,7 +713,39 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           icon: LucideIcons.globe,
           colorScheme: colorScheme,
         ),
-        const SizedBox(height: 48),
+        const SizedBox(height: 16),
+        // The automatic scan above only checks a fixed list of standard
+        // folder names (Music, Download, Podcasts, ...) plus anything
+        // manually added - without All Files Access (removed for Play
+        // Store compliance) it can't blanket-discover an arbitrarily-named
+        // folder or every SD card on its own, so this is the direct path
+        // to fixing that instead of leaving the user to find "Add Folder"
+        // buried in Settings after they've already given up here.
+        _buildInstructionStep(
+          stepNumber: "4",
+          title: "Add a Custom Folder",
+          description:
+              "If your music lives in a folder with a different name, or on an SD card, add it directly.",
+          icon: LucideIcons.folderPlus,
+          colorScheme: colorScheme,
+        ),
+        const SizedBox(height: 12),
+        TextButton.icon(
+          onPressed: () => FolderPickerHelper.pickFolder(context, ref),
+          icon: Icon(
+            LucideIcons.folderPlus,
+            size: 16,
+            color: colorScheme.primary,
+          ),
+          label: Text(
+            "Add Folder",
+            style: TextStyle(
+              color: colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        const SizedBox(height: 36),
 
         // Quick Retry/Actions
         _PremiumButton(
@@ -846,24 +917,31 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       }
     }
 
-    int totalSongsDiscovered = 0;
+    if (!mounted) return;
+    setState(() {
+      _scanStatusMessage = "Scanning ${scanRoots.length} folders...";
+    });
 
-    // Run scans
-    for (final path in scanRoots) {
-      if (!mounted) return;
-      if (Directory(path).existsSync()) {
-        if (mounted) {
-          setState(() {
-            _scanStatusMessage =
-                "Analyzing path: ${p.context.basename(path)}...";
-          });
-        }
-        final count = await ref
-            .read(libraryProvider.notifier)
-            .scanLibrary(path, recordFolder: !coarseRoots.contains(path));
-        totalSongsDiscovered += count;
-      }
-    }
+    final existingRoots = scanRoots
+        .where((path) => Directory(path).existsSync())
+        .toList();
+
+    // Scanned as one batch (not a per-path loop calling scanLibrary) so the
+    // library's live watches are only paused/resumed once for the whole
+    // set, not once per folder - see scanMultipleFolders' doc comment for
+    // why looping the single-folder call here used to mean up to ~24 full
+    // library requery+rebuild cycles stacked into the first few seconds on
+    // Home right after this screen hands off.
+    //
+    // coarseRoots is currently never populated on Android (raw traversal
+    // can no longer reach a whole-storage root without All Files Access -
+    // see the comment on commonPaths above), so every root scanned here is
+    // always recorded as its own libraryFolders entry.
+    final totalSongsDiscovered = existingRoots.isEmpty
+        ? 0
+        : await ref
+              .read(libraryProvider.notifier)
+              .scanMultipleFolders(existingRoots, recordFolder: true);
 
     if (!mounted) return;
 
@@ -883,56 +961,22 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           _currentState = WelcomeState.noSongs;
         });
       }
-    } else {
-      ref.read(forceWelcomeProvider.notifier).state = false;
-      ref.read(welcomeBypassedProvider.notifier).state = true;
+      return;
     }
-  }
 
-  // Choose Custom Folder Backup Function
-  Future<void> _selectCustomFolder() async {
-    await _checkPermissionStatus();
-    if (!mounted) return;
-    if (Platform.isAndroid && !_permissionGranted) return;
-
-    String? path;
-    if (Platform.isAndroid) {
-      try {
-        path = await SafFolderService.pickFolder();
-      } on PlatformException catch (e) {
-        if (mounted && e.code == 'UNSUPPORTED_PROVIDER') {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                e.message ??
-                    "Please choose a folder on this device's internal storage or SD card.",
-              ),
-            ),
-          );
-        }
-        return;
-      }
-    } else {
-      path = await FilePicker.getDirectoryPath();
-    }
-    if (!mounted || path == null) return;
-
+    // A brief fixed pause here (not tied to actual enrichment progress,
+    // which can take much longer for a large library - that's the whole
+    // point of the quick first pass) just smooths the handoff to Home
+    // instead of cutting straight from "scanning" to a screen full of
+    // still-enriching placeholder rows.
     setState(() {
-      _currentState = WelcomeState.scanning;
-      _scanStatusMessage = "Scanning selected path: $path...";
+      _currentState = WelcomeState.indexing;
     });
-
-    final count = await ref.read(libraryProvider.notifier).scanLibrary(path);
+    await Future.delayed(const Duration(seconds: 5));
     if (!mounted) return;
 
-    if (count == 0) {
-      setState(() {
-        _currentState = WelcomeState.noSongs;
-      });
-    } else {
-      ref.read(forceWelcomeProvider.notifier).state = false;
-      ref.read(welcomeBypassedProvider.notifier).state = true;
-    }
+    ref.read(forceWelcomeProvider.notifier).set(false);
+    ref.read(welcomeBypassedProvider.notifier).set(true);
   }
 }
 

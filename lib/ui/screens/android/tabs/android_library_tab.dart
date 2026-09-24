@@ -73,12 +73,6 @@ class AndroidLibraryTab extends ConsumerWidget {
                   },
                   child: const Icon(LucideIcons.settings, color: Colors.white, size: 20),
                 ),
-                // Action Buttons Matching Home and Songs screen
-                // Row(
-                //   children: [
-                //     const SizedBox(width: 4),
-                //   ],
-                // ),
               ],
             ),
           ),
@@ -305,7 +299,7 @@ class AndroidLibraryTab extends ConsumerWidget {
 
   Widget _buildRecentlyAccessed(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final recentSongs = ref.watch(recentlyPlayedProvider).value ?? [];
+    final recentSongs = ref.watch(dashboardRecentlyPlayedProvider).value ?? [];
     if (recentSongs.isEmpty) {
       return SizedBox(
         height: 100,

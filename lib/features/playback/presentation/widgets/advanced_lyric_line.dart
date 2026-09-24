@@ -32,9 +32,7 @@ final artworkColorProvider = FutureProvider<Color?>((ref) async {
       newLightness = newLightness.clamp(0.0, 0.95);
       return hsl.withLightness(newLightness).toColor();
     }
-  } catch (e) {
-
-  }
+  } catch (e) {}
   return null;
 });
 
@@ -73,54 +71,62 @@ class AdvancedLyricLine extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Only watch position if this line is active and in word/char sync modes, avoiding rebuilds of all other lines
-    final needsPosition = isActive && (mode == LyricsSyncMode.word || mode == LyricsSyncMode.char);
+    final needsPosition =
+        isActive &&
+        (mode == LyricsSyncMode.word || mode == LyricsSyncMode.char);
     final currentPosition = needsPosition
         ? ref.watch(playbackProvider.select((s) => s.position))
         : Duration.zero;
 
     final progress = line.getProgress(currentPosition);
-    final isPast = isActive ? false : (ref.read(playbackProvider).position > line.endTime);
+    final isPast = isActive
+        ? false
+        : (ref.read(playbackProvider).position > line.endTime);
 
     // Calculate absolute distance for opacity and duration
     final absIndex = relativeIndex.abs();
-    
+
     // Calculate dynamic opacity based on distance from active line for a smoother transition
     double lineOpacity = 1.0;
     if (isSelected) {
-      lineOpacity = 1.0; // selected lines should read clearly regardless of playback position
+      lineOpacity =
+          1.0; // selected lines should read clearly regardless of playback position
     } else if (selectionActive) {
-      lineOpacity = 0.18; // dim everything else while the user is picking lines to share
+      lineOpacity =
+          0.18; // dim everything else while the user is picking lines to share
     } else if (!isActive) {
-      lineOpacity = 0.35; // ponytail: make inactive lyrics lines all have uniform opacity
+      lineOpacity =
+          0.35; // ponytail: make inactive lyrics lines all have uniform opacity
     }
 
     final settings = ref.watch(settingsProvider);
     final alignmentString = settings.lyricsAlignment;
-    final useDynamicColor = (settings.dynamicColorActiveLyrics && 
-        (settings.enableDynamicTheming || settings.dynamicLyrics)) ||
+    final useDynamicColor =
+        (settings.dynamicColorActiveLyrics &&
+            (settings.enableDynamicTheming || settings.dynamicLyrics)) ||
         settings.blurredArtworkForLyrics;
 
     final textAlign = alignmentString == 'left'
         ? TextAlign.left
         : alignmentString == 'right'
-            ? TextAlign.right
-            : TextAlign.center;
+        ? TextAlign.right
+        : TextAlign.center;
 
     final iconAlignment = alignmentString == 'left'
         ? Alignment.centerLeft
         : alignmentString == 'right'
-            ? Alignment.centerRight
-            : Alignment.center;
+        ? Alignment.centerRight
+        : Alignment.center;
 
     final wrapAlignment = alignmentString == 'left'
         ? WrapAlignment.start
         : alignmentString == 'right'
-            ? WrapAlignment.end
-            : WrapAlignment.center;
+        ? WrapAlignment.end
+        : WrapAlignment.center;
 
     // Extract dynamic color from artwork or fallback to Theme primary / white
     final artworkColorAsync = ref.watch(artworkColorProvider);
-    final artworkColor = artworkColorAsync.valueOrNull;
+    final artworkColor = artworkColorAsync.value;
 
     // useDynamicColor already covers every case where dynamicColorActiveLyrics
     // is meaningfully "on" (it requires enableDynamicTheming, dynamicLyrics, or
@@ -141,19 +147,21 @@ class AdvancedLyricLine extends ConsumerWidget {
       weightDelta: settings.customFontWeightLyricsDelta,
       activeWeightDelta: settings.activeLyricsFontWeightDelta,
       isActive: isActive,
-      fontSize: 30 * fontScale,//(isActive ? 30.5 : 30) * fontScale,
+      fontSize: 30 * fontScale, //(isActive ? 30.5 : 30) * fontScale,
       height: 1.15,
-      color: isActive ? activeColor : Colors.white.withValues(alpha: lineOpacity),
-      shadows: isActive && useDynamicColor ? [
-        Shadow(
-          color: activeColor.withValues(alpha: 0.01),
-          blurRadius: 20,
-          offset: const Offset(0, 4),
-        )
-      ] : null,
-    ).copyWith(
-      letterSpacing: isHindiText ? 0.95 : 0,
-    );
+      color: isActive
+          ? activeColor
+          : Colors.white.withValues(alpha: lineOpacity),
+      shadows: isActive && useDynamicColor
+          ? [
+              Shadow(
+                color: activeColor.withValues(alpha: 0.01),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+            ]
+          : null,
+    ).copyWith(letterSpacing: isHindiText ? 0.95 : 0);
 
     // Unified animation duration and easeInOutCubic curve for a buttery-smooth transition
     final animDuration = const Duration(milliseconds: 400);
@@ -182,10 +190,7 @@ class AdvancedLyricLine extends ConsumerWidget {
         onTap: onTap,
         onLongPress: onLongPress,
         child: Padding(
-          padding: EdgeInsets.only(
-            top: 8 * fontScale,
-            bottom: 8 * fontScale,
-          ),
+          padding: EdgeInsets.only(top: 8 * fontScale, bottom: 8 * fontScale),
           child: _selectionHighlight(
             child: DefaultTextStyle(
               style: baseStyle,
@@ -231,9 +236,14 @@ class AdvancedLyricLine extends ConsumerWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOut,
-      padding: EdgeInsets.symmetric(horizontal: isSelected ? 10 * fontScale : 0, vertical: 2 * fontScale),
+      padding: EdgeInsets.symmetric(
+        horizontal: isSelected ? 10 * fontScale : 0,
+        vertical: 2 * fontScale,
+      ),
       decoration: BoxDecoration(
-        color: isSelected ? Colors.white.withValues(alpha: 0.08) : Colors.transparent,
+        color: isSelected
+            ? Colors.white.withValues(alpha: 0.08)
+            : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
       ),
       child: child,
@@ -259,17 +269,25 @@ class AdvancedLyricLine extends ConsumerWidget {
         text.trim() == '♪';
 
     // If there is a search match, always highlight it
-    final bool isSearchMatch = searchQuery.isNotEmpty && text.toLowerCase().contains(searchQuery);
+    final bool isSearchMatch =
+        searchQuery.isNotEmpty && text.toLowerCase().contains(searchQuery);
 
     if (!isActive && !isPast) {
       return isInstrumental
           ? Align(
               alignment: iconAlignment,
-              child: Icon(Icons.music_note, color: Colors.white24, size: 30 * fontScale),
+              child: Text(
+                '♫',
+                style: baseStyle.copyWith(color: Colors.white24),
+              ),
             )
           : Text(
               text,
-              style: isSearchMatch ? baseStyle.copyWith(color: activeColor.withValues(alpha: 0.9)) : null,
+              style: isSearchMatch
+                  ? baseStyle.copyWith(
+                      color: activeColor.withValues(alpha: 0.9),
+                    )
+                  : null,
               textAlign: textAlign,
               softWrap: true,
               overflow: TextOverflow.visible,
@@ -280,7 +298,10 @@ class AdvancedLyricLine extends ConsumerWidget {
       return isInstrumental
           ? Align(
               alignment: iconAlignment,
-              child: Icon(Icons.music_note, color: Colors.white10, size: 30 * fontScale),
+              child: Text(
+                '♫',
+                style: baseStyle.copyWith(color: Colors.white10),
+              ),
             )
           : Text(
               text,
@@ -298,10 +319,12 @@ class AdvancedLyricLine extends ConsumerWidget {
         return isInstrumental
             ? Align(
                 alignment: iconAlignment,
-                child: Text(
-                  "♫",
+                // Same "♫" glyph as the not-active/past instrumental symbol
+                // above - only the animation (see _PulsingInstrumentalIcon)
+                // marks this one out as the active line, not a symbol swap.
+                child: _PulsingInstrumentalIcon(
+                  color: activeColor,
                   style: baseStyle,
-                  
                 ),
               )
             : Text(
@@ -313,10 +336,22 @@ class AdvancedLyricLine extends ConsumerWidget {
               );
 
       case LyricsSyncMode.word:
-        return _buildWordMode(displayText, progress, baseStyle, activeColor, wrapAlignment);
+        return _buildWordMode(
+          displayText,
+          progress,
+          baseStyle,
+          activeColor,
+          wrapAlignment,
+        );
 
       case LyricsSyncMode.char:
-        return _buildCharMode(displayText, progress, baseStyle, activeColor, textAlign);
+        return _buildCharMode(
+          displayText,
+          progress,
+          baseStyle,
+          activeColor,
+          textAlign,
+        );
     }
   }
 
@@ -347,7 +382,9 @@ class AdvancedLyricLine extends ConsumerWidget {
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeOutCubic,
                 style: baseStyle.copyWith(
-                  color: isWordActive ? activeColor : baseStyle.color?.withValues(alpha: 0.5),
+                  color: isWordActive
+                      ? activeColor
+                      : baseStyle.color?.withValues(alpha: 0.5),
                   shadows: isWordActive
                       ? [
                           Shadow(
@@ -405,6 +442,68 @@ class AdvancedLyricLine extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The instrumental/music-gap symbol ("♫") for the currently active line -
+/// same glyph the inactive and already-played instrumental symbols use, but
+/// pulsing with a soft glow and a gentle bounce for as long as this line
+/// stays active, so the animation itself (not a different symbol) is what
+/// marks it as the current one.
+class _PulsingInstrumentalIcon extends StatefulWidget {
+  const _PulsingInstrumentalIcon({required this.color, required this.style});
+
+  /// Color of the glow halo behind the symbol - the symbol's own color
+  /// already comes from [style].
+  final Color color;
+  final TextStyle style;
+
+  @override
+  State<_PulsingInstrumentalIcon> createState() =>
+      _PulsingInstrumentalIconState();
+}
+
+class _PulsingInstrumentalIconState extends State<_PulsingInstrumentalIcon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = Curves.easeInOut.transform(_controller.value);
+        return Transform.translate(
+          // Bounce: rises slightly on each beat, settles back down.
+          offset: Offset(0, -4.0 * t),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                // Glow: a soft halo behind the icon that swells and fades
+                // with the same beat as the bounce.
+                BoxShadow(
+                  color: widget.color.withValues(alpha: 0.15 + 0.35 * t),
+                  blurRadius: 10 + 14 * t,
+                  spreadRadius: 1 + 3 * t,
+                ),
+              ],
+            ),
+            child: child,
+          ),
+        );
+      },
+      child: Text('♫', style: widget.style),
     );
   }
 }

@@ -8,6 +8,33 @@ import 'package:looper_player/features/library/presentation/library_notifier.dar
 import 'package:looper_player/l10n/app_localizations.dart';
 
 class FolderPickerHelper {
+  /// Reports what scanning a newly-added folder actually found - shared by
+  /// the native picker and the manual-path dialog, since both call
+  /// scanLibrary() the same way. The failure case (0 songs) already had a
+  /// SnackBar; success silently had none at all, leaving the user to
+  /// notice the new songs on their own by scrolling the library.
+  static void _showScanResultSnackBar(BuildContext context, int count) {
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    if (count == 0) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(l10n.noSupportedSongsFoundFolder),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } else {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Added $count song${count == 1 ? '' : 's'}'),
+          duration: const Duration(seconds: 3),
+          backgroundColor: Colors.green.shade800,
+        ),
+      );
+    }
+  }
+
   static void showManualPathDialog(BuildContext context, WidgetRef ref) {
     final TextEditingController controller = TextEditingController();
     final l10n = AppLocalizations.of(context)!;
@@ -62,15 +89,7 @@ class FolderPickerHelper {
                 Navigator.of(context).pop();
                 if (path.isNotEmpty) {
                   final count = await ref.read(libraryProvider.notifier).scanLibrary(path);
-                  if (count == 0 && context.mounted) {
-                    ScaffoldMessenger.of(context).clearSnackBars();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(l10n.noSupportedSongsFoundFolder),
-                        duration: const Duration(seconds: 3),
-                      ),
-                    );
-                  }
+                  if (context.mounted) _showScanResultSnackBar(context, count);
                 }
               },
               child: Text(l10n.add),
@@ -79,6 +98,22 @@ class FolderPickerHelper {
         );
       },
     );
+  }
+
+  /// Just resolves a folder path from the platform's native picker, without
+  /// pickFolder()'s side effect of immediately scanning and adding it to the
+  /// library - used by "Excluded folders" management, which wants the same
+  /// picker UI but the opposite outcome.
+  static Future<String?> pickFolderPathOnly(BuildContext context) async {
+    try {
+      if (Platform.isAndroid) {
+        return await SafFolderService.pickFolder();
+      }
+      return await FilePicker.getDirectoryPath();
+    } catch (e) {
+      debugPrint('Error using native directory picker: $e');
+      return null;
+    }
   }
 
   static Future<void> pickFolder(BuildContext context, WidgetRef ref) async {
@@ -107,16 +142,7 @@ class FolderPickerHelper {
       }
       if (path != null) {
         final count = await ref.read(libraryProvider.notifier).scanLibrary(path);
-        if (count == 0 && context.mounted) {
-          final l10n = AppLocalizations.of(context)!;
-          ScaffoldMessenger.of(context).clearSnackBars();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.noSupportedSongsFoundFolder),
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
+        if (context.mounted) _showScanResultSnackBar(context, count);
       } else {
         if (context.mounted) {
           final l10n = AppLocalizations.of(context)!;

@@ -27,7 +27,8 @@ class AdvancedLyricRenderer extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<AdvancedLyricRenderer> createState() => _AdvancedLyricRendererState();
+  ConsumerState<AdvancedLyricRenderer> createState() =>
+      _AdvancedLyricRendererState();
 }
 
 class _AdvancedLyricRendererState extends ConsumerState<AdvancedLyricRenderer> {
@@ -112,23 +113,26 @@ class _AdvancedLyricRendererState extends ConsumerState<AdvancedLyricRenderer> {
       ref.read(lyricsSelectionProvider.notifier).clear();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          ref.read(lyricsManualScrollProvider.notifier).state = false;
+          ref.read(lyricsManualScrollProvider.notifier).set(false);
         }
       });
     }
     final currentPos = ref.read(playbackProvider).position;
-    _updateActiveLine(currentPos, forceScroll: oldWidget.mode != widget.mode || oldWidget.lines != widget.lines);
+    _updateActiveLine(
+      currentPos,
+      forceScroll:
+          oldWidget.mode != widget.mode || oldWidget.lines != widget.lines,
+    );
   }
 
   void _updateActiveLine(Duration position, {bool forceScroll = false}) {
     final route = ModalRoute.of(context);
-    final isExiting = route != null && route.animation?.status == AnimationStatus.reverse;
+    final isExiting =
+        route != null && route.animation?.status == AnimationStatus.reverse;
     if (isExiting) return;
 
     int index = widget.lines.indexWhere(
-      (line) =>
-          position >= line.startTime &&
-          position < line.endTime,
+      (line) => position >= line.startTime && position < line.endTime,
     );
 
     if (index == -1 && widget.lines.isNotEmpty) {
@@ -146,6 +150,58 @@ class _AdvancedLyricRendererState extends ConsumerState<AdvancedLyricRenderer> {
         _scrollToIndex(index, animate: _transitionFinished);
       }
       if (mounted) setState(() {});
+    }
+    // The active row's position within the viewport can change even
+    // without the list itself moving - e.g. while manual scroll is
+    // suppressing auto-follow, playback advancing to a different line
+    // changes which row is "active" without the list scrolling to it. Runs
+    // after this frame's layout so the new line's GlobalKey (if it just
+    // became active) has an attached RenderBox to measure.
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _checkActiveLineVisibility(),
+    );
+  }
+
+  /// Updates lyricsActiveLineVisibleProvider based on whether the active
+  /// line's row currently overlaps this renderer's own visible bounds (which
+  /// match the list's viewport, since the ListView is this widget's only
+  /// child) - used by AndroidLyricsScreen to only show its "re-sync" button
+  /// once the active line has actually scrolled off screen, not on every
+  /// scroll touch regardless of whether the line ever left view.
+  DateTime _lastVisibilityCheck = DateTime.fromMillisecondsSinceEpoch(0);
+
+  void _checkActiveLineVisibility() {
+    if (!mounted || _currentLineIndex < 0) return;
+    // Called from a ScrollNotification listener, which fires many times a
+    // second during a drag/fling - the two RenderBox lookups below don't
+    // need to run at that frequency for a boolean "is the active line on
+    // screen" flag that only drives a re-sync button's visibility, so
+    // coalesce to at most once every ~100ms (imperceptible for this UI).
+    final now = DateTime.now();
+    if (now.difference(_lastVisibilityCheck) < const Duration(milliseconds: 100)) {
+      return;
+    }
+    _lastVisibilityCheck = now;
+    final lineBox =
+        _lineKeys[_currentLineIndex]?.currentContext?.findRenderObject()
+            as RenderBox?;
+    final viewportBox = context.findRenderObject() as RenderBox?;
+    if (lineBox == null ||
+        viewportBox == null ||
+        !lineBox.attached ||
+        !viewportBox.attached) {
+      return;
+    }
+
+    final lineTop = lineBox
+        .localToGlobal(Offset.zero, ancestor: viewportBox)
+        .dy;
+    final lineBottom = lineTop + lineBox.size.height;
+    final visible = lineBottom > 0 && lineTop < viewportBox.size.height;
+
+    final provider = ref.read(lyricsActiveLineVisibleProvider);
+    if (provider != visible) {
+      ref.read(lyricsActiveLineVisibleProvider.notifier).set(visible);
     }
   }
 
@@ -236,7 +292,10 @@ class _AdvancedLyricRendererState extends ConsumerState<AdvancedLyricRenderer> {
     _activePointers[event.pointer] = event.position;
 
     final startDistance = _pinchStartDistance;
-    if (_activePointers.length < 2 || startDistance == null || startDistance <= 0) return;
+    if (_activePointers.length < 2 ||
+        startDistance == null ||
+        startDistance <= 0)
+      return;
 
     final scale = _distanceBetweenFirstTwoPointers() / startDistance;
     final newFontScale = (_baseScale * scale).clamp(0.6, 2.5);
@@ -260,12 +319,12 @@ class _AdvancedLyricRendererState extends ConsumerState<AdvancedLyricRenderer> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<Duration>(
-      playbackProvider.select((s) => s.position),
-      (previous, next) {
-        _updateActiveLine(next);
-      },
-    );
+    ref.listen<Duration>(playbackProvider.select((s) => s.position), (
+      previous,
+      next,
+    ) {
+      _updateActiveLine(next);
+    });
 
     ref.listen<bool>(lyricsManualScrollProvider, (previous, next) {
       if (next == false) {
@@ -282,84 +341,100 @@ class _AdvancedLyricRendererState extends ConsumerState<AdvancedLyricRenderer> {
       onPointerMove: _onPointerMove,
       onPointerUp: _onPointerUpOrCancel,
       onPointerCancel: _onPointerUpOrCancel,
-      child: ListView.builder(
-        controller: _scrollController,
-        physics: const BouncingScrollPhysics(),
-        itemCount: widget.lines.length + 1,
-        padding: EdgeInsets.only(
-          top: 60.s,
-          bottom: (Platform.isAndroid || Platform.isIOS) ? 120.s : 400.s,
-          left: 24.s,
-          right: 24.s,
-        ),
-        itemBuilder: (context, index) {
-          if (index == widget.lines.length) {
-            final source = ref.watch(lyricsProvider.select((s) => s.source));
-            if (source == null || source.isEmpty) return const SizedBox.shrink();
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          // Re-check on every scroll tick, not just when the active line
+          // itself changes - the whole point of the re-sync button is to
+          // react to the user scrolling the list, and that's exactly the
+          // case where the active line's on-screen position moves without
+          // _updateActiveLine ever running. Returning false lets
+          // AndroidLyricsScreen's own ScrollNotification listener (which
+          // drives _onUserScrolled/lyricsManualScrollProvider) still see it.
+          _checkActiveLineVisibility();
+          return false;
+        },
+        child: ListView.builder(
+          controller: _scrollController,
+          physics: const BouncingScrollPhysics(),
+          itemCount: widget.lines.length + 1,
+          padding: EdgeInsets.only(
+            top: 60.s,
+            bottom: (Platform.isAndroid || Platform.isIOS) ? 120.s : 400.s,
+            left: 24.s,
+            right: 24.s,
+          ),
+          itemBuilder: (context, index) {
+            if (index == widget.lines.length) {
+              final source = ref.watch(lyricsProvider.select((s) => s.source));
+              if (source == null || source.isEmpty)
+                return const SizedBox.shrink();
 
-            String displaySource = source.toUpperCase();
-            if (source == 'local') displaySource = 'Local File';
-            if (source == 'embedded') displaySource = 'Embedded Metadata';
+              String displaySource = source.toUpperCase();
+              if (source == 'local') displaySource = 'Local File';
+              if (source == 'embedded') displaySource = 'Embedded Metadata';
+
+              return Padding(
+                padding: const EdgeInsets.only(top: 24.0, bottom: 48.0),
+                child: Opacity(
+                  opacity: 0.35,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(LucideIcons.scroll, size: 10.s, color: Colors.white),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Lyrics provided by $displaySource',
+                        style: AppFonts.jostStyle(
+                          fontSize: 10.ts,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w300,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            final line = widget.lines[index];
+            final isActive = index == _currentLineIndex;
+
+            // Assign or retrieve key for this line
+            final key = _lineKeys.putIfAbsent(index, () => GlobalKey());
 
             return Padding(
-              padding: const EdgeInsets.only(top: 24.0, bottom: 48.0),
-              child: Opacity(
-                opacity: 0.35,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(LucideIcons.scroll, size: 10.s, color: Colors.white),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Lyrics provided by $displaySource',
-                      style: AppFonts.jostStyle(
-                        fontSize: 10.ts,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w300,
-                      ),
-                    ),
-                  ],
-                ),
+              key: key,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: AdvancedLyricLine(
+                line: line,
+                mode: widget.mode,
+                isActive: isActive,
+                fontScale: _fontScale,
+                relativeIndex: _currentLineIndex == -1
+                    ? index
+                    : index - _currentLineIndex,
+                isSelected: selection.contains(index),
+                selectionActive: selection.isActive,
+                onTap: () {
+                  // While picking lines for the share card, tapping extends
+                  // (or shrinks) the selection instead of seeking.
+                  if (selection.isActive) {
+                    HapticFeedback.selectionClick();
+                    ref.read(lyricsSelectionProvider.notifier).extendTo(index);
+                  } else {
+                    widget.onSeek(line.startTime);
+                  }
+                },
+                onLongPress: () {
+                  HapticFeedback.mediumImpact();
+                  ref
+                      .read(lyricsSelectionProvider.notifier)
+                      .startSelection(index);
+                },
               ),
             );
-          }
-
-          final line = widget.lines[index];
-          final isActive = index == _currentLineIndex;
-
-          // Assign or retrieve key for this line
-          final key = _lineKeys.putIfAbsent(index, () => GlobalKey());
-
-          return Padding(
-            key: key,
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: AdvancedLyricLine(
-              line: line,
-              mode: widget.mode,
-              isActive: isActive,
-              fontScale: _fontScale,
-              relativeIndex: _currentLineIndex == -1
-                  ? index
-                  : index - _currentLineIndex,
-              isSelected: selection.contains(index),
-              selectionActive: selection.isActive,
-              onTap: () {
-                // While picking lines for the share card, tapping extends
-                // (or shrinks) the selection instead of seeking.
-                if (selection.isActive) {
-                  HapticFeedback.selectionClick();
-                  ref.read(lyricsSelectionProvider.notifier).extendTo(index);
-                } else {
-                  widget.onSeek(line.startTime);
-                }
-              },
-              onLongPress: () {
-                HapticFeedback.mediumImpact();
-                ref.read(lyricsSelectionProvider.notifier).startSelection(index);
-              },
-            ),
-          );
-        },
+          },
+        ),
       ),
     );
   }

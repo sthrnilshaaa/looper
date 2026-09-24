@@ -9,6 +9,22 @@ class LoggerHelper {
   static File? _logFile;
   static bool _initialized = false;
 
+  // Every file operation (append, rotate, clear) is chained onto this so only
+  // one is in flight at a time. Dart's FileMode.append is not O_APPEND: each
+  // writeAsString opens the file and seeks to the end as it was at that
+  // moment, so overlapping un-awaited writes (mpv's log callback alone can
+  // fire several per millisecond) land on the same offset and overwrite each
+  // other, leaving torn lines like "arting..." in the log.
+  static Future<void> _fileQueue = Future.value();
+
+  static Future<void> _enqueue(Future<void> Function() task) {
+    final result = _fileQueue.then((_) => task());
+    // The chain itself never carries an error: one failed operation must not
+    // wedge every later write. The caller still sees it via `result`.
+    _fileQueue = result.catchError((_) {});
+    return result;
+  }
+
   static Future<void> init() async {
     if (_initialized) return;
     try {
@@ -16,23 +32,29 @@ class LoggerHelper {
       _logFile = File('${dir.path}/app_logs.txt');
       _initialized = true;
 
-      // Log rotation check (cap at 5MB)
-      if (await _logFile!.exists()) {
-        final size = await _logFile!.length();
-        if (size > 5 * 1024 * 1024) {
-          // Keep a backup of the previous log and clear the main one
-          final backupFile = File('${dir.path}/app_logs_old.txt');
-          if (await backupFile.exists()) {
-            await backupFile.delete();
-          }
-          await _logFile!.rename(backupFile.path);
-          _logFile = File('${dir.path}/app_logs.txt');
-        }
-      }
+      // Log rotation check (cap at 5MB). Queued rather than run inline
+      // because _initialized is already true, so other callers may be
+      // appending while this renames the file out from under them.
+      await _enqueue(() => _rotateIfNeeded(dir));
 
       await write('--- Session Started ---');
     } catch (e) {
       debugPrint('Failed to initialize LoggerHelper: $e');
+    }
+  }
+
+  static Future<void> _rotateIfNeeded(Directory dir) async {
+    if (await _logFile!.exists()) {
+      final size = await _logFile!.length();
+      if (size > 5 * 1024 * 1024) {
+        // Keep a backup of the previous log and clear the main one
+        final backupFile = File('${dir.path}/app_logs_old.txt');
+        if (await backupFile.exists()) {
+          await backupFile.delete();
+        }
+        await _logFile!.rename(backupFile.path);
+        _logFile = File('${dir.path}/app_logs.txt');
+      }
     }
   }
 
@@ -65,6 +87,24 @@ class LoggerHelper {
 
     debugPrint(logLine.trim());
 
+    // Queued before the remote report is awaited (not after, as it used to
+    // be) so a slow report can't reorder lines relative to other callers, and
+    // one that throws can't skip the local write.
+    Future<void>? localWrite;
+    if (_initialized && _logFile != null) {
+      localWrite = _enqueue(() async {
+        try {
+          await _logFile!.writeAsString(
+            logLine,
+            mode: FileMode.append,
+            flush: true,
+          );
+        } catch (e) {
+          debugPrint('LoggerHelper: Failed to write log: $e');
+        }
+      });
+    }
+
     if (reportRemotely && (error != null || stack != null)) {
       await AppAmbitReporter.reportError(
         message: message,
@@ -73,20 +113,13 @@ class LoggerHelper {
       );
     }
 
-    if (!_initialized || _logFile == null) return;
-    try {
-      await _logFile!.writeAsString(
-        logLine,
-        mode: FileMode.append,
-        flush: true,
-      );
-    } catch (e) {
-      debugPrint('LoggerHelper: Failed to write log: $e');
-    }
+    await localWrite;
   }
 
   static Future<File?> getLogFile() async {
     if (!_initialized) await init();
+    // Let queued appends land first so an export/share reads a complete file.
+    await _fileQueue;
     return _logFile;
   }
 
@@ -107,7 +140,9 @@ class LoggerHelper {
     try {
       final file = await getLogFile();
       if (file != null && await file.exists()) {
-        await file.writeAsString('', mode: FileMode.write, flush: true);
+        await _enqueue(
+          () => file.writeAsString('', mode: FileMode.write, flush: true),
+        );
         await write('--- Logs Cleared ---');
       }
     } catch (e) {

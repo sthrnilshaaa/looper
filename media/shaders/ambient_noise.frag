@@ -48,16 +48,54 @@ float fbm(vec2 p) {
   return value;
 }
 
-// Sequential lerp chain across 6 stops — avoids dynamic array indexing so
-// this stays compatible across GPUs.
+// Gaussian-weighted blend across all 6 stops at once, rather than a
+// sequential "mix into the next stop" chain. The old chain only ever
+// blended two neighboring colors together, and smoothstep flattens out
+// near each end of its range — so most of the field sat at a nearly-flat,
+// nearly-pure color (a plateau), joined by a comparatively narrow
+// transition band wherever the underlying noise field's gradient was
+// steep. That narrow band is what reads as a visible seam/"joint" once
+// it's animating. Here every point blends *all* the nearby colors with
+// smoothly-varying weights (no flat plateaus, no hard 2-color cutover), so
+// the field reads as continuously drifting/brushed color rather than
+// discrete tinted regions stitched together. Explicit per-stop weights
+// (no array, no dynamic indexing) to stay compatible with GPUs that
+// handle those poorly, same constraint the old chain was written under.
 vec3 ramp(float t) {
   float s = clamp(t, 0.0, 1.0) * 5.0;
-  vec3 c = uColor0;
-  c = mix(c, uColor1, smoothstep(0.0, 1.0, clamp(s - 0.0, 0.0, 1.0)));
-  c = mix(c, uColor2, smoothstep(0.0, 1.0, clamp(s - 1.0, 0.0, 1.0)));
-  c = mix(c, uColor3, smoothstep(0.0, 1.0, clamp(s - 2.0, 0.0, 1.0)));
-  c = mix(c, uColor4, smoothstep(0.0, 1.0, clamp(s - 3.0, 0.0, 1.0)));
-  c = mix(c, uColor5, smoothstep(0.0, 1.0, clamp(s - 4.0, 0.0, 1.0)));
+
+  // How far (in stop-spacing units) a color's influence reaches. Wide
+  // enough that every point blends at least two, usually three, stops.
+  const float sigma = 0.85;
+  const float invTwoSigmaSq = 1.0 / (2.0 * sigma * sigma);
+
+  float d0 = s - 0.0;
+  float d1 = s - 1.0;
+  float d2 = s - 2.0;
+  float d3 = s - 3.0;
+  float d4 = s - 4.0;
+  float d5 = s - 5.0;
+
+  float w0 = exp(-d0 * d0 * invTwoSigmaSq);
+  float w1 = exp(-d1 * d1 * invTwoSigmaSq);
+  float w2 = exp(-d2 * d2 * invTwoSigmaSq);
+  float w3 = exp(-d3 * d3 * invTwoSigmaSq);
+  float w4 = exp(-d4 * d4 * invTwoSigmaSq);
+  float w5 = exp(-d5 * d5 * invTwoSigmaSq);
+
+  float wSum = w0 + w1 + w2 + w3 + w4 + w5;
+  vec3 blended = uColor0 * w0 + uColor1 * w1 + uColor2 * w2 +
+      uColor3 * w3 + uColor4 * w4 + uColor5 * w5;
+  vec3 c = blended / max(wSum, 0.0001);
+
+  // Blending several stops at once softens the result toward grey
+  // (averaging pulls saturated colors toward their shared luma) exactly
+  // where the old chain looked muddiest mid-transition. Push it back out
+  // from its own luma a little to keep transitions looking vivid/painted
+  // rather than washed out.
+  float luma = dot(c, vec3(0.299, 0.587, 0.114));
+  c = mix(vec3(luma), c, 1.18);
+
   return c;
 }
 

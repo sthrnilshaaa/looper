@@ -56,59 +56,11 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
     final l10n = AppLocalizations.of(context)!;
     final lyricsState = ref.watch(lyricsProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
-    //final playback = ref.watch(playbackProvider);
-    // final song = playback.currentSong;
-    // final settings = ref.watch(settingsProvider);
-
-    // final lyricsDarkness = settings.lyricsDarkness.isNaN
-    //     ? 0.55
-    //     : settings.lyricsDarkness;
-
-    // final showDynamicBg = (settings.enableDynamicTheming || settings.dynamicLyrics) &&
-    //     !settings.blurredArtworkForLyrics &&
-    //     song?.artPath != null;
-
-    // final showBlurredArtworkBg = settings.blurredArtworkForLyrics &&
-    //     song?.artPath != null;
 
     return Stack(
       children: [
-        // if (showDynamicBg)
-        //   Positioned.fill(
-        //     child: FluidBackground(
-        //       key: ValueKey('lyrics_fluid_bg_${song!.path}'),
-        //       imageProvider: FileImage(File(song.artPath!)),
-        //       animate: playback.isPlaying,
-        //       blurSigma: 80,
-        //       overlayDarken: lyricsDarkness,
-        //       child: const SizedBox.expand(),
-        //     ),
-        //   )
-        // else if (showBlurredArtworkBg)
-        //   Positioned.fill(
-        //     child: Stack(
-        //       children: [
-        //         Positioned.fill(
-        //           child: ImageFiltered(
-        //             imageFilter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
-        //             child: Image.file(
-        //               File(song!.artPath!),
-        //               fit: BoxFit.cover,
-        //               filterQuality: FilterQuality.low,
-        //             ),
-        //           ),
-        //         ),
-        //         Positioned.fill(
-        //           child: Container(
-        //             color: Colors.black.withValues(alpha: lyricsDarkness),
-        //           ),
-        //         ),
-        //       ],
-        //     ),
-        //   ),
         Column(
           children: [
-            //const SizedBox(height: 48), // Space for floating button
             if (_syncMode != LyricsSyncMode.line) _buildDisclaimer(l10n),
             Expanded(
               child: lyricsState.isLoading

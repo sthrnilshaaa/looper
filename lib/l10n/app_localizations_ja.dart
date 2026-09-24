@@ -1480,4 +1480,21 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get selectWhenToPause => '音楽の再生をいつ一時停止するか選択してください';
+
+  @override
+  String get selectAvatars => 'アバターを選択';
+
+  @override
+  String get selectAvatarsDesc => 'ホーム画面に表示するアバターを選択します';
+
+  @override
+  String get dynamicAvatarColor => 'ダイナミックアバターカラー';
+
+  @override
+  String get dynamicAvatarColorDesc => 'アバターのアクセントカラーを現在のテーマに合わせます';
+
+  @override
+  String enrichingSongs(int count) {
+    return '$count曲を情報取得中…';
+  }
 }

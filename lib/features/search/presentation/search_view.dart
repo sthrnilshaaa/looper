@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:looper_player/core/app_fonts.dart';
 import 'package:looper_player/ui/widgets/app_loading_indicator.dart';
 import 'package:looper_player/features/playback/presentation/playback_notifier.dart';
@@ -14,8 +15,59 @@ import 'package:isar_community/isar.dart';
 import 'package:looper_player/features/library/presentation/songs_list.dart';
 import 'package:looper_player/core/navigation_provider.dart';
 import 'package:looper_player/features/playback/presentation/lyrics_search_provider.dart';
+import 'package:looper_player/core/local_json_store.dart';
 
-final searchQueryProvider = StateProvider<String>((ref) => '');
+part 'search_view.g.dart';
+
+@Riverpod(keepAlive: true)
+class SearchQuery extends _$SearchQuery {
+  @override
+  String build() => '';
+
+  void set(String value) => state = value;
+}
+
+/// Search terms the user has actually submitted (keyboard "search" action),
+/// not every partial string typed while the live-filter results were
+/// updating - most-recent first, deduplicated, capped so the list stays a
+/// quick-glance shortlist rather than a full search log.
+@Riverpod(keepAlive: true)
+class RecentSearches extends _$RecentSearches {
+  static const _storeKey = 'recent_searches';
+  static const _maxEntries = 10;
+
+  @override
+  List<String> build() {
+    _load();
+    return [];
+  }
+
+  Future<void> _load() async {
+    final raw = await LocalJsonStore.read(_storeKey);
+    if (raw is! List) return;
+    state = raw.whereType<String>().toList();
+  }
+
+  Future<void> add(String query) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return;
+    state = [
+      trimmed,
+      ...state.where((q) => q.toLowerCase() != trimmed.toLowerCase()),
+    ].take(_maxEntries).toList();
+    await LocalJsonStore.write(_storeKey, state);
+  }
+
+  Future<void> remove(String query) async {
+    state = state.where((q) => q != query).toList();
+    await LocalJsonStore.write(_storeKey, state);
+  }
+
+  Future<void> clear() async {
+    state = [];
+    await LocalJsonStore.write(_storeKey, state);
+  }
+}
 
 class SearchResults {
   final List<Song> songs;
@@ -29,7 +81,33 @@ class SearchResults {
   });
 }
 
-final searchResultsProvider = StreamProvider<SearchResults>((ref) {
+/// Ranks how well [song] matches [lowerQuery] (already lower-cased) for
+/// search-result ordering: exact/prefix/substring title match, then a
+/// lyrics match, then an artist/album match, highest first. A pure function
+/// (no Isar/DB dependency) so it's unit-testable independently of
+/// [searchResultsProvider]'s DB-backed stream.
+int songSearchScore(Song song, String lowerQuery) {
+  final title = song.title.toLowerCase();
+  final lyrics = (song.lyrics ?? '').toLowerCase();
+  final artist = (song.artist ?? '').toLowerCase();
+  final album = (song.album ?? '').toLowerCase();
+
+  // 1. Top Match Songs Name
+  if (title == lowerQuery) return 100;
+  if (title.startsWith(lowerQuery)) return 90;
+  if (title.contains(lowerQuery)) return 80;
+
+  // 2. Lyrics Match
+  if (lyrics.contains(lowerQuery)) return 50;
+
+  // 3. Others (Artist or Album contain query)
+  if (artist.contains(lowerQuery) || album.contains(lowerQuery)) return 30;
+
+  return 0;
+}
+
+@Riverpod(keepAlive: true)
+Stream<SearchResults> searchResults(Ref ref) {
   final query = ref.watch(searchQueryProvider);
   if (query.isEmpty) {
     return Stream.value(SearchResults(songs: [], albums: [], artists: []));
@@ -59,40 +137,20 @@ final searchResultsProvider = StreamProvider<SearchResults>((ref) {
         final lowerQuery = query.toLowerCase();
         final sortedSongs = List<Song>.from(songs);
         sortedSongs.sort((a, b) {
-          int getSongScore(Song song) {
-            final title = song.title.toLowerCase();
-            final lyrics = (song.lyrics ?? '').toLowerCase();
-            final artist = (song.artist ?? '').toLowerCase();
-            final album = (song.album ?? '').toLowerCase();
+          final scoreA = songSearchScore(a, lowerQuery);
+          final scoreB = songSearchScore(b, lowerQuery);
 
-            // 1. Top Match Songs Name
-            if (title == lowerQuery) return 100;
-            if (title.startsWith(lowerQuery)) return 90;
-            if (title.contains(lowerQuery)) return 80;
-
-            // 2. Lyrics Match
-            if (lyrics.contains(lowerQuery)) return 50;
-
-            // 3. Others (Artist or Album contain query)
-            if (artist.contains(lowerQuery) || album.contains(lowerQuery)) return 30;
-
-            return 0;
-          }
-
-          final scoreA = getSongScore(a);
-          final scoreB = getSongScore(b);
-          
           if (scoreA != scoreB) {
             return scoreB.compareTo(scoreA); // Higher score first
           }
-          
+
           // Secondary sort: alphabetical by title
           return a.title.toLowerCase().compareTo(b.title.toLowerCase());
         });
 
         return SearchResults(songs: sortedSongs, albums: albums, artists: artists);
       });
-});
+}
 
 class SearchView extends ConsumerWidget {
   const SearchView({super.key});
@@ -106,7 +164,7 @@ class SearchView extends ConsumerWidget {
       children: [
         Expanded(
           child: query.isEmpty
-              ? _buildRecentSearches(context)
+              ? _buildRecentSearches(context, ref)
               : resultsAsync.when(
                   data: (results) => _buildResults(results, ref, context),
                   loading: () =>
@@ -118,24 +176,60 @@ class SearchView extends ConsumerWidget {
     );
   }
 
-  Widget _buildRecentSearches(BuildContext context) {
+  Widget _buildRecentSearches(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            LucideIcons.search,
-            size: 64,
-            color: Colors.grey.withValues(alpha: 0.2),
+    final recent = ref.watch(recentSearchesProvider);
+
+    if (recent.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              LucideIcons.search,
+              size: 64,
+              color: Colors.grey.withValues(alpha: 0.2),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              l10n.searchLibraryHint,
+              style: AppFonts.jostStyle(color: Colors.grey),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Not localized - see the equivalent note in songs_list.dart's
+            // multi-select bar.
+            Text(
+              'Recent Searches',
+              style: AppFonts.jostStyle(color: Colors.grey, fontSize: 13),
+            ),
+            TextButton(
+              onPressed: () => ref.read(recentSearchesProvider.notifier).clear(),
+              child: const Text('Clear'),
+            ),
+          ],
+        ),
+        ...recent.map(
+          (term) => ListTile(
+            leading: const Icon(LucideIcons.history, size: 18, color: Colors.grey),
+            title: Text(term, style: AppFonts.jostStyle(color: Colors.white)),
+            trailing: IconButton(
+              icon: const Icon(LucideIcons.x, size: 16, color: Colors.grey),
+              onPressed: () => ref.read(recentSearchesProvider.notifier).remove(term),
+            ),
+            onTap: () => ref.read(searchQueryProvider.notifier).set(term),
           ),
-          const SizedBox(height: 16),
-          Text(
-            l10n.searchLibraryHint,
-            style: AppFonts.jostStyle(color: Colors.grey),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -342,13 +436,14 @@ class _SongResultCard extends ConsumerWidget {
 
     return InkWell(
       onTap: () {
-        ref.read(lyricsSearchQueryProvider.notifier).state = '';
+        ref.read(lyricsSearchQueryProvider.notifier).clear();
         ref.read(playbackProvider.notifier).play(song);
       },
       borderRadius: BorderRadius.circular(16),
       child: isCurrent
           ? AnimatedContainer(
               duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(

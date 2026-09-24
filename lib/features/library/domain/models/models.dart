@@ -47,6 +47,14 @@ class Song {
   bool hasCustomEqualizer = false;
   List<double>? equalizerGains;
 
+  /// True for a row the scanner inserted quickly (path + whatever MediaStore
+  /// had) without yet running the slow part - tag parsing, embedded art,
+  /// lyrics. Lets a song appear in the list immediately on first scan while
+  /// that enrichment happens in the background; see
+  /// LibraryScanner.enrichPendingSongs.
+  @Index()
+  bool needsEnrichment = false;
+
   // Metadata for search
   @Index(type: IndexType.value, caseSensitive: false)
   List<String> get searchTerms => [title, artist ?? '', album ?? '', lyrics ?? ''];
@@ -200,6 +208,14 @@ class AppSettings {
   double libraryDarkness = 0.62;
   double musicDarkness = 0.62;
   double lyricsDarkness = 0.55;
+
+  // Home screen app-bar avatar. Filename only (not a full path) - it's
+  // always resolved against assets/android_icons/avatars/, so renaming that
+  // folder is a one-place change instead of a data migration.
+  String selectedAvatarAsset = 'looper_player_logo.svg';
+  // Only the default avatar (looper_main.svg) contains the swappable
+  // "#C0E200" accent color - see SelectedAvatar's doc comment.
+  bool avatarDynamicColor = false;
 
   bool useNewFont = true;
   String customFontFamily = 'Space Grotesk';

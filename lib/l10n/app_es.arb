@@ -491,5 +491,10 @@
   "lyricsNotAvailableHint": "Importa un archivo .lrc o .txt para añadir la letra de esta canción",
   "nextUp": "A continuación",
   "noEmbeddedArtworkFound": "No se encontró portada incrustada para este álbum",
-  "resetArtworkToDefault": "Restablecer a la predeterminada"
+  "resetArtworkToDefault": "Restablecer a la predeterminada",
+  "selectAvatars": "Seleccionar avatar",
+  "selectAvatarsDesc": "Elige el avatar que se muestra en tu pantalla de inicio",
+  "dynamicAvatarColor": "Color dinámico del avatar",
+  "dynamicAvatarColorDesc": "Ajusta el color de acento del avatar a tu tema actual",
+  "enrichingSongs": "Enriqueciendo {count} canciones…"
 }

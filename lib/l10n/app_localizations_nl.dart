@@ -1567,4 +1567,23 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get selectWhenToPause =>
       'Kies wanneer de muziekweergave wordt gepauzeerd';
+
+  @override
+  String get selectAvatars => 'Avatar selecteren';
+
+  @override
+  String get selectAvatarsDesc =>
+      'Kies de avatar die op je startscherm wordt getoond';
+
+  @override
+  String get dynamicAvatarColor => 'Dynamische avatarkleur';
+
+  @override
+  String get dynamicAvatarColorDesc =>
+      'Past de accentkleur van de avatar aan je huidige thema aan';
+
+  @override
+  String enrichingSongs(int count) {
+    return '$count nummers worden verrijkt…';
+  }
 }

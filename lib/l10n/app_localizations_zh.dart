@@ -1451,4 +1451,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get selectWhenToPause => '选择何时暂停音乐播放';
+
+  @override
+  String get selectAvatars => '选择头像';
+
+  @override
+  String get selectAvatarsDesc => '选择主屏幕上显示的头像';
+
+  @override
+  String get dynamicAvatarColor => '动态头像颜色';
+
+  @override
+  String get dynamicAvatarColorDesc => '将头像的强调色与当前主题匹配';
+
+  @override
+  String enrichingSongs(int count) {
+    return '正在丰富 $count 首歌曲的信息…';
+  }
 }

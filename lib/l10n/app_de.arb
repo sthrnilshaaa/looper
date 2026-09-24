@@ -491,5 +491,10 @@
   "lyricsNotAvailableHint": "Importiere eine .lrc- oder .txt-Datei, um Songtext für diesen Song hinzuzufügen",
   "nextUp": "Als Nächstes",
   "noEmbeddedArtworkFound": "Kein eingebettetes Cover für dieses Album gefunden",
-  "resetArtworkToDefault": "Auf Standard zurücksetzen"
+  "resetArtworkToDefault": "Auf Standard zurücksetzen",
+  "selectAvatars": "Avatar auswählen",
+  "selectAvatarsDesc": "Wähle den Avatar für deinen Startbildschirm",
+  "dynamicAvatarColor": "Dynamische Avatar-Farbe",
+  "dynamicAvatarColorDesc": "Passt die Akzentfarbe des Avatars an dein aktuelles Design an",
+  "enrichingSongs": "{count} Songs werden angereichert…"
 }

@@ -50,6 +50,20 @@ android {
         multiDexEnabled = true
     }
 
+    // Two distributions of the same app (same applicationId), differing only
+    // in how updates are delivered:
+    //   github - APKs attached to GitHub releases; checks the GitHub releases
+    //            API. Contains no Google Play code at all.
+    //   play   - the Google Play AAB; uses Play's In-App Updates API and never
+    //            talks to GitHub.
+    // Build with `--flavor github` / `--flavor play` (there is deliberately no
+    // pubspec default-flavor: it would also relocate the Linux build output).
+    flavorDimensions += "store"
+    productFlavors {
+        create("github") { dimension = "store" }
+        create("play") { dimension = "store" }
+    }
+
     buildTypes {
         val sharedSigningConfig = if (hasSigningConfig) {
             signingConfigs.getByName("release")
@@ -94,4 +108,6 @@ dependencies {
     // lyrics field, and hand-rolling binary tag parsing for untrusted files
     // isn't worth the risk when a mature library already does it correctly.
     implementation("net.jthink:jaudiotagger:3.0.1")
+    // In-App Updates - play flavor only, so the GitHub APK ships no Google code.
+    "playImplementation"("com.google.android.play:app-update:2.1.0")
 }

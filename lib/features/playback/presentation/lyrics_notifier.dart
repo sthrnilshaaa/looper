@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:looper_player/core/db_service.dart';
 import 'package:looper_player/features/library/domain/models/models.dart';
 import '../data/lyrics_cache.dart';
@@ -8,6 +8,8 @@ import '../data/lyrics_fetcher.dart';
 import '../data/lyrics_service.dart';
 import '../data/metadata_service.dart';
 import '../domain/lyric_models.dart';
+
+part 'lyrics_notifier.g.dart';
 
 class LyricsState {
   final String? rawLrc;
@@ -41,10 +43,10 @@ class LyricsState {
   }
 }
 
-class LyricsNotifier extends StateNotifier<LyricsState> {
-  final Ref ref;
-
-  LyricsNotifier(this.ref) : super(LyricsState());
+@Riverpod(keepAlive: true)
+class Lyrics extends _$Lyrics {
+  @override
+  LyricsState build() => LyricsState();
 
   void fetchForSong(Song song, {bool force = false}) {
     _fetchLyrics(song, force: force);
@@ -212,10 +214,24 @@ class LyricsNotifier extends StateNotifier<LyricsState> {
   }
 }
 
-final lyricsProvider = StateNotifierProvider<LyricsNotifier, LyricsState>((
-  ref,
-) {
-  return LyricsNotifier(ref);
-});
+@Riverpod(keepAlive: true)
+class LyricsManualScroll extends _$LyricsManualScroll {
+  @override
+  bool build() => false;
 
-final lyricsManualScrollProvider = StateProvider<bool>((ref) => false);
+  void set(bool value) => state = value;
+}
+
+/// Whether the currently active lyric line's row is within the lyrics
+/// list's visible viewport right now - kept up to date by
+/// AdvancedLyricRenderer. Lets the "re-sync" button (see
+/// AndroidLyricsScreen) only show once the user has actually scrolled the
+/// active line out of view, instead of on every scroll touch regardless of
+/// whether the line ever left the screen.
+@Riverpod(keepAlive: true)
+class LyricsActiveLineVisible extends _$LyricsActiveLineVisible {
+  @override
+  bool build() => true;
+
+  void set(bool value) => state = value;
+}

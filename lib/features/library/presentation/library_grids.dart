@@ -12,29 +12,35 @@ import 'package:looper_player/ui/widgets/optimized_image.dart';
 import 'package:looper_player/features/playback/presentation/playback_notifier.dart';
 import 'package:looper_player/ui/widgets/global_playing_indicator.dart';
 import 'package:isar_community/isar.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+part 'library_grids.g.dart';
 
 // Providers for Albums and Artists
-final albumsProvider = StreamProvider<List<Album>>((ref) {
+@Riverpod(keepAlive: true)
+Stream<List<Album>> albums(Ref ref) {
   return DbService.isar.albums.where().sortByDateAddedDesc().watch(
     fireImmediately: true,
   );
-});
+}
 
-final artistsProvider = StreamProvider<List<Artist>>((ref) {
+@Riverpod(keepAlive: true)
+Stream<List<Artist>> artists(Ref ref) {
   return DbService.isar.artists.where().sortByName().watch(
     fireImmediately: true,
   );
-});
+}
 
 /// Reactively watches every song tagged with [albumName], so a
 /// CollectionDetailView opened for an album updates live when that album
 /// (or one of its songs) is edited, instead of showing a stale snapshot.
-final songsForAlbumProvider = StreamProvider.family<List<Song>, String>((ref, albumName) {
+@Riverpod(keepAlive: true)
+Stream<List<Song>> songsForAlbum(Ref ref, String albumName) {
   return DbService.isar.songs
       .filter()
       .albumEqualTo(albumName)
       .watch(fireImmediately: true);
-});
+}
 
 class AlbumsGrid extends ConsumerWidget {
   const AlbumsGrid({super.key});
@@ -75,10 +81,16 @@ class _AlbumCard extends ConsumerWidget {
     final isPlayingThisAlbum = ref.watch(
       playbackProvider.select((s) => s.isPlaying && s.currentSong?.album == album.name),
     );
-    final nav = ref.watch(appNavigationProvider);
-    final isSelected =
-        nav.activeItem == NavItem.collectionDetail &&
-        nav.collectionTitle == album.name;
+    // Same reasoning as isPlayingThisAlbum above: select just whether THIS
+    // album is the selected one, instead of watching the whole nav state
+    // (which would rebuild every visible card on any navigation change).
+    final isSelected = ref.watch(
+      appNavigationProvider.select(
+        (nav) =>
+            nav.activeItem == NavItem.collectionDetail &&
+            nav.collectionTitle == album.name,
+      ),
+    );
 
     return InkWell(
       onTap: () async {
@@ -99,6 +111,7 @@ class _AlbumCard extends ConsumerWidget {
       borderRadius: BorderRadius.circular(24),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
         padding: EdgeInsets.all(12.s),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
@@ -222,10 +235,16 @@ class _ArtistCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDynamic = ref.watch(settingsProvider).enableDynamicTheming;
-    final nav = ref.watch(appNavigationProvider);
-    final isSelected =
-        nav.activeItem == NavItem.collectionDetail &&
-        nav.collectionTitle == artist.name;
+    // Select just whether THIS artist is the selected one, instead of
+    // watching the whole nav state (which would rebuild every visible card
+    // on any navigation change).
+    final isSelected = ref.watch(
+      appNavigationProvider.select(
+        (nav) =>
+            nav.activeItem == NavItem.collectionDetail &&
+            nav.collectionTitle == artist.name,
+      ),
+    );
 
     return InkWell(
       onTap: () async {
@@ -248,6 +267,7 @@ class _ArtistCard extends ConsumerWidget {
       borderRadius: BorderRadius.circular(24),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
         padding: EdgeInsets.all(12.s),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),

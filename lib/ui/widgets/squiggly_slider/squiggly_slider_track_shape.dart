@@ -149,7 +149,11 @@ class SquigglySliderTrackShape extends SliderTrackShape
       final double endX = lr - radius;
       final double totalLength = endX - startX;
 
-      const ppp = 1.0; // pixels per point -- the resolution of the curve
+      // Pixels per point - the curve's resolution. A gentle sine wave looks
+      // identical well below one point per pixel; this runs on every paint
+      // while the wave animates, so the point count (and the sin() call and
+      // Offset allocation behind each one) directly sets that per-frame cost.
+      const ppp = 3.0;
       context.canvas.drawPoints(
         PointMode.polygon,
         List.generate(

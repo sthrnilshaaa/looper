@@ -46,7 +46,7 @@ class _GlobalSearchBarState extends ConsumerState<GlobalSearchBar> {
   void _clearSearch() {
     _debounceTimer?.cancel();
     _controller.clear();
-    ref.read(searchQueryProvider.notifier).state = '';
+    ref.read(searchQueryProvider.notifier).set('');
     // Unfocus the search bar to return to music control mode
     FocusManager.instance.primaryFocus?.unfocus();
 
@@ -64,6 +64,15 @@ class _GlobalSearchBarState extends ConsumerState<GlobalSearchBar> {
     final l10n = AppLocalizations.of(context)!;
     // Remove global watch of searchQueryProvider to prevent rebuilds on every keystroke
     // final query = ref.watch(searchQueryProvider);
+
+    // Keeps the visible text in sync when something other than typing here
+    // changes the query - e.g. tapping a Recent Searches row in SearchView,
+    // which only updates searchQueryProvider itself.
+    ref.listen(searchQueryProvider, (previous, next) {
+      if (_controller.text != next) {
+        _controller.text = next;
+      }
+    });
 
     if (nav.activeItem == NavItem.lyrics) {
       return const SizedBox.shrink();
@@ -108,10 +117,11 @@ class _GlobalSearchBarState extends ConsumerState<GlobalSearchBar> {
               child: TextField(
                 focusNode: ref.watch(searchFocusNodeProvider),
                 controller: _controller,
+                textInputAction: TextInputAction.search,
                 onChanged: (val) {
                   _debounceTimer?.cancel();
                   _debounceTimer = Timer(const Duration(milliseconds: 300), () {
-                    ref.read(searchQueryProvider.notifier).state = val;
+                    ref.read(searchQueryProvider.notifier).set(val);
                   });
                   if (val.isNotEmpty && nav.activeItem != NavItem.search) {
                     ref
@@ -119,6 +129,12 @@ class _GlobalSearchBarState extends ConsumerState<GlobalSearchBar> {
                         .setItem(NavItem.search);
                   }
                 },
+                // Recording happens on an explicit "search" submit rather
+                // than every debounced keystroke, so history holds terms
+                // the user meant to search for instead of every partial
+                // substring typed along the way.
+                onSubmitted: (val) =>
+                    ref.read(recentSearchesProvider.notifier).add(val),
                 decoration: InputDecoration(
                   hintText: l10n.searchSongsHint,
                   hintStyle: AppFonts.jostStyle(

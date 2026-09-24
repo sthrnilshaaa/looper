@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:looper_player/features/library/domain/models/models.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -10,6 +11,7 @@ import 'package:looper_player/core/app_fonts.dart';
 import 'package:looper_player/core/app_links.dart';
 import 'package:looper_player/core/providers.dart';
 import 'package:looper_player/core/navigation_provider.dart';
+import 'package:looper_player/core/responsive.dart';
 import 'package:looper_player/features/settings/presentation/settings_notifier.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
 import 'package:looper_player/ui/screens/android/widgets/premium_section.dart';
@@ -26,7 +28,15 @@ import 'widgets/library_settings_tiles.dart';
 import 'widgets/about_settings_tiles.dart';
 import 'widgets/backup_logs_settings_tiles.dart';
 
-final supportUsSheetVisibleProvider = StateProvider<bool>((ref) => false);
+part 'settings_view.g.dart';
+
+@Riverpod(keepAlive: true)
+class SupportUsSheetVisible extends _$SupportUsSheetVisible {
+  @override
+  bool build() => false;
+
+  void set(bool value) => state = value;
+}
 
 class SettingsView extends ConsumerStatefulWidget {
   const SettingsView({super.key});
@@ -50,7 +60,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     ColorScheme colorScheme,
     bool useBlur,
   ) {
-    ref.read(supportUsSheetVisibleProvider.notifier).state = true;
+    ref.read(supportUsSheetVisibleProvider.notifier).set(true);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -166,7 +176,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
         );
       },
     ).whenComplete(() {
-      ref.read(supportUsSheetVisibleProvider.notifier).state = false;
+      ref.read(supportUsSheetVisibleProvider.notifier).set(false);
     });
   }
 
@@ -362,10 +372,21 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                 ),
 
                 // Settings Body
+                //
+                // In landscape the list is capped to a readable width and
+                // centered instead of stretching every settings tile
+                // edge-to-edge across the whole window.
                 Expanded(
-                  child: _isSearching
-                      ? _buildSearchResults(context, ref, settings, l10n)
-                      : ListView(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: Responsive.isLandscape(MediaQuery.sizeOf(context))
+                            ? 640
+                            : double.infinity,
+                      ),
+                      child: _isSearching
+                          ? _buildSearchResults(context, ref, settings, l10n)
+                          : ListView(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16.0,
                             vertical: 12.0,
@@ -473,6 +494,8 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                             ), // Bottom breathing room for expanded player bar
                           ],
                         ),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -690,6 +713,12 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
         subtitle: l10n.adaptColorsArtwork,
         category: l10n.theme,
         widget: const DynamicThemingTile(),
+      ),
+      SettingsSearchItem(
+        title: l10n.selectAvatars,
+        subtitle: l10n.selectAvatarsDesc,
+        category: l10n.theme,
+        widget: const SelectAvatarsTile(),
       ),
       if (settings.enableDynamicTheming)
         SettingsSearchItem(
@@ -994,6 +1023,12 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
         widget: const IncludeSystemAndMessagingAudioTile(),
       ),
       SettingsSearchItem(
+        title: 'Excluded Folders',
+        subtitle: 'Skip specific folders when scanning',
+        category: l10n.musicLibrary,
+        widget: const ExcludedFoldersTile(),
+      ),
+      SettingsSearchItem(
         title: l10n.resetLibrary,
         subtitle: 'Clear library data',
         category: l10n.musicLibrary,
@@ -1037,6 +1072,8 @@ class SettingsCategoryScreen extends ConsumerWidget {
     if (categoryId == 'theme') {
       children = [
         const DynamicThemingTile(),
+        const Divider(height: 1, indent: 72, color: Colors.white10),
+        const SelectAvatarsTile(),
         if (settings.enableDynamicTheming) ...[
           const Divider(height: 1, indent: 72, color: Colors.white10),
           const DisableBlurTile(),
@@ -1198,6 +1235,8 @@ class SettingsCategoryScreen extends ConsumerWidget {
         const SyncLyricsOfflineTile(),
         const Divider(height: 1, indent: 72, color: Colors.white10),
         const IncludeSystemAndMessagingAudioTile(),
+        const Divider(height: 1, indent: 72, color: Colors.white10),
+        const ExcludedFoldersTile(),
         const Divider(height: 1, indent: 72, color: Colors.white10),
         const RescanLibraryTile(),
         const Divider(height: 1, indent: 72, color: Colors.white10),

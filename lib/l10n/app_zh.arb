@@ -491,5 +491,10 @@
   "lyricsNotAvailableHint": "导入 .lrc 或 .txt 文件为这首歌添加歌词",
   "nextUp": "接下来播放",
   "noEmbeddedArtworkFound": "未找到此专辑的内嵌封面",
-  "resetArtworkToDefault": "重置为默认"
+  "resetArtworkToDefault": "重置为默认",
+  "selectAvatars": "选择头像",
+  "selectAvatarsDesc": "选择主屏幕上显示的头像",
+  "dynamicAvatarColor": "动态头像颜色",
+  "dynamicAvatarColorDesc": "将头像的强调色与当前主题匹配",
+  "enrichingSongs": "正在丰富 {count} 首歌曲的信息…"
 }

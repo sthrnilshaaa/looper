@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:looper_player/core/responsive.dart';
 import 'package:looper_player/features/settings/presentation/settings_notifier.dart';
 import 'package:looper_player/ui/screens/android/widgets/premium_section.dart';
 
@@ -34,6 +35,20 @@ class AppBottomSheetContainer extends ConsumerWidget {
     final useBlur = settings.alwaysBlurSheets ||
         (!settings.disableBlur && (useBlurBG || settings.enableDynamicTheming));
 
+    // On a landscape phone/tablet a bottom sheet stretched edge-to-edge
+    // reads as a wall of controls - cap the content's width and center it,
+    // the same way the rest of the landscape work caps other panes rather
+    // than letting them stretch just because the window is wide.
+    final isLandscape = Responsive.isLandscape(MediaQuery.sizeOf(context));
+    final constrainedChild = isLandscape
+        ? Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: child,
+            ),
+          )
+        : child;
+
     final sheetBody = Container(
       height: height,
       decoration: BoxDecoration(
@@ -41,7 +56,13 @@ class AppBottomSheetContainer extends ConsumerWidget {
             ? const Color.fromARGB(50, 0, 0, 0)
             : settings.darkTheme
                 ? const Color.fromARGB(255, 0, 0, 0)
-                : const Color(0xFF161613),
+                // Was 0xFF161613, a rogue shade matching neither of the
+                // theme's own two canonical near-black colors
+                // (theme_provider.dart) - use the same 0xFF1E1E1E every
+                // other non-OLED sheet/dialog in the app already uses, so
+                // this widely-shared sheet shell (11+ call sites) is
+                // visually consistent with the rest.
+                : const Color(0xFF1E1E1E),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(30),
           topRight: Radius.circular(30),
@@ -68,9 +89,9 @@ class AppBottomSheetContainer extends ConsumerWidget {
               const SizedBox(height: 20),
             ],
             if (height != null)
-              Expanded(child: child)
+              Expanded(child: constrainedChild)
             else
-              child,
+              constrainedChild,
           ],
         ),
       ),

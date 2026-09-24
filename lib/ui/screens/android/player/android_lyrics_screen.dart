@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/core/app_fonts.dart';
+import 'package:looper_player/core/responsive.dart';
 import 'package:looper_player/features/playback/presentation/playback_notifier.dart';
 import 'package:looper_player/features/playback/presentation/lyrics_view.dart';
 import 'package:looper_player/features/settings/presentation/settings_notifier.dart';
@@ -30,7 +31,8 @@ class AndroidLyricsScreen extends ConsumerStatefulWidget {
   const AndroidLyricsScreen({super.key});
 
   @override
-  ConsumerState<AndroidLyricsScreen> createState() => _AndroidLyricsScreenState();
+  ConsumerState<AndroidLyricsScreen> createState() =>
+      _AndroidLyricsScreenState();
 }
 
 class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
@@ -70,7 +72,7 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
 
     // Reset manual scroll provider when opening lyrics screen
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(lyricsManualScrollProvider.notifier).state = false;
+      ref.read(lyricsManualScrollProvider.notifier).set(false);
     });
   }
 
@@ -130,7 +132,7 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
 
   void _onUserScrolled() {
     if (!mounted) return;
-    ref.read(lyricsManualScrollProvider.notifier).state = true;
+    ref.read(lyricsManualScrollProvider.notifier).set(true);
     if (!_showController) {
       setState(() {
         _showController = true;
@@ -139,7 +141,23 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
     _resetHideTimer();
   }
 
+  DateTime _lastHideTimerReset = DateTime.fromMillisecondsSinceEpoch(0);
+
   void _resetHideTimer([Duration duration = const Duration(seconds: 4)]) {
+    // Called from a ScrollNotification listener, which fires many times a
+    // second during a drag/fling - coalesce to at most one Timer
+    // cancel+recreate per 200ms instead of one per scroll delta. Safe: as
+    // long as scrolling keeps generating events at least that often (true
+    // of any active scroll), the still-pending timer from the last real
+    // reset has well over 200ms left, so this can never fire early - it
+    // only ever pushes the hide out a little later than the theoretical
+    // "exactly on the last event" deadline, never sooner.
+    final now = DateTime.now();
+    if (_hideTimer != null &&
+        now.difference(_lastHideTimerReset) < const Duration(milliseconds: 200)) {
+      return;
+    }
+    _lastHideTimerReset = now;
     _hideTimer?.cancel();
     _hideTimer = Timer(duration, () {
       if (mounted) {
@@ -171,7 +189,8 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
     final Hero fromHero = fromHeroContext.widget as Hero;
     final Hero toHero = toHeroContext.widget as Hero;
 
-    final isArtist = fromHero.tag == 'song_artist' || toHero.tag == 'song_artist';
+    final isArtist =
+        fromHero.tag == 'song_artist' || toHero.tag == 'song_artist';
     final playback = ref.read(playbackProvider);
     final song = playback.currentSong;
     if (song == null) return const SizedBox.shrink();
@@ -179,12 +198,26 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
     final text = isArtist ? (song.artist ?? 'Unknown Artist') : song.title;
 
     final fallbackFrom = isArtist
-        ? AppFonts.jostStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14)
-        : AppFonts.jostStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold);
+        ? AppFonts.jostStyle(
+            color: Colors.white.withValues(alpha: 0.5),
+            fontSize: 14,
+          )
+        : AppFonts.jostStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          );
 
     final fallbackTo = isArtist
-        ? AppFonts.jostStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 18)
-        : AppFonts.jostStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold);
+        ? AppFonts.jostStyle(
+            color: Colors.white.withValues(alpha: 0.6),
+            fontSize: 18,
+          )
+        : AppFonts.jostStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          );
 
     final fromStyle = _getHeroStyle(fromHero, fallbackFrom);
     final toStyle = _getHeroStyle(toHero, fallbackTo);
@@ -228,9 +261,23 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
 
     final song = ref.watch(playbackProvider.select((s) => s.currentSong));
     final isManualScroll = ref.watch(lyricsManualScrollProvider);
+    // The re-sync button itself should only appear once the active line has
+    // actually scrolled out of view - not on every scroll touch regardless
+    // of whether the current line is still sitting right there on screen.
+    final activeLineVisible = ref.watch(lyricsActiveLineVisibleProvider);
+    final showResync = isManualScroll && !activeLineVisible;
     final settings = ref.watch(settingsProvider);
 
     if (song == null) return const SizedBox.shrink();
+
+    // On a short window (landscape phones - same check PlayerLandscapeMetrics
+    // uses) the bottom controller's original 350dp height, tuned for a tall
+    // portrait screen, ate a large fraction of the available height and
+    // covered the lyrics behind it. Shrink it to just fit the seek bar +
+    // transport row + safe-area padding instead of the extra gradient
+    // headroom that only looks right when there's plenty of vertical space.
+    final bool isCompactHeight = Responsive.isShort(MediaQuery.sizeOf(context));
+    final double bottomControllerHeight = isCompactHeight ? 220.s : 350.s;
 
     final mainContent = SafeArea(
       child: NotificationListener<ScrollNotification>(
@@ -327,7 +374,11 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
                       HapticFeedback.lightImpact();
                       showLyricsMenuBottomSheet(context, ref, song);
                     },
-                    child: const Icon(LucideIcons.ellipsisVertical, color: Colors.white, size: 20),
+                    child: const Icon(
+                      LucideIcons.ellipsisVertical,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 2),
                   // Down Arrow
@@ -353,7 +404,11 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
                       HapticFeedback.lightImpact();
                       Navigator.pop(context);
                     },
-                    child: const Icon(LucideIcons.chevronDown, color: Colors.white, size: 20),
+                    child: const Icon(
+                      LucideIcons.chevronDown,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                 ],
               ),
@@ -376,10 +431,13 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
       ),
     );
 
-    final lyricsDarkness = settings.lyricsDarkness.isNaN ? 0.55 : settings.lyricsDarkness;
+    final lyricsDarkness = settings.lyricsDarkness.isNaN
+        ? 0.55
+        : settings.lyricsDarkness;
 
     final route = ModalRoute.of(context);
-    final isExiting = route != null && route.animation?.status == AnimationStatus.reverse;
+    final isExiting =
+        route != null && route.animation?.status == AnimationStatus.reverse;
 
     final showDynamicBg =
         !isExiting &&
@@ -396,7 +454,9 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
         settings.blurredArtworkForLyrics &&
         song.artPath != null;
 
-    final transitionDuration = isExiting ? Duration.zero : const Duration(milliseconds: 1000);
+    final transitionDuration = isExiting
+        ? Duration.zero
+        : const Duration(milliseconds: 1000);
 
     return GestureDetector(
       onVerticalDragEnd: (details) {
@@ -426,7 +486,9 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
                     ? Consumer(
                         key: ValueKey('fluid_bg_${song.path}'),
                         builder: (context, ref, child) {
-                          final isPlaying = ref.watch(playbackProvider.select((s) => s.isPlaying));
+                          final isPlaying = ref.watch(
+                            playbackProvider.select((s) => s.isPlaying),
+                          );
                           return FluidBackground(
                             key: ValueKey('fluid_bg_child_${song.path}'),
                             imageProvider: FileImage(File(song.artPath!)),
@@ -444,7 +506,10 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
                                 children: [
                                   Positioned.fill(
                                     child: ImageFiltered(
-                                      imageFilter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+                                      imageFilter: ImageFilter.blur(
+                                        sigmaX: 25,
+                                        sigmaY: 25,
+                                      ),
                                       child: Image.file(
                                         File(song.artPath!),
                                         fit: BoxFit.cover,
@@ -452,13 +517,16 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
                                         cacheWidth: 100,
                                         cacheHeight: 100,
                                         gaplessPlayback: true,
-                                        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                                        errorBuilder: (_, _, _) =>
+                                            const SizedBox.shrink(),
                                       ),
                                     ),
                                   ),
                                   Positioned.fill(
                                     child: Container(
-                                      color: Colors.black.withValues(alpha: lyricsDarkness),
+                                      color: Colors.black.withValues(
+                                        alpha: lyricsDarkness,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -470,22 +538,44 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
                                     children: [
                                       Positioned.fill(
                                         child: AnimatedContainer(
-                                          duration: const Duration(milliseconds: 600),
+                                          duration: const Duration(
+                                            milliseconds: 600,
+                                          ),
                                           curve: Curves.easeInOut,
                                           decoration: BoxDecoration(
                                             gradient: RadialGradient(
                                               center: Alignment.topCenter,
                                               radius: 1.8,
                                               colors: [
+                                                Theme.of(context)
+                                                    .colorScheme
+                                                    .primary
+                                                    .withValues(alpha: 0.20),
+                                                // Opaque surface, not a low-alpha
+                                                // primary tint - see the same fix
+                                                // in android_expanded_player.dart:
+                                                // fading to near-transparent left
+                                                // this screen's baseline far
+                                                // darker than Home's equivalent
+                                                // gradient, making lyricsDarkness
+                                                // feel broken.
                                                 Theme.of(
                                                   context,
-                                                ).colorScheme.primary.withValues(alpha: 0.20),
-                                                Theme.of(
-                                                  context,
-                                                ).colorScheme.primary.withValues(alpha: 0.08),
+                                                ).colorScheme.surface,
                                               ],
                                               stops: const [0.0, 1.0],
                                             ),
+                                          ),
+                                        ),
+                                      ),
+                                      // Same lyricsDarkness slider as the
+                                      // dynamic/blurred-artwork backgrounds
+                                      // above, so it isn't a dead control when
+                                      // gradient mode is what's actually active.
+                                      Positioned.fill(
+                                        child: Container(
+                                          color: Colors.black.withValues(
+                                            alpha: lyricsDarkness,
                                           ),
                                         ),
                                       ),
@@ -493,7 +583,9 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
                                   )
                                 : Container(
                                     key: const ValueKey('static_bg'),
-                                    color: Theme.of(context).colorScheme.surface,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surface,
                                   ))),
               ),
             ),
@@ -526,22 +618,16 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
                   child: IgnorePointer(
                     ignoring: !_showController,
                     child: Container(
-                      height: 350.s,
+                      height: bottomControllerHeight,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                           // Colors.transparent,
-                            // Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
-                            // Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
-                            // Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
                             Colors.transparent.withValues(alpha: 0.010),
-                            //Colors.transparent.withValues(alpha: 0.10),
                             Colors.transparent.withValues(alpha: 0.50),
                             Colors.black.withValues(alpha: 0.90),
                             Colors.black.withValues(alpha: 0.99),
-                           // Colors.black,Colors.transparent.withValues(alpha: 0.50),
                           ],
                           stops: const [0.0, 0.2, 0.75, 1.0],
                         ),
@@ -578,17 +664,25 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
                                       isPlaying: isPlaying,
                                       onSeek: (pos) {
                                         _resetHideTimer();
-                                        ref.read(playbackProvider.notifier).seek(pos);
+                                        ref
+                                            .read(playbackProvider.notifier)
+                                            .seek(pos);
                                       },
                                       onSeekStart: () {
                                         _resetHideTimer();
-                                        ref.read(playbackProvider.notifier).startScrubbing();
+                                        ref
+                                            .read(playbackProvider.notifier)
+                                            .startScrubbing();
                                       },
                                       onSeekEnd: () {
                                         _resetHideTimer();
-                                        ref.read(playbackProvider.notifier).stopScrubbing();
+                                        ref
+                                            .read(playbackProvider.notifier)
+                                            .stopScrubbing();
                                       },
-                                      color: Theme.of(context).colorScheme.onSecondary,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSecondary,
                                     ),
                                   ),
                                 );
@@ -596,16 +690,28 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
                             ),
                           ),
 
-                          const SizedBox(height: 12),
+                          SizedBox(height: isCompactHeight ? 6 : 12),
 
                           // Playback Controls Row matching android_expanded_player.dart exactly
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 14),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 0,
+                              vertical: isCompactHeight ? 4 : 14,
+                            ),
                             child: Consumer(
                               builder: (context, ref, child) {
                                 final isPlaying = ref.watch(
                                   playbackProvider.select((s) => s.isPlaying),
                                 );
+                                // Portrait-tuned 80dp buttons, unchanged
+                                // there; on a short window the outer
+                                // controller container is already shrunk
+                                // (see bottomControllerHeight above) but
+                                // these stayed fixed, leaving almost no
+                                // margin before the seek bar + this row +
+                                // safe-area padding overflowed it.
+                                final double transportButtonHeight =
+                                    isCompactHeight ? 56.0 : 80.0;
                                 return Row(
                                   children: [
                                     // Previous
@@ -617,17 +723,21 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
                                         topRight: Radius.circular(12),
                                         bottomRight: Radius.circular(12),
                                       ),
-                                      height: 80,
+                                      height: transportButtonHeight,
                                       showShadow: false,
                                       useBlur: settings.enableDynamicTheming,
                                       forceNoBlur: true,
-                                       backgroundColor: Colors.white.withOpacity(0.04),
+                                      backgroundColor: Colors.white.withOpacity(
+                                        0.04,
+                                      ),
                                       showBorder: false,
                                       onTap: () {
                                         _resetHideTimer();
                                         HapticFeedback.lightImpact();
                                         _prevTapPulse.value++;
-                                        ref.read(playbackProvider.notifier).skipPrevious();
+                                        ref
+                                            .read(playbackProvider.notifier)
+                                            .skipPrevious();
                                       },
                                       child: ValueListenableBuilder<int>(
                                         valueListenable: _prevTapPulse,
@@ -635,7 +745,9 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
                                           return AnimatedTransportIcon(
                                             asset: AppIcons.prev,
                                             color: Colors.white,
-                                            size: AppIcons.expandedPlayerMainControl.s,
+                                            size: AppIcons
+                                                .expandedPlayerMainControl
+                                                .s,
                                             triggerKey: tick,
                                           );
                                         },
@@ -646,31 +758,35 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
                                     PremiumSection(
                                       heroTag: 'player_play_pause_btn',
                                       borderRadius: BorderRadius.circular(12),
-                                      height: 80,
+                                      height: transportButtonHeight,
                                       showBorder: false,
                                       showShadow: false,
                                       useBlur: settings.enableDynamicTheming,
                                       forceNoBlur: true,
                                       backgroundColor: isPlaying
-                                          ?  Colors.white.withOpacity(0.04)
-                                          : Theme.of(context).colorScheme.onSecondary,
+                                          ? Colors.white.withOpacity(0.04)
+                                          : Theme.of(
+                                              context,
+                                            ).colorScheme.onSecondary,
                                       onTap: () {
                                         _resetHideTimer();
                                         HapticFeedback.mediumImpact();
-                                        ref.read(playbackProvider.notifier).togglePlay();
+                                        ref
+                                            .read(playbackProvider.notifier)
+                                            .togglePlay();
                                       },
                                       child: AnimatedScale(
                                         scale: 1.1,
-                                        duration: const Duration(milliseconds: 300),
+                                        duration: const Duration(
+                                          milliseconds: 300,
+                                        ),
                                         curve: Curves.easeOutBack,
                                         child: AnimatedPlayPauseIcon(
                                           isPlaying: isPlaying,
-                                          color: 
-                                               Colors.white,
-                                              // : HSLColor.fromColor(
-                                              //     Theme.of(context).colorScheme.primary,
-                                              //   ).withLightness(0.15).toColor(),
-                                          size: AppIcons.expandedPlayerPlayPauseIcon.s,
+                                          color: Colors.white,
+                                          size: AppIcons
+                                              .expandedPlayerPlayPauseIcon
+                                              .s,
                                         ),
                                       ),
                                     ),
@@ -684,17 +800,21 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
                                         topRight: Radius.circular(40),
                                         bottomRight: Radius.circular(40),
                                       ),
-                                      height: 80,
+                                      height: transportButtonHeight,
                                       useBlur: settings.enableDynamicTheming,
                                       showShadow: false,
-                                       backgroundColor: Colors.white.withOpacity(0.04),
+                                      backgroundColor: Colors.white.withOpacity(
+                                        0.04,
+                                      ),
                                       showBorder: false,
                                       forceNoBlur: true,
                                       onTap: () {
                                         _resetHideTimer();
                                         HapticFeedback.lightImpact();
                                         _nextTapPulse.value++;
-                                        ref.read(playbackProvider.notifier).skipNext();
+                                        ref
+                                            .read(playbackProvider.notifier)
+                                            .skipNext();
                                       },
                                       child: ValueListenableBuilder<int>(
                                         valueListenable: _nextTapPulse,
@@ -702,7 +822,9 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
                                           return AnimatedTransportIcon(
                                             asset: AppIcons.next,
                                             color: Colors.white,
-                                            size: AppIcons.expandedPlayerMainControl.s,
+                                            size: AppIcons
+                                                .expandedPlayerMainControl
+                                                .s,
                                             triggerKey: tick,
                                           );
                                         },
@@ -722,29 +844,34 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
             ),
 
             AnimatedPositioned(
-              bottom: _showController ? 300.s : 50.s,
+              bottom: _showController ? bottomControllerHeight - 50.s : 50.s,
               left: 0,
               right: 0,
               duration: const Duration(milliseconds: 350),
               curve: Curves.easeInOutCubic,
               child: Center(
                 child: AnimatedOpacity(
-                  opacity: isManualScroll ? 1.0 : 0.0,
+                  opacity: showResync ? 1.0 : 0.0,
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOut,
                   child: AnimatedScale(
-                    scale: isManualScroll ? 1.0 : 0.8,
+                    scale: showResync ? 1.0 : 0.8,
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeOutBack,
                     child: IgnorePointer(
-                      ignoring: !isManualScroll,
+                      ignoring: !showResync,
                       child: GestureDetector(
                         onTap: () {
                           HapticFeedback.mediumImpact();
-                          ref.read(lyricsManualScrollProvider.notifier).state = false;
+                          ref
+                              .read(lyricsManualScrollProvider.notifier)
+                              .set(false);
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: Theme.of(context).colorScheme.onSecondary,
                             borderRadius: BorderRadius.circular(24),
@@ -759,7 +886,11 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(LucideIcons.refreshCw, size: 14, color: Colors.white),
+                              Icon(
+                                LucideIcons.refreshCw,
+                                size: 14,
+                                color: Colors.white,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 l10n.resync,

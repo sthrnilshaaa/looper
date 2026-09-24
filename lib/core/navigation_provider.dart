@@ -1,5 +1,7 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/features/library/domain/models/models.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+part 'navigation_provider.g.dart';
 
 enum NavItem {
   home,
@@ -85,8 +87,10 @@ class NavigationState {
   }
 }
 
-class NavigationNotifier extends StateNotifier<NavigationState> {
-  NavigationNotifier() : super(NavigationState(activeItem: NavItem.home));
+@Riverpod(keepAlive: true)
+class AppNavigation extends _$AppNavigation {
+  @override
+  NavigationState build() => NavigationState(activeItem: NavItem.home);
 
   void setItem(NavItem item) {
     if (state.activeItem == item) return;
@@ -202,8 +206,3 @@ class NavigationNotifier extends StateNotifier<NavigationState> {
     state = state.copyWith(isPlayerExpanded: expanded);
   }
 }
-
-final appNavigationProvider =
-    StateNotifierProvider<NavigationNotifier, NavigationState>((ref) {
-      return NavigationNotifier();
-    });

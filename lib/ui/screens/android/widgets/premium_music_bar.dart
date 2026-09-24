@@ -4,20 +4,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/features/playback/presentation/playback_notifier.dart';
 import 'package:looper_player/features/settings/presentation/settings_notifier.dart';
 import 'package:looper_player/ui/screens/android/player/android_expanded_player.dart';
+import 'package:looper_player/ui/screens/android/player/player_landscape_layout.dart';
 import 'package:looper_player/ui/widgets/optimized_image.dart';
+import 'package:looper_player/core/responsive.dart';
 import 'package:looper_player/core/ui_utils.dart';
 import 'package:looper_player/core/app_icons.dart';
 import 'package:looper_player/ui/widgets/animated_play_pause_icon.dart';
 import 'package:looper_player/core/app_fonts.dart';
 import 'package:looper_player/ui/widgets/scrolling_text.dart';
+import 'package:looper_player/core/player_expand_focus.dart';
 import 'package:looper_player/core/player_expand_provider.dart';
 import 'package:looper_player/features/library/domain/models/models.dart';
 import 'dart:ui';
 
 import 'premium_section.dart';
-
-// Keeping the provider for future use but it won't be used by navbar now
-final navbarBounceProvider = StateProvider<Offset>((ref) => Offset.zero);
 
 class PremiumMusicBar extends ConsumerStatefulWidget {
   const PremiumMusicBar({super.key});
@@ -39,7 +39,7 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar> with TickerPr
       vsync: this,
       duration: const Duration(milliseconds: 380),
     )..addListener(() {
-        ref.read(playerExpandProgressProvider.notifier).state = _dragController.value;
+        ref.read(playerExpandProgressProvider.notifier).set(_dragController.value);
       });
   }
 
@@ -87,6 +87,7 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar> with TickerPr
 
     ref.listen<double>(playerExpandProgressProvider, (prev, next) {
       if (settings.enableSlideGesture) {
+        dismissFocusWhenPlayerExpands(prev, next);
         if (next == 0.0 && _dragController.value > 0.0 && !_isDragging) {
           _dragController.animateTo(0.0, curve: Curves.easeOutCubic);
         } else if (next == 1.0 && _dragController.value < 1.0 && !_isDragging) {
@@ -105,7 +106,14 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar> with TickerPr
     if (song == null) return const SizedBox.shrink();
 
     if (!settings.enableSlideGesture) {
-      return Padding(
+      final Size windowSize = MediaQuery.sizeOf(context);
+      // Landscape phones are short - shrink the bar to match PremiumNavbar's
+      // own compact height (see navbarHeight in android_main_screen.dart, kept
+      // in sync with this) instead of the portrait-tuned 72dp.
+      final bool isCompact = Responsive.isShort(windowSize);
+      final double barHeight = isCompact ? 56.0 : 72.0;
+
+      final Widget bar = Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: GestureDetector(
           onPanStart: (details) {
@@ -179,12 +187,37 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar> with TickerPr
               );
             },
             child: SizedBox(
-              height: 72,
-              child: _buildMiniPlayerContent(song, isPlaying, useBlur, null, 3.0, settings),
+              height: barHeight,
+              child: _buildMiniPlayerContent(
+                song,
+                isPlaying,
+                useBlur,
+                null,
+                3.0,
+                settings,
+                compact: isCompact,
+              ),
             ),
           ),
         ),
       );
+
+      // A landscape window is wide - a 72dp pill stretched edge-to-edge
+      // across it read as an oddly thin, stretched strip rather than a
+      // player pill. Cap its width and center it, matching the same
+      // treatment already applied to sheets/settings/collection views in
+      // landscape (this only wraps the mini-player-only bar used here, not
+      // the shared slide-gesture container that also hosts the full-screen
+      // expanded player below).
+      if (Responsive.isLandscape(windowSize)) {
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640.0),
+            child: bar,
+          ),
+        );
+      }
+      return bar;
     }
 
     final Color? cardBgColor = settings.enableSlideGesture ? Colors.transparent : null;
@@ -375,18 +408,31 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar> with TickerPr
                                 ],
                               );
                             } else if (settings.enablePlayerGradient) {
-                              return Container(
-                                decoration: BoxDecoration(
-                                  gradient: RadialGradient(
-                                    center: Alignment.topRight,
-                                    radius: 1.5,
-                                    colors: [
-                                      Theme.of(context).colorScheme.primary.withValues(alpha: 0.18),
-                                      Theme.of(context).colorScheme.surface,
-                                    ],
-                                    stops: const [0.0, 1.0],
+                              return Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      gradient: RadialGradient(
+                                        center: Alignment.topRight,
+                                        radius: 1.5,
+                                        colors: [
+                                          Theme.of(context).colorScheme.primary.withValues(alpha: 0.18),
+                                          Theme.of(context).colorScheme.surface,
+                                        ],
+                                        stops: const [0.0, 1.0],
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  // Same musicDarkness slider as the dynamic-art
+                                  // background above, so it isn't a dead control
+                                  // when gradient mode is what's actually active.
+                                  Container(
+                                    color: Colors.black.withValues(
+                                      alpha: settings.musicDarkness.isNaN ? 0.62 : settings.musicDarkness,
+                                    ),
+                                  ),
+                                ],
                               );
                             } else {
                               return Container(
@@ -429,15 +475,47 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar> with TickerPr
                   if (settings.enableSlideGesture && song.artPath != null) ...[
                     () {
                       final double dpr = MediaQuery.maybeDevicePixelRatioOf(context) ?? 2.0;
-                      final double expandedArtSize = screenWidth - 60.0;
-                      final double availableHeight = screenHeight - topPadding - 56.0 - 380.0;
-                      final double expandedArtTop = topPadding + 56.0 +
-                          (availableHeight - expandedArtSize).clamp(0.0, double.infinity) / 2;
+
+                      // Target the real artwork's measured rect (reported by
+                      // PositionReporter/playerArtworkRectProvider once
+                      // AndroidExpandedPlayer has fully expanded at least
+                      // once) so the handoff at expandProgress > 0.99 lands
+                      // exactly where the real widget renders - pixel-perfect
+                      // regardless of text scale, safe-area insets, or future
+                      // layout changes below the artwork. Before it's ever
+                      // been measured (e.g. the very first expand after
+                      // launch), fall back to an approximation.
+                      //
+                      // In landscape the artwork's rect is a pure function of
+                      // the window (PlayerLandscapeMetrics), so aim at that
+                      // directly: the measurement above is only ever taken in
+                      // portrait and would be stale after a rotation.
+                      final Size windowSize = Size(screenWidth, screenHeight);
+                      final bool isLandscape = Responsive.isLandscape(windowSize);
+                      final Rect? measuredRect = isLandscape
+                          ? PlayerLandscapeMetrics.of(
+                              windowSize,
+                              MediaQuery.paddingOf(context),
+                            ).artRect
+                          : ref.watch(playerArtworkRectProvider);
+                      final double expandedArtSize = measuredRect?.width ?? (screenWidth - 40.0);
+                      final double expandedArtLeft = measuredRect?.left ?? 20.0;
+                      final double expandedArtTop = measuredRect?.top ??
+                          () {
+                            final double availableHeight =
+                                screenHeight - topPadding - 56.0 - 380.0;
+                            return topPadding +
+                                56.0 +
+                                (availableHeight - expandedArtSize).clamp(0.0, double.infinity) /
+                                    2;
+                          }();
 
                       final double artSize = 50.0 + (expandedArtSize - 50.0) * expandProgress;
-                      final double artLeft = 12.0 + (30.0 - 12.0) * expandProgress;
+                      final double artLeft = 12.0 + (expandedArtLeft - 12.0) * expandProgress;
                       final double artTop = 11.0 + (expandedArtTop - 11.0) * expandProgress;
-                      final double artRadius = 32.0 * (1.0 - expandProgress) + 24.0 * expandProgress;
+                      // Target radius matches artworkSwitcher's real
+                      // BorderRadius.circular(12) in android_expanded_player.dart.
+                      final double artRadius = 32.0 * (1.0 - expandProgress) + 12.0 * expandProgress;
 
                       return Positioned(
                         left: artLeft,
@@ -457,7 +535,7 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar> with TickerPr
                                 imagePath: !song.artPath!.startsWith('http') ? song.artPath : null,
                                 imageUrl: song.artPath!.startsWith('http') ? song.artPath : null,
                                 fit: BoxFit.cover,
-                                cacheWidth: (screenWidth * dpr).toInt(),
+                                cacheWidth: ((isLandscape ? expandedArtSize : screenWidth) * dpr).toInt(),
                               ),
                               Positioned.fill(
                                 child: AnimatedOpacity(
@@ -466,12 +544,17 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar> with TickerPr
                                   child: Container(
                                     color: Colors.black.withValues(alpha: 0.4),
                                     child: Center(
-                                      child: Image.asset(
-                                        'assets/android_icons/Playing.gif',
-                                        width: 24,
-                                        height: 24,
-                                        color: Colors.white,
-                                      ),
+                                      // GIF frame decoding doesn't respect
+                                      // TickerMode - skip it while ticking is
+                                      // paused (e.g. mid route transition).
+                                      child: TickerMode.of(context)
+                                          ? Image.asset(
+                                              'assets/android_icons/Playing.gif',
+                                              width: 24,
+                                              height: 24,
+                                              color: Colors.white,
+                                            )
+                                          : const SizedBox.shrink(),
                                     ),
                                   ),
                                 ),
@@ -499,12 +582,18 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar> with TickerPr
     bool useBlur,
     Color? cardBgColor,
     double cardBlurAmount,
-    dynamic settings,
-  ) {
+    dynamic settings, {
+    bool compact = false,
+  }) {
     Widget buildHero({required String tag, required Widget child}) {
       if (settings.enableSlideGesture) return child;
       return Hero(tag: tag, child: child);
     }
+
+    final double artSize = compact ? 40.0 : 50.0;
+    final double artRadius = compact ? 26.0 : 32.0;
+    final double titleFontSize = compact ? 16.0 : 18.0;
+    final double artistFontSize = compact ? 13.0 : 16.0;
 
     return Padding(
       padding: EdgeInsets.symmetric(
@@ -534,13 +623,13 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar> with TickerPr
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12.0),
                   child: SizedBox(
-                    width: 50,
-                    height: 50,
+                    width: artSize,
+                    height: artSize,
                     child: !settings.enableSlideGesture
                         ? Hero(
                             tag: 'album_art',
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(32),
+                              borderRadius: BorderRadius.circular(artRadius),
                               child: Stack(
                                 fit: StackFit.expand,
                                 children: [
@@ -556,12 +645,18 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar> with TickerPr
                                       child: Container(
                                         color: Colors.black.withValues(alpha: 0.4),
                                         child: Center(
-                                          child: Image.asset(
-                                            'assets/android_icons/Playing.gif',
-                                            width: 24,
-                                            height: 24,
-                                            color: Colors.white,
-                                          ),
+                                          // GIF frame decoding doesn't respect
+                                          // TickerMode - skip it while ticking
+                                          // is paused (e.g. mid route
+                                          // transition).
+                                          child: TickerMode.of(context)
+                                              ? Image.asset(
+                                                  'assets/android_icons/Playing.gif',
+                                                  width: 24,
+                                                  height: 24,
+                                                  color: Colors.white,
+                                                )
+                                              : const SizedBox.shrink(),
                                         ),
                                       ),
                                     ),
@@ -585,7 +680,7 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar> with TickerPr
                           style: AppFonts.jostStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            fontSize: 18.ts,
+                            fontSize: titleFontSize.ts,
                             letterSpacing: 0.3,
                           ),
                         ),
@@ -596,7 +691,7 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar> with TickerPr
                           text: song.artist ?? 'Unknown Artist',
                           style: AppFonts.jostStyle(
                             color: Colors.white.withValues(alpha: 0.5),
-                            fontSize: 16.ts,
+                            fontSize: artistFontSize.ts,
                             letterSpacing: 0.2,
                           ),
                         ),
@@ -635,7 +730,9 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar> with TickerPr
                   child: AnimatedPlayPauseIcon(
                     isPlaying: isPlaying,
                     color: Colors.white,
-                    size: AppIcons.expandedPlayerPlayPauseIcon.s,
+                    size: (compact
+                        ? AppIcons.expandedPlayerPlayPauseIcon * 0.8
+                        : AppIcons.expandedPlayerPlayPauseIcon).s,
                   ),
                 ),
               ),

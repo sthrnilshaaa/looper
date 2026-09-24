@@ -38,36 +38,41 @@ class _GlobalPlayingIndicatorState extends State<GlobalPlayingIndicator>
   Widget build(BuildContext context) {
     final color = widget.color ?? Theme.of(context).colorScheme.primary;
 
-    return SizedBox(
-      width: widget.size,
-      height: widget.size,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: List.generate(3, (index) {
-          return AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              final double value = math.sin((_controller.value * 2 * math.pi) + (index * math.pi / 3));
-              final double heightFactor = 0.5 + (value.abs() * 0.5);
-              
-              return Container(
-                width: widget.size / 6,
-                height: widget.size * heightFactor,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(widget.size / 12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.3),
-                      blurRadius: 4,
-                      spreadRadius: 1,
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
-        }),
+    // This animates indefinitely (repeat()) at 60fps for as long as
+    // something's playing, and sits inside scrollable grid/list tiles -
+    // isolate its continuous repaint from the rest of the tile's layer.
+    return RepaintBoundary(
+      child: SizedBox(
+        width: widget.size,
+        height: widget.size,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: List.generate(3, (index) {
+            return AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                final double value = math.sin((_controller.value * 2 * math.pi) + (index * math.pi / 3));
+                final double heightFactor = 0.5 + (value.abs() * 0.5);
+
+                return Container(
+                  width: widget.size / 6,
+                  height: widget.size * heightFactor,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(widget.size / 12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.3),
+                        blurRadius: 4,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          }),
+        ),
       ),
     );
   }
@@ -94,6 +99,7 @@ class PlayingOverlay extends StatelessWidget {
           Positioned.fill(
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(borderRadius),

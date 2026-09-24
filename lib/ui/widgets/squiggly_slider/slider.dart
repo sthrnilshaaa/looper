@@ -123,6 +123,7 @@ class SquigglySlider extends Slider {
 class _SquigglySliderState extends State<SquigglySlider>
     with SingleTickerProviderStateMixin {
   late AnimationController phaseController;
+  DateTime _lastRebuild = DateTime.fromMillisecondsSinceEpoch(0);
 
   @override
   void initState() {
@@ -139,12 +140,26 @@ class _SquigglySliderState extends State<SquigglySlider>
         vsync: this,
       )
         ..repeat(min: 0, max: 1)
-        ..addListener(() {
-          setState(() {
-            // The state that has changed here is the animation object’s value.
-          });
-        });
+        ..addListener(_onPhaseTick);
     }
+  }
+
+  void _onPhaseTick() {
+    // Nothing visible changes while the wave is flat (amplitude 0 - paused,
+    // or squiggle disabled), so skip rebuilding the whole Slider for it.
+    if (widget.squiggleAmplitude == 0) return;
+    // This ticks every animation frame (~60/s), but the wave itself drifts
+    // over ~20s - sampling its phase this often only means rebuilding (and
+    // repainting a several-hundred-point sine curve for) the whole Slider
+    // far more often than the eye can tell apart from ~15/s.
+    final now = DateTime.now();
+    if (now.difference(_lastRebuild) < const Duration(milliseconds: 66)) {
+      return;
+    }
+    _lastRebuild = now;
+    setState(() {
+      // The state that has changed here is the animation object's value.
+    });
   }
 
   @override

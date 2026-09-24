@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:looper_player/features/library/data/saf_folder_service.dart';
+import 'package:looper_player/features/library/presentation/library_notifier.dart';
 import 'package:looper_player/features/settings/presentation/settings_notifier.dart';
 import 'package:looper_player/core/app_fonts.dart';
 
@@ -153,14 +154,24 @@ class LibraryFoldersList extends ConsumerWidget {
                   size: 16,
                   color: Colors.white60,
                 ),
-                onPressed: () {
+                onPressed: () async {
                   if (Platform.isAndroid) {
                     SafFolderService.releaseFolder(path);
                   }
                   final newFolders = List<String>.from(folders)..remove(path);
-                  ref
+                  await ref
                       .read(settingsProvider.notifier)
                       .updateLibraryFolders(newFolders);
+                  // Also records it as excluded, not just dropped from this
+                  // list - otherwise MediaStore's device-wide index (merged
+                  // into every scan regardless of which folder was
+                  // requested) would just rediscover these same songs and
+                  // re-add the folder on the very next refresh. This also
+                  // deletes the folder's already-indexed songs immediately,
+                  // instead of waiting for a scan to notice they're gone.
+                  await ref
+                      .read(excludedFoldersProvider.notifier)
+                      .add(path);
                 },
               ),
             ),

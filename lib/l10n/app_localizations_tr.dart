@@ -1565,4 +1565,22 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get selectWhenToPause =>
       'Müzik çalmanın ne zaman duraklatılacağını seçin';
+
+  @override
+  String get selectAvatars => 'Avatar Seç';
+
+  @override
+  String get selectAvatarsDesc => 'Ana ekranınızda gösterilecek avatarı seçin';
+
+  @override
+  String get dynamicAvatarColor => 'Dinamik Avatar Rengi';
+
+  @override
+  String get dynamicAvatarColorDesc =>
+      'Avatarın vurgu rengini mevcut temanızla eşleştirir';
+
+  @override
+  String enrichingSongs(int count) {
+    return '$count şarkı zenginleştiriliyor…';
+  }
 }

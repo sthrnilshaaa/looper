@@ -491,5 +491,10 @@
   "lyricsNotAvailableHint": "この曲の歌詞を追加するには .lrc または .txt ファイルをインポートしてください",
   "nextUp": "次の曲",
   "noEmbeddedArtworkFound": "このアルバムに埋め込まれたアートワークが見つかりません",
-  "resetArtworkToDefault": "デフォルトにリセット"
+  "resetArtworkToDefault": "デフォルトにリセット",
+  "selectAvatars": "アバターを選択",
+  "selectAvatarsDesc": "ホーム画面に表示するアバターを選択します",
+  "dynamicAvatarColor": "ダイナミックアバターカラー",
+  "dynamicAvatarColorDesc": "アバターのアクセントカラーを現在のテーマに合わせます",
+  "enrichingSongs": "{count}曲を情報取得中…"
 }

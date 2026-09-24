@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,14 +13,54 @@ import 'package:looper_player/l10n/app_localizations.dart';
 import 'package:looper_player/ui/screens/android/widgets/premium_section.dart';
 import 'package:looper_player/ui/widgets/optimized_image.dart';
 import 'package:looper_player/ui/widgets/app_bottom_sheet.dart';
+import 'package:looper_player/ui/widgets/empty_state_card.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:isar_community/isar.dart';
 import 'package:looper_player/features/settings/presentation/settings_notifier.dart';
 import 'package:looper_player/core/app_fonts.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+part 'library_categories_views.g.dart';
 
 enum AlbumSortOption { nameAsc, nameDesc, dateAddedNewest, dateAddedOldest, yearNewest, yearOldest }
 enum ArtistSortOption { nameAsc, nameDesc }
 enum GenreSortOption { nameAsc, nameDesc, songCountDesc, songCountAsc }
+
+/// Memoized per sort option so switching screens/rebuilding this view
+/// doesn't tear down and recreate the underlying Isar watch (which briefly
+/// re-shows the loading state) - the previous inline `switch` in
+/// AlbumsGridView.build() opened a brand-new Stream on every rebuild.
+@Riverpod(keepAlive: true)
+Stream<List<Album>> albumsSorted(Ref ref, AlbumSortOption sortOption) {
+  switch (sortOption) {
+    case AlbumSortOption.nameAsc:
+      return DbService.isar.albums.where().sortByName().watch(fireImmediately: true);
+    case AlbumSortOption.nameDesc:
+      return DbService.isar.albums.where().sortByNameDesc().watch(fireImmediately: true);
+    case AlbumSortOption.dateAddedNewest:
+      return DbService.isar.albums.where().sortByDateAddedDesc().watch(fireImmediately: true);
+    case AlbumSortOption.dateAddedOldest:
+      return DbService.isar.albums.where().sortByDateAdded().watch(fireImmediately: true);
+    case AlbumSortOption.yearNewest:
+      return DbService.isar.albums.where().sortByYearDesc().watch(fireImmediately: true);
+    case AlbumSortOption.yearOldest:
+      return DbService.isar.albums.where().sortByYear().watch(fireImmediately: true);
+  }
+}
+
+/// Memoized on the library's artist list + sort option, instead of
+/// re-sorting the full artist list on every rebuild of ArtistsGridView.
+@Riverpod(keepAlive: true)
+List<Artist> artistsSorted(Ref ref, ArtistSortOption sortOption) {
+  final artists = ref.watch(libraryProvider.select((s) => s.artists));
+  final sorted = List<Artist>.from(artists);
+  if (sortOption == ArtistSortOption.nameAsc) {
+    sorted.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  } else {
+    sorted.sort((a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()));
+  }
+  return sorted;
+}
 
 class CategoryDetailWrapper extends ConsumerWidget {
   final String title;
@@ -244,34 +285,15 @@ class AlbumsGridView extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final sortOptionIndex = ref.watch(settingsProvider.select((s) => s.albumSortOptionIndex));
     final sortOption = AlbumSortOption.values[sortOptionIndex.clamp(0, AlbumSortOption.values.length - 1)];
-    final Stream<List<Album>> albumStream;
-    switch (sortOption) {
-      case AlbumSortOption.nameAsc:
-        albumStream = DbService.isar.albums.where().sortByName().watch(fireImmediately: true);
-        break;
-      case AlbumSortOption.nameDesc:
-        albumStream = DbService.isar.albums.where().sortByNameDesc().watch(fireImmediately: true);
-        break;
-      case AlbumSortOption.dateAddedNewest:
-        albumStream = DbService.isar.albums.where().sortByDateAddedDesc().watch(fireImmediately: true);
-        break;
-      case AlbumSortOption.dateAddedOldest:
-        albumStream = DbService.isar.albums.where().sortByDateAdded().watch(fireImmediately: true);
-        break;
-      case AlbumSortOption.yearNewest:
-        albumStream = DbService.isar.albums.where().sortByYearDesc().watch(fireImmediately: true);
-        break;
-      case AlbumSortOption.yearOldest:
-        albumStream = DbService.isar.albums.where().sortByYear().watch(fireImmediately: true);
-        break;
-    }
+    final albumsAsync = ref.watch(albumsSortedProvider(sortOption));
 
-    return StreamBuilder<List<Album>>(
-      stream: albumStream,
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const AppLoadingIndicator();
-        final albums = snapshot.data!;
-        if (albums.isEmpty) return Center(child: Text(l10n.noAlbumsFound));
+    return Builder(
+      builder: (context) {
+        if (!albumsAsync.hasValue) return const AppLoadingIndicator();
+        final albums = albumsAsync.requireValue;
+        if (albums.isEmpty) {
+          return EmptyStateCard(icon: LucideIcons.disc, title: l10n.noAlbumsFound);
+        }
 
         // A plain `childAspectRatio` sizes the *whole* card (art + text) to a fixed
         // ratio, so the art itself ends up a hair taller or shorter than it is wide
@@ -280,12 +302,26 @@ class AlbumsGridView extends ConsumerWidget {
         // and give every card the exact same fixed text-block height below it.
         return LayoutBuilder(
           builder: (context, constraints) {
-            const crossAxisCount = 2;
             const crossAxisSpacing = 24.0;
             const horizontalPadding = 24.0;
             const textBlockHeight = 54.0; // 12 gap + title line + subtitle line
+            // Was a fixed 2 columns regardless of width - on a landscape
+            // phone/tablet that leaves only 2 needlessly huge cards instead
+            // of using the extra width for more columns. Same target column
+            // width (~200) as the equivalent grid in library_grids.dart, but
+            // as a computed crossAxisCount (at least 2) rather than a fixed
+            // maxCrossAxisExtent delegate, so the mainAxisExtent below can
+            // still force a true 1:1 square art + fixed text block.
+            const targetColumnWidth = 200.0;
+            final availableWidth = constraints.maxWidth - horizontalPadding * 2;
+            final crossAxisCount = math.max(
+              2,
+              ((availableWidth + crossAxisSpacing) /
+                      (targetColumnWidth + crossAxisSpacing))
+                  .floor(),
+            );
             final itemWidth =
-                (constraints.maxWidth - horizontalPadding * 2 - crossAxisSpacing * (crossAxisCount - 1)) /
+                (availableWidth - crossAxisSpacing * (crossAxisCount - 1)) /
                     crossAxisCount;
 
             return GridView.builder(
@@ -343,25 +379,19 @@ class ArtistsGridView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final library = ref.watch(libraryProvider);
-    final artists = library.artists;
     final l10n = AppLocalizations.of(context)!;
-
-    if (artists.isEmpty) return Center(child: Text(l10n.noArtistsFound));
-
     final sortOptionIndex = ref.watch(settingsProvider.select((s) => s.artistSortOptionIndex));
     final sortOption = ArtistSortOption.values[sortOptionIndex.clamp(0, ArtistSortOption.values.length - 1)];
-    final sortedArtists = List<Artist>.from(artists);
-    if (sortOption == ArtistSortOption.nameAsc) {
-      sortedArtists.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-    } else {
-      sortedArtists.sort((a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()));
+    final sortedArtists = ref.watch(artistsSortedProvider(sortOption));
+
+    if (sortedArtists.isEmpty) {
+      return EmptyStateCard(icon: LucideIcons.user, title: l10n.noArtistsFound);
     }
 
     return GridView.builder(
       padding: const EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 200),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 200,
         mainAxisSpacing: 24,
         crossAxisSpacing: 24,
         childAspectRatio: 0.8,
@@ -420,14 +450,16 @@ class GenresGridView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Isar doesn't have a distinct query easily for genres if they are just strings in Songs.
-    // We'll fetch all songs and group them. For larger libraries, we should cache this.
-    final songs = ref.watch(libraryProvider).songs;
+    // Isar doesn't have a distinct query easily for genres if they are just
+    // strings in Songs, so the grouping itself is cached in
+    // songsByGenreProvider (memoized on the song list, not this screen's
+    // build cycle) - only the localized "Unknown" label is applied here.
     final l10n = AppLocalizations.of(context)!;
+    final songsByGenre = ref.watch(songsByGenreProvider);
     final genresMap = <String, List<Song>>{};
-    for (var song in songs) {
-      final genre = song.genre ?? l10n.unknown;
-      genresMap.putIfAbsent(genre, () => []).add(song);
+    for (final entry in songsByGenre.entries) {
+      final genre = entry.key ?? l10n.unknown;
+      genresMap.putIfAbsent(genre, () => []).addAll(entry.value);
     }
 
     final sortOptionIndex = ref.watch(settingsProvider.select((s) => s.genreSortOptionIndex));
@@ -450,8 +482,8 @@ class GenresGridView extends ConsumerWidget {
 
     return GridView.builder(
       padding: const EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 200),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 220,
         mainAxisSpacing: 20,
         crossAxisSpacing: 20,
         childAspectRatio: 1.35,
@@ -606,13 +638,10 @@ class FoldersListView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final songs = ref.watch(libraryProvider).songs;
     final l10n = AppLocalizations.of(context)!;
-    final foldersMap = <String, List<Song>>{};
-    for (var song in songs) {
-      final folder = Directory(song.path).parent.path;
-      foldersMap.putIfAbsent(folder, () => []).add(song);
-    }
+    // Grouping is cached in songsByFolderProvider (memoized on the song
+    // list, not this screen's build cycle) instead of redone here inline.
+    final foldersMap = ref.watch(songsByFolderProvider);
     final folders = foldersMap.keys.toList()..sort();
 
     return AppRefreshIndicator(

@@ -10,6 +10,7 @@ import 'package:looper_player/features/playback/data/audio_analyzer.dart';
 import 'package:looper_player/features/playback/data/lyrics_fetcher.dart';
 import 'package:looper_player/features/settings/presentation/settings_notifier.dart';
 import 'package:looper_player/core/app_fonts.dart';
+import 'package:looper_player/core/responsive.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:looper_player/ui/widgets/optimized_image.dart';
 import 'package:intl/intl.dart';
@@ -68,6 +69,7 @@ class _SongInfoScreenState extends ConsumerState<SongInfoScreen> {
     final theme = Theme.of(context);
     final primaryColor = theme.colorScheme.primary;
     final l10n = AppLocalizations.of(context)!;
+    final isLandscape = Responsive.isLandscape(MediaQuery.sizeOf(context));
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -109,7 +111,15 @@ class _SongInfoScreenState extends ConsumerState<SongInfoScreen> {
                 _buildTopBar(context),
 
                 Expanded(
-                  child: SingleChildScrollView(
+                  // In landscape, cap the reading width and center it instead
+                  // of stretching every info row edge-to-edge across the
+                  // whole window.
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: isLandscape ? 700 : double.infinity,
+                      ),
+                      child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
                     child: Column(
@@ -188,6 +198,8 @@ class _SongInfoScreenState extends ConsumerState<SongInfoScreen> {
                         const SizedBox(height: 12),
                         AudioAnalysisCard(filePath: widget.song.path),
                       ],
+                    ),
+                      ),
                     ),
                   ),
                 ),

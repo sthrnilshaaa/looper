@@ -20,10 +20,13 @@ class MetadataService {
 
   static Future<String?> _getLyricsAndroid(String path) async {
     try {
-      final lyrics = await _broadcastChannel.invokeMethod<String>(
-        'getEmbeddedLyrics',
-        {'path': path},
-      );
+      // See LibraryScanner._fetchNativeEmbeddedPicture's doc comment - same
+      // reasoning: this runs inside enrichPendingSongs' batched Future.wait,
+      // so one file that hangs the native side here would otherwise stall
+      // every song batched after it, not just this one's lyrics.
+      final lyrics = await _broadcastChannel
+          .invokeMethod<String>('getEmbeddedLyrics', {'path': path})
+          .timeout(const Duration(seconds: 6));
       return (lyrics != null && lyrics.isNotEmpty) ? lyrics : null;
     } catch (_) {
       return null;
@@ -33,10 +36,12 @@ class MetadataService {
   static Future<String?> _getLyricsLinux(String path) async {
     try {
       final result = await Process.run('ffprobe', [
-        '-v', 'quiet',
-        '-print_format', 'json',
+        '-v',
+        'quiet',
+        '-print_format',
+        'json',
         '-show_format',
-        path
+        path,
       ]);
 
       if (result.exitCode == 0) {
@@ -59,9 +64,9 @@ class MetadataService {
     // Look for common lyrics tags (case-insensitive)
     for (final key in tags.keys) {
       final lowerKey = key.toLowerCase();
-      if (lowerKey == 'lyrics' || 
-          lowerKey == 'unsync-lyrics' || 
-          lowerKey == 'unsyncedlyrics' || 
+      if (lowerKey == 'lyrics' ||
+          lowerKey == 'unsync-lyrics' ||
+          lowerKey == 'unsyncedlyrics' ||
           lowerKey == 'uslt') {
         return tags[key]?.toString();
       }

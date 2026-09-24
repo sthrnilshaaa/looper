@@ -491,5 +491,10 @@
   "lyricsNotAvailableHint": "इस गाने के लिए लिरिक्स जोड़ने हेतु .lrc या .txt फ़ाइल इंपोर्ट करें",
   "nextUp": "आगे क्या",
   "noEmbeddedArtworkFound": "इस एल्बम के लिए कोई एम्बेडेड आर्टवर्क नहीं मिली",
-  "resetArtworkToDefault": "डिफ़ॉल्ट पर रीसेट करें"
+  "resetArtworkToDefault": "डिफ़ॉल्ट पर रीसेट करें",
+  "selectAvatars": "अवतार चुनें",
+  "selectAvatarsDesc": "अपनी होम स्क्रीन पर दिखने वाला अवतार चुनें",
+  "dynamicAvatarColor": "डायनामिक अवतार रंग",
+  "dynamicAvatarColorDesc": "अवतार के रंग को आपकी वर्तमान थीम से मिलाएं",
+  "enrichingSongs": "{count} गानों को समृद्ध किया जा रहा है…"
 }

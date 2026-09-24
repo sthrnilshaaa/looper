@@ -7,15 +7,23 @@ import 'package:looper_player/core/db_service.dart';
 import 'package:isar_community/isar.dart';
 import 'package:looper_player/features/library/presentation/songs_list.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-final favoritesProvider = StreamProvider<List<Song>>((ref) {
+part 'smart_views.g.dart';
+
+@Riverpod(keepAlive: true)
+Stream<List<Song>> favorites(Ref ref) {
   return DbService.isar.songs
       .filter()
       .isFavoriteEqualTo(true)
       .watch(fireImmediately: true);
-});
+}
 
-final recentlyPlayedProvider = StreamProvider<List<Song>>((ref) {
+/// Last 50 played songs for the dedicated "Recently Played" screen. Distinct
+/// from [dashboardRecentlyPlayedProvider] (library_notifier.dart, limit 10)
+/// which backs the Home dashboard's smaller preview list.
+@Riverpod(keepAlive: true)
+Stream<List<Song>> recentlyPlayedScreen(Ref ref) {
   return DbService.isar.songs
       .where()
       .filter()
@@ -23,7 +31,7 @@ final recentlyPlayedProvider = StreamProvider<List<Song>>((ref) {
       .sortByLastPlayedDesc()
       .limit(50)
       .watch(fireImmediately: true);
-});
+}
 
 class FavoritesView extends ConsumerWidget {
   const FavoritesView({super.key});
@@ -62,7 +70,7 @@ class RecentlyPlayedView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final recentlyPlayedAsync = ref.watch(recentlyPlayedProvider);
+    final recentlyPlayedAsync = ref.watch(recentlyPlayedScreenProvider);
 
     return recentlyPlayedAsync.when(
       data: (songs) => songs.isEmpty

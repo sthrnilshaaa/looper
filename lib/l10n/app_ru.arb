@@ -491,5 +491,10 @@
   "lyricsNotAvailableHint": "Импортируйте файл .lrc или .txt, чтобы добавить текст к этой песне",
   "nextUp": "Далее",
   "noEmbeddedArtworkFound": "Встроенная обложка для этого альбома не найдена",
-  "resetArtworkToDefault": "Сбросить к стандартным"
+  "resetArtworkToDefault": "Сбросить к стандартным",
+  "selectAvatars": "Выбрать аватар",
+  "selectAvatarsDesc": "Выберите аватар, отображаемый на главном экране",
+  "dynamicAvatarColor": "Динамический цвет аватара",
+  "dynamicAvatarColorDesc": "Согласовывает акцентный цвет аватара с текущей темой",
+  "enrichingSongs": "Обогащение {count} песен…"
 }

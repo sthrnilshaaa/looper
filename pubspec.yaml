@@ -4,7 +4,7 @@ description: "Looper Player - A powerful music player."
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 2.5.0+22
+version: 2.6.0+27
 
 environment:
   sdk: ^3.11.0
@@ -29,15 +29,15 @@ dependencies:
   adaptive_palette: ^3.1.0
 
   # State Management
-  flutter_riverpod: ^2.6.1
-  riverpod_annotation: ^2.6.1
+  flutter_riverpod: ^3.3.1
+  riverpod_annotation: ^4.0.2
 
   # Audio Playback
   mpv_audio_kit: ^0.4.5
 
   # Database
-  isar_community: ^3.3.0-dev.1
-  isar_community_flutter_libs: ^3.3.0-dev.1
+  isar_community: ^3.3.2
+  isar_community_flutter_libs: ^3.3.2
 
   # Localization
   flutter_localizations:
@@ -73,8 +73,8 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   build_runner: ^2.4.13
-  riverpod_generator: ^2.4.0
-  isar_community_generator: ^3.3.0-dev.1
+  riverpod_generator: ^4.0.3
+  isar_community_generator: ^3.3.2
   flutter_distributor: ^0.6.6
   flutter_launcher_icons: ^0.14.4
   coverage: ^1.15.1
@@ -97,6 +97,7 @@ flutter:
     - assets/side_bar/
     - assets/about/
     - assets/android_icons/
+    - assets/android_icons/avatars/
   shaders:
     - media/shaders/ambient_noise.frag
   fonts:

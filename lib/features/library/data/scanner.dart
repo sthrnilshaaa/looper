@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 import 'package:flutter/foundation.dart';
@@ -11,6 +12,20 @@ import 'package:isar_community/isar.dart';
 import '../../playback/data/metadata_service.dart';
 import 'artwork_downloader_service.dart';
 import 'saf_folder_service.dart';
+import '../../../core/local_json_store.dart';
+
+/// True if [filePath] falls inside one of [excludedFolders] - the user's
+/// per-folder scan exclusions (e.g. a voice-memos subfolder living inside an
+/// otherwise-wanted Music folder), which is a separate, finer-grained knob
+/// than the blanket "include system & messaging audio" setting.
+bool isUnderExcludedFolder(String filePath, List<String> excludedFolders) {
+  for (final folder in excludedFolders) {
+    if (folder.isEmpty) continue;
+    final normalized = folder.endsWith('/') ? folder : '$folder/';
+    if (filePath == folder || filePath.startsWith(normalized)) return true;
+  }
+  return false;
+}
 
 class ScanResult {
   final int songsCount;
@@ -236,6 +251,18 @@ class LibraryScanner {
     }
   }
 
+  /// Drops the memoized MediaStore listing - same reasoning as
+  /// invalidateSafCache: a scan run shortly before this one (e.g. the
+  /// welcome screen's common-folder auto-scan, moments before the user
+  /// grants Music & Audio access and adds a custom folder) can leave this
+  /// cache holding a stale or permission-less snapshot for up to
+  /// [_mediaStoreCacheTtl], making an explicit "Add Folder" scan miss songs
+  /// MediaStore already knows about elsewhere on the device.
+  static void invalidateMediaStoreCache() {
+    _cachedMediaStoreItems = null;
+    _cachedMediaStoreAt = null;
+  }
+
   // Same memoization idea as the MediaStore cache above, for the SAF
   // (Storage Access Framework) folder listing: it's also device-wide (every
   // currently-granted "Add folder" folder, not just the one being scanned),
@@ -260,6 +287,25 @@ class LibraryScanner {
     return files;
   }
 
+  /// Drops the memoized SAF file listing so the very next scan re-queries
+  /// it instead of reusing a result from before a folder grant existed.
+  /// Without this, a scan that runs (e.g. the welcome screen's automatic
+  /// common-folder scan) within [_safFilesCacheTtl] of a brand-new "Add
+  /// Folder" pick would keep serving the pre-grant (often empty) listing,
+  /// making the just-granted folder look like it has no songs.
+  static void invalidateSafCache() {
+    _cachedSafFiles = null;
+    _cachedSafFilesAt = null;
+  }
+
+  static const _excludedFoldersKey = 'excluded_folders';
+
+  Future<List<String>> _loadExcludedFolders() async {
+    final raw = await LocalJsonStore.read(_excludedFoldersKey);
+    if (raw is! List) return const [];
+    return raw.whereType<String>().toList();
+  }
+
   Future<ScanResult> scanDirectory(
     String path, {
     bool addFolderToSettings = false,
@@ -273,6 +319,7 @@ class LibraryScanner {
     final settings = await DbService.isar.appSettings.get(0);
     final includeSystemAndMessagingAudio =
         settings?.includeSystemAndMessagingAudio ?? false;
+    final excludedFolders = await _loadExcludedFolders();
 
     // 1. Direct Background Isolate Directory Traversal for full disk coverage
     if (Directory(path).existsSync()) {
@@ -324,6 +371,15 @@ class LibraryScanner {
           discoveredPaths.add(filePath);
         }
       }
+    }
+
+    // Applied once here, after all three discovery sources (raw traversal,
+    // MediaStore, SAF) are merged, so an exclusion holds regardless of which
+    // of them happened to find a given file.
+    if (excludedFolders.isNotEmpty) {
+      discoveredPaths.removeWhere(
+        (fp) => isUnderExcludedFolder(fp, excludedFolders),
+      );
     }
 
     for (final fp in discoveredPaths) {
@@ -401,104 +457,336 @@ class LibraryScanner {
 
     final List<File> newFilesToProcess = filesToProcess.where((f) {
       final dbSong = dbSongsMap[f.path] ?? dbSongsMap[p.canonicalize(f.path)];
-      if (dbSong == null) return true;
-      if (dbSong.artist == 'Unknown Artist' || dbSong.artPath == null) {
-        return true;
-      }
-      return false;
+      // A song genuinely tagged "Unknown Artist" (or with no art anywhere to
+      // find) is not incomplete - it's already been through pass 2 and this
+      // is its real result. Re-flagging it here on every routine scan used
+      // to mean any such song was perpetually rewritten from scratch (see
+      // needsEnrichment's doc comment - that flag is exactly this
+      // "still needs the slow pass" state, so trust it instead of guessing
+      // from the data shape).
+      return dbSong == null || dbSong.needsEnrichment;
     }).toList();
 
     if (newFilesToProcess.isNotEmpty) {
-      final downloadIfMissing =
-          (settings?.downloadArtwork ?? false) &&
-          (settings?.enableInternet ?? true);
-
-      final List<Map<String, dynamic>> allResults = [];
-      const int batchSize = 6;
-
-      for (int i = 0; i < newFilesToProcess.length; i += batchSize) {
-        final end = (i + batchSize < newFilesToProcess.length)
-            ? i + batchSize
-            : newFilesToProcess.length;
-        final batch = newFilesToProcess.sublist(i, end);
-
-        final results = await Future.wait(
-          batch.map(
-            (f) => _extractMetadata(
+      // Pass 1 of 2 (see enrichPendingSongs for pass 2): insert every new/
+      // incomplete file immediately using only what MediaStore already
+      // indexed (or a filename guess) - title/artist/duration, no tag-file
+      // parsing, no embedded art, no lyrics lookup. That's what actually
+      // took the time on a big first scan (hundreds of MetadataGod/native
+      // calls before a single song became visible); this way songs appear
+      // right away and the slow part happens in the background afterward.
+      final results = newFilesToProcess
+          .map(
+            (f) => _quickSongFrom(
               f,
-              mediaStoreData:
-                  mediaStoreMap[f.path] ??
-                  mediaStoreMap[p.canonicalize(f.path)],
-              downloadArtworkIfMissing: downloadIfMissing,
+              mediaStoreMap[f.path] ?? mediaStoreMap[p.canonicalize(f.path)],
             ),
-          ),
-        );
-        for (final res in results) {
-          if (res != null) {
-            allResults.add(res);
-          }
-        }
-        await Future.delayed(const Duration(milliseconds: 5));
-      }
+          )
+          .toList();
 
-      if (allResults.isNotEmpty) {
-        await DbService.isar.writeTxn(() async {
-          for (final data in allResults) {
-            final song = data['song'] as Song;
-            final metadata = data['metadata'] as Metadata;
-            final artPath = data['artPath'] as String?;
-
-            final existingDbSong =
-                dbSongsMap[song.path] ?? dbSongsMap[p.canonicalize(song.path)];
-            if (existingDbSong != null) {
-              song.id = existingDbSong.id;
-            }
-
-            await DbService.isar.songs.put(song);
-
-            if (metadata.album != null) {
-              final existingAlbum = await DbService.isar.albums
-                  .filter()
-                  .nameEqualTo(metadata.album!)
-                  .findFirst();
-              if (existingAlbum == null) {
-                final album = Album()
-                  ..name = metadata.album!
-                  ..artist = metadata.artist
-                  ..artPath = artPath
-                  ..dateAdded = DateTime.now();
-                await DbService.isar.albums.put(album);
-              } else if (existingAlbum.artPath == null && artPath != null) {
-                existingAlbum.artPath = artPath;
-                await DbService.isar.albums.put(existingAlbum);
-              }
-            }
-
-            final primaryArtistName = ArtistParser.primaryArtist(
-              metadata.artist,
-            );
-            final existingArtist = await DbService.isar.artists
-                .filter()
-                .nameEqualTo(primaryArtistName)
-                .findFirst();
-            if (existingArtist == null) {
-              final artistObj = Artist()
-                ..name = primaryArtistName
-                ..artPath = artPath;
-              await DbService.isar.artists.put(artistObj);
-            } else if (existingArtist.artPath == null && artPath != null) {
-              existingArtist.artPath = artPath;
-              await DbService.isar.artists.put(existingArtist);
-            }
-          }
-        });
-      }
+      final maps = await _loadNameMaps();
+      await _writeSongBatch(results, dbSongsMap, maps.albums, maps.artists);
     }
 
     return ScanResult(
       songsCount: filesToProcess.length,
       musicFolders: musicFolders,
     );
+  }
+
+  /// Builds a minimal Song from whatever MediaStore already knows (or a
+  /// filename guess) - no file I/O, no tag parsing. Same shape as
+  /// _extractMetadata's return value so both can flow through
+  /// _writeSongBatch, but flagged needsEnrichment: true since none of the
+  /// slow stuff (real tags, embedded art, lyrics) has run yet.
+  Map<String, dynamic> _quickSongFrom(
+    File file,
+    Map<String, dynamic>? mediaStoreData,
+  ) {
+    final filename = p.basenameWithoutExtension(file.path);
+    String? title = mediaStoreData?['title'] as String?;
+    String? artist = mediaStoreData?['artist'] as String?;
+    final album = mediaStoreData?['album'] as String?;
+    final durationMs = (mediaStoreData?['duration'] as num?)?.toInt();
+    final trackNumber = (mediaStoreData?['track'] as num?)?.toInt();
+    final year = (mediaStoreData?['year'] as num?)?.toInt();
+
+    if (artist == null ||
+        artist.trim().isEmpty ||
+        artist.trim().toLowerCase() == 'unknown artist') {
+      if (filename.contains(' - ')) {
+        final parts = filename.split(' - ');
+        if (parts.length >= 2) {
+          artist = parts[0].trim();
+          if (title == null || title.trim().isEmpty || title == filename) {
+            title = parts.sublist(1).join(' - ').trim();
+          }
+        }
+      }
+    }
+
+    final cleanTitle = (title != null && title.trim().isNotEmpty)
+        ? title.trim()
+        : filename;
+    final cleanArtist = (artist != null && artist.trim().isNotEmpty)
+        ? artist.trim()
+        : 'Unknown Artist';
+    final cleanAlbum = (album != null && album.trim().isNotEmpty)
+        ? album.trim()
+        : 'Unknown Album';
+
+    final song = Song()
+      ..path = file.path
+      ..title = cleanTitle
+      ..artist = cleanArtist
+      ..album = cleanAlbum
+      ..duration = durationMs
+      ..trackNumber = trackNumber
+      ..year = year
+      ..dateAdded = DateTime.now()
+      ..needsEnrichment = true;
+
+    return {
+      'song': song,
+      'metadata': Metadata(
+        title: cleanTitle,
+        artist: cleanArtist,
+        album: cleanAlbum,
+      ),
+      'artPath': null,
+    };
+  }
+
+  Future<({Map<String, Album> albums, Map<String, Artist> artists})>
+  _loadNameMaps() async {
+    return (
+      albums: {
+        for (final a in await DbService.isar.albums.where().findAll())
+          a.name: a,
+      },
+      artists: {
+        for (final a in await DbService.isar.artists.where().findAll())
+          a.name: a,
+      },
+    );
+  }
+
+  /// Writes a batch of _extractMetadata/_quickSongFrom results in one
+  /// transaction, deduping albums/artists against the maps passed in
+  /// (which the caller keeps across calls so a name discovered in an
+  /// earlier batch of the same run is recognized, not re-inserted).
+  Future<void> _writeSongBatch(
+    List<Map<String, dynamic>?> results,
+    Map<String, Song> dbSongsMap,
+    Map<String, Album> albumByName,
+    Map<String, Artist> artistByName,
+  ) async {
+    final songsToPut = <Song>[];
+    final albumsToPut = <Album>{};
+    final artistsToPut = <Artist>{};
+
+    for (final data in results) {
+      if (data == null) continue;
+      final song = data['song'] as Song;
+      final metadata = data['metadata'] as Metadata;
+      final artPath = data['artPath'] as String?;
+
+      final existingDbSong =
+          dbSongsMap[song.path] ?? dbSongsMap[p.canonicalize(song.path)];
+      if (existingDbSong != null) {
+        song.id = existingDbSong.id;
+        // song here is a brand-new Song() from _quickSongFrom/_extractMetadata
+        // that only ever set the fields it actually discovered - putAll()
+        // below replaces the whole row, so anything not copied across here
+        // would be silently reset to its default (favorite unset, play
+        // count/listening history zeroed, custom equalizer cleared) every
+        // time this path is reprocessed, not just the first time it's seen.
+        song.playCount = existingDbSong.playCount;
+        song.lastPlayed = existingDbSong.lastPlayed;
+        song.totalListenedMs = existingDbSong.totalListenedMs;
+        song.lastPositionMs = existingDbSong.lastPositionMs;
+        song.isFavorite = existingDbSong.isFavorite;
+        song.hasCustomEqualizer = existingDbSong.hasCustomEqualizer;
+        song.equalizerGains = existingDbSong.equalizerGains;
+        song.lyrics ??= existingDbSong.lyrics;
+      }
+      songsToPut.add(song);
+
+      if (metadata.album != null) {
+        final existingAlbum = albumByName[metadata.album!];
+        if (existingAlbum == null) {
+          final album = Album()
+            ..name = metadata.album!
+            ..artist = metadata.artist
+            ..artPath = artPath
+            ..dateAdded = DateTime.now();
+          albumByName[album.name] = album;
+          albumsToPut.add(album);
+        } else if (existingAlbum.artPath == null && artPath != null) {
+          existingAlbum.artPath = artPath;
+          albumsToPut.add(existingAlbum);
+        }
+      }
+
+      final primaryArtistName = ArtistParser.primaryArtist(metadata.artist);
+      final existingArtist = artistByName[primaryArtistName];
+      if (existingArtist == null) {
+        final artistObj = Artist()
+          ..name = primaryArtistName
+          ..artPath = artPath;
+        artistByName[artistObj.name] = artistObj;
+        artistsToPut.add(artistObj);
+      } else if (existingArtist.artPath == null && artPath != null) {
+        existingArtist.artPath = artPath;
+        artistsToPut.add(existingArtist);
+      }
+    }
+
+    if (songsToPut.isEmpty) return;
+    await DbService.isar.writeTxn(() async {
+      await DbService.isar.songs.putAll(songsToPut);
+      if (albumsToPut.isNotEmpty) {
+        await DbService.isar.albums.putAll(albumsToPut.toList());
+      }
+      if (artistsToPut.isNotEmpty) {
+        await DbService.isar.artists.putAll(artistsToPut.toList());
+      }
+    });
+  }
+
+  /// Pass 2 of 2: the slow part deferred by scanDirectory's quick insert -
+  /// real tag parsing, embedded art, lyrics - for every song still flagged
+  /// needsEnrichment, across the whole library at once regardless of which
+  /// folder(s) were just scanned (see the dbSongsMap comment above for why
+  /// per-folder would mean redundant repeat work). Writes in small batches
+  /// rather than one giant transaction at the end so the pending count
+  /// (and therefore the "Enriching…" indicator) visibly counts down as it
+  /// goes, via the same live Isar watch the rest of the library list uses.
+  Future<void> enrichPendingSongs() async {
+    final settings = await DbService.isar.appSettings.get(0);
+    final downloadIfMissing =
+        (settings?.downloadArtwork ?? false) &&
+        (settings?.enableInternet ?? true);
+    final includeSystemAndMessagingAudio =
+        settings?.includeSystemAndMessagingAudio ?? false;
+
+    final pending = await DbService.isar.songs
+        .filter()
+        .needsEnrichmentEqualTo(true)
+        .findAll();
+    if (pending.isEmpty) return;
+
+    final mediaStoreItems = await _queryMediaStoreNative(
+      includeSystemAndMessagingAudio: includeSystemAndMessagingAudio,
+    );
+    final mediaStoreMap = <String, Map<String, dynamic>>{};
+    if (mediaStoreItems != null) {
+      for (final item in mediaStoreItems) {
+        final filePath = item['path'] as String?;
+        if (filePath != null && filePath.isNotEmpty) {
+          mediaStoreMap[filePath] = item;
+          mediaStoreMap[p.canonicalize(filePath)] = item;
+        }
+      }
+    }
+
+    final dbSongsMap = {for (final s in pending) s.path: s};
+    final maps = await _loadNameMaps();
+
+    Future<Map<String, dynamic>?> enrichOne(
+      Song song, {
+      bool retry = false,
+    }) async {
+      final file = File(song.path);
+      if (!await file.exists()) return null;
+      return _extractMetadata(
+        file,
+        mediaStoreData:
+            mediaStoreMap[song.path] ??
+            mediaStoreMap[p.canonicalize(song.path)],
+        downloadArtworkIfMissing: downloadIfMissing,
+        retry: retry,
+      );
+    }
+
+    // Two separate knobs. writeBatchSize is how many rows share one Isar
+    // transaction - each write fires the library's live watches, so fewer,
+    // larger ones mean fewer rebuilds of whatever's on screen (Home's Quick
+    // Picks / Recently Added re-sort, etc) while the pill counts down.
+    // extractionConcurrency is how many songs have their tags/art read at
+    // once, and is deliberately far smaller: firing a whole write batch's
+    // worth at once (as this used to) queued dozens of embedded-picture
+    // reads and tag parses behind each other, which both starved the UI of
+    // frames and pushed the later ones past their timeouts - a timed-out
+    // picture read looked exactly like "this song has no artwork".
+    const int writeBatchSize = 25;
+    const int extractionConcurrency = 3;
+    for (int i = 0; i < pending.length; i += writeBatchSize) {
+      final batch = pending.sublist(
+        i,
+        (i + writeBatchSize < pending.length)
+            ? i + writeBatchSize
+            : pending.length,
+      );
+
+      final results = await _mapWithConcurrency<Song, Map<String, dynamic>?>(
+        batch,
+        extractionConcurrency,
+        enrichOne,
+      );
+
+      // A song whose tag/art read timed out (rather than genuinely having
+      // none) gets one more attempt, one at a time with longer timeouts,
+      // before being written as final - the row is marked done either way,
+      // so without this a single slow read permanently meant no artwork.
+      for (var j = 0; j < batch.length; j++) {
+        if (results[j]?['transient'] == true) {
+          results[j] = await enrichOne(batch[j], retry: true);
+        }
+      }
+
+      // A file that vanished between the quick insert and now (deleted,
+      // ejected SD card, ...) has no result to enrich with - drop the
+      // placeholder row rather than leaving it stuck flagged forever.
+      final goneIds = <int>[];
+      for (var j = 0; j < batch.length; j++) {
+        if (results[j] == null) goneIds.add(batch[j].id);
+      }
+
+      await _writeSongBatch(results, dbSongsMap, maps.albums, maps.artists);
+      if (goneIds.isNotEmpty) {
+        await DbService.isar.writeTxn(() async {
+          await DbService.isar.songs.deleteAll(goneIds);
+        });
+      }
+
+      // Lets the frames queued up behind that write's watch-driven rebuild
+      // actually render before the next batch's reads start competing again.
+      await Future.delayed(const Duration(milliseconds: 40));
+    }
+  }
+
+  /// Runs [fn] over [items] with at most [concurrency] in flight at once,
+  /// returning results in the same order as [items].
+  Future<List<R>> _mapWithConcurrency<T, R>(
+    List<T> items,
+    int concurrency,
+    Future<R> Function(T item) fn,
+  ) async {
+    final results = List<R?>.filled(items.length, null);
+    var next = 0;
+
+    Future<void> worker() async {
+      while (true) {
+        final index = next++;
+        if (index >= items.length) return;
+        results[index] = await fn(items[index]);
+      }
+    }
+
+    final workerCount = concurrency < items.length ? concurrency : items.length;
+    await Future.wait([for (var w = 0; w < workerCount; w++) worker()]);
+    return [for (final r in results) r as R];
   }
 
   /// Removes excluded system/messaging audio after the setting is disabled.
@@ -556,25 +844,58 @@ class LibraryScanner {
     return removedCount;
   }
 
-  Future<List<int>?> _fetchNativeEmbeddedPicture(String path) async {
+  /// Throws [TimeoutException] (rather than returning null) if the native
+  /// side doesn't answer in time, so the caller can tell "slow" apart from
+  /// "this file genuinely has no embedded picture" - see _extractMetadata's
+  /// transient flag. Any other failure is a real "no picture" and is null.
+  ///
+  /// Returns the bytes as the Uint8List they arrive as: an earlier
+  /// `.toList()` here turned a multi-MB picture into a boxed `List<int>` - one
+  /// object per byte - on the main isolate, for every song, which was a
+  /// large frame-dropping copy for no benefit (File.writeAsBytes takes the
+  /// Uint8List directly).
+  Future<Uint8List?> _fetchNativeEmbeddedPicture(
+    String path, {
+    required Duration timeout,
+  }) async {
     if (!Platform.isAndroid) return null;
     try {
-      final Uint8List? bytes = await _broadcastChannel.invokeMethod<Uint8List>(
-        'getEmbeddedPicture',
-        {'path': path},
-      );
-      return bytes?.toList();
+      return await _broadcastChannel
+          .invokeMethod<Uint8List>('getEmbeddedPicture', {'path': path})
+          .timeout(timeout);
+    } on TimeoutException {
+      rethrow;
     } catch (_) {
       return null;
     }
   }
 
   Future<String?> _findFolderArtwork(String songFilePath) async {
+    final dirPath = p.dirname(songFilePath);
+    if (_folderArtCache.containsKey(dirPath)) {
+      return _folderArtCache[dirPath];
+    }
     try {
-      final dirPath = p.dirname(songFilePath);
-      if (_folderArtCache.containsKey(dirPath)) {
-        return _folderArtCache[dirPath];
-      }
+      // A stalled/ejected SD card or a slow scoped-storage FUSE path can
+      // hang any of the dart:io calls below (dir.exists(), the per-
+      // candidate File.exists() checks, dir.list()) - and since this runs
+      // inside enrichPendingSongs' batched Future.wait (see
+      // _fetchNativeEmbeddedPicture's doc comment for the same reasoning),
+      // one folder that hangs stalls every song batched alongside it, not
+      // just this one's artwork lookup.
+      return await _findFolderArtworkUncached(
+        dirPath,
+      ).timeout(const Duration(seconds: 5));
+    } catch (_) {
+      // Not cached: a transient stall/timeout shouldn't permanently record
+      // "no artwork" for a folder that may genuinely have some - only a
+      // real, completed search result (found or not) gets cached below.
+      return null;
+    }
+  }
+
+  Future<String?> _findFolderArtworkUncached(String dirPath) async {
+    try {
       final dir = Directory(dirPath);
       if (!await dir.exists()) {
         _folderArtCache[dirPath] = null;
@@ -632,17 +953,28 @@ class LibraryScanner {
     return null;
   }
 
+  /// [retry] is the second, one-at-a-time attempt enrichPendingSongs makes
+  /// for a song whose first attempt reported `'transient': true` in its
+  /// result - i.e. a tag or embedded-picture read timed out, which is not
+  /// the same as the file having nothing to read - and uses longer timeouts.
   Future<Map<String, dynamic>?> _extractMetadata(
     File file, {
     Map<String, dynamic>? mediaStoreData,
     bool downloadArtworkIfMissing = false,
+    bool retry = false,
   }) async {
+    final tagTimeout = Duration(seconds: retry ? 10 : 4);
+    final pictureTimeout = Duration(seconds: retry ? 20 : 8);
+    var transient = false;
+
     try {
       Metadata? metadata;
       try {
         metadata = await MetadataGod.readMetadata(
           file: file.path,
-        ).timeout(const Duration(milliseconds: 1500));
+        ).timeout(tagTimeout);
+      } on TimeoutException {
+        transient = true;
       } catch (_) {}
 
       String? title = metadata?.title;
@@ -681,7 +1013,14 @@ class LibraryScanner {
       }
 
       if (pictureData == null && Platform.isAndroid) {
-        pictureData = await _fetchNativeEmbeddedPicture(file.path);
+        try {
+          pictureData = await _fetchNativeEmbeddedPicture(
+            file.path,
+            timeout: pictureTimeout,
+          );
+        } on TimeoutException {
+          transient = true;
+        }
       }
 
       final filename = p.basenameWithoutExtension(file.path);
@@ -709,7 +1048,9 @@ class LibraryScanner {
 
       String? lyrics;
       try {
-        final embeddedLyrics = await MetadataService.getEmbeddedLyrics(file.path);
+        final embeddedLyrics = await MetadataService.getEmbeddedLyrics(
+          file.path,
+        );
         // Tag with the same [source:embedded] prefix LyricsFetcher/
         // LyricsNotifier use for an embedded-metadata hit, so the lyrics
         // screen's source pill can identify it - untagged text here read
@@ -766,6 +1107,7 @@ class LibraryScanner {
             metadata ??
             Metadata(title: cleanTitle, artist: cleanArtist, album: cleanAlbum),
         'artPath': artPath,
+        'transient': transient,
       };
     } catch (e) {
       try {

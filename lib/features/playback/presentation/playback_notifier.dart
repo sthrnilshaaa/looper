@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:math' as math;
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:looper_player/core/logger_helper.dart';
 import 'package:looper_player/core/android_audio_focus_manager.dart';
+import 'package:looper_player/core/media_store_write_service.dart';
 import 'package:looper_player/features/playback/presentation/lyrics_search_provider.dart';
+import 'package:looper_player/features/playback/domain/lyric_models.dart';
 import 'package:mpv_audio_kit/mpv_audio_kit.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
 import 'package:looper_player/core/providers.dart';
@@ -23,6 +25,8 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
+
+part 'playback_notifier.g.dart';
 
 enum RepeatMode { off, all, one }
 
@@ -119,21 +123,22 @@ class PlaybackState {
 
 const _sentinel = Object();
 
-class PlaybackNotifier extends StateNotifier<PlaybackState> {
-  final Ref ref;
+@Riverpod(keepAlive: true)
+class Playback extends _$Playback {
   late final Player player;
   List<Song> _playlist = [];
   List<Song> _originalPlaylist = [];
   int _currentIndex = -1;
   bool _isTransitioning = false;
-  bool _autoCrossfadeTriggered = false;
-  bool _isLastPlayManual = true;
   int _activeCrossfadeId = 0;
-  int _activeSeekId = 0;
-  final int _activePlayPauseId = 0;
   Timer? _silenceTimer;
   Timer? _songCompletionTimer;
   int _lastWidgetPositionUpdate = 0;
+  // Separate, much coarser throttle for the isar.songs.put() progress
+  // write - see the position-stream listener in _init() for why this is
+  // decoupled from _lastWidgetPositionUpdate.
+  int _lastProgressSaveCheckpoint = 0;
+  static const int _progressSaveIntervalMs = 20000;
   int _manualQueueCount = 0;
   DateTime _lastSeekTime = DateTime.fromMillisecondsSinceEpoch(0);
   DateTime _lastPlayTime = DateTime.fromMillisecondsSinceEpoch(0);
@@ -151,7 +156,9 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   String? _activeListenSongPath;
   DateTime _lastListenCheckpoint = DateTime.fromMillisecondsSinceEpoch(0);
 
-  PlaybackNotifier(this.ref) : super(PlaybackState()) {
+  @override
+  PlaybackState build() {
+    ref.onDispose(_disposePlayback);
     if (Platform.isAndroid) {
       ref.read(androidAudioFocusManagerProvider);
     }
@@ -229,9 +236,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
             .setStopOnTaskRemoved(next.stopOnTaskRemoved);
       }
     });
+    return PlaybackState();
   }
-
-  void _syncAudioHandlerState() {}
 
   void updateNotification({bool forceFresh = false}) {
     _updateNotification(forceFresh: forceFresh);
@@ -253,7 +259,6 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         forceFresh: forceFresh,
       );
     }
-    _syncAudioHandlerState();
     _updateWidgetState();
   }
 
@@ -329,20 +334,53 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     _subscriptions.add(
       player.stream.position.listen((position) {
         if (!state.isScrubbing) {
-          state = state.copyWith(position: position);
+          // seek() already set state.position to the seek target the
+          // instant it was called, before the native player actually
+          // finishes repositioning - for a brief window after that, this
+          // stream can still emit one or more stale ticks reporting where
+          // playback was *before* the seek (mpv hasn't caught up yet). Since
+          // a real forward-playing tick can never report a position at or
+          // before wherever we just explicitly moved to, treat one that does
+          // as stale and drop it instead of letting it overwrite the seek -
+          // otherwise the UI (and specifically the lyrics screen's active-
+          // line highlight, which reacts to this same position) flickers
+          // back to the pre-seek spot for a moment, making a tap-to-seek on
+          // a lyric line intermittently look like it did nothing.
+          final withinSeekWindow =
+              DateTime.now().difference(_lastSeekTime).inMilliseconds < 400;
+          final isStaleAfterSeek =
+              withinSeekWindow && position <= state.position;
+          if (!isStaleAfterSeek) {
+            state = state.copyWith(position: position);
+          }
         }
         _checkAndUpdateLyrics();
 
         final now = DateTime.now().millisecondsSinceEpoch;
-        if (state.isPlaying && now - _lastWidgetPositionUpdate > 2000) {
+        // Widened from 2s to 5s: this only feeds the notification/queue
+        // sync and the (usually unpinned - see _anyHomeWidgetPinned) home
+        // screen widget, neither of which needs sub-5-second resolution.
+        if (state.isPlaying && now - _lastWidgetPositionUpdate > 5000) {
           _lastWidgetPositionUpdate = now;
           _updateWidgetState();
-          _syncAudioHandlerState();
           if (ref.read(settingsProvider).persistQueue) {
             ref
                 .read(settingsProvider.notifier)
                 .updateLastPosition(position.inMilliseconds);
           }
+        }
+        // Deliberately on its own, coarser (20s) throttle rather than
+        // reusing the block above: this writes to Song via
+        // isar.songs.put(), and the library list watches the *entire*
+        // songs collection (library_notifier._watchSongs), so every write
+        // here forces a full-library re-query + rebuild of every widget
+        // watching libraryProvider's song list. Pause and song-change
+        // already checkpoint the exact position (see the `playing`
+        // listener above), so this periodic write is only crash insurance
+        // and doesn't need second-level resolution.
+        if (state.isPlaying &&
+            now - _lastProgressSaveCheckpoint > _progressSaveIntervalMs) {
+          _lastProgressSaveCheckpoint = now;
           unawaited(
             _savePerSongProgress(state.currentSong, position, state.duration),
           );
@@ -406,8 +444,6 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
                 state = state.copyWith(sleepTimerSongsRemaining: remaining);
               }
             }
-
-            _isLastPlayManual = false;
 
             if (state.repeatMode == RepeatMode.one) {
               _isTransitioning = false;
@@ -712,9 +748,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       _savePerSongProgress(state.currentSong, state.position, state.duration),
     );
 
-    _autoCrossfadeTriggered = false;
     _lastWidgetLyricLine = '';
-    ref.read(lyricsSearchQueryProvider.notifier).state = '';
+    ref.read(lyricsSearchQueryProvider.notifier).clear();
     state = state.copyWith(
       currentSong: song,
       duration: song.duration != null
@@ -1077,7 +1112,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         }
       });
     } catch (e) {
-      LoggerHelper.write('PlaybackNotifier._flushListenedTime failed', e);
+      LoggerHelper.write('Playback._flushListenedTime failed', e);
     }
   }
 
@@ -1156,12 +1191,10 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       // native side for parity.
       ref.read(androidAudioFocusManagerProvider).setPlaybackInterrupted(false);
     }
-    _syncAudioHandlerState();
   }
 
   Future<void> setSpeed(double speed) async {
     await player.setRate(speed);
-    _syncAudioHandlerState();
   }
 
   Future<void> togglePlay() async {
@@ -1206,9 +1239,13 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
           // sure AudioFocusManager doesn't think it should auto-resume us
           // once focus comes back (e.g. after a transient loss/gain cycle
           // from an unrelated notification sound).
-          ref.read(androidAudioFocusManagerProvider).setPlaybackInterrupted(false);
+          ref
+              .read(androidAudioFocusManagerProvider)
+              .setPlaybackInterrupted(false);
           if (settings.audioFocusReleaseOnPause) {
-            await ref.read(androidAudioFocusManagerProvider).abandonAudioFocus();
+            await ref
+                .read(androidAudioFocusManagerProvider)
+                .abandonAudioFocus();
           }
         }
         // Deliberate user pause: disarm mpv_audio_kit's auto-resume-on-focus-
@@ -1273,7 +1310,6 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   Future<void> skipNext({bool isManual = true}) async {
     if (_playlist.isEmpty) return;
-    _isLastPlayManual = isManual;
 
     final nextIndex = _currentIndex + 1;
     if (nextIndex >= _playlist.length) {
@@ -1316,7 +1352,6 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   Future<void> skipPrevious({bool force = false}) async {
     if (_playlist.isEmpty) return;
-    _isLastPlayManual = true;
     if (!force && state.position.inSeconds > 3) {
       await seek(Duration.zero);
       return;
@@ -1399,8 +1434,6 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     _updateNotification();
   }
 
-  int songId(Song s) => s.id;
-
   void nextRepeatMode() {
     final nextMode = RepeatMode
         .values[(state.repeatMode.index + 1) % RepeatMode.values.length];
@@ -1421,7 +1454,6 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   Future<void> seek(Duration position) async {
     _songCompletionTimer?.cancel();
-    _activeSeekId++;
     _lastSeekTime = DateTime.now();
 
     try {
@@ -1446,14 +1478,12 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   }
 
   void startScrubbing() {
-    _activeSeekId++;
     _lastSeekTime = DateTime.now();
     state = state.copyWith(isScrubbing: true);
     player.setVolume(0);
   }
 
   void stopScrubbing() {
-    _activeSeekId++;
     _lastSeekTime = DateTime.now();
     state = state.copyWith(isScrubbing: false, position: player.state.position);
     player.setVolume(state.volume * 100);
@@ -1623,98 +1653,6 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     }
   }
 
-  Future<FileActionResult> renameSong(Song song, String newTitle) async {
-    try {
-      await _requestStoragePermissions();
-    } catch (e) {}
-
-    final sanitizedTitle = newTitle
-        .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_')
-        .trim();
-    if (sanitizedTitle.isEmpty) {
-      return FileActionResult.failure;
-    }
-
-    final isCurrent = state.currentSong?.id == song.id;
-    final wasPlaying = state.isPlaying;
-    final lastPosition = state.position;
-
-    if (isCurrent) {
-      // Completely stop player to release file handle locks
-      await player.stop();
-      // Wait for player to completely release the file handle
-      await Future.delayed(const Duration(milliseconds: 500));
-    }
-
-    final file = File(song.path);
-    final dir = file.parent.path;
-    final ext = p.extension(song.path);
-    final newPath = p.join(dir, '$sanitizedTitle$ext');
-
-    bool fileRenamed = false;
-    if (newPath != song.path) {
-      try {
-        if (newPath.toLowerCase() != song.path.toLowerCase() &&
-            await File(newPath).exists()) {
-          if (isCurrent) {
-            // Restore playback of the original song
-            await play(song, play: wasPlaying);
-            await seek(lastPosition);
-          }
-          return FileActionResult.failure;
-        }
-
-        if (await file.exists()) {
-          await file.rename(newPath);
-          fileRenamed = true;
-        }
-      } catch (e) {}
-    } else {
-      fileRenamed = true;
-    }
-
-    bool dbSuccess = false;
-    try {
-      await DbService.isar.writeTxn(() async {
-        song.title = sanitizedTitle;
-        if (fileRenamed) {
-          song.path = newPath;
-        }
-        await DbService.isar.songs.put(song);
-      });
-      dbSuccess = true;
-
-      // Update in-memory queue
-      final index = _playlist.indexWhere((s) => s.id == song.id);
-      if (index != -1) {
-        _playlist[index] = song;
-      }
-
-      // Update state if it's the current song
-      if (isCurrent) {
-        state = state.copyWith(currentSong: song, queue: List.from(_playlist));
-        // Resume playing track from the new path
-        await play(song, play: wasPlaying);
-        await seek(lastPosition);
-      } else {
-        state = state.copyWith(queue: List.from(_playlist));
-      }
-    } catch (e) {
-      if (isCurrent) {
-        // Fallback: restore player using original song/state
-        await play(song, play: wasPlaying);
-        await seek(lastPosition);
-      }
-    }
-
-    if (!dbSuccess) {
-      return FileActionResult.failure;
-    }
-    return (fileRenamed && newPath != song.path)
-        ? FileActionResult.success
-        : FileActionResult.dbOnly;
-  }
-
   void updateSongEqualizer({
     required int songId,
     required bool hasCustom,
@@ -1768,8 +1706,16 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     }
   }
 
-  /// Edits song metadata in the database (title, artist, album, year, genre, artPath).
-  /// Does NOT rename the physical file — only updates the DB record.
+  /// Edits song metadata (title, artist, album, year, genre, artPath,
+  /// lyrics). If [title] actually changes the song's title, the physical
+  /// file is renamed to match (this is the only place a song's title can be
+  /// changed, so it doubles as the file-rename action - no separate "rename
+  /// file" UI). On Android, best-effort also writes title/artist/album/
+  /// genre/year/lyrics into the file's own tags (see MediaStoreWriteService).
+  /// The returned bool reflects only the DB write - a declined/unsupported
+  /// rename or tag write is not treated as a failure, since the DB-side edit
+  /// already stands on its own (that's what every other read path in this
+  /// app uses).
   Future<bool> editSongMetadata(
     Song song, {
     String? title,
@@ -1780,6 +1726,61 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     String? artPath,
     String? lyrics,
   }) async {
+    final originalPath = song.path;
+    final sanitizedTitle = (title != null && title.trim().isNotEmpty)
+        ? title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_').trim()
+        : null;
+    final titleChanged = sanitizedTitle != null && sanitizedTitle != song.title;
+
+    final isCurrent = state.currentSong?.id == song.id;
+    final wasPlaying = state.isPlaying;
+    final lastPosition = state.position;
+
+    // Only rename the physical file when the title actually changed - a
+    // song's title very commonly differs from its on-disk filename already
+    // (from tags set before this app ever saw it), and re-triggering a
+    // rename on every metadata edit just because of that mismatch would be
+    // a surprising side effect of e.g. only changing the genre.
+    String? renamedPath;
+    if (titleChanged) {
+      final file = File(originalPath);
+      final ext = p.extension(originalPath);
+      final newDisplayName = '$sanitizedTitle$ext';
+      final newPath = p.join(file.parent.path, newDisplayName);
+      final collides =
+          newPath.toLowerCase() != originalPath.toLowerCase() &&
+          await File(newPath).exists();
+      if (!collides) {
+        try {
+          if (isCurrent) {
+            // Completely stop player to release file handle locks
+            await player.stop();
+            await Future.delayed(const Duration(milliseconds: 500));
+          }
+          if (await file.exists()) {
+            if (Platform.isAndroid) {
+              // Renames on Android scoped storage go through MediaStore -
+              // File.rename() throws for any file this app doesn't own
+              // (most MediaStore-indexed songs), so it needs the native
+              // consent flow rather than a raw filesystem rename.
+              renamedPath = await MediaStoreWriteService.renameFile(
+                originalPath,
+                newDisplayName,
+              );
+            } else {
+              await file.rename(newPath);
+              renamedPath = newPath;
+            }
+          }
+        } catch (e) {}
+        if (renamedPath == null && isCurrent) {
+          // Declined/failed - resume where playback was before we stopped it.
+          await play(song, play: wasPlaying);
+          await seek(lastPosition);
+        }
+      }
+    }
+
     try {
       await DbService.isar.writeTxn(() async {
         if (title != null && title.isNotEmpty) song.title = title.trim();
@@ -1795,6 +1796,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         song.lyrics = (lyrics == null || lyrics.trim().isEmpty)
             ? null
             : lyrics.trim();
+        if (renamedPath != null) song.path = renamedPath;
         await DbService.isar.songs.put(song);
       });
 
@@ -1803,15 +1805,41 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       if (idx != -1) _playlist[idx] = song;
 
       // Reflect changes in live playback state if this is the current song
-      if (state.currentSong?.id == song.id) {
+      if (isCurrent) {
         state = state.copyWith(currentSong: song, queue: List.from(_playlist));
-        _updateNotification();
+        if (renamedPath != null) {
+          // Resume playing track from the new path
+          await play(song, play: wasPlaying);
+          await seek(lastPosition);
+        } else {
+          _updateNotification();
+        }
         ref.read(lyricsProvider.notifier).fetchForSong(song, force: true);
       } else {
         state = state.copyWith(queue: List.from(_playlist));
       }
+
+      if (Platform.isAndroid) {
+        try {
+          await MediaStoreWriteService.writeTags(
+            song.path,
+            title: song.title,
+            artist: song.artist,
+            album: song.album,
+            genre: song.genre,
+            year: song.year,
+            lyrics: song.lyrics,
+          );
+        } catch (_) {}
+      }
+
       return true;
     } catch (e) {
+      if (isCurrent && renamedPath != null) {
+        // Fallback: restore player using original song/state
+        await play(song, play: wasPlaying);
+        await seek(lastPosition);
+      }
       return false;
     }
   }
@@ -1835,8 +1863,15 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     bool fileDeleted = false;
     try {
       if (await file.exists()) {
-        await file.delete();
-        fileDeleted = true;
+        if (Platform.isAndroid) {
+          // Scoped storage: File.delete() throws for any file this app
+          // doesn't own (most MediaStore-indexed songs), so route through
+          // the native MediaStore consent flow instead.
+          fileDeleted = await MediaStoreWriteService.deleteFile(song.path);
+        } else {
+          await file.delete();
+          fileDeleted = true;
+        }
       }
     } catch (e) {}
 
@@ -1922,10 +1957,20 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     } catch (e) {}
   }
 
-  Future<void> shareSong(Song song) async {
-    await Share.shareXFiles([
-      XFile(song.path),
-    ], text: 'Check out this song: ${song.title}');
+  Future<void> shareSong(Song song) => shareSongs([song]);
+
+  /// Shares one or more songs as files through a single native share sheet.
+  /// [shareSong] is a thin wrapper over this so there's one implementation
+  /// of "turn songs into an XFile share" instead of two.
+  Future<void> shareSongs(List<Song> songs) async {
+    if (songs.isEmpty) return;
+    final text = songs.length == 1
+        ? 'Check out this song: ${songs.first.title}'
+        : 'Check out these ${songs.length} songs';
+    await Share.shareXFiles(
+      songs.map((s) => XFile(s.path)).toList(),
+      text: text,
+    );
   }
 
   void _showErrorSnackBar(
@@ -1987,6 +2032,34 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     });
   }
 
+  /// Index of the lyric line active at [position] in [lines].
+  ///
+  /// [lines] are sorted and contiguous by construction (LrcParser.parse
+  /// sorts by startTime and sets each line's endTime to the next line's
+  /// startTime), so a binary search on startTime is equivalent to the
+  /// linear `indexWhere(start <= position < end)` scan this replaces -
+  /// O(log n) instead of O(n). This runs on every playback position tick
+  /// (many times per second while playing, from _checkAndUpdateLyrics),
+  /// so the linear scan's cost was paid continuously for the entire
+  /// duration of playback, whether or not the lyrics screen was open.
+  int _activeLyricLineIndex(List<LyricLine> lines, Duration position) {
+    if (lines.isEmpty) return -1;
+    if (position < lines.first.startTime) return 0;
+    if (position >= lines.last.endTime) return lines.length - 1;
+
+    int lo = 0;
+    int hi = lines.length - 1;
+    while (lo < hi) {
+      final mid = (lo + hi + 1) >> 1;
+      if (lines[mid].startTime <= position) {
+        lo = mid;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    return lo;
+  }
+
   void _checkAndUpdateLyrics() {
     if (!Platform.isAndroid) return;
     try {
@@ -1994,18 +2067,10 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       final currentPosition = state.position;
       String currentLine = "";
       if (lyricsState.rawLrc != null) {
-        int activeLineIndex = lyricsState.parsedLines.indexWhere(
-          (line) =>
-              currentPosition >= line.startTime &&
-              currentPosition < line.endTime,
+        final activeLineIndex = _activeLyricLineIndex(
+          lyricsState.parsedLines,
+          currentPosition,
         );
-        if (activeLineIndex == -1 && lyricsState.parsedLines.isNotEmpty) {
-          if (currentPosition < lyricsState.parsedLines.first.startTime) {
-            activeLineIndex = 0;
-          } else if (currentPosition >= lyricsState.parsedLines.last.endTime) {
-            activeLineIndex = lyricsState.parsedLines.length - 1;
-          }
-        }
         if (activeLineIndex != -1) {
           currentLine = lyricsState.parsedLines[activeLineIndex].text;
         }
@@ -2017,27 +2082,58 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     } catch (e) {}
   }
 
+  bool? _hasHomeWidgetsPinned;
+  int _lastHomeWidgetPinCheckMs = 0;
+  static const int _homeWidgetPinCheckIntervalMs = 60000;
+  static const Set<String> _homeWidgetProviderClasses = {
+    'com.looper.player.PlayerWidgetProvider',
+    'com.looper.player.PlayerWidgetProviderSquareArtwork',
+    'com.looper.player.PlayerWidgetProviderSquareProgress',
+    'com.looper.player.PlayerWidgetProviderLargeLyrics',
+  };
+
+  /// Whether any of this app's 4 home-screen widgets is actually pinned to
+  /// a launcher, cached for [_homeWidgetPinCheckIntervalMs] so checking
+  /// costs one platform-channel round trip a minute rather than one per
+  /// call. _updateWidgetState() used to unconditionally push 11
+  /// saveWidgetData writes + 4 updateWidget broadcasts on every throttle
+  /// tick even for the (typical) user who never placed any of these
+  /// widgets on their home screen.
+  Future<bool> _anyHomeWidgetPinned() async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (_hasHomeWidgetsPinned != null &&
+        now - _lastHomeWidgetPinCheckMs < _homeWidgetPinCheckIntervalMs) {
+      return _hasHomeWidgetsPinned!;
+    }
+    _lastHomeWidgetPinCheckMs = now;
+    try {
+      final installed = await HomeWidget.getInstalledWidgets();
+      _hasHomeWidgetsPinned = installed.any(
+        (w) => _homeWidgetProviderClasses.contains(w.androidClassName),
+      );
+    } catch (_) {
+      // Can't tell - fail open so a widget the user actually placed never
+      // silently stops updating.
+      _hasHomeWidgetsPinned = true;
+    }
+    return _hasHomeWidgetsPinned!;
+  }
+
   Future<void> _updateWidgetState() async {
     if (!Platform.isAndroid) return;
     try {
+      if (!await _anyHomeWidgetPinned()) return;
+
       final song = state.currentSong;
       final lyricsState = ref.read(lyricsProvider);
       final currentPosition = state.position;
       String currentLine = "";
       String nextLine = "";
       if (lyricsState.rawLrc != null) {
-        int activeLineIndex = lyricsState.parsedLines.indexWhere(
-          (line) =>
-              currentPosition >= line.startTime &&
-              currentPosition < line.endTime,
+        final activeLineIndex = _activeLyricLineIndex(
+          lyricsState.parsedLines,
+          currentPosition,
         );
-        if (activeLineIndex == -1 && lyricsState.parsedLines.isNotEmpty) {
-          if (currentPosition < lyricsState.parsedLines.first.startTime) {
-            activeLineIndex = 0;
-          } else if (currentPosition >= lyricsState.parsedLines.last.endTime) {
-            activeLineIndex = lyricsState.parsedLines.length - 1;
-          }
-        }
         if (activeLineIndex != -1) {
           currentLine = lyricsState.parsedLines[activeLineIndex].text;
           if (activeLineIndex + 1 < lyricsState.parsedLines.length) {
@@ -2129,7 +2225,13 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
             sleepTimerDurationInitial: null,
             sleepTimerSongsInitial: null,
           );
-          player.pause();
+          // Route through togglePlay() instead of a bare player.pause():
+          // it's the same "pause" a tap on the play button triggers, so a
+          // song caught mid-playback gets the fade-out/notification sync
+          // that already exists there instead of a jarring hard cut.
+          if (state.isPlaying) {
+            unawaited(togglePlay());
+          }
         } else {
           state = state.copyWith(sleepTimerDurationRemaining: remaining);
         }
@@ -2387,8 +2489,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     }
   }
 
-  @override
-  void dispose() {
+  void _disposePlayback() {
     // Best-effort: flush whatever real listening time is pending. There's no
     // synchronous flush available here, so a hard process kill in the same
     // instant can still lose the last few seconds - unavoidable without a
@@ -2405,12 +2506,5 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     if (Platform.isAndroid) {
       ref.read(androidAudioFocusManagerProvider).abandonAudioFocus();
     }
-    super.dispose();
   }
 }
-
-final playbackProvider = StateNotifierProvider<PlaybackNotifier, PlaybackState>(
-  (ref) {
-    return PlaybackNotifier(ref);
-  },
-);

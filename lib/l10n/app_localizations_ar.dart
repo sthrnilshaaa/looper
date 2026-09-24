@@ -1542,4 +1542,23 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get selectWhenToPause => 'اختر متى يتم إيقاف تشغيل الموسيقى مؤقتًا';
+
+  @override
+  String get selectAvatars => 'اختيار الصورة الرمزية';
+
+  @override
+  String get selectAvatarsDesc =>
+      'اختر الصورة الرمزية المعروضة على الشاشة الرئيسية';
+
+  @override
+  String get dynamicAvatarColor => 'لون الصورة الرمزية الديناميكي';
+
+  @override
+  String get dynamicAvatarColorDesc =>
+      'مطابقة لون الصورة الرمزية مع لون السمة الحالي';
+
+  @override
+  String enrichingSongs(int count) {
+    return 'جارِ” إثراء $count أغنية…';
+  }
 }

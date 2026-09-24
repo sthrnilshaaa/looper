@@ -519,5 +519,17 @@
       }
     }
   },
-  "selectWhenToPause": "Select when to pause music playback"
+  "selectWhenToPause": "Select when to pause music playback",
+  "selectAvatars": "Select Avatars",
+  "selectAvatarsDesc": "Choose the avatar shown on your Home screen",
+  "dynamicAvatarColor": "Dynamic Avatar Color",
+  "dynamicAvatarColorDesc": "Match the avatar's accent color to your current theme",
+  "enrichingSongs": "Enriching {count} songs…",
+  "@enrichingSongs": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

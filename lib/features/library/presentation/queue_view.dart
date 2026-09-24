@@ -101,6 +101,7 @@ class QueueView extends ConsumerWidget {
                       child: AnimatedContainer(
                         key: ValueKey('queue_tile_${song.path}_$index'),
                         duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOutCubic,
                         margin: const EdgeInsets.only(bottom: 8),
                         decoration: BoxDecoration(
                           color: isCurrent

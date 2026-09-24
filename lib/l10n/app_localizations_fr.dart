@@ -1578,4 +1578,23 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get selectWhenToPause => 'Choisissez quand mettre la musique en pause';
+
+  @override
+  String get selectAvatars => 'Choisir l\'avatar';
+
+  @override
+  String get selectAvatarsDesc =>
+      'Choisissez l\'avatar affiché sur votre écran d\'accueil';
+
+  @override
+  String get dynamicAvatarColor => 'Couleur dynamique de l\'avatar';
+
+  @override
+  String get dynamicAvatarColorDesc =>
+      'Adapte la couleur d\'accent de l\'avatar à votre thème actuel';
+
+  @override
+  String enrichingSongs(int count) {
+    return 'Enrichissement de $count morceaux…';
+  }
 }

@@ -22,12 +22,7 @@ void showLyricsMenuBottomSheet(BuildContext context, WidgetRef ref, Song song) {
     isScrollControlled: true,
     backgroundColor: Colors.black12,
     builder: (context) {
-      return
-      // BackdropFilter(
-      // filter: ImageFilter.blur(sigmaX: 0, sigmaY: 4),
-      // child:
-      _LyricsMenuSheetContent(song: song);
-      //);
+      return _LyricsMenuSheetContent(song: song);
     },
   );
 }

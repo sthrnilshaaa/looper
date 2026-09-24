@@ -99,7 +99,7 @@ class _LimitToggle extends ConsumerWidget {
         onTap: () {
           if (selected) return;
           HapticFeedback.selectionClick();
-          ref.read(analyzeTopSongsLimitProvider.notifier).state = value;
+          ref.read(analyzeTopSongsLimitProvider.notifier).set(value);
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),

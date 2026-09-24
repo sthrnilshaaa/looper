@@ -35,7 +35,16 @@ class _SleepTimerSheetContentState extends ConsumerState<SleepTimerSheetContent>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final settings = ref.watch(settingsProvider);
-    final playbackState = ref.watch(playbackProvider);
+    final (isSleepTimerActive, sleepTimerDurationRemaining, sleepTimerSongsRemaining) =
+        ref.watch(
+      playbackProvider.select(
+        (s) => (
+          s.isSleepTimerActive,
+          s.sleepTimerDurationRemaining,
+          s.sleepTimerSongsRemaining,
+        ),
+      ),
+    );
     final accentColor = Color(settings.accentColor);
     final useBlur = settings.alwaysBlurSheets ||
         (!settings.disableBlur && settings.enableDynamicTheming);
@@ -89,14 +98,18 @@ class _SleepTimerSheetContentState extends ConsumerState<SleepTimerSheetContent>
             ),
             const SizedBox(height: 8),
             Text(
-              playbackState.isSleepTimerActive
-                  ? (playbackState.sleepTimerDurationRemaining != null
-                      ? l10n.sleepTimerStoppingIn(formatSleepTimerRemaining(playbackState))
-                      : l10n.sleepTimerStoppingAfter(formatSleepTimerRemaining(playbackState)))
+              isSleepTimerActive
+                  ? (sleepTimerDurationRemaining != null
+                      ? l10n.sleepTimerStoppingIn(formatSleepTimerRemaining(
+                          durationRemaining: sleepTimerDurationRemaining,
+                        ))
+                      : l10n.sleepTimerStoppingAfter(formatSleepTimerRemaining(
+                          songsRemaining: sleepTimerSongsRemaining,
+                        )))
                   : l10n.selectWhenToPause,
               style: AppFonts.jostStyle(
                 fontSize: 14,
-                color: playbackState.isSleepTimerActive
+                color: isSleepTimerActive
                     ? accentColor
                     : Colors.white54,
               ),
@@ -307,7 +320,7 @@ class _SleepTimerSheetContentState extends ConsumerState<SleepTimerSheetContent>
               ),
             ),
             const SizedBox(height: 24),
-            if (playbackState.isSleepTimerActive)
+            if (isSleepTimerActive)
               ElevatedButton.icon(
                 onPressed: () {
                   HapticFeedback.mediumImpact();
@@ -388,16 +401,17 @@ class _SleepTimerSheetContentState extends ConsumerState<SleepTimerSheetContent>
   }
 }
 
-String formatSleepTimerRemaining(PlaybackState state) {
-  if (state.sleepTimerDurationRemaining != null) {
-    final duration = state.sleepTimerDurationRemaining!;
-    final minutes = duration.inMinutes;
+String formatSleepTimerRemaining({
+  Duration? durationRemaining,
+  int? songsRemaining,
+}) {
+  if (durationRemaining != null) {
+    final minutes = durationRemaining.inMinutes;
     final seconds =
-        duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+        durationRemaining.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$minutes:$seconds';
-  } else if (state.sleepTimerSongsRemaining != null) {
-    final count = state.sleepTimerSongsRemaining!;
-    return count == 1 ? '1 song left' : '$count songs left';
+  } else if (songsRemaining != null) {
+    return songsRemaining == 1 ? '1 song left' : '$songsRemaining songs left';
   }
   return '';
 }

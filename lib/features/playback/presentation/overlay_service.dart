@@ -26,7 +26,7 @@ class OverlayService {
     _previousBounds = await windowManager.getBounds();
 
     // Switch state first to trigger UI rebuild
-    ref.read(overlayModeProvider.notifier).state = true;
+    ref.read(overlayModeProvider.notifier).set(true);
 
     await windowManager.setAsFrameless();
     await windowManager.setHasShadow(false);
@@ -43,7 +43,7 @@ class OverlayService {
 
   Future<void> exitOverlay() async {
     // Switch state back to trigger UI rebuild
-    ref.read(overlayModeProvider.notifier).state = false;
+    ref.read(overlayModeProvider.notifier).set(false);
 
     await windowManager.setAlwaysOnTop(false);
     await windowManager.setHasShadow(true);

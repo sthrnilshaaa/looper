@@ -1,11 +1,14 @@
 import 'dart:async';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
 import 'package:looper_player/features/library/domain/models/models.dart';
 import 'package:looper_player/core/db_service.dart';
 import 'package:looper_player/features/settings/presentation/settings_notifier.dart';
 import 'package:looper_player/features/playback/presentation/playback_notifier.dart';
 import 'package:looper_player/core/providers.dart';
+import 'package:looper_player/core/local_json_store.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+part 'equalizer_notifier.g.dart';
 
 class EqualizerState {
   final bool enabled;
@@ -95,23 +98,68 @@ class EqualizerState {
   }
 }
 
-class EqualizerNotifier extends StateNotifier<EqualizerState> {
-  final Ref ref;
+/// Per-band gain range table, shared by [Equalizer._setMultipleBands] and
+/// [Equalizer.setBandGain] - previously two independent copies of the same
+/// if/else chain in this file, a correctness risk if one were ever tuned
+/// without the other. (`audio_service.dart` also inlines a few of these same
+/// ranges at their own named, per-effect call sites - e.g. `bass.clamp(-10,
+/// 15)` - deliberately left as-is there since routing through a generic
+/// bandIndex lookup would make that native-audio code less self-documenting
+/// at each specific effect, not more.)
+double clampEqGain(int bandIndex, double value) {
+  if (bandIndex < 18) {
+    return value.clamp(-20.0, 20.0);
+  } else if (bandIndex == 18) {
+    return value.clamp(-12.0, 12.0);
+  } else if (bandIndex == 20) {
+    return value.clamp(-60.0, -30.0);
+  } else if (bandIndex == 22) {
+    return value.clamp(0.0, 1.0);
+  } else if (bandIndex == 24) {
+    return value.clamp(-40.0, 0.0);
+  } else if (bandIndex == 25) {
+    return value.clamp(1.0, 20.0);
+  } else if (bandIndex == 26) {
+    return value.clamp(0.01, 2000.0);
+  } else if (bandIndex == 27) {
+    return value.clamp(0.01, 9000.0);
+  } else if (bandIndex == 29) {
+    return value.clamp(-70.0, -5.0);
+  } else if (bandIndex == 31) {
+    return value.clamp(-10.0, 10.0);
+  } else if (bandIndex == 32 || bandIndex == 33) {
+    return value.clamp(-10.0, 15.0);
+  } else if (bandIndex == 34) {
+    return value.clamp(0.5, 2.0);
+  } else if (bandIndex == 35) {
+    return value.clamp(0.5, 3.0);
+  } else if (bandIndex == 37) {
+    return value.clamp(-20.0, 20.0);
+  } else if (bandIndex == 39) {
+    return value.clamp(100.0, 300.0);
+  } else if (bandIndex == 40) {
+    return value.clamp(3000.0, 6000.0);
+  }
+  return value;
+}
+
+@Riverpod(keepAlive: true)
+class Equalizer extends _$Equalizer {
   Timer? _debounceTimer;
   List<double>? _pendingSongGains;
   List<double>? _pendingGlobalGains;
   Song? _pendingSaveSong;
 
-  EqualizerNotifier(this.ref)
-    : super(
-        EqualizerState(
-          enabled: false,
-          globalGains: List.filled(48, 0.0),
-          currentSongGains: List.filled(48, 0.0),
-          currentSongHasCustom: false,
-        ),
-      ) {
-    _init();
+  @override
+  EqualizerState build() {
+    ref.onDispose(_flushPendingSaveSync);
+    final settings = ref.read(settingsProvider);
+    return EqualizerState(
+      enabled: settings.equalizerEnabled,
+      globalGains: _ensureLength(settings.globalEqualizerGains, 48),
+      currentSongGains: _ensureLength(settings.globalEqualizerGains, 48),
+      currentSongHasCustom: false,
+    );
   }
 
   List<double> _ensureLength(List<double> list, int targetLength) {
@@ -139,17 +187,6 @@ class EqualizerNotifier extends StateNotifier<EqualizerState> {
     if (list.length <= 44) newList[44] = 1.0;
     if (list.length <= 45) newList[45] = 1.0;
     return newList;
-  }
-
-  void _init() {
-    final settings = ref.read(settingsProvider);
-
-    state = EqualizerState(
-      enabled: settings.equalizerEnabled,
-      globalGains: _ensureLength(settings.globalEqualizerGains, 48),
-      currentSongGains: _ensureLength(settings.globalEqualizerGains, 48),
-      currentSongHasCustom: false,
-    );
   }
 
   void onSongChanged(Song? song) {
@@ -238,49 +275,12 @@ class EqualizerNotifier extends StateNotifier<EqualizerState> {
   }) async {
     final newSongGains = List<double>.from(state.currentSongGains);
 
-    double clampBand(int bandIndex, double val) {
-      if (bandIndex < 18) {
-        return val.clamp(-20.0, 20.0);
-      } else if (bandIndex == 18) {
-        return val.clamp(-12.0, 12.0);
-      } else if (bandIndex == 20) {
-        return val.clamp(-60.0, -30.0);
-      } else if (bandIndex == 22) {
-        return val.clamp(0.0, 1.0);
-      } else if (bandIndex == 24) {
-        return val.clamp(-40.0, 0.0);
-      } else if (bandIndex == 25) {
-        return val.clamp(1.0, 20.0);
-      } else if (bandIndex == 26) {
-        return val.clamp(0.01, 2000.0);
-      } else if (bandIndex == 27) {
-        return val.clamp(0.01, 9000.0);
-      } else if (bandIndex == 29) {
-        return val.clamp(-70.0, -5.0);
-      } else if (bandIndex == 31) {
-        return val.clamp(-10.0, 10.0);
-      } else if (bandIndex == 32 || bandIndex == 33) {
-        return val.clamp(-10.0, 15.0);
-      } else if (bandIndex == 34) {
-        return val.clamp(0.5, 2.0);
-      } else if (bandIndex == 35) {
-        return val.clamp(0.5, 3.0);
-      } else if (bandIndex == 37) {
-        return val.clamp(-20.0, 20.0);
-      } else if (bandIndex == 39) {
-        return val.clamp(100.0, 300.0);
-      } else if (bandIndex == 40) {
-        return val.clamp(3000.0, 6000.0);
-      }
-      return val;
-    }
-
     final settings = ref.read(settingsProvider);
     final isGlobal = settings.equalizerGlobalMode;
 
     final newGains = List<double>.from(state.currentSongGains);
     bandValues.forEach((bandIndex, val) {
-      newGains[bandIndex] = clampBand(bandIndex, val);
+      newGains[bandIndex] = clampEqGain(bandIndex, val);
     });
 
     if (isGlobal) {
@@ -503,45 +503,25 @@ class EqualizerNotifier extends StateNotifier<EqualizerState> {
     }
   }
 
+  /// Restores a full gains snapshot saved by the user (see [CustomEqPreset]),
+  /// unlike [setPreset] which only sets the 18 visible bands plus a
+  /// name-matched shelving guess for the small set of built-in presets.
+  /// Routing every index through [_setMultipleBands] reuses its per-band
+  /// clamping and the existing global/per-song persistence path instead of
+  /// duplicating either here.
+  Future<void> applyCustomPreset(List<double> gains) async {
+    final bandValues = <int, double>{
+      for (int i = 0; i < gains.length; i++) i: gains[i],
+    };
+    await _setMultipleBands(bandValues, applyInstant: true);
+  }
+
   Future<void> setBandGain(
     int bandIndex,
     double gain, {
     bool applyInstant = false,
   }) async {
-    double clampedGain = gain;
-    if (bandIndex < 18) {
-      clampedGain = gain.clamp(-20.0, 20.0);
-    } else if (bandIndex == 18) {
-      clampedGain = gain.clamp(-12.0, 12.0);
-    } else if (bandIndex == 20) {
-      clampedGain = gain.clamp(-60.0, -30.0);
-    } else if (bandIndex == 22) {
-      clampedGain = gain.clamp(0.0, 1.0);
-    } else if (bandIndex == 24) {
-      clampedGain = gain.clamp(-40.0, 0.0);
-    } else if (bandIndex == 25) {
-      clampedGain = gain.clamp(1.0, 20.0);
-    } else if (bandIndex == 26) {
-      clampedGain = gain.clamp(0.01, 2000.0);
-    } else if (bandIndex == 27) {
-      clampedGain = gain.clamp(0.01, 9000.0);
-    } else if (bandIndex == 29) {
-      clampedGain = gain.clamp(-70.0, -5.0);
-    } else if (bandIndex == 31) {
-      clampedGain = gain.clamp(-10.0, 10.0);
-    } else if (bandIndex == 32 || bandIndex == 33) {
-      clampedGain = gain.clamp(-10.0, 15.0);
-    } else if (bandIndex == 34) {
-      clampedGain = gain.clamp(0.5, 2.0);
-    } else if (bandIndex == 35) {
-      clampedGain = gain.clamp(0.5, 3.0);
-    } else if (bandIndex == 37) {
-      clampedGain = gain.clamp(-20.0, 20.0);
-    } else if (bandIndex == 39) {
-      clampedGain = gain.clamp(100.0, 300.0);
-    } else if (bandIndex == 40) {
-      clampedGain = gain.clamp(3000.0, 6000.0);
-    }
+    final double clampedGain = clampEqGain(bandIndex, gain);
 
     final settings = ref.read(settingsProvider);
     final isGlobal = settings.equalizerGlobalMode;
@@ -790,15 +770,78 @@ class EqualizerNotifier extends StateNotifier<EqualizerState> {
       _flushPendingSaveSync();
     });
   }
-
-  @override
-  void dispose() {
-    _flushPendingSaveSync();
-    super.dispose();
-  }
 }
 
-final equalizerProvider =
-    StateNotifierProvider<EqualizerNotifier, EqualizerState>((ref) {
-      return EqualizerNotifier(ref);
-    });
+/// A user-named snapshot of the full gains array, saved from whatever curve
+/// they'd drawn so it can be recalled later - the built-in presets in
+/// [Equalizer.setPreset] can't be renamed or added to.
+class CustomEqPreset {
+  final String name;
+  final List<double> gains;
+
+  const CustomEqPreset({required this.name, required this.gains});
+
+  Map<String, dynamic> toJson() => {'name': name, 'gains': gains};
+
+  static CustomEqPreset fromJson(Map<String, dynamic> json) => CustomEqPreset(
+    name: json['name'] as String,
+    gains: (json['gains'] as List).map((g) => (g as num).toDouble()).toList(),
+  );
+}
+
+/// Persists custom EQ presets to a local JSON file (see [LocalJsonStore])
+/// rather than the Isar schema - a handful of named gain snapshots don't
+/// warrant a DB migration.
+@Riverpod(keepAlive: true)
+class CustomEqPresets extends _$CustomEqPresets {
+  static const _storeKey = 'custom_eq_presets';
+
+  @override
+  List<CustomEqPreset> build() {
+    _load();
+    return [];
+  }
+
+  Future<void> _load() async {
+    final raw = await LocalJsonStore.read(_storeKey);
+    if (raw is! List) return;
+    state = raw
+        .whereType<Map<String, dynamic>>()
+        .map(CustomEqPreset.fromJson)
+        .toList();
+  }
+
+  Future<void> _persist() async {
+    await LocalJsonStore.write(_storeKey, state.map((p) => p.toJson()).toList());
+  }
+
+  Future<void> save(String name, List<double> gains) async {
+    final trimmedName = name.trim();
+    if (trimmedName.isEmpty) return;
+    final preset = CustomEqPreset(name: trimmedName, gains: List.from(gains));
+    // Saving under an existing name replaces it rather than piling up
+    // duplicates - the name is the only handle the user has to it.
+    state = [
+      ...state.where((p) => p.name != trimmedName),
+      preset,
+    ];
+    await _persist();
+  }
+
+  Future<void> delete(String name) async {
+    state = state.where((p) => p.name != name).toList();
+    await _persist();
+  }
+
+  /// Adds presets from a restored backup that aren't already present by
+  /// name, without touching (or being overwritten by) whatever the user
+  /// already has saved locally. A single persist for the whole batch,
+  /// unlike calling [save] in a loop.
+  Future<void> mergeFrom(List<CustomEqPreset> imported) async {
+    final existingNames = state.map((p) => p.name).toSet();
+    final toAdd = imported.where((p) => !existingNames.contains(p.name));
+    if (toAdd.isEmpty) return;
+    state = [...state, ...toAdd];
+    await _persist();
+  }
+}

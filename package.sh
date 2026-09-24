@@ -4,7 +4,9 @@
 # Flutter Multi-Platform Packaging & Build Suite
 # ==============================================================================
 # Generic packaging script for Linux (.deb, .rpm, .tar.gz, .AppImage) and
-# Android (Split-per-ABI APKs, Universal APK, App Bundle .aab) builds.
+# Android (Split-per-ABI APKs, Universal APK, App Bundle .aab) builds. When the
+# project defines github/play Android flavors, the APKs are built as `github`
+# and the .aab as `play`.
 #
 # All identity metadata (app name, display name, description, maintainer,
 # icon, version, ...) is auto-detected from the target Flutter project's own
@@ -36,9 +38,25 @@ OVERRIDE_DISPLAY_NAME="${DISPLAY_NAME:-}"
 OVERRIDE_DESCRIPTION="${DESCRIPTION:-}"
 OVERRIDE_MAINTAINER="${MAINTAINER:-}"
 OVERRIDE_ICON="${ICON_SOURCE:-}"
+
 OVERRIDE_CATEGORIES="${CATEGORIES:-}"
 OVERRIDE_MIME_TYPES="${MIME_TYPES:-}"
 OVERRIDE_DEB_DEPENDS="${DEB_DEPENDS:-}"
+
+# --- Packaging settings (environment variables can override these) ---
+# Icon used for the Linux packages (.deb / AppImage): a transparent-background
+# mark that suits desktop docks and launchers better than a mobile launcher
+# tile. --icon still overrides it, and if the file doesn't exist in the target
+# project the script falls back to auto-detecting an icon.
+LINUX_ICON="${LINUX_ICON:-assets/logo_linux.png}"
+
+# Android build outputs (see package_android). ABIs produced by
+# `flutter build apk --split-per-abi`; narrow them with e.g. ANDROID_ABIS="arm64-v8a".
+ANDROID_ABIS="${ANDROID_ABIS:-arm64-v8a armeabi-v7a x86_64}"
+BUILD_MARKER=""          # temp file whose mtime is when this run's build started
+ANDROID_PUBLISHED=()     # file names copied into $ANDROID_DIST_DIR by this run
+ANDROID_MISSING=()       # expected artifacts that could not be found
+PACKAGING_FAILED=false   # set when an expected artifact is missing after a build
 
 # --- Usage Helper ---
 show_help() {
@@ -52,7 +70,8 @@ be overridden with the flags below.
 
 Targets:
   linux       Package Linux distributions (.deb, .rpm, .tar.gz, .AppImage)
-  android     Package Android applications (Split APKs, Universal APK, AAB)
+  android     Package Android applications (Split APKs, Universal APK, AAB;
+              github flavor for APKs and play flavor for the AAB when defined)
   all         Package all supported target platforms (Default)
 
 Options:
@@ -63,11 +82,18 @@ Options:
   --display-name <name>   Override the human-readable app name (default: from AndroidManifest.xml / linux window title)
   --description <text>    Override the package description (default: from pubspec.yaml)
   --maintainer <name>     Override the maintainer string (default: from git config user.name/user.email)
-  --icon <path>           Override the source icon image (default: flutter_launcher_icons image_path, or a common asset path)
+  --icon <path>           Override the source icon image (default: assets/logo_linux.png, else flutter_launcher_icons image_path, or a common asset path)
   --categories <string>   Override the .desktop Categories= value
   --mime-types <string>   Override the .desktop MimeType= value
   --deb-depends <string>  Override the .deb Depends: line
   --help                  Show this help message
+
+Environment:
+  ANDROID_ABIS            Split-APK ABIs to collect (default: "arm64-v8a armeabi-v7a x86_64")
+  LINUX_ICON              Icon for the Linux packages (default: assets/logo_linux.png)
+
+Android output: artifacts are copied to dist/android/ with a SHA256SUMS-v<version>.txt.
+With --build, any missing artifact fails the run (non-zero exit) instead of being skipped.
 
 Examples:
   ./package.sh linux --build
@@ -217,16 +243,20 @@ detect_maintainer() {
 }
 
 detect_icon() {
-    # 1. flutter_launcher_icons config, if the project uses that package.
-    local icon
+    local icon candidate
+    # 1. The Linux icon (LINUX_ICON, assets/logo_linux.png by default).
+    if [[ -n "$LINUX_ICON" && -f "$LINUX_ICON" ]]; then
+        echo "$LINUX_ICON"
+        return
+    fi
+    # 2. flutter_launcher_icons config, if the project uses that package.
     icon=$(awk '/^flutter_launcher_icons:/{f=1;next} f && /^[a-zA-Z]/{exit} f && /image_path:/{print; exit}' pubspec.yaml \
         | sed -E 's/.*image_path:[[:space:]]*//' | tr -d '"'"'"'\r')
     if [[ -n "$icon" && -f "$icon" ]]; then
         echo "$icon"
         return
     fi
-    # 2. Common conventional asset locations.
-    local candidate
+    # 3. Common conventional asset locations.
     for candidate in assets/icon.png assets/icon/icon.png assets/launcher_logo.png \
                       assets/app_icon.png assets/logo.png web/icons/Icon-512.png; do
         if [[ -f "$candidate" ]]; then
@@ -476,6 +506,53 @@ EOF
 }
 
 # --- Android Packaging Function ---
+# Copies the first existing candidate into $ANDROID_DIST_DIR as <dest_name>,
+# verifies the copy, and records the outcome in ANDROID_PUBLISHED / ANDROID_MISSING.
+#   usage: publish_android_artifact <label> <dest_name> <candidate-path>...
+#
+# Several candidates are tried on purpose. Flutter's Gradle plugin writes split
+# APKs as app-<abi>-<flavor>-<mode>.apk, while flutter_tools' own lookup list
+# uses app-<flavor>-<abi>-<mode>.apk - so never hardcode a single order (an
+# earlier version of this script did, and silently skipped every split APK).
+publish_android_artifact() {
+    local label="$1" dest_name="$2"
+    shift 2
+
+    local src="" candidate
+    for candidate in "$@"; do
+        if [[ -f "$candidate" ]]; then
+            src="$candidate"
+            break
+        fi
+    done
+
+    if [[ -z "$src" ]]; then
+        ANDROID_MISSING+=("$label")
+        echo "  ❌ $label — not found. Looked for:"
+        printf '       %s\n' "$@"
+        return 0
+    fi
+
+    local dest="$ANDROID_DIST_DIR/$dest_name"
+    cp -f "$src" "$dest"
+    if ! cmp -s "$src" "$dest"; then
+        ANDROID_MISSING+=("$label (copy did not match source)")
+        echo "  ❌ $label — copy to $dest did not match $src"
+        return 0
+    fi
+
+    local size built note=""
+    size="$(du -h "$dest" | cut -f1)"
+    built="$(date -r "$src" '+%Y-%m-%d %H:%M')"
+    # Gradle skips repackaging when nothing changed, leaving the previous
+    # (identical) file in place - fine to ship, but say so instead of hiding it.
+    if [[ -n "$BUILD_MARKER" && ! "$src" -nt "$BUILD_MARKER" ]]; then
+        note="  ⚠️ predates this run (Gradle reused an up-to-date build)"
+    fi
+    echo "  ✅ $label → $dest ($size, built $built)$note"
+    ANDROID_PUBLISHED+=("$dest_name")
+}
+
 package_android() {
     echo ""
     echo "--------------------------------------------------"
@@ -489,51 +566,94 @@ package_android() {
 
     mkdir -p "$ANDROID_DIST_DIR"
 
+    # Pick up compile-time secrets (API keys, feature flags, ...) from a
+    # gitignored env.json at the project root, if the project uses one (see
+    # docs/ADS_ANALYTICS_SETUP.md for this project's case). Without this,
+    # String.fromEnvironment()/bool.fromEnvironment() calls in Dart silently
+    # compile to their default values instead of erroring, so a build that
+    # forgets this flag looks fine but ships with those features inert.
+    local dart_define_flag=""
+    if [[ -f "env.json" ]]; then
+        dart_define_flag="--dart-define-from-file=env.json"
+        echo "🔑 Found env.json — compiling with $dart_define_flag"
+    fi
+
+    # This app defines `github` and `play` product flavors (see
+    # android/app/build.gradle.kts): the APKs are the GitHub-release
+    # distribution (checks GitHub for updates, no Google Play code) and the AAB
+    # is the Google Play one (Play In-App Updates). Only use them when the
+    # target project actually defines both, so this script still works
+    # unchanged on a project without flavors.
+    local apk_flavor="" aab_flavor=""
+    if grep -qsE '(create\("|^\s*)github("\)|\s*\{)' android/app/build.gradle* &&
+       grep -qsE '(create\("|^\s*)play("\)|\s*\{)' android/app/build.gradle*; then
+        apk_flavor="github"
+        aab_flavor="play"
+        echo "🏷️  Found github/play flavors — APKs use 'github', the AAB uses 'play'"
+    fi
+    local apk_flavor_flag="${apk_flavor:+--flavor $apk_flavor}"
+    local aab_flavor_flag="${aab_flavor:+--flavor $aab_flavor}"
+
     if [[ "$BUILD_FLAG" == true ]]; then
+        # Anything not newer than this marker wasn't (re)written by this build.
+        BUILD_MARKER="$(mktemp)"
+
         echo "🔨 Building Android Split APKs..."
-        flutter build apk --release --split-per-abi
+        flutter build apk --release $apk_flavor_flag --split-per-abi $dart_define_flag
 
         echo "🔨 Building Android Universal APK..."
-        flutter build apk --release
+        flutter build apk --release $apk_flavor_flag $dart_define_flag
 
         echo "🔨 Building Android App Bundle (AAB)..."
-        flutter build appbundle --release
+        flutter build appbundle --release $aab_flavor_flag $dart_define_flag
     fi
 
-    local apk_build_dir="build/app/outputs/flutter-apk"
-    local aab_build_dir="build/app/outputs/bundle/release"
+    local apk_dir="build/app/outputs/flutter-apk"
+    local bundle_dir="build/app/outputs/bundle"
+    local apk_flavor_part="${apk_flavor:+-$apk_flavor}"
+    local aab_flavor_part="${aab_flavor:+-$aab_flavor}"
+    local aab_variant_dir="release"
+    [[ -n "$aab_flavor" ]] && aab_variant_dir="${aab_flavor}Release"
 
-    if [[ -d "$apk_build_dir" ]]; then
-        echo "📦 Copying Android APK binaries to $ANDROID_DIST_DIR..."
+    echo "📦 Collecting Android artifacts into $ANDROID_DIST_DIR..."
 
-        # 1. ABI Split APKs
-        for abi in arm64-v8a armeabi-v7a x86_64; do
-            local src_file="$apk_build_dir/app-${abi}-release.apk"
-            if [[ -f "$src_file" ]]; then
-                local dest_file="$ANDROID_DIST_DIR/${APP_NAME}-v${VERSION}-${abi}-release.apk"
-                cp "$src_file" "$dest_file"
-                echo "  ✅ APK ($abi): $dest_file"
-            fi
-        done
+    # 1. ABI split APKs
+    local abi
+    for abi in $ANDROID_ABIS; do
+        publish_android_artifact "APK ($abi)" "${APP_NAME}-v${VERSION}-${abi}-release.apk" \
+            "$apk_dir/app-${abi}${apk_flavor_part}-release.apk" \
+            "$apk_dir/app${apk_flavor_part}-${abi}-release.apk"
+    done
 
-        # 2. Universal APK
-        local universal_src="$apk_build_dir/app-release.apk"
-        if [[ -f "$universal_src" ]]; then
-            local universal_dest="$ANDROID_DIST_DIR/${APP_NAME}-v${VERSION}-universal-release.apk"
-            cp "$universal_src" "$universal_dest"
-            echo "  ✅ Universal APK: $universal_dest"
-        fi
-    else
-        echo "⚠️  No APK outputs found in $apk_build_dir. Run with --build to compile APKs."
-    fi
+    # 2. Universal APK
+    publish_android_artifact "Universal APK" "${APP_NAME}-v${VERSION}-universal-release.apk" \
+        "$apk_dir/app${apk_flavor_part}-release.apk"
 
     # 3. App Bundle (.aab)
-    if [[ -d "$aab_build_dir" ]]; then
-        local aab_src="$aab_build_dir/app-release.aab"
-        if [[ -f "$aab_src" ]]; then
-            local aab_dest="$ANDROID_DIST_DIR/${APP_NAME}-v${VERSION}-release.aab"
-            cp "$aab_src" "$aab_dest"
-            echo "  ✅ App Bundle (.aab): $aab_dest"
+    publish_android_artifact "App Bundle (AAB)" "${APP_NAME}-v${VERSION}-release.aab" \
+        "$bundle_dir/$aab_variant_dir/app${aab_flavor_part}-release.aab"
+
+    [[ -n "$BUILD_MARKER" ]] && rm -f "$BUILD_MARKER"
+    BUILD_MARKER=""
+
+    # Checksums for what this run published, in `sha256sum -c` format.
+    if (( ${#ANDROID_PUBLISHED[@]} > 0 )); then
+        local sums_file="SHA256SUMS-v${VERSION}.txt"
+        (cd "$ANDROID_DIST_DIR" && sha256sum "${ANDROID_PUBLISHED[@]}" > "$sums_file")
+        echo "  🔐 Checksums: $ANDROID_DIST_DIR/$sums_file"
+    fi
+
+    if (( ${#ANDROID_MISSING[@]} > 0 )); then
+        echo ""
+        echo "  Present in $apk_dir:"
+        ls -1 "$apk_dir" 2>/dev/null | sed 's/^/       /' || true
+        if [[ "$BUILD_FLAG" == true ]]; then
+            # A build just ran, so a missing artifact is a real failure - don't
+            # let the closing banner claim success.
+            PACKAGING_FAILED=true
+            echo "❌ ${#ANDROID_MISSING[@]} expected Android artifact(s) missing after the build: ${ANDROID_MISSING[*]}"
+        else
+            echo "⚠️  ${#ANDROID_MISSING[@]} artifact(s) not found. Nothing was built by this run — pass --build to compile them."
         fi
     fi
 }
@@ -555,7 +675,11 @@ esac
 # --- Summary & Dashboard ---
 echo ""
 echo "=================================================="
-echo "🎉 Build & Packaging Completed Successfully!"
+if [[ "$PACKAGING_FAILED" == true ]]; then
+    echo "❌ Packaging finished with errors — see above"
+else
+    echo "🎉 Build & Packaging Completed Successfully!"
+fi
 echo "=================================================="
 echo "📂 Package Distribution Files:"
 
@@ -571,3 +695,7 @@ if [[ -d "$ANDROID_DIST_DIR" ]]; then
     ls -lh "$ANDROID_DIST_DIR" 2>/dev/null || echo "   (No Android packages found)"
 fi
 echo "=================================================="
+
+if [[ "$PACKAGING_FAILED" == true ]]; then
+    exit 1
+fi

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/core/app_fonts.dart';
 import 'package:looper_player/core/providers.dart';
+import 'package:looper_player/core/responsive.dart';
 import 'package:looper_player/features/playback/presentation/equalizer_notifier.dart';
 import 'package:looper_player/features/playback/presentation/playback_notifier.dart';
 import 'package:looper_player/features/settings/presentation/settings_notifier.dart';
@@ -11,8 +13,18 @@ import 'package:looper_player/ui/widgets/optimized_image.dart';
 import 'package:looper_player/ui/widgets/app_bottom_sheet.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-final equalizerViewModeProvider = StateProvider<bool>((ref) => false); // false = Sliders, true = Graph
+part 'android_equalizer_screen.g.dart';
+
+// false = Sliders, true = Graph
+@Riverpod(keepAlive: true)
+class EqualizerViewMode extends _$EqualizerViewMode {
+  @override
+  bool build() => false;
+
+  void set(bool value) => state = value;
+}
 
 class AndroidEqualizerScreen extends ConsumerWidget {
   const AndroidEqualizerScreen({super.key});
@@ -61,6 +73,11 @@ class AndroidEqualizerScreen extends ConsumerWidget {
     final accentColor = Color(settings.accentColor);
     final isPureBlack = settings.darkTheme;
     final useBlur = settings.enableDynamicTheming && !settings.disableBlur;
+    // Same check PlayerLandscapeMetrics uses for "landscape phone, not
+    // tablet" - the graph/slider area's fixed 290dp height was tuned for a
+    // tall portrait screen and ate a large fraction of a short window.
+    final barModeHeight =
+        Responsive.isShort(MediaQuery.sizeOf(context)) ? 200.0 : 290.0;
 
     if (settings.firstTimeEqualizer) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -136,7 +153,7 @@ class AndroidEqualizerScreen extends ConsumerWidget {
                       tooltip: isGraphMode ? 'Switch to Sliders' : 'Switch to Graph',
                       onPressed: () {
                         HapticFeedback.selectionClick();
-                        ref.read(equalizerViewModeProvider.notifier).state = !isGraphMode;
+                        ref.read(equalizerViewModeProvider.notifier).set(!isGraphMode);
                       },
                     ),
                     const Spacer(),
@@ -194,46 +211,39 @@ class AndroidEqualizerScreen extends ConsumerWidget {
                           child: ListView(
                             scrollDirection: Axis.horizontal,
                             physics: const BouncingScrollPhysics(),
-                            children: _presets.keys.map((name) {
-                              final presetGains = _presets[name]!;
-                              final isCurrent = _isMatchingPreset(eqState.currentSongGains, presetGains);
-
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8.0),
-                                child: InkWell(
+                            children: [
+                              ..._presets.keys.map((name) {
+                                final presetGains = _presets[name]!;
+                                final isCurrent = _isMatchingPreset(eqState.currentSongGains, presetGains);
+                                return _buildPresetChip(
+                                  label: name,
+                                  isCurrent: isCurrent,
+                                  accentColor: accentColor,
                                   onTap: () {
                                     HapticFeedback.selectionClick();
                                     eqNotifier.setPreset(name, presetGains);
                                   },
-                                  borderRadius: BorderRadius.circular(20),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: isCurrent 
-                                          ? accentColor.withValues(alpha: 0.15) 
-                                          : Colors.white.withValues(alpha: 0.05),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                        color: isCurrent 
-                                            ? accentColor 
-                                            : Colors.white.withValues(alpha: 0.08),
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        name,
-                                        style: AppFonts.jostStyle(
-                                          fontSize: 13,
-                                          fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                                          color: isCurrent ? accentColor : Colors.white70,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
+                                );
+                              }),
+                              // User-saved curves, appended after the built-ins so the
+                              // fixed presets stay in a stable order as custom ones are
+                              // added/removed.
+                              ...ref.watch(customEqPresetsProvider).map((preset) {
+                                final isCurrent = _isMatchingPreset(eqState.currentSongGains, preset.gains);
+                                return _buildPresetChip(
+                                  label: preset.name,
+                                  isCurrent: isCurrent,
+                                  accentColor: accentColor,
+                                  onTap: () {
+                                    HapticFeedback.selectionClick();
+                                    eqNotifier.applyCustomPreset(preset.gains);
+                                  },
+                                  onLongPress: () =>
+                                      _confirmDeleteCustomPreset(context, ref, preset.name),
+                                );
+                              }),
+                              _buildSavePresetChip(context, ref, eqState, accentColor),
+                            ],
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -330,7 +340,7 @@ class AndroidEqualizerScreen extends ConsumerWidget {
                               accentColor: accentColor,
                             )
                           : Container(
-                              height: 290,
+                              height: barModeHeight,
                               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.02),
@@ -1153,6 +1163,136 @@ class AndroidEqualizerScreen extends ConsumerWidget {
     return true;
   }
 
+  // Shared visual for every preset pill (built-in, custom, and the "save"
+  // action) so the three don't drift out of sync with each other.
+  Widget _buildPresetChip({
+    required String label,
+    required bool isCurrent,
+    required Color accentColor,
+    required VoidCallback onTap,
+    VoidCallback? onLongPress,
+    IconData? icon,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8.0),
+      child: InkWell(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: isCurrent
+                ? accentColor.withValues(alpha: 0.15)
+                : Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isCurrent ? accentColor : Colors.white.withValues(alpha: 0.08),
+              width: 1,
+            ),
+          ),
+          child: Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, size: 14, color: isCurrent ? accentColor : Colors.white70),
+                  const SizedBox(width: 6),
+                ],
+                Text(
+                  label,
+                  style: AppFonts.jostStyle(
+                    fontSize: 13,
+                    fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                    color: isCurrent ? accentColor : Colors.white70,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSavePresetChip(
+    BuildContext context,
+    WidgetRef ref,
+    EqualizerState eqState,
+    Color accentColor,
+  ) {
+    return _buildPresetChip(
+      label: 'Save',
+      icon: LucideIcons.plus,
+      isCurrent: false,
+      accentColor: accentColor,
+      onTap: () => _promptSaveCustomPreset(context, ref, eqState),
+    );
+  }
+
+  Future<void> _promptSaveCustomPreset(
+    BuildContext context,
+    WidgetRef ref,
+    EqualizerState eqState,
+  ) async {
+    final controller = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Save Preset'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'Preset name'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (name == null || name.trim().isEmpty) return;
+    // Saves the whole current gains array (all bands plus every effect
+    // toggle), not just the 18 visible sliders, so recalling it later
+    // restores exactly what was heard when it was saved.
+    await ref
+        .read(customEqPresetsProvider.notifier)
+        .save(name, eqState.currentSongGains);
+  }
+
+  Future<void> _confirmDeleteCustomPreset(
+    BuildContext context,
+    WidgetRef ref,
+    String name,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Preset'),
+        content: Text('Delete the "$name" preset?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await ref.read(customEqPresetsProvider.notifier).delete(name);
+    }
+  }
+
   Widget _buildSwitchRow({
     required String title,
     required bool value,
@@ -1909,13 +2049,18 @@ class EqualizerCurvePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(EqualizerCurvePainter oldDelegate) {
-    return oldDelegate.gains != gains || oldDelegate.color != color;
+    // gains is a freshly-built sublist() on every call site, so comparing
+    // with != (identity, for a plain List) was always true regardless of
+    // whether the visible curve actually changed - listEquals compares the
+    // values instead, so an unrelated EqualizerState change (e.g. toggling
+    // an effect that isn't one of these 18 bands) no longer repaints.
+    return !listEquals(oldDelegate.gains, gains) || oldDelegate.color != color;
   }
 }
 
 class InteractiveEqualizerGraph extends ConsumerStatefulWidget {
   final EqualizerState eqState;
-  final EqualizerNotifier eqNotifier;
+  final Equalizer eqNotifier;
   final Color accentColor;
 
   const InteractiveEqualizerGraph({
@@ -1938,7 +2083,9 @@ class _InteractiveEqualizerGraphState
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final size = Size(constraints.maxWidth, 290.0);
+        final graphHeight =
+            Responsive.isShort(MediaQuery.sizeOf(context)) ? 200.0 : 290.0;
+        final size = Size(constraints.maxWidth, graphHeight);
         final colWidth = size.width / 18;
         final trackTop = 16.0;
         final trackBottom = size.height - 24.0;
@@ -1978,7 +2125,7 @@ class _InteractiveEqualizerGraphState
             }
           },
           child: Container(
-            height: 290,
+            height: graphHeight,
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.02),
               borderRadius: BorderRadius.circular(24),
@@ -2198,7 +2345,10 @@ class _InteractiveGraphPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _InteractiveGraphPainter oldDelegate) {
-    return oldDelegate.gains != gains ||
+    // See the identical note on EqualizerCurvePainter.shouldRepaint above -
+    // gains needs a value comparison, not identity, since it's a fresh
+    // sublist() every time.
+    return !listEquals(oldDelegate.gains, gains) ||
         oldDelegate.accentColor != accentColor ||
         oldDelegate.enabled != enabled ||
         oldDelegate.activeDragIndex != activeDragIndex;

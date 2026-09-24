@@ -7,6 +7,26 @@ import 'package:looper_player/features/settings/presentation/settings_notifier.d
 import 'package:looper_player/l10n/app_localizations.dart';
 import 'settings_widgets.dart';
 import 'settings_dialogs.dart';
+import 'avatar_picker_sheet.dart';
+
+class SelectAvatarsTile extends ConsumerWidget {
+  const SelectAvatarsTile({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    return ListTile(
+      leading: const Icon(LucideIcons.userCircle, color: Colors.white70),
+      title: Text(l10n.selectAvatars, style: _tileTitleStyle()),
+      subtitle: Text(l10n.selectAvatarsDesc, style: _tileSubtitleStyle()),
+      trailing: const Icon(LucideIcons.chevronRight, color: Colors.white30, size: 18),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        showAvatarPickerSheet(context);
+      },
+    );
+  }
+}
 
 class DynamicThemingTile extends ConsumerWidget {
   const DynamicThemingTile({super.key});

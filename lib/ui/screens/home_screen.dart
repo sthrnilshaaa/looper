@@ -125,13 +125,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       children: [
                         Positioned.fill(
                           child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 1000),
+                            // Matches the Android equivalent's crossfade
+                            // duration (android_main_screen.dart) for the
+                            // same blurred-background-art effect.
+                            duration: const Duration(milliseconds: 800),
                             child: ImageFiltered(
                               imageFilter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
                               child: Image.file(
                                 File(currentSongArtPath),
                                 key: ValueKey(currentSongArtPath),
                                 fit: BoxFit.cover,
+                                filterQuality: FilterQuality.low,
+                                // Downsample before blurring, same as every
+                                // other blurred-background usage in the app
+                                // (BlurredBackgroundArt, android_lyrics_screen,
+                                // song_info_screen, looper_analyze_view) -
+                                // without this the full-resolution art was
+                                // decoded on every song change just to be
+                                // blurred away.
+                                cacheWidth: 80,
+                                cacheHeight: 80,
                                 gaplessPlayback: true,
                                 errorBuilder: (_, _, _) => const SizedBox.shrink(),
                               ),

@@ -491,5 +491,10 @@
   "lyricsNotAvailableHint": "استورد ملف .lrc أو .txt لإضافة كلمات لهذه الأغنية",
   "nextUp": "التالي",
   "noEmbeddedArtworkFound": "لم يتم العثور على غلاف مضمّن لهذا الألبوم",
-  "resetArtworkToDefault": "إعادة التعيين إلى الافتراضي"
+  "resetArtworkToDefault": "إعادة التعيين إلى الافتراضي",
+  "selectAvatars": "اختيار الصورة الرمزية",
+  "selectAvatarsDesc": "اختر الصورة الرمزية المعروضة على الشاشة الرئيسية",
+  "dynamicAvatarColor": "لون الصورة الرمزية الديناميكي",
+  "dynamicAvatarColorDesc": "مطابقة لون الصورة الرمزية مع لون السمة الحالي",
+  "enrichingSongs": "جارِ” إثراء {count} أغنية…"
 }

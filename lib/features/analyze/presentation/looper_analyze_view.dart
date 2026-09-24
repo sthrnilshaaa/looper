@@ -1,10 +1,12 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/core/app_fonts.dart';
 import 'package:looper_player/core/navigation_provider.dart';
+import 'package:looper_player/core/responsive.dart';
 import 'package:looper_player/features/analyze/domain/analyze_models.dart';
 import 'package:looper_player/features/analyze/presentation/analyze_notifier.dart';
 import 'package:looper_player/features/analyze/presentation/widgets/analyze_activity_heatmap.dart';
@@ -16,6 +18,7 @@ import 'package:looper_player/features/analyze/presentation/widgets/analyze_tren
 import 'package:looper_player/features/analyze/presentation/widgets/staggered_reveal.dart';
 import 'package:looper_player/features/analyze/presentation/widgets/stat_tile.dart';
 import 'package:looper_player/ui/screens/android/widgets/premium_section.dart';
+import 'package:looper_player/ui/widgets/empty_state_card.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 /// Looper Analyze — a personal listening "report card": top played songs,
@@ -71,7 +74,13 @@ class LooperAnalyzeView extends ConsumerWidget {
                     Expanded(
                       child: snapshot.hasHistory
                           ? _AnalyzeBody(snapshot: snapshot, accent: accent)
-                          : _EmptyState(accent: accent),
+                          : EmptyStateCard(
+                              icon: LucideIcons.barChart3,
+                              title: 'No listening history yet',
+                              subtitle:
+                                  'Play a few songs and your personal report card — top songs, artists, albums and genres — will come to life here.',
+                              accentColor: accent,
+                            ),
                     ),
                   ],
                 ),
@@ -170,13 +179,26 @@ class _AnalyzeBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Was a fixed 2 columns regardless of width - on a landscape phone/
+    // tablet that leaves 4 needlessly wide tiles instead of using the extra
+    // width for more columns. Same target tile width the original 2-column
+    // math implied on a portrait phone (~168dp), just computed instead of
+    // hardcoded to exactly 2.
+    const spacing = 12.0;
+    const targetTileWidth = 168.0;
+    final availableWidth = MediaQuery.sizeOf(context).width - 32;
+    final columns = Responsive.isLandscape(MediaQuery.sizeOf(context))
+        ? math.max(2, ((availableWidth + spacing) / (targetTileWidth + spacing)).floor())
+        : 2;
+    final tileWidth = (availableWidth - spacing * (columns - 1)) / columns;
+
     final sections = <Widget>[
       Wrap(
-        spacing: 12,
-        runSpacing: 12,
+        spacing: spacing,
+        runSpacing: spacing,
         children: [
           SizedBox(
-            width: (MediaQuery.of(context).size.width - 44) / 2,
+            width: tileWidth,
             child: StatTile(
               icon: LucideIcons.play,
               value: snapshot.totalPlays,
@@ -185,7 +207,7 @@ class _AnalyzeBody extends StatelessWidget {
             ),
           ),
           SizedBox(
-            width: (MediaQuery.of(context).size.width - 44) / 2,
+            width: tileWidth,
             child: StatTile(
               icon: LucideIcons.clock,
               value: snapshot.totalListenedMs,
@@ -195,7 +217,7 @@ class _AnalyzeBody extends StatelessWidget {
             ),
           ),
           SizedBox(
-            width: (MediaQuery.of(context).size.width - 44) / 2,
+            width: tileWidth,
             child: StatTile(
               icon: LucideIcons.flame,
               value: snapshot.streak.current,
@@ -204,7 +226,7 @@ class _AnalyzeBody extends StatelessWidget {
             ),
           ),
           SizedBox(
-            width: (MediaQuery.of(context).size.width - 44) / 2,
+            width: tileWidth,
             child: StatTile(
               icon: LucideIcons.award,
               value: snapshot.streak.longest,
@@ -243,52 +265,6 @@ class _AnalyzeBody extends StatelessWidget {
   }
 }
 
-class _EmptyState extends StatelessWidget {
-  final Color accent;
-  const _EmptyState({required this.accent});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(LucideIcons.barChart3, color: accent, size: 32),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'No listening history yet',
-              style: AppFonts.jostStyle(
-                color: Colors.white,
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Play a few songs and your personal report card — top songs, artists, albums and genres — will come to life here.',
-              textAlign: TextAlign.center,
-              style: AppFonts.jostStyle(
-                color: Colors.white.withValues(alpha: 0.5),
-                fontSize: 13,
-                height: 1.4,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 /// Ambient blurred cover-art background for the #1 top song, giving the
 /// report card a personalized feel. Mirrors the blurred-art background

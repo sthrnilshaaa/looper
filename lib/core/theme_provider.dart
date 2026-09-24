@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:looper_player/features/library/domain/models/models.dart';
 import 'package:looper_player/features/settings/presentation/settings_notifier.dart';
 import 'package:adaptive_palette/adaptive_palette.dart';
 import 'package:looper_player/features/playback/presentation/playback_notifier.dart';
+
+part 'theme_provider.g.dart';
 
 class ThemeState {
   final ColorScheme colorScheme;
@@ -20,27 +22,49 @@ class ThemeState {
   }
 }
 
-class ThemeNotifier extends StateNotifier<ThemeState> {
-  final Ref _ref;
-  AppSettings _settings;
+// Named 'AppTheme' (not 'Theme') to avoid colliding with Flutter's own
+// Theme widget - `name: 'theme'` keeps the generated provider as
+// `themeProvider`, matching every existing call site.
+@Riverpod(keepAlive: true, name: 'themeProvider')
+class AppTheme extends _$AppTheme {
+  late AppSettings _settings;
   bool _isUpdating = false;
 
-  ThemeNotifier(this._ref, this._settings)
-    : super(
-        ThemeState(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Color(_settings.accentColor),
-            primary: Color(_settings.accentColor),
-            surface: _settings.darkTheme
-                ? Colors.black
-                : const Color(0xFF11110E),
-            surfaceContainer: _settings.darkTheme
-                ? const Color(0xFF0A0A0A)
-                : const Color(0xFF1E1E1E),
-            brightness: Brightness.dark,
-          ),
-        ),
-      );
+  @override
+  ThemeState build() {
+    // Use read here to avoid the re-creation loop
+    _settings = ref.read(settingsProvider);
+
+    // Watch current song and update theme if dynamic theming or dynamic
+    // accent color is enabled
+    ref.listen(playbackProvider, (previous, next) {
+      final currentSettings = ref.read(settingsProvider);
+      if ((currentSettings.enableDynamicTheming ||
+              currentSettings.dynamicAccentColor) &&
+          next.currentSong?.artPath != previous?.currentSong?.artPath) {
+        updateFromImage(next.currentSong?.artPath);
+      }
+    });
+
+    // Handle settings changes without re-creating the notifier
+    ref.listen(settingsProvider, (previous, next) {
+      updateSettings(next);
+    });
+
+    return ThemeState(
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Color(_settings.accentColor),
+        primary: Color(_settings.accentColor),
+        surface: _settings.darkTheme
+            ? Colors.black
+            : const Color(0xFF11110E),
+        surfaceContainer: _settings.darkTheme
+            ? const Color(0xFF0A0A0A)
+            : const Color(0xFF1E1E1E),
+        brightness: Brightness.dark,
+      ),
+    );
+  }
 
   // Update internal settings reference when they change
   void updateSettings(AppSettings newSettings) {
@@ -57,15 +81,15 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
         _resetTheme();
       } else if (!oldSettings.dynamicAccentColor &&
           newSettings.dynamicAccentColor) {
-        final playback = _ref.read(playbackProvider);
+        final playback = ref.read(playbackProvider);
         updateFromImage(playback.currentSong?.artPath);
       }
     } else {
       if (!oldSettings.enableDynamicTheming) {
-        final playback = _ref.read(playbackProvider);
+        final playback = ref.read(playbackProvider);
         updateFromImage(playback.currentSong?.artPath);
       } else if (oldSettings.accentColor != newSettings.accentColor) {
-        final playback = _ref.read(playbackProvider);
+        final playback = ref.read(playbackProvider);
         if (playback.currentSong == null) {
           _resetTheme();
         }
@@ -126,7 +150,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
 
         // PERSIST the color to database if enabled
         if (_settings.saveDynamicColor || _settings.dynamicAccentColor) {
-          await _ref
+          await ref
               .read(settingsProvider.notifier)
               .updateAccentColor(vibrantColor.toARGB32());
         }
@@ -159,26 +183,3 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
     );
   }
 }
-
-final themeProvider = StateNotifierProvider<ThemeNotifier, ThemeState>((ref) {
-  // Use read here to avoid the re-creation loop
-  final initialSettings = ref.read(settingsProvider);
-  final notifier = ThemeNotifier(ref, initialSettings);
-
-  // Watch current song and update theme if dynamic theming or dynamic accent color is enabled
-  ref.listen(playbackProvider, (previous, next) {
-    final currentSettings = ref.read(settingsProvider);
-    if ((currentSettings.enableDynamicTheming ||
-            currentSettings.dynamicAccentColor) &&
-        next.currentSong?.artPath != previous?.currentSong?.artPath) {
-      notifier.updateFromImage(next.currentSong?.artPath);
-    }
-  });
-
-  // Handle settings changes without re-creating the notifier
-  ref.listen(settingsProvider, (previous, next) {
-    notifier.updateSettings(next);
-  });
-
-  return notifier;
-});

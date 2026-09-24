@@ -491,5 +491,10 @@
   "lyricsNotAvailableHint": "Bu şarkıya söz eklemek için bir .lrc veya .txt dosyası içe aktarın",
   "nextUp": "Sıradaki",
   "noEmbeddedArtworkFound": "Bu albüm için yerleşik kapak resmi bulunamadı",
-  "resetArtworkToDefault": "Varsayılana Sıfırla"
+  "resetArtworkToDefault": "Varsayılana Sıfırla",
+  "selectAvatars": "Avatar Seç",
+  "selectAvatarsDesc": "Ana ekranınızda gösterilecek avatarı seçin",
+  "dynamicAvatarColor": "Dinamik Avatar Rengi",
+  "dynamicAvatarColorDesc": "Avatarın vurgu rengini mevcut temanızla eşleştirir",
+  "enrichingSongs": "{count} şarkı zenginleştiriliyor…"
 }

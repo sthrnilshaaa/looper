@@ -1559,4 +1559,22 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get selectWhenToPause => 'चुनें कि म्यूज़िक प्लेबैक कब रोका जाए';
+
+  @override
+  String get selectAvatars => 'अवतार चुनें';
+
+  @override
+  String get selectAvatarsDesc => 'अपनी होम स्क्रीन पर दिखने वाला अवतार चुनें';
+
+  @override
+  String get dynamicAvatarColor => 'डायनामिक अवतार रंग';
+
+  @override
+  String get dynamicAvatarColorDesc =>
+      'अवतार के रंग को आपकी वर्तमान थीम से मिलाएं';
+
+  @override
+  String enrichingSongs(int count) {
+    return '$count गानों को समृद्ध किया जा रहा है…';
+  }
 }

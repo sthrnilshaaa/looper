@@ -8,10 +8,17 @@ import 'package:path_provider/path_provider.dart';
 import 'package:isar_community/isar.dart';
 import 'db_service.dart';
 import 'logger_helper.dart';
+import 'local_json_store.dart';
 import 'package:looper_player/features/library/domain/models/models.dart';
 import 'package:looper_player/features/library/presentation/library_notifier.dart';
+import 'package:looper_player/features/playback/presentation/equalizer_notifier.dart';
 
 class ImportExportService {
+  // Bumped from 1 -> 2 to add play stats, custom EQ presets and excluded
+  // folders. importLibraryData() still accepts a version-1 file - every new
+  // section is optional there, defaulting to empty rather than failing.
+  static const _backupVersion = 2;
+
   static Future<void> exportLibraryData(BuildContext context) async {
     LoggerHelper.write('ImportExportService: Starting library backup export...');
     final messenger = ScaffoldMessenger.of(context);
@@ -36,22 +43,48 @@ class ImportExportService {
       }).toList();
       LoggerHelper.write('ImportExportService: Found ${playlists.length} playlists to export.');
 
-      // 3. Construct JSON structure
+      // 3. Play stats - without this, everything the Analyze tab shows
+      // (play counts, listening time) silently resets on reinstall/device
+      // switch, which was the biggest gap in what this backup covered.
+      final playedSongs = await DbService.isar.songs
+          .filter()
+          .playCountGreaterThan(0)
+          .findAll();
+      final statsJson = playedSongs.map((s) => {
+        'path': s.path,
+        'title': s.title,
+        'artist': s.artist,
+        'album': s.album,
+        'playCount': s.playCount,
+        'totalListenedMs': s.totalListenedMs,
+      }).toList();
+      LoggerHelper.write('ImportExportService: Found ${playedSongs.length} songs with play stats to export.');
+
+      // 4. Custom EQ presets and excluded scan folders - both already store
+      // themselves as plain JSON (see LocalJsonStore), so they drop straight
+      // into the backup as-is.
+      final customEqPresets = await LocalJsonStore.read('custom_eq_presets') ?? [];
+      final excludedFolders = await LocalJsonStore.read('excluded_folders') ?? [];
+
+      // 5. Construct JSON structure
       final backup = {
-        'version': 1,
+        'version': _backupVersion,
         'favorites': favoritesJson,
         'playlists': playlistsJson,
+        'playStats': statsJson,
+        'customEqPresets': customEqPresets,
+        'excludedFolders': excludedFolders,
       };
 
       final jsonStr = const JsonEncoder.withIndent('  ').convert(backup);
 
-      // 4. Write to temp directory
+      // 6. Write to temp directory
       final tempDir = await getTemporaryDirectory();
       final file = File('${tempDir.path}/looper_player_backup.json');
       await file.writeAsString(jsonStr);
       LoggerHelper.write('ImportExportService: Serialised backup written to: ${file.path}');
 
-      // 5. Native Share
+      // 7. Native Share
       await Share.shareXFiles([XFile(file.path)], subject: 'Looper Player Backup');
       LoggerHelper.write('ImportExportService: Shared backup file successfully.');
     } catch (e, stack) {
@@ -86,90 +119,23 @@ class ImportExportService {
       final content = await file.readAsString();
       final Map<String, dynamic> backup = jsonDecode(content);
 
-      if (backup['version'] != 1) {
+      if (backup['version'] != 1 && backup['version'] != 2) {
         throw 'Unsupported backup version: ${backup['version']}';
       }
 
-      int favoritesMerged = 0;
-      int playlistsCreated = 0;
-
-      // 2. Import Favorites
-      final favorites = backup['favorites'] as List<dynamic>? ?? [];
-      LoggerHelper.write('ImportExportService: Parsing ${favorites.length} favorited songs from backup.');
-      for (final fav in favorites) {
-        final path = fav['path'] as String?;
-        final title = fav['title'] as String?;
-        final artist = fav['artist'] as String?;
-        final album = fav['album'] as String?;
-
-        if (path == null) continue;
-
-        // Try to match song by path first
-        var song = await DbService.isar.songs.filter().pathEqualTo(path).findFirst();
-
-        // Fallback: match by title and artist if path fails (path drift/drive change)
-        if (song == null && title != null && artist != null) {
-          song = await DbService.isar.songs.filter()
-              .titleEqualTo(title)
-              .and()
-              .artistEqualTo(artist)
-              .findFirst();
-        }
-
-        if (song != null && !song.isFavorite) {
-          song.isFavorite = true;
-          await DbService.isar.writeTxn(() async {
-            await DbService.isar.songs.put(song!);
-          });
-          favoritesMerged++;
-        }
-      }
-      LoggerHelper.write('ImportExportService: Merged $favoritesMerged favorites.');
-
-      // 3. Import Playlists
-      final playlists = backup['playlists'] as List<dynamic>? ?? [];
-      LoggerHelper.write('ImportExportService: Parsing ${playlists.length} playlists from backup.');
-      for (final pl in playlists) {
-        final name = pl['name'] as String?;
-        final songPaths = List<String>.from(pl['songPaths'] ?? []);
-        final dateCreatedStr = pl['dateCreated'] as String?;
-        final dateModifiedStr = pl['dateModified'] as String?;
-
-        if (name == null || name.isEmpty) continue;
-
-        final dateCreated = dateCreatedStr != null ? DateTime.parse(dateCreatedStr) : DateTime.now();
-        final dateModified = dateModifiedStr != null ? DateTime.parse(dateModifiedStr) : DateTime.now();
-
-        // Check if playlist exists
-        var playlist = await DbService.isar.playlists.filter().nameEqualTo(name).findFirst();
-        if (playlist == null) {
-          playlist = Playlist()
-            ..name = name
-            ..songPaths = songPaths
-            ..dateCreated = dateCreated
-            ..dateModified = dateModified;
-          await DbService.isar.writeTxn(() async {
-            await DbService.isar.playlists.put(playlist!);
-          });
-          playlistsCreated++;
-        } else {
-          // Merge paths
-          final mergedPaths = Set<String>.from(playlist.songPaths)..addAll(songPaths);
-          playlist.songPaths = mergedPaths.toList();
-          playlist.dateModified = DateTime.now();
-          await DbService.isar.writeTxn(() async {
-            await DbService.isar.playlists.put(playlist!);
-          });
-          playlistsCreated++;
-        }
-      }
-      LoggerHelper.write('ImportExportService: Synced $playlistsCreated playlists.');
+      final favoritesMerged = await _importFavorites(backup);
+      final playlistsCreated = await _importPlaylists(backup);
+      final statsMerged = await _importPlayStats(backup);
+      await _importCustomEqPresets(ref, backup);
+      await _importExcludedFolders(ref, backup);
 
       // Trigger Library ref scan / updates to sync UI
       ref.read(libraryProvider.notifier).scanSavedFolders(showVisualIndicator: false);
 
       messenger.showSnackBar(SnackBar(
-        content: Text('Backup imported: Merged $favoritesMerged favorites, synced $playlistsCreated playlists'),
+        content: Text(
+          'Backup imported: Merged $favoritesMerged favorites, $statsMerged play stats, synced $playlistsCreated playlists',
+        ),
         backgroundColor: Colors.green.shade800,
         behavior: SnackBarBehavior.floating,
       ));
@@ -181,5 +147,124 @@ class ImportExportService {
         behavior: SnackBarBehavior.floating,
       ));
     }
+  }
+
+  /// Finds the local song a backup entry refers to: by path first, falling
+  /// back to title+artist since a restored/moved library can have drifted
+  /// paths (different drive letter, re-mounted SD card, ...).
+  static Future<Song?> _findSong(Map<String, dynamic> entry) async {
+    final path = entry['path'] as String?;
+    final title = entry['title'] as String?;
+    final artist = entry['artist'] as String?;
+    if (path == null) return null;
+
+    final byPath = await DbService.isar.songs.filter().pathEqualTo(path).findFirst();
+    if (byPath != null) return byPath;
+
+    if (title != null && artist != null) {
+      return DbService.isar.songs.filter().titleEqualTo(title).and().artistEqualTo(artist).findFirst();
+    }
+    return null;
+  }
+
+  static Future<int> _importFavorites(Map<String, dynamic> backup) async {
+    final favorites = backup['favorites'] as List<dynamic>? ?? [];
+    LoggerHelper.write('ImportExportService: Parsing ${favorites.length} favorited songs from backup.');
+
+    // Collected into one batch instead of a writeTxn per song - each
+    // separate transaction used to add up on a large backup for no benefit,
+    // since nothing here depends on a previous entry's write succeeding.
+    final toUpdate = <Song>[];
+    for (final fav in favorites) {
+      final song = await _findSong(fav as Map<String, dynamic>);
+      if (song != null && !song.isFavorite) {
+        song.isFavorite = true;
+        toUpdate.add(song);
+      }
+    }
+    if (toUpdate.isNotEmpty) {
+      await DbService.isar.writeTxn(() => DbService.isar.songs.putAll(toUpdate));
+    }
+    LoggerHelper.write('ImportExportService: Merged ${toUpdate.length} favorites.');
+    return toUpdate.length;
+  }
+
+  static Future<int> _importPlaylists(Map<String, dynamic> backup) async {
+    final playlists = backup['playlists'] as List<dynamic>? ?? [];
+    LoggerHelper.write('ImportExportService: Parsing ${playlists.length} playlists from backup.');
+
+    final toPut = <Playlist>[];
+    for (final pl in playlists) {
+      final entry = pl as Map<String, dynamic>;
+      final name = entry['name'] as String?;
+      final songPaths = List<String>.from(entry['songPaths'] ?? []);
+      final dateCreatedStr = entry['dateCreated'] as String?;
+      final dateModifiedStr = entry['dateModified'] as String?;
+      if (name == null || name.isEmpty) continue;
+
+      final dateCreated = dateCreatedStr != null ? DateTime.parse(dateCreatedStr) : DateTime.now();
+
+      var playlist = await DbService.isar.playlists.filter().nameEqualTo(name).findFirst();
+      if (playlist == null) {
+        playlist = Playlist()
+          ..name = name
+          ..songPaths = songPaths
+          ..dateCreated = dateCreated
+          ..dateModified = dateModifiedStr != null ? DateTime.parse(dateModifiedStr) : DateTime.now();
+      } else {
+        final mergedPaths = Set<String>.from(playlist.songPaths)..addAll(songPaths);
+        playlist.songPaths = mergedPaths.toList();
+        playlist.dateModified = DateTime.now();
+      }
+      toPut.add(playlist);
+    }
+    if (toPut.isNotEmpty) {
+      await DbService.isar.writeTxn(() => DbService.isar.playlists.putAll(toPut));
+    }
+    LoggerHelper.write('ImportExportService: Synced ${toPut.length} playlists.');
+    return toPut.length;
+  }
+
+  static Future<int> _importPlayStats(Map<String, dynamic> backup) async {
+    final stats = backup['playStats'] as List<dynamic>? ?? [];
+    if (stats.isEmpty) return 0;
+    LoggerHelper.write('ImportExportService: Parsing ${stats.length} play-stat entries from backup.');
+
+    final toUpdate = <Song>[];
+    for (final entry in stats) {
+      final map = entry as Map<String, dynamic>;
+      final song = await _findSong(map);
+      if (song == null) continue;
+
+      // Take the higher of the two rather than overwriting outright - a
+      // restore should never make a song look *less* played than it
+      // actually is on this device.
+      final importedPlayCount = map['playCount'] as int? ?? 0;
+      final importedListenedMs = map['totalListenedMs'] as int? ?? 0;
+      final changed = importedPlayCount > song.playCount || importedListenedMs > song.totalListenedMs;
+      if (!changed) continue;
+
+      song.playCount = importedPlayCount > song.playCount ? importedPlayCount : song.playCount;
+      song.totalListenedMs = importedListenedMs > song.totalListenedMs ? importedListenedMs : song.totalListenedMs;
+      toUpdate.add(song);
+    }
+    if (toUpdate.isNotEmpty) {
+      await DbService.isar.writeTxn(() => DbService.isar.songs.putAll(toUpdate));
+    }
+    LoggerHelper.write('ImportExportService: Merged play stats for ${toUpdate.length} songs.');
+    return toUpdate.length;
+  }
+
+  static Future<void> _importCustomEqPresets(WidgetRef ref, Map<String, dynamic> backup) async {
+    final raw = backup['customEqPresets'] as List<dynamic>? ?? [];
+    if (raw.isEmpty) return;
+    final imported = raw.whereType<Map<String, dynamic>>().map(CustomEqPreset.fromJson).toList();
+    await ref.read(customEqPresetsProvider.notifier).mergeFrom(imported);
+  }
+
+  static Future<void> _importExcludedFolders(WidgetRef ref, Map<String, dynamic> backup) async {
+    final raw = backup['excludedFolders'] as List<dynamic>? ?? [];
+    if (raw.isEmpty) return;
+    await ref.read(excludedFoldersProvider.notifier).mergeFrom(raw.whereType<String>().toList());
   }
 }

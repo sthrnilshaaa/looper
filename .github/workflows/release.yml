@@ -41,15 +41,32 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # The GitHub-release APKs use the `github` flavor: it checks GitHub for
+      # updates and contains no Google Play code. The Play Store AAB (`play`
+      # flavor) is built separately with `./package.sh android --build`.
       - name: Build Android Release APK
-        run: flutter build apk --release --split-per-abi
+        run: flutter build apk --release --flavor github --split-per-abi
 
+      # Flutter's Gradle plugin names split APKs app-<abi>-<flavor>-release.apk
+      # (ABI before flavor); the other order is accepted too so a tooling change
+      # can't silently drop an APK. The job fails, listing what was built, if
+      # one is missing.
       - name: Rename and Prepare APKs
         run: |
           mkdir -p build/release-assets
-          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk build/release-assets/looper-player-arm64-v8a.apk
-          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk build/release-assets/looper-player-armeabi-v7a.apk
-          cp build/app/outputs/flutter-apk/app-x86_64-release.apk build/release-assets/looper-player-x86_64.apk
+          dir=build/app/outputs/flutter-apk
+          ls -1 "$dir"/*.apk
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            src=""
+            for f in "$dir/app-${abi}-github-release.apk" "$dir/app-github-${abi}-release.apk"; do
+              if [ -f "$f" ]; then src="$f"; break; fi
+            done
+            if [ -z "$src" ]; then
+              echo "::error::No $abi APK found in $dir (see listing above)"
+              exit 1
+            fi
+            cp "$src" "build/release-assets/looper-player-${abi}.apk"
+          done
 
       - name: Upload Android Artifacts
         uses: actions/upload-artifact@v4

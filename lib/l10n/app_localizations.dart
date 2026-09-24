@@ -2947,6 +2947,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select when to pause music playback'**
   String get selectWhenToPause;
+
+  /// No description provided for @selectAvatars.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Avatars'**
+  String get selectAvatars;
+
+  /// No description provided for @selectAvatarsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the avatar shown on your Home screen'**
+  String get selectAvatarsDesc;
+
+  /// No description provided for @dynamicAvatarColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Dynamic Avatar Color'**
+  String get dynamicAvatarColor;
+
+  /// No description provided for @dynamicAvatarColorDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Match the avatar\'s accent color to your current theme'**
+  String get dynamicAvatarColorDesc;
+
+  /// No description provided for @enrichingSongs.
+  ///
+  /// In en, this message translates to:
+  /// **'Enriching {count} songs…'**
+  String enrichingSongs(int count);
 }
 
 class _AppLocalizationsDelegate

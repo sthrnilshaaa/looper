@@ -47,9 +47,6 @@ void main(List<String> args) async {
     return true;
   };
 
-  // AppAmbit key is never hardcoded - build/run with:
-  //   flutter run --dart-define-from-file=env.json
-  // (see env.json.example / docs/ADS_ANALYTICS_SETUP.md).
   try {
     await AppAmbitReporter.start();
   } catch (e, stack) {
@@ -147,7 +144,9 @@ void main(List<String> args) async {
     ProviderScope(
       overrides: [
         startupFileProvider.overrideWithValue(initialFile),
-        forceWelcomeProvider.overrideWith((ref) => !permissionsGranted),
+        startupPermissionsGrantedProvider.overrideWithValue(
+          permissionsGranted,
+        ),
       ],
       child: const MyApp(),
     ),

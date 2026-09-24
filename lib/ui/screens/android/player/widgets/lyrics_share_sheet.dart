@@ -238,7 +238,7 @@ class _LyricsShareSheetContentState extends ConsumerState<_LyricsShareSheetConte
   @override
   Widget build(BuildContext context) {
     final artworkColorAsync = ref.watch(artworkColorProvider);
-    final accentColor = artworkColorAsync.valueOrNull ?? Theme.of(context).colorScheme.primary;
+    final accentColor = artworkColorAsync.value ?? Theme.of(context).colorScheme.primary;
     final effectiveTextColor = _textColor ?? accentColor;
     final colorSwatches = [..._dynamicColors(context, accentColor.withValues(alpha: 0.5)), ..._presetBackgroundColors];
     final textColorSwatches = [..._dynamicTextColors(context, accentColor), ..._presetTextColors];
@@ -402,6 +402,7 @@ class _ColorSwatchButton extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOutCubic,
         width: 40,
         height: 40,
         padding: EdgeInsets.all(selected ? 3 : 0),

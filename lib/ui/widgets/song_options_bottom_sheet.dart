@@ -216,7 +216,16 @@ class _SongOptionsSheetContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final settings = ref.watch(settingsProvider);
-    final playbackState = ref.watch(playbackProvider);
+    final (isSleepTimerActive, sleepTimerDurationRemaining, sleepTimerSongsRemaining) =
+        ref.watch(
+      playbackProvider.select(
+        (s) => (
+          s.isSleepTimerActive,
+          s.sleepTimerDurationRemaining,
+          s.sleepTimerSongsRemaining,
+        ),
+      ),
+    );
     final useBlur = settings.alwaysBlurSheets ||
         (!settings.disableBlur && settings.enableDynamicTheming);
     final isPureBlack = settings.darkTheme;
@@ -345,11 +354,14 @@ class _SongOptionsSheetContent extends ConsumerWidget {
                         },
                       ),
                       MenuOptionTile(
-                        label: playbackState.isSleepTimerActive
-                            ? 'Sleep Timer (${formatSleepTimerRemaining(playbackState)})'
+                        label: isSleepTimerActive
+                            ? 'Sleep Timer (${formatSleepTimerRemaining(
+                                durationRemaining: sleepTimerDurationRemaining,
+                                songsRemaining: sleepTimerSongsRemaining,
+                              )})'
                             : 'Sleep Timer',
                         icon: LucideIcons.timer,
-                        iconColor: playbackState.isSleepTimerActive ? Colors.white70 : accentColor,
+                        iconColor: isSleepTimerActive ? Colors.white70 : accentColor,
                         onTap: () {
                           HapticFeedback.lightImpact();
                           Navigator.pop(context);

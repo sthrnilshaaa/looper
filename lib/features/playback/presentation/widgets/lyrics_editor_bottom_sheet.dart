@@ -607,11 +607,15 @@ class _LyricsEditorBottomSheetState extends ConsumerState<LyricsEditorBottomShee
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    // Deliberately not setState() here: _currentPosition only feeds
+    // _updateCurrentTimeField() (which writes straight into a
+    // TextEditingController and re-renders itself) and the nudge/"set to
+    // current position" buttons (which just read the field when pressed) -
+    // neither needs this whole sheet (text field, line-picker list, sync
+    // UI) to rebuild on every position tick while a song plays.
     ref.listen<PlaybackState>(playbackProvider, (previous, next) {
       if (next.position != previous?.position) {
-        setState(() {
-          _currentPosition = next.position;
-        });
+        _currentPosition = next.position;
         _updateCurrentTimeField();
       }
     });
@@ -1149,8 +1153,7 @@ class _LyricsEditorBottomSheetState extends ConsumerState<LyricsEditorBottomShee
 
   Widget _buildPlaybackTools(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final playbackState = ref.watch(playbackProvider);
-    final isPlaying = playbackState.isPlaying;
+    final isPlaying = ref.watch(playbackProvider.select((s) => s.isPlaying));
     final accentColor = Theme.of(context).colorScheme.primary;
 
     return Container(

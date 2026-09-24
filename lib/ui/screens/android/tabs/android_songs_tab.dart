@@ -33,9 +33,22 @@ class _AndroidSongsTabState extends ConsumerState<AndroidSongsTab> {
     super.initState();
     _scrollController = ScrollController();
     _scrollController.addListener(_scrollListener);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // All three tabs mount together at app launch now (see
+      // AndroidMainScreen), so this fires immediately on every cold start
+      // regardless of which tab is active - previously it only fired once
+      // the user actually navigated to Songs. A brief delay here lets the
+      // very first Home-screen frames settle before a scan's background
+      // metadata-extraction work starts competing with the main isolate for
+      // CPU (see LibraryScanner's batched _extractMetadata calls).
+      await Future.delayed(const Duration(seconds: 2));
       if (mounted) {
-        ref.read(libraryProvider.notifier).scanSavedFolders(showVisualIndicator: false);
+        // refreshIfStale (rather than scanSavedFolders directly) skips the
+        // rescan if one already ran recently - this tab now stays mounted
+        // across Home<->Songs switches (see AndroidMainScreen), so without
+        // this gate every switch back to Songs would still trigger a full
+        // rescan for no reason.
+        ref.read(libraryProvider.notifier).refreshIfStale();
       }
     });
   }
@@ -73,7 +86,13 @@ class _AndroidSongsTabState extends ConsumerState<AndroidSongsTab> {
 
   @override
   Widget build(BuildContext context) {
-    final library = ref.watch(libraryProvider);
+    // LibraryState also carries artists/albums/playlists/sort settings that
+    // this tab never renders - watching the whole object rebuilt this tab on
+    // any of those (e.g. a playlist renamed elsewhere) even when the songs
+    // list itself hadn't changed. Select just the fields actually used.
+    final (isInitialized, isScanning, songs) = ref.watch(
+      libraryProvider.select((s) => (s.isInitialized, s.isScanning, s.songs)),
+    );
     final settings = ref.watch(settingsProvider);
     // Only the presence of a current song matters here (to make room for the
     // mini player), so select a bool instead of the Song object - otherwise
@@ -81,11 +100,11 @@ class _AndroidSongsTabState extends ConsumerState<AndroidSongsTab> {
     final hasCurrentSong = ref.watch(playbackProvider.select((s) => s.currentSong != null));
     final l10n = AppLocalizations.of(context)!;
 
-    if (!library.isInitialized || (library.isScanning && library.songs.isEmpty)) {
+    if (!isInitialized || (isScanning && songs.isEmpty)) {
       return const PremiumLoadingView();
     }
 
-    return library.songs.isEmpty
+    return songs.isEmpty
         ? EmptyLibraryView(title: l10n.noSongsFound)
         : Container(
             color: (settings.enableDynamicTheming || settings.keepBackgroundGradient)
@@ -163,7 +182,11 @@ class _AndroidSongsTabState extends ConsumerState<AndroidSongsTab> {
                       ),
                       const SizedBox(height: 8),
                       Expanded(
-                        child: SongsList(songs: library.songs, controller: _scrollController),
+                        child: SongsList(
+                          songs: songs,
+                          controller: _scrollController,
+                          showEnrichmentIndicator: true,
+                        ),
                       ),
                     ],
                   ),
@@ -191,7 +214,6 @@ class _AndroidSongsTabState extends ConsumerState<AndroidSongsTab> {
                           backgroundColor: Colors.white.withValues(alpha: 0.04),
                           onTap: () {
                             HapticFeedback.mediumImpact();
-                            final songs = library.songs;
                             if (songs.isNotEmpty) {
                               final randomSongList = List<Song>.from(songs)..shuffle();
                               ref

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:looper_player/features/settings/presentation/settings_notifier.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:looper_player/features/library/domain/models/models.dart';
@@ -10,9 +11,18 @@ import 'package:isar_community/isar.dart';
 import 'package:looper_player/core/app_fonts.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
 
-class PlaylistNotifier extends StateNotifier<List<Playlist>> {
-  PlaylistNotifier() : super([]) {
+part 'playlist_view.g.dart';
+
+// Named 'PlaylistList' (not 'Playlist') to avoid colliding with the
+// Playlist model class from library/domain/models - `name: 'playlist'`
+// keeps the generated provider as `playlistProvider`, matching every
+// existing call site.
+@Riverpod(keepAlive: true, name: 'playlistProvider')
+class PlaylistList extends _$PlaylistList {
+  @override
+  List<Playlist> build() {
     _loadPlaylists();
+    return [];
   }
 
   void _loadPlaylists() {
@@ -40,29 +50,25 @@ class PlaylistNotifier extends StateNotifier<List<Playlist>> {
   }
 }
 
-final playlistProvider =
-    StateNotifierProvider<PlaylistNotifier, List<Playlist>>((ref) {
-      return PlaylistNotifier();
-    });
-
-final playlistSongsProvider = StreamProvider.family<List<Song>, int>((ref, playlistId) {
+@Riverpod(keepAlive: true)
+Stream<List<Song>> playlistSongs(Ref ref, int playlistId) {
   return DbService.isar.playlists
       .watchObject(playlistId, fireImmediately: true)
       .asyncMap((playlist) async {
         if (playlist == null || playlist.songPaths.isEmpty) return <Song>[];
-        
+
         final songs = await DbService.isar.songs
             .filter()
             .anyOf(playlist.songPaths, (q, path) => q.pathEqualTo(path))
             .findAll();
-            
+
         final songMap = {for (var s in songs) s.path: s};
         return playlist.songPaths
             .map((path) => songMap[path])
             .whereType<Song>()
             .toList();
       });
-});
+}
 
 class PlaylistView extends ConsumerWidget {
   const PlaylistView({super.key});

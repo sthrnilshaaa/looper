@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui';
+import 'package:looper_player/core/responsive.dart';
 import 'package:looper_player/ui/screens/android/widgets/premium_section.dart';
 import 'package:looper_player/features/settings/presentation/settings_notifier.dart';
 import 'package:looper_player/ui/widgets/optimized_image.dart';
@@ -11,6 +12,7 @@ import 'package:looper_player/features/library/domain/models/models.dart';
 import 'package:looper_player/features/library/presentation/songs_list.dart';
 import 'package:looper_player/features/playback/presentation/playback_notifier.dart';
 import 'package:looper_player/features/playlists/presentation/playlist_view.dart';
+import 'package:looper_player/features/playlists/data/playlist_service.dart';
 import 'package:looper_player/core/db_service.dart';
 import 'package:looper_player/core/navigation_provider.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
@@ -123,6 +125,9 @@ class CollectionDetailView extends ConsumerWidget {
         break;
     }
 
+    final canReorderPlaylist =
+        reactivePlaylist != null && sortOption == CollectionSortOption.defaultOrder;
+
     return Scaffold(
       // Not Colors.transparent - see the comment on CategoryDetailWrapper's
       // Scaffold in library_categories_views.dart for why.
@@ -131,7 +136,8 @@ class CollectionDetailView extends ConsumerWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isNarrow = constraints.maxWidth < 450;
-            return CustomScrollView(
+            final isLandscape = Responsive.isLandscape(MediaQuery.sizeOf(context));
+            final scrollView = CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
                 SliverToBoxAdapter(
@@ -179,6 +185,35 @@ class CollectionDetailView extends ConsumerWidget {
                   ),
                 ),
                 if (sortedSongs.isNotEmpty)
+                  // Dragging to reorder only makes sense while sortedSongs is
+                  // actually the playlist's own saved order - once a sort
+                  // option (title/artist/duration/...) is applied, a row's
+                  // on-screen position no longer corresponds to a slot in
+                  // playlist.songPaths that dragging could sensibly write to.
+                  if (canReorderPlaylist)
+                    SliverReorderableList(
+                      itemBuilder: (context, index) {
+                        final song = sortedSongs[index];
+                        final l10n = AppLocalizations.of(context)!;
+                        return SongTile(
+                          key: ValueKey(song.path),
+                          song: song,
+                          l10n: l10n,
+                          songs: sortedSongs,
+                          playlist: reactivePlaylist,
+                          reorderIndex: index,
+                        );
+                      },
+                      itemCount: sortedSongs.length,
+                      onReorder: (oldIndex, newIndex) {
+                        PlaylistService.reorderSong(
+                          reactivePlaylist,
+                          oldIndex,
+                          newIndex,
+                        );
+                      },
+                    )
+                  else
                   SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
@@ -200,6 +235,16 @@ class CollectionDetailView extends ConsumerWidget {
                 ),
               ],
             );
+            // In landscape, cap the reading width and center it instead of
+            // stretching the song list edge-to-edge across the whole window.
+            return isLandscape
+                ? Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 700),
+                      child: scrollView,
+                    ),
+                  )
+                : scrollView;
           },
         ),
       ),

@@ -31,6 +31,113 @@ class AddFolderTile extends ConsumerWidget {
   }
 }
 
+class ExcludedFoldersTile extends ConsumerWidget {
+  const ExcludedFoldersTile({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final excluded = ref.watch(excludedFoldersProvider);
+    return ListTile(
+      leading: const Icon(LucideIcons.folderMinus, color: Colors.white70),
+      // Not localized: a small addition to an already-large l10n surface -
+      // see the equivalent note in songs_list.dart's multi-select bar.
+      title: Text('Excluded Folders', style: _tileTitleStyle()),
+      subtitle: Text(
+        excluded.isEmpty ? 'None' : '${excluded.length} folder(s) skipped when scanning',
+        style: _tileSubtitleStyle(),
+      ),
+      trailing: const Icon(
+        LucideIcons.chevronRight,
+        color: Colors.white30,
+        size: 18,
+      ),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        _showExcludedFoldersSheet(context, ref, l10n);
+      },
+    );
+  }
+
+  void _showExcludedFoldersSheet(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1F1F1F),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => Consumer(
+        builder: (sheetContext, ref, _) {
+          final excluded = ref.watch(excludedFoldersProvider);
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Excluded Folders', style: AppFonts.jostStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Songs in these folders are skipped during a scan, even if they sit inside a folder you added.',
+                    style: _tileSubtitleStyle(),
+                  ),
+                  const SizedBox(height: 12),
+                  if (excluded.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Text('No excluded folders yet.', style: _tileSubtitleStyle()),
+                    )
+                  else
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: excluded.length,
+                        itemBuilder: (context, index) {
+                          final folder = excluded[index];
+                          return ListTile(
+                            dense: true,
+                            leading: const Icon(LucideIcons.folder, size: 18, color: Colors.white54),
+                            title: Text(
+                              folder,
+                              style: _tileTitleStyle(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            trailing: IconButton(
+                              icon: const Icon(LucideIcons.x, size: 18, color: Colors.redAccent),
+                              onPressed: () => ref.read(excludedFoldersProvider.notifier).remove(folder),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    onPressed: () async {
+                      final path = await FolderPickerHelper.pickFolderPathOnly(sheetContext);
+                      if (path != null) {
+                        await ref.read(excludedFoldersProvider.notifier).add(path);
+                      }
+                    },
+                    icon: const Icon(LucideIcons.plus, size: 16),
+                    label: const Text('Exclude a Folder'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
 class SyncLyricsOfflineTile extends ConsumerWidget {
   const SyncLyricsOfflineTile({super.key});
 

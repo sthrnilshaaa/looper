@@ -14,19 +14,25 @@ import 'package:looper_player/ui/widgets/app_bottom_sheet.dart';
 
 import 'package:looper_player/core/navigation_provider.dart';
 import 'package:looper_player/core/db_service.dart';
+import 'package:looper_player/core/media_store_write_service.dart';
 import 'package:isar_community/isar.dart';
 
 import 'package:looper_player/l10n/app_localizations.dart';
+import 'package:looper_player/ui/screens/android/widgets/enrichment_indicator.dart';
 import 'package:looper_player/ui/screens/android/widgets/premium_section.dart';
 import 'package:looper_player/ui/widgets/song_options_bottom_sheet.dart';
+import 'package:looper_player/features/playlists/data/playlist_service.dart';
+import 'package:looper_player/features/playlists/presentation/playlist_view.dart'
+    show playlistProvider;
 
-class SongsList extends ConsumerWidget {
+class SongsList extends ConsumerStatefulWidget {
   final List<Song> songs;
   final bool shrinkWrap;
   final ScrollPhysics? physics;
   final String? searchQuery;
   final Playlist? playlist;
   final ScrollController? controller;
+  final bool showEnrichmentIndicator;
 
   const SongsList({
     super.key,
@@ -36,94 +42,308 @@ class SongsList extends ConsumerWidget {
     this.searchQuery,
     this.playlist,
     this.controller,
+    this.showEnrichmentIndicator = false,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SongsList> createState() => _SongsListState();
+}
+
+// Selection lives here as plain widget state rather than a provider: nothing
+// outside this list needs to know which rows are checked, and it must reset
+// itself for free whenever the list is torn down (switching tabs, closing a
+// playlist) instead of leaking a stale selection into the next screen.
+class _SongsListState extends ConsumerState<SongsList> {
+  final Set<String> _selectedPaths = {};
+
+  bool get _isSelecting => _selectedPaths.isNotEmpty;
+
+  List<Song> get _selectedSongs =>
+      widget.songs.where((s) => _selectedPaths.contains(s.path)).toList();
+
+  void _enterSelection(Song song) {
+    setState(() => _selectedPaths.add(song.path));
+  }
+
+  void _toggleSelected(Song song) {
+    setState(() {
+      if (!_selectedPaths.remove(song.path)) {
+        _selectedPaths.add(song.path);
+      }
+    });
+  }
+
+  void _clearSelection() => setState(_selectedPaths.clear);
+
+  void _selectAll() {
+    setState(() => _selectedPaths.addAll(widget.songs.map((s) => s.path)));
+  }
+
+  Future<void> _bulkFavorite() async {
+    final selected = _selectedSongs;
+    // Mixed selections favorite everything rather than toggling each song
+    // independently - a per-song toggle would be unpredictable to the user
+    // when some of the picked songs are already favorites and some aren't.
+    final makeFavorite = selected.any((s) => !s.isFavorite);
+    await ref.read(libraryProvider.notifier).setFavorite(selected, makeFavorite);
+    _clearSelection();
+  }
+
+  Future<void> _bulkAddToPlaylist(AppLocalizations l10n) async {
+    final selected = _selectedSongs;
+    final playlists = ref.read(playlistProvider);
+    final chosen = await showDialog<Playlist>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Theme.of(dialogContext).colorScheme.surfaceContainer,
+        title: Text(l10n.addToPlaylists),
+        content: playlists.isEmpty
+            ? Text(l10n.noPlaylistsCreated)
+            : SizedBox(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: playlists.length,
+                  itemBuilder: (context, index) {
+                    final p = playlists[index];
+                    return ListTile(
+                      leading: const Icon(LucideIcons.listMusic),
+                      title: Text(p.name),
+                      onTap: () => Navigator.pop(dialogContext, p),
+                    );
+                  },
+                ),
+              ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.cancel),
+          ),
+        ],
+      ),
+    );
+    if (chosen == null) return;
+    await PlaylistService.addSongsToPlaylist(chosen, selected);
+    if (!mounted) return;
+    _clearSelection();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.addedTo(chosen.name)),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _bulkShare() {
+    ref.read(playbackProvider.notifier).shareSongs(_selectedSongs);
+    _clearSelection();
+  }
+
+  Future<void> _bulkDelete(AppLocalizations l10n) async {
+    final selected = _selectedSongs;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.deleteSong),
+        content: Text('${l10n.deleteSongConfirm} (${selected.length})'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.delete, style: AppFonts.jostStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    if (Platform.isAndroid) {
+      // One MediaStore consent dialog covering every selected file at once
+      // (API 30+) instead of the per-song dialog deleteSong() below would
+      // otherwise trigger for each one. Whatever this can't cover (no batch
+      // consent API before Android 11, or a file it couldn't resolve) is
+      // simply left on disk for deleteSong() to prompt for individually.
+      await MediaStoreWriteService.deleteFilesBatch(
+        selected.map((s) => s.path).toList(),
+      );
+    }
+
+    final notifier = ref.read(playbackProvider.notifier);
+    // Sequential, reusing the same single-song path deleteSong() already
+    // takes (file removal, DB row, queue/orphan bookkeeping) - a bulk-only
+    // fast path isn't worth duplicating that logic for what's normally a
+    // handful of songs at a time.
+    for (final song in selected) {
+      await notifier.deleteSong(song);
+    }
+    if (!mounted) return;
+    _clearSelection();
+  }
+
+  Widget _buildSelectionBar(AppLocalizations l10n) {
+    final accentColor = Theme.of(context).colorScheme.primary;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(LucideIcons.x, size: 20),
+            onPressed: _clearSelection,
+            tooltip: l10n.cancel,
+          ),
+          Expanded(
+            child: Text(
+              '${_selectedPaths.length}',
+              style: AppFonts.jostStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          // Not localized: this multi-select bar is new UI and the app's
+          // l10n strings are generated from .arb sources, which a one-off
+          // label here isn't worth regenerating for (see other hardcoded
+          // literals throughout the UI, e.g. the equalizer screen).
+          TextButton(onPressed: _selectAll, child: const Text('Select All')),
+          IconButton(
+            icon: const Icon(LucideIcons.heart, size: 20),
+            color: accentColor,
+            tooltip: l10n.addToFavorites,
+            onPressed: _bulkFavorite,
+          ),
+          IconButton(
+            icon: const Icon(LucideIcons.listMusic, size: 20),
+            color: accentColor,
+            tooltip: l10n.addToPlaylists,
+            onPressed: () => _bulkAddToPlaylist(l10n),
+          ),
+          IconButton(
+            icon: const Icon(LucideIcons.share2, size: 20),
+            color: accentColor,
+            tooltip: l10n.share,
+            onPressed: _bulkShare,
+          ),
+          IconButton(
+            icon: const Icon(LucideIcons.trash2, size: 20),
+            color: Colors.redAccent,
+            tooltip: l10n.delete,
+            onPressed: () => _bulkDelete(l10n),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, AppLocalizations l10n) {
+    if (_isSelecting) return _buildSelectionBar(l10n);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            '${widget.songs.length} ${l10n.songs}',
+            style: AppFonts.jostStyle(color: Colors.grey, fontSize: 13),
+          ),
+          if (widget.showEnrichmentIndicator) const EnrichmentIndicator(),
+          Row(
+            children: [
+              IconButton(
+                onPressed: () => _showSortBottomSheet(context, ref, l10n),
+                icon: const Icon(LucideIcons.listFilter, size: 18),
+                tooltip: l10n.sortBy,
+                style: IconButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              if (!Platform.isAndroid)
+                TextButton.icon(
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: Text(l10n.resetLibrary),
+                        content: Text(
+                          l10n.resetLibraryConfirm,
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: Text(l10n.cancel),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: Text(
+                              l10n.reset,
+                              style: AppFonts.jostStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      await ref
+                          .read(libraryProvider.notifier)
+                          .resetAndRescan();
+                    }
+                  },
+                  icon: const Icon(LucideIcons.refreshCw, size: 16),
+                  label: Text(
+                    l10n.resetLibrary,
+                    style: AppFonts.jostStyle(fontSize: 13),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    foregroundColor: Colors.red[300],
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '${songs.length} ${l10n.songs}',
-                style: AppFonts.jostStyle(color: Colors.grey, fontSize: 13),
-              ),
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: () => _showSortBottomSheet(context, ref, l10n),
-                    icon: const Icon(LucideIcons.listFilter, size: 18),
-                    tooltip: l10n.sortBy,
-                    style: IconButton.styleFrom(
-                      foregroundColor: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                  if (!Platform.isAndroid)
-                    TextButton.icon(
-                      onPressed: () async {
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: Text(l10n.resetLibrary),
-                            content: Text(
-                              l10n.resetLibraryConfirm,
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: Text(l10n.cancel),
-                              ),
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: Text(
-                                  l10n.reset,
-                                  style: AppFonts.jostStyle(color: Colors.red),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                        if (confirm == true) {
-                          await ref
-                              .read(libraryProvider.notifier)
-                              .resetAndRescan();
-                        }
-                      },
-                      icon: const Icon(LucideIcons.refreshCw, size: 16),
-                      label: Text(
-                        l10n.resetLibrary,
-                        style: AppFonts.jostStyle(fontSize: 13),
-                      ),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        foregroundColor: Colors.red[300],
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        if (shrinkWrap)
+        _buildHeader(context, l10n),
+        if (widget.shrinkWrap)
           ListView.builder(
-            controller: controller,
+            controller: widget.controller,
             shrinkWrap: true,
-            physics: physics ?? const BouncingScrollPhysics(),
+            physics: widget.physics ?? const BouncingScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(0, 8, 0, 180),
-            itemCount: songs.length,
+            itemCount: widget.songs.length,
+            // Every row is the same fixed-height SongTile, so give the
+            // sliver one real instance to measure once instead of
+            // re-measuring each row as it scrolls into view.
+            prototypeItem: SongTile(
+              song: widget.songs.first,
+              l10n: l10n,
+              songs: widget.songs,
+              searchQuery: widget.searchQuery,
+              playlist: widget.playlist,
+              selectionMode: false,
+              selected: false,
+              onToggleSelect: () {},
+              onEnterSelection: () {},
+            ),
             itemBuilder: (context, index) {
-              final song = songs[index];
+              final song = widget.songs[index];
               return SongTile(
                 key: ValueKey(song.path),
                 song: song,
                 l10n: l10n,
-                songs: songs,
-                searchQuery: searchQuery,
-                playlist: playlist,
+                songs: widget.songs,
+                searchQuery: widget.searchQuery,
+                playlist: widget.playlist,
+                selectionMode: _isSelecting,
+                selected: _selectedPaths.contains(song.path),
+                onToggleSelect: () => _toggleSelected(song),
+                onEnterSelection: () => _enterSelection(song),
               );
             },
           )
@@ -133,23 +353,42 @@ class SongsList extends ConsumerWidget {
               onRefresh: () =>
                   ref.read(libraryProvider.notifier).scanSavedFolders(showVisualIndicator: false),
               child: ListView.builder(
-                controller: controller,
+                controller: widget.controller,
                 shrinkWrap: false,
-                physics: physics ??
+                physics: widget.physics ??
                     const AlwaysScrollableScrollPhysics(
                       parent: BouncingScrollPhysics(),
                     ),
                 padding: const EdgeInsets.fromLTRB(0, 8, 0, 180),
-                itemCount: songs.length,
+                itemCount: widget.songs.length,
+                // Every row is the same fixed-height SongTile, so give the
+                // sliver one real instance to measure once instead of
+                // re-measuring each row as it scrolls into view - this is
+                // the list a fast fling scroll actually has to keep up with.
+                prototypeItem: SongTile(
+                  song: widget.songs.first,
+                  l10n: l10n,
+                  songs: widget.songs,
+                  searchQuery: widget.searchQuery,
+                  playlist: widget.playlist,
+                  selectionMode: false,
+                  selected: false,
+                  onToggleSelect: () {},
+                  onEnterSelection: () {},
+                ),
                 itemBuilder: (context, index) {
-                  final song = songs[index];
+                  final song = widget.songs[index];
                   return SongTile(
                     key: ValueKey(song.path),
                     song: song,
                     l10n: l10n,
-                    songs: songs,
-                    searchQuery: searchQuery,
-                    playlist: playlist,
+                    songs: widget.songs,
+                    searchQuery: widget.searchQuery,
+                    playlist: widget.playlist,
+                    selectionMode: _isSelecting,
+                    selected: _selectedPaths.contains(song.path),
+                    onToggleSelect: () => _toggleSelected(song),
+                    onEnterSelection: () => _enterSelection(song),
                   );
                 },
               ),
@@ -168,6 +407,14 @@ class SongTile extends ConsumerWidget {
   final AppLocalizations l10n;
   final String? searchQuery;
   final Playlist? playlist;
+  final bool selectionMode;
+  final bool selected;
+  final VoidCallback? onToggleSelect;
+  final VoidCallback? onEnterSelection;
+  // Non-null only when this tile is rendered inside a SliverReorderableList
+  // (a playlist showing its own saved order) - its presence is what decides
+  // whether the drag-handle grip icon shows up at all.
+  final int? reorderIndex;
 
   const SongTile({
     required this.song,
@@ -175,6 +422,11 @@ class SongTile extends ConsumerWidget {
     required this.l10n,
     this.searchQuery,
     this.playlist,
+    this.selectionMode = false,
+    this.selected = false,
+    this.onToggleSelect,
+    this.onEnterSelection,
+    this.reorderIndex,
     super.key,
   });
 
@@ -244,9 +496,13 @@ class SongTile extends ConsumerWidget {
     }
 
     return Material(
-      color: Colors.transparent,
+      color: selected ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08) : Colors.transparent,
       child: _SongTileBouncyTap(
         onTap: () {
+          if (selectionMode) {
+            onToggleSelect?.call();
+            return;
+          }
           final index = songs.indexWhere((s) => s.path == song.path);
           if (index != -1) {
             ref
@@ -256,44 +512,78 @@ class SongTile extends ConsumerWidget {
             ref.read(playbackProvider.notifier).play(song);
           }
         },
+        // A long-press on any row starts a selection (with that row already
+        // checked) instead of requiring a separate "select" mode button -
+        // there's nowhere else in this list a batch action could live.
+        onLongPress: selectionMode ? null : onEnterSelection,
         child: ListTile(
           contentPadding: const EdgeInsets.only(left: 16, right: 4, top: 0, bottom: 0),
           leading: ClipRRect(
             borderRadius: BorderRadius.circular(4),
-            child: isCurrent
-                ? Stack(
-                    children: [
-                      OptimizedImage(
+            child: Stack(
+              children: [
+                isCurrent
+                    ? Stack(
+                        children: [
+                          OptimizedImage(
+                            imagePath: song.artPath,
+                            width: 52,
+                            height: 52,
+                            fit: BoxFit.cover,
+                          ),
+                          Positioned.fill(
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 300),
+                              opacity: isPlaying ? 1.0 : 0.0,
+                              child: Container(
+                                color: Colors.black.withValues(alpha: 0.4),
+                                child: Center(
+                                  // Animated GIF frame decoding doesn't respect
+                                  // TickerMode - an Image.asset(.gif) keeps
+                                  // ticking on its own Timer even while offstage
+                                  // (e.g. this tab sitting inactive behind
+                                  // another one - see AndroidMainScreen). Skip
+                                  // mounting it entirely while offstage, where
+                                  // it wouldn't be visible anyway.
+                                  child: TickerMode.of(context)
+                                      ? Image.asset(
+                                          'assets/android_icons/Playing.gif',
+                                          width: 24,
+                                          height: 24,
+                                          color: Colors.white,
+                                        )
+                                      : const SizedBox.shrink(),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : OptimizedImage(
                         imagePath: song.artPath,
                         width: 52,
                         height: 52,
                         fit: BoxFit.cover,
                       ),
-                      Positioned.fill(
-                        child: AnimatedOpacity(
-                          duration: const Duration(milliseconds: 300),
-                          opacity: isPlaying ? 1.0 : 0.0,
-                          child: Container(
-                            color: Colors.black.withValues(alpha: 0.4),
-                            child: Center(
-                              child: Image.asset(
-                                'assets/android_icons/Playing.gif',
-                                width: 24,
-                                height: 24,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  )
-                : OptimizedImage(
-                    imagePath: song.artPath,
-                    width: 52,
-                    height: 52,
-                    fit: BoxFit.cover,
+                if (selectionMode)
+                  Positioned.fill(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      curve: Curves.easeOutCubic,
+                      color: selected
+                          ? Colors.black.withValues(alpha: 0.35)
+                          : Colors.transparent,
+                      child: selected
+                          ? Icon(
+                              LucideIcons.checkCircle2,
+                              color: Theme.of(context).colorScheme.primary,
+                              size: 24,
+                            )
+                          : null,
+                    ),
                   ),
+              ],
+            ),
           ),
           title: Text(
             song.title,
@@ -416,15 +706,28 @@ class SongTile extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-          trailing: IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.grey),
-            onPressed: () => showSongOptionsBottomSheet(
-              context: context,
-              ref: ref,
-              song: song,
-              playlist: playlist,
-              showEqualizerAndTechnicalInfoOptions: false,
-            ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (reorderIndex != null)
+                ReorderableDragStartListener(
+                  index: reorderIndex!,
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4),
+                    child: Icon(LucideIcons.gripVertical, size: 20, color: Colors.grey),
+                  ),
+                ),
+              IconButton(
+                icon: const Icon(Icons.more_vert, color: Colors.grey),
+                onPressed: () => showSongOptionsBottomSheet(
+                  context: context,
+                  ref: ref,
+                  song: song,
+                  playlist: playlist,
+                  showEqualizerAndTechnicalInfoOptions: false,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -746,10 +1049,12 @@ class _SortOption extends StatelessWidget {
 class _SongTileBouncyTap extends StatefulWidget {
   final Widget child;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   const _SongTileBouncyTap({
     required this.child,
     required this.onTap,
+    this.onLongPress,
   });
 
   @override
@@ -787,6 +1092,12 @@ class _SongTileBouncyTapState extends State<_SongTileBouncyTap> with SingleTicke
         widget.onTap();
       },
       onTapCancel: () => _controller.reverse(),
+      onLongPress: widget.onLongPress == null
+          ? null
+          : () {
+              HapticFeedback.mediumImpact();
+              widget.onLongPress!();
+            },
       behavior: HitTestBehavior.opaque,
       // ScaleTransition builds a Transform, which always needs its own
       // compositing layer whenever it has a child -- even sitting still at
