@@ -326,6 +326,20 @@ class AppLocalizationsKo extends AppLocalizations {
   String get keepBackgroundGradientDesc => '모든 애플리케이션 화면에서 배경 그라데이션 유지';
 
   @override
+  String get animatePlayerGradient => '애니메이션 그라데이션';
+
+  @override
+  String get animatePlayerGradientDesc =>
+      '음악에 반응하여 기본 색상과 3차 색상을 부드러운 그레인과 함께 천천히 움직입니다';
+
+  @override
+  String get animateBackgroundGradient => '애니메이션 배경';
+
+  @override
+  String get animateBackgroundGradientDesc =>
+      '홈, 노래, 라이브러리 배경에 애니메이션 그라데이션을 사용합니다';
+
+  @override
   String get language => '언어';
 
   @override
@@ -905,10 +919,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get useStaticTextTimestamps => '진행 기간 동안 롤링 애니메이션 대신 정적 텍스트를 사용하십시오.';
 
   @override
-  String get verticalMotionEffectPlayer => '플레이어 수직 제스처 닫기';
+  String get fluidPlayer => '플루이드 플레이어';
 
   @override
-  String get verticalMotionEffectPlayerDesc => '확장된 플레이어를 아래로 스와이프하여 닫습니다';
+  String get fluidPlayerDesc => '미니 플레이어를 위로 끌어 전체 플레이어로 전환합니다';
 
   @override
   String get viewAll => '모두 보기';
@@ -1496,4 +1510,885 @@ class AppLocalizationsKo extends AppLocalizations {
   String enrichingSongs(int count) {
     return '$count개 과 다양한 정보를 수집 중…';
   }
+
+  @override
+  String get noListeningHistoryYet => '아직 감상 기록이 없습니다';
+
+  @override
+  String get noListeningHistoryYetDesc =>
+      '노래를 몇 곡 재생하면 많이 들은 노래, 아티스트, 앨범, 장르를 담은 나만의 리포트가 여기에 표시됩니다.';
+
+  @override
+  String get looperAnalyze => 'Looper Analyze';
+
+  @override
+  String get totalPlays => '총 재생 횟수';
+
+  @override
+  String get listeningTime => '감상 시간';
+
+  @override
+  String get currentStreakDays => '현재 연속 기록(일)';
+
+  @override
+  String get longestStreakDays => '최장 연속 기록(일)';
+
+  @override
+  String analyzePlaysAndSongs(int plays, int songs) {
+    return '$plays회 재생 • $songs곡';
+  }
+
+  @override
+  String get dayPartMorningShort => '아침';
+
+  @override
+  String get dayPartAfternoonShort => '오후';
+
+  @override
+  String get dayPartEveningShort => '저녁';
+
+  @override
+  String get dayPartNightShort => '밤';
+
+  @override
+  String get activityPattern => '활동 패턴';
+
+  @override
+  String get whenYouListenMost => '가장 많이 듣는 시간대';
+
+  @override
+  String get genreBreakdown => '장르 분포';
+
+  @override
+  String get otherGenre => '기타';
+
+  @override
+  String get topAlbums => '인기 앨범';
+
+  @override
+  String get topArtists => '인기 아티스트';
+
+  @override
+  String get topSongs => '인기 노래';
+
+  @override
+  String playsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count회 재생',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String songsPlayedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count곡 재생',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listeningTrend => '감상 추이';
+
+  @override
+  String get last30Days => '최근 30일';
+
+  @override
+  String errorWithDetails(String error) {
+    return '오류: $error';
+  }
+
+  @override
+  String get selectAll => '모두 선택';
+
+  @override
+  String get playlist => '재생목록';
+
+  @override
+  String songsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count곡',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recentSearches => '최근 검색';
+
+  @override
+  String get lyricsSourceLocalFile => '로컬 파일';
+
+  @override
+  String get lyricsSourceEmbedded => '내장 메타데이터';
+
+  @override
+  String lyricsProvidedBy(String source) {
+    return '가사 제공: $source';
+  }
+
+  @override
+  String failedToImportLyrics(String error) {
+    return '가사를 가져오지 못했습니다: $error';
+  }
+
+  @override
+  String get lyricsEditorLines => '줄';
+
+  @override
+  String get lyricsEditorStamped => '지정됨';
+
+  @override
+  String lyricsEditorLineNumber(int number) {
+    return '$number번째 줄';
+  }
+
+  @override
+  String get lyricsEditorEmptyLine => '(빈 줄)';
+
+  @override
+  String get lyricsEditorNotStamped => '아직 지정 안 됨';
+
+  @override
+  String get pause => '일시정지';
+
+  @override
+  String get lyricsEditorAddLineFirst => '먼저 가사를 한 줄 이상 추가하세요.';
+
+  @override
+  String get lyricsEditorSavedWithSidecar => '가사를 데이터베이스와 노래 파일 옆에 저장했습니다.';
+
+  @override
+  String get lyricsEditorSavedDbOnly => '가사를 플레이어 데이터베이스에 저장했습니다.';
+
+  @override
+  String get lyricsEditorSaveFailed => '가사를 저장하지 못했습니다.';
+
+  @override
+  String get saving => '저장 중...';
+
+  @override
+  String get saveLrc => 'LRC 저장';
+
+  @override
+  String lyricsEditorSelectedLine(int index, int total) {
+    return '선택한 줄 $index/$total';
+  }
+
+  @override
+  String get lyricsEditorPickLine => '아래 목록에서 가사 줄을 선택하세요.';
+
+  @override
+  String get stampAndNext => '지정 후 다음';
+
+  @override
+  String get stampNow => '지금 지정';
+
+  @override
+  String get lyricsEditorSimpleSteps =>
+      '1. 한 줄에 가사 한 줄씩 붙여넣거나 입력하세요.\n2. 노래를 재생하세요.\n3. 현재 가사 줄을 선택하세요.\n4. 그 줄이 들리면 \"지정 후 다음\"을 탭하세요.\n5. 끝나면 저장하세요.';
+
+  @override
+  String get lyricsEditorAdvancedSteps =>
+      '1. 각 줄의 타임스탬프를 직접 편집하세요.\n2. \"현재 시간 사용\"으로 재생 중인 시간을 가져오세요.\n3. 이동 컨트롤로 지정된 모든 줄을 함께 옮기세요.\n4. 저장하면 최종 `.lrc` 파일이 생성됩니다.';
+
+  @override
+  String get lyricsEditorTipsText =>
+      '- 지정되지 않은 줄이 있으면 Flick 엔진이 시간을 자동으로 채웁니다.\n- 저장 시 가능하면 노래 옆에 기록하고, 그렇지 않으면 연결된 사본을 데이터베이스에 보관합니다.';
+
+  @override
+  String fileNotFoundOrInaccessible(String title) {
+    return '파일을 찾을 수 없거나 접근할 수 없습니다: $title';
+  }
+
+  @override
+  String playbackFailedCorrupted(String title) {
+    return '재생 실패: \"$title\"을(를) 불러오거나 재생할 수 없습니다. 파일이 손상되지 않았는지 확인하세요.';
+  }
+
+  @override
+  String shareSongText(String title) {
+    return '이 노래 들어 봐: $title';
+  }
+
+  @override
+  String shareSongsText(int count) {
+    return '이 노래 $count곡 들어 봐';
+  }
+
+  @override
+  String noSettingsFoundFor(String query) {
+    return '\"$query\"에 대한 설정이 없습니다';
+  }
+
+  @override
+  String get chooseQuickAccentColors => '빠른 강조 색상 선택';
+
+  @override
+  String get fontWeight => '글꼴 두께';
+
+  @override
+  String get changeBaseFontWeight => '사용자 지정 글꼴의 기본 두께 변경';
+
+  @override
+  String lyricsFontWeightValue(int weight) {
+    return '가사 글꼴 두께: $weight';
+  }
+
+  @override
+  String get equalizerSearchDesc => '18밴드 이퀄라이저와 오디오 프리셋 조정';
+
+  @override
+  String get stopServiceSearchDesc => '최근 앱에서 밀어서 닫으면 재생을 멈추고 앱 종료';
+
+  @override
+  String get scanNewFolderDesc => '새 폴더에서 오디오 파일 검색';
+
+  @override
+  String get includeOtherDeviceAudioShortDesc => '벨소리, 알림음, 메신저 오디오';
+
+  @override
+  String get excludedFolders => '제외된 폴더';
+
+  @override
+  String get excludedFoldersSearchDesc => '스캔할 때 특정 폴더 건너뛰기';
+
+  @override
+  String get clearLibraryData => '라이브러리 데이터 삭제';
+
+  @override
+  String get looperPlayerVersion => 'Looper Player 버전';
+
+  @override
+  String versionLabel(String version) {
+    return '버전 $version';
+  }
+
+  @override
+  String get none => '없음';
+
+  @override
+  String foldersSkippedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '스캔 시 폴더 $count개 건너뜀',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get excludedFoldersDesc => '이 폴더에 있는 노래는 추가한 폴더 안에 있더라도 스캔할 때 건너뜁니다.';
+
+  @override
+  String get noExcludedFoldersYet => '아직 제외된 폴더가 없습니다.';
+
+  @override
+  String get excludeAFolder => '폴더 제외';
+
+  @override
+  String get equalizerEnabled18Band => '사용 (18밴드 MPV EQ)';
+
+  @override
+  String get disabled => '사용 안 함';
+
+  @override
+  String get noIndexedFoldersYet => '아직 색인된 폴더가 없습니다';
+
+  @override
+  String get noIndexedFoldersYetDesc => '\"라이브러리 다시 스캔\"을 사용해 저장소의 폴더를 찾으세요.';
+
+  @override
+  String get eqDynamicRangeCompressor => '다이내믹 레인지 컴프레서';
+
+  @override
+  String get eqThreshold => '임계값';
+
+  @override
+  String get eqRatio => '비율';
+
+  @override
+  String get eqAttack => '어택';
+
+  @override
+  String get eqRelease => '릴리스';
+
+  @override
+  String get eqHeadphoneCrossfeedWidth => '헤드폰 크로스피드 및 폭';
+
+  @override
+  String get eqBinauralCrossfeed => '바이노럴 크로스피드';
+
+  @override
+  String get eqCrossfeedStrength => '크로스피드 강도';
+
+  @override
+  String get eqStereoWidening => '스테레오 확장';
+
+  @override
+  String get eqWideningFactor => '확장 계수';
+
+  @override
+  String get eqLoudnessNormalization => '라우드니스 정규화';
+
+  @override
+  String get eqTargetLoudness => '목표 라우드니스';
+
+  @override
+  String get eqToneShelving => '톤 셸빙 (저음 / 고음)';
+
+  @override
+  String get eqBassShelf => '저음 셸프';
+
+  @override
+  String get eqTrebleShelf => '고음 셸프';
+
+  @override
+  String get eqTempoPitchControls => '템포 및 피치 조절';
+
+  @override
+  String get eqPitchShift => '피치 시프트';
+
+  @override
+  String get eqTempoSpeed => '템포 속도';
+
+  @override
+  String get eqVoiceSilenceControls => '음성 및 무음 조절';
+
+  @override
+  String get eqSilenceTrimming => '무음 잘라내기';
+
+  @override
+  String get eqSilenceThreshold => '무음 임계값';
+
+  @override
+  String get eqSpeechEnhancementFilter => '음성 향상 필터';
+
+  @override
+  String get eqHighpassCutoff => '하이패스 차단 주파수';
+
+  @override
+  String get eqLowpassCutoff => '로우패스 차단 주파수';
+
+  @override
+  String get eqRetroRoomEffects => '레트로 및 공간 효과';
+
+  @override
+  String get eqLofiEffect => '로파이 효과 (8비트 크러셔)';
+
+  @override
+  String get eqStudioRoomReverb => '스튜디오 룸 리버브 (에코)';
+
+  @override
+  String get eqVirtualSurround => '가상 5.1 서라운드 사운드';
+
+  @override
+  String get eqRawFilterConsole => 'FFmpeg 원시 필터 콘솔';
+
+  @override
+  String get eqSwitchToSliders => '슬라이더로 전환';
+
+  @override
+  String get eqSwitchToGraph => '그래프로 전환';
+
+  @override
+  String get on => '켜짐';
+
+  @override
+  String get off => '꺼짐';
+
+  @override
+  String get eqSongSpecificActive => '곡별 설정 사용 중';
+
+  @override
+  String get eqUsingGlobalDefault => '전역 기본 설정 사용 중';
+
+  @override
+  String get eqInteractiveGraphHint => '인터랙티브 그래프 (점을 위아래로 드래그)';
+
+  @override
+  String get eq18BandHint => '18밴드 이퀄라이저 (가로로 스크롤)';
+
+  @override
+  String get eqSongSpecific => '곡별';
+
+  @override
+  String get eqGlobalDefault => '전역 기본값';
+
+  @override
+  String get eqEditScopeNote =>
+      '노래 재생 중에 한 변경은 해당 노래에만 적용됩니다. 전역 기본값을 설정하려면 재생 중인 노래가 없을 때 편집하거나 \'전역에 적용\'을 사용하세요.';
+
+  @override
+  String get presetFlat => '플랫';
+
+  @override
+  String get presetBassBooster => '저음 강화';
+
+  @override
+  String get presetTrebleBooster => '고음 강화';
+
+  @override
+  String get presetVocalBooster => '보컬 강화';
+
+  @override
+  String get presetElectronic => '일렉트로닉';
+
+  @override
+  String get presetRock => '록';
+
+  @override
+  String get presetPop => '팝';
+
+  @override
+  String get presetJazz => '재즈';
+
+  @override
+  String get save => '저장';
+
+  @override
+  String get savePreset => '프리셋 저장';
+
+  @override
+  String get presetName => '프리셋 이름';
+
+  @override
+  String get deletePreset => '프리셋 삭제';
+
+  @override
+  String deletePresetConfirm(String name) {
+    return '\"$name\" 프리셋을 삭제할까요?';
+  }
+
+  @override
+  String get noLyricsSource => '가사 출처 없음';
+
+  @override
+  String lyricsSourceLabel(String source) {
+    return '출처: $source';
+  }
+
+  @override
+  String get lyricsSourceLocalSidecar => '로컬 사이드카 (.lrc)';
+
+  @override
+  String get lyricsSourceCustomFile => '사용자 지정 LRC 파일';
+
+  @override
+  String get lyricsSourceNotFoundOnline => '온라인에서 찾을 수 없음';
+
+  @override
+  String get lyricsProviderLocal => '로컬';
+
+  @override
+  String get checkingLocalLyrics => '로컬/내장 가사 확인 중...';
+
+  @override
+  String fetchingLyricsFrom(String provider) {
+    return '$provider에서 가사를 가져오는 중...';
+  }
+
+  @override
+  String get loadedLocalLyrics => '로컬/내장 가사를 불러왔습니다!';
+
+  @override
+  String get noLocalLyricsFound => '로컬 또는 내장 가사를 찾을 수 없습니다';
+
+  @override
+  String lyricsUpdatedFrom(String provider) {
+    return '$provider에서 가사를 업데이트했습니다!';
+  }
+
+  @override
+  String noLyricsFoundOn(String provider) {
+    return '$provider에서 가사를 찾을 수 없습니다';
+  }
+
+  @override
+  String get gestureTips => '제스처 팁';
+
+  @override
+  String get gestureTipsDesc => '탭, 길게 누르기, 핀치 줌 등';
+
+  @override
+  String get exportLyrics => '가사 내보내기';
+
+  @override
+  String lyricsExportedTo(String path) {
+    return '가사를 내보낸 위치: $path';
+  }
+
+  @override
+  String failedToExportLyrics(String error) {
+    return '가사를 내보내지 못했습니다: $error';
+  }
+
+  @override
+  String get gestureTapLine => '줄 탭하기';
+
+  @override
+  String get gestureTapLineDesc => '해당 가사 위치로 바로 이동합니다.';
+
+  @override
+  String get gestureLongPressLine => '줄 길게 누르기';
+
+  @override
+  String get gestureLongPressLineDesc =>
+      '공유용 가사 카드로 만들 줄을 선택하기 시작합니다. 다른 줄을 탭하면 선택 범위가 늘어납니다.';
+
+  @override
+  String get gesturePinch => '두 손가락으로 핀치';
+
+  @override
+  String get gesturePinchDesc => '가사 글자 크기를 원하는 대로 조절합니다.';
+
+  @override
+  String get gestureSwipeDown => '아래로 스와이프';
+
+  @override
+  String get gestureSwipeDownDesc => '가사 화면을 닫고 플레이어로 돌아갑니다.';
+
+  @override
+  String get lyricsGestures => '가사 제스처';
+
+  @override
+  String get lyricsGesturesIntro => '이 화면에서 쉽게 눈에 띄지 않는 기능 몇 가지:';
+
+  @override
+  String linesSelected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count줄 선택됨',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get couldNotGenerateShareImage => '공유 이미지를 만들지 못했습니다.';
+
+  @override
+  String get couldNotGenerateImage => '이미지를 만들지 못했습니다.';
+
+  @override
+  String get savedToGallery => '갤러리에 저장했습니다.';
+
+  @override
+  String get galleryPermissionDenied => '갤러리 접근 권한이 거부되었습니다.';
+
+  @override
+  String get couldNotSaveToGallery => '이미지를 갤러리에 저장하지 못했습니다.';
+
+  @override
+  String get shareLyrics => '가사 공유';
+
+  @override
+  String get backgroundColor => '배경 색상';
+
+  @override
+  String get lyricsTextColor => '가사 글자 색상';
+
+  @override
+  String get saveToGallery => '갤러리에 저장';
+
+  @override
+  String get preparing => '준비 중...';
+
+  @override
+  String get trackTitle => '트랙 제목';
+
+  @override
+  String get composer => '작곡가';
+
+  @override
+  String get unknownGenre => '알 수 없는 장르';
+
+  @override
+  String get releaseYear => '발매 연도';
+
+  @override
+  String get notAvailable => '없음';
+
+  @override
+  String get recordLabel => '레이블';
+
+  @override
+  String get copyright => '저작권';
+
+  @override
+  String get encoder => '인코더';
+
+  @override
+  String get fileName => '파일 이름';
+
+  @override
+  String get fileFormat => '파일 형식';
+
+  @override
+  String get fileSize => '파일 크기';
+
+  @override
+  String get absolutePath => '절대 경로';
+
+  @override
+  String get playCount => '재생 횟수';
+
+  @override
+  String playCountTimes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count회',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get lastPlayed => '마지막 재생';
+
+  @override
+  String get filePath => '파일 경로';
+
+  @override
+  String get rescan => '다시 스캔';
+
+  @override
+  String get codec => '코덱';
+
+  @override
+  String get container => '컨테이너';
+
+  @override
+  String get sampleRate => '샘플 레이트';
+
+  @override
+  String get bitDepth => '비트 심도';
+
+  @override
+  String get decodedFormat => '디코딩 형식';
+
+  @override
+  String get bitrate => '비트레이트';
+
+  @override
+  String get channels => '채널';
+
+  @override
+  String get nyquist => '나이퀴스트';
+
+  @override
+  String get dynamicRange => '다이내믹 레인지';
+
+  @override
+  String get peak => '피크';
+
+  @override
+  String get truePeak => '트루 피크';
+
+  @override
+  String get clipping => '클리핑';
+
+  @override
+  String get cutoff => '차단 주파수';
+
+  @override
+  String get samples => '샘플 수';
+
+  @override
+  String channelShort(int channel) {
+    return 'Ch $channel';
+  }
+
+  @override
+  String get noneClean => '없음 (깨끗함)';
+
+  @override
+  String get reanalyzingAudio => '오디오 스트림 다시 분석 중...';
+
+  @override
+  String get analyzingAudio => '오디오 스트림 분석 중...';
+
+  @override
+  String sampleRateHz(int rate) {
+    return '샘플 레이트: $rate Hz';
+  }
+
+  @override
+  String nyquistKhz(String khz) {
+    return '나이퀴스트: $khz kHz';
+  }
+
+  @override
+  String get qualityLossless => '무손실';
+
+  @override
+  String get qualityHigh => '고음질';
+
+  @override
+  String get qualityStandard => '표준 음질';
+
+  @override
+  String get qualityAudio => '오디오';
+
+  @override
+  String get addCustomFolder => '사용자 지정 폴더 추가';
+
+  @override
+  String get addCustomFolderDesc => '음악이 다른 이름의 폴더나 SD 카드에 있다면 직접 추가하세요.';
+
+  @override
+  String get indexingYourLibrary => '라이브러리 색인 중...';
+
+  @override
+  String get indexingYourLibraryDesc => '노래의 제목, 아트워크, 가사를 채우고 있습니다.';
+
+  @override
+  String welcomeStep(String step, String title) {
+    return '$step단계: $title';
+  }
+
+  @override
+  String get includeOtherDeviceAudioAlarmsDesc => '벨소리, 알림음, 알람, 메신저 오디오';
+
+  @override
+  String get version => '버전';
+
+  @override
+  String get noIndexedFoldersDesktopDesc => '\"라이브러리 다시 스캔\"을 사용해 저장소 폴더를 찾으세요';
+
+  @override
+  String get playedLabel => '재생함';
+
+  @override
+  String minutesShort(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count분',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String minuteChip(int count) {
+    return '$count분';
+  }
+
+  @override
+  String songsCountTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count곡',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String songsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count곡 남음',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String sleepTimerWithRemaining(String remaining) {
+    return '수면 타이머 ($remaining)';
+  }
+
+  @override
+  String get trackInfoSection => '트랙 정보';
+
+  @override
+  String get detailsSection => '세부 정보';
+
+  @override
+  String get lyricsSection => '가사';
+
+  @override
+  String get editLyricsHint => '일반 텍스트 또는 동기화된 LRC 형식 [00:00.00]으로 가사 입력...';
+
+  @override
+  String addedSongsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count곡 추가됨',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chooseInternalStorageFolder =>
+      '이 기기의 내부 저장소 또는 SD 카드에 있는 폴더를 선택하세요.';
+
+  @override
+  String get appCrashedTitle => 'Looper Player가 중단되었습니다';
+
+  @override
+  String get appCrashedDesc => '초기화 중 예기치 않은 오류가 발생했습니다. 진단용 오류 보고서가 생성되었습니다.';
+
+  @override
+  String get appCrashedDetails =>
+      '앱 데이터베이스 또는 서비스를 초기화하는 중 오류가 발생했습니다. 저장소 접근이 제한되었거나 데이터베이스 파일이 손상된 경우 발생할 수 있습니다.';
+
+  @override
+  String get crashReportSaved => '진단용 오류 보고서를 앱 지원 폴더에 저장했습니다.';
+
+  @override
+  String get shareLog => '로그 공유';
+
+  @override
+  String get restartApp => '앱 다시 시작';
+
+  @override
+  String get updateAvailableOnPlay => 'Google Play에서 새 버전을 사용할 수 있습니다.';
+
+  @override
+  String updateAvailableOnGithub(String version) {
+    return 'GitHub에서 버전 $version을(를) 사용할 수 있습니다.';
+  }
+
+  @override
+  String get updateAvailable => '업데이트 가능';
+
+  @override
+  String get updateAvailableTitle => '업데이트가 있습니다!';
+
+  @override
+  String get visit => '열기';
+
+  @override
+  String get updateDownloaded => '업데이트 다운로드됨';
+
+  @override
+  String get restartToInstallUpdate => '설치하려면 Looper Player를 다시 시작하세요.';
+
+  @override
+  String get restart => '다시 시작';
+
+  @override
+  String backupImportedSummary(int favorites, int stats, int playlists) {
+    return '백업 가져옴: 즐겨찾기 $favorites개와 재생 통계 $stats개 병합, 재생목록 $playlists개 동기화';
+  }
+
+  @override
+  String get backupExportFailed => '백업 내보내기 실패: 백업 파일을 저장하는 중 내부 오류가 발생했습니다.';
+
+  @override
+  String get backupImportFailed => '백업 가져오기 실패: 파일을 읽을 수 없거나 백업 형식이 올바르지 않습니다.';
+
+  @override
+  String get stereo => '스테레오';
+
+  @override
+  String get mono => '모노';
 }

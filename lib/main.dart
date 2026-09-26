@@ -1,25 +1,27 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart' show GestureBinding;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:looper_player/features/settings/presentation/widgets/theme_settings_tiles.dart';
+import 'package:looper_player/features/settings/presentation/widgets/tiles/theme/theme_settings_tiles.dart';
 import 'package:mpv_audio_kit/mpv_audio_kit.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
-import 'package:looper_player/features/settings/presentation/settings_notifier.dart';
+import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:looper_player/core/providers.dart';
-import 'core/db_service.dart';
-import 'core/app_fonts.dart';
-import 'core/appambit_reporter.dart';
-import 'ui/screens/home_screen.dart';
+import 'package:looper_player/core/providers/providers.dart';
+import 'core/services/storage/db_service.dart';
+import 'core/theme/app_fonts.dart';
+import 'core/services/appambit_reporter.dart';
+import 'ui/home_screen/home_screen.dart';
 
 import 'package:metadata_god/metadata_god.dart';
-import 'package:looper_player/core/theme_provider.dart';
-import 'package:looper_player/ui/widgets/keyboard_handler.dart';
-import 'core/logger_helper.dart';
+import 'package:looper_player/core/theme/theme_provider.dart';
+import 'package:looper_player/ui/widgets/common/keyboard_handler.dart';
+import 'core/utils/logger_helper.dart';
+import 'package:looper_player/core/utils/l10n.dart';
 
 final dbInitializerProvider = FutureProvider<void>((ref) async {
   LoggerHelper.write('dbInitializerProvider: Initializing db and settings...');
@@ -30,6 +32,13 @@ final dbInitializerProvider = FutureProvider<void>((ref) async {
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Touch events arrive on the input clock, not on vsync; on a 90/120Hz panel
+  // that makes drag deltas land unevenly across frames, so dragged surfaces
+  // (the Fluid Player, sheets) step instead of glide. Resampling aligns them
+  // to the frame clock.
+  if (Platform.isAndroid) {
+    GestureBinding.instance.resamplingEnabled = true;
+  }
 
   // Capture unhandled Flutter framework errors
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -144,9 +153,7 @@ void main(List<String> args) async {
     ProviderScope(
       overrides: [
         startupFileProvider.overrideWithValue(initialFile),
-        startupPermissionsGrantedProvider.overrideWithValue(
-          permissionsGranted,
-        ),
+        startupPermissionsGrantedProvider.overrideWithValue(permissionsGranted),
       ],
       child: const MyApp(),
     ),
@@ -286,111 +293,118 @@ class _CrashRecoveryScreenState extends State<CrashRecoveryScreen> {
     return MaterialApp(
       theme: ThemeData.dark(),
       debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        backgroundColor: const Color(0xFF0F0F1A),
-        body: Center(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 450),
-            margin: const EdgeInsets.all(24),
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.03),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.error_outline,
-                  color: Color(0xFFFF5252),
-                  size: 64,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Looper Player Crashed',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Builder(
+        builder: (context) => Scaffold(
+          backgroundColor: const Color(0xFF0F0F1A),
+          body: Center(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 450),
+              margin: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.03),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.4),
+                    blurRadius: 16,
+                    offset: const Offset(0, 8),
                   ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'An unexpected initialization error occurred. A diagnostic crash report has been generated.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white54, fontSize: 14),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  constraints: const BoxConstraints(maxHeight: 120),
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.black38,
-                    borderRadius: BorderRadius.circular(12),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    color: Color(0xFFFF5252),
+                    size: 64,
                   ),
-                  child: const SingleChildScrollView(
-                    child: Text(
-                      'An error occurred during app database or service initialization. This can happen if storage access is restricted or database files are corrupted.',
-                      style: TextStyle(fontSize: 12, color: Colors.white70),
+                  const SizedBox(height: 16),
+                  Text(
+                    context.l10n.appCrashedTitle,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                if (_isSaving)
-                  const CircularProgressIndicator()
-                else ...[
-                  if (_savedPath.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: const Text(
-                        'Diagnostic crash report saved to application support folder.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFFB4BEFE),
-                          fontWeight: FontWeight.w500,
+                  const SizedBox(height: 8),
+                  Text(
+                    context.l10n.appCrashedDesc,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white54, fontSize: 14),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 120),
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.black38,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: SingleChildScrollView(
+                      child: Text(
+                        context.l10n.appCrashedDetails,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.white70,
                         ),
                       ),
                     ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      if (_savedPath.isNotEmpty)
+                  ),
+                  const SizedBox(height: 16),
+                  if (_isSaving)
+                    const CircularProgressIndicator()
+                  else ...[
+                    if (_savedPath.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          context.l10n.crashReportSaved,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFFB4BEFE),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        if (_savedPath.isNotEmpty)
+                          ElevatedButton.icon(
+                            onPressed: () =>
+                                LoggerHelper.shareCrashLog(_savedPath),
+                            icon: const Icon(Icons.share, size: 16),
+                            label: Text(context.l10n.shareLog),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF6C7086),
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
                         ElevatedButton.icon(
-                          onPressed: () =>
-                              LoggerHelper.shareCrashLog(_savedPath),
-                          icon: const Icon(Icons.share, size: 16),
-                          label: const Text('Share Log'),
+                          onPressed: () {
+                            exit(0);
+                          },
+                          icon: const Icon(Icons.refresh, size: 16),
+                          label: Text(context.l10n.restartApp),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF6C7086),
+                            backgroundColor: const Color(0xFFFF5252),
                             foregroundColor: Colors.white,
                           ),
                         ),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          exit(0);
-                        },
-                        icon: const Icon(Icons.refresh, size: 16),
-                        label: const Text('Restart App'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF5252),
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),

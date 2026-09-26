@@ -349,6 +349,20 @@ class AppLocalizationsNl extends AppLocalizations {
       'Behoud het achtergrondverloop op alle applicatieschermen';
 
   @override
+  String get animatePlayerGradient => 'Geanimeerd verloop';
+
+  @override
+  String get animatePlayerGradientDesc =>
+      'Beweegt de primaire en tertiaire kleuren langzaam met een zachte korrel, reagerend op de muziek';
+
+  @override
+  String get animateBackgroundGradient => 'Geanimeerde achtergrond';
+
+  @override
+  String get animateBackgroundGradientDesc =>
+      'Gebruikt het geanimeerde verloop als achtergrond voor Home, Nummers en Bibliotheek';
+
+  @override
   String get language => 'Taal';
 
   @override
@@ -964,11 +978,11 @@ class AppLocalizationsNl extends AppLocalizations {
       'Gebruik statische tekst in plaats van rollende animaties voor de voortgangsduur';
 
   @override
-  String get verticalMotionEffectPlayer => 'Verticaal bewegingseffect speler';
+  String get fluidPlayer => 'Vloeiende speler';
 
   @override
-  String get verticalMotionEffectPlayerDesc =>
-      'Veeg omlaag op de geopende speler om deze te sluiten';
+  String get fluidPlayerDesc =>
+      'Sleep de minispeler omhoog om hem in de volledige speler te laten overgaan';
 
   @override
   String get viewAll => 'Bekijk alles';
@@ -1586,4 +1600,929 @@ class AppLocalizationsNl extends AppLocalizations {
   String enrichingSongs(int count) {
     return '$count nummers worden verrijkt…';
   }
+
+  @override
+  String get noListeningHistoryYet => 'Nog geen luistergeschiedenis';
+
+  @override
+  String get noListeningHistoryYetDesc =>
+      'Speel een paar nummers af en je persoonlijke rapport — topnummers, artiesten, albums en genres — komt hier tot leven.';
+
+  @override
+  String get looperAnalyze => 'Looper Analyze';
+
+  @override
+  String get totalPlays => 'Totaal afgespeeld';
+
+  @override
+  String get listeningTime => 'Luistertijd';
+
+  @override
+  String get currentStreakDays => 'Huidige reeks (dagen)';
+
+  @override
+  String get longestStreakDays => 'Langste reeks (dagen)';
+
+  @override
+  String analyzePlaysAndSongs(int plays, int songs) {
+    return '$plays keer afgespeeld • $songs nummers';
+  }
+
+  @override
+  String get dayPartMorningShort => 'Ocht.';
+
+  @override
+  String get dayPartAfternoonShort => 'Midd.';
+
+  @override
+  String get dayPartEveningShort => 'Avond';
+
+  @override
+  String get dayPartNightShort => 'Nacht';
+
+  @override
+  String get activityPattern => 'Activiteitspatroon';
+
+  @override
+  String get whenYouListenMost => 'Wanneer je het meest luistert';
+
+  @override
+  String get genreBreakdown => 'Verdeling per genre';
+
+  @override
+  String get otherGenre => 'Overig';
+
+  @override
+  String get topAlbums => 'Topalbums';
+
+  @override
+  String get topArtists => 'Topartiesten';
+
+  @override
+  String get topSongs => 'Topnummers';
+
+  @override
+  String playsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count keer afgespeeld',
+      one: '1 keer afgespeeld',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String songsPlayedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nummers afgespeeld',
+      one: '1 nummer afgespeeld',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listeningTrend => 'Luistertrend';
+
+  @override
+  String get last30Days => 'Afgelopen 30 dagen';
+
+  @override
+  String errorWithDetails(String error) {
+    return 'Fout: $error';
+  }
+
+  @override
+  String get selectAll => 'Alles selecteren';
+
+  @override
+  String get playlist => 'Afspeellijst';
+
+  @override
+  String songsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nummers',
+      one: '1 nummer',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recentSearches => 'Recente zoekopdrachten';
+
+  @override
+  String get lyricsSourceLocalFile => 'Lokaal bestand';
+
+  @override
+  String get lyricsSourceEmbedded => 'Ingesloten metadata';
+
+  @override
+  String lyricsProvidedBy(String source) {
+    return 'Songtekst aangeleverd door $source';
+  }
+
+  @override
+  String failedToImportLyrics(String error) {
+    return 'Songtekst importeren mislukt: $error';
+  }
+
+  @override
+  String get lyricsEditorLines => 'Regels';
+
+  @override
+  String get lyricsEditorStamped => 'Gestempeld';
+
+  @override
+  String lyricsEditorLineNumber(int number) {
+    return 'Regel $number';
+  }
+
+  @override
+  String get lyricsEditorEmptyLine => '(Lege regel)';
+
+  @override
+  String get lyricsEditorNotStamped => 'Nog niet gestempeld';
+
+  @override
+  String get pause => 'Pauzeren';
+
+  @override
+  String get lyricsEditorAddLineFirst =>
+      'Voeg eerst minstens één songtekstregel toe.';
+
+  @override
+  String get lyricsEditorSavedWithSidecar =>
+      'Songtekst opgeslagen in de database en naast het muziekbestand.';
+
+  @override
+  String get lyricsEditorSavedDbOnly =>
+      'Songtekst opgeslagen in de database van de speler.';
+
+  @override
+  String get lyricsEditorSaveFailed =>
+      'De songtekst kon niet worden opgeslagen.';
+
+  @override
+  String get saving => 'Opslaan...';
+
+  @override
+  String get saveLrc => 'LRC opslaan';
+
+  @override
+  String lyricsEditorSelectedLine(int index, int total) {
+    return 'Geselecteerde regel $index van $total';
+  }
+
+  @override
+  String get lyricsEditorPickLine => 'Kies hieronder een regel uit de lijst.';
+
+  @override
+  String get stampAndNext => 'Stempelen & volgende';
+
+  @override
+  String get stampNow => 'Nu stempelen';
+
+  @override
+  String get lyricsEditorSimpleSteps =>
+      '1. Plak of typ één songtekstregel per rij.\n2. Speel het nummer af.\n3. Selecteer de huidige regel.\n4. Tik op \'Stempelen & volgende\' wanneer je die regel hoort.\n5. Sla op als je klaar bent.';
+
+  @override
+  String get lyricsEditorAdvancedSteps =>
+      '1. Bewerk de tijdstempels van elke regel rechtstreeks.\n2. Gebruik \'Huidige tijd gebruiken\' om de actuele afspeeltijd vast te leggen.\n3. Gebruik de verschuifknoppen om alle gestempelde regels samen te verplaatsen.\n4. Sla op om het definitieve `.lrc`-bestand te maken.';
+
+  @override
+  String get lyricsEditorTipsText =>
+      '- Zijn sommige regels niet gestempeld, dan vult de Flick-engine hun tijden automatisch in.\n- Opslaan schrijft indien mogelijk naast het nummer, anders wordt een gekoppelde kopie in de database bewaard.';
+
+  @override
+  String fileNotFoundOrInaccessible(String title) {
+    return 'Bestand niet gevonden of niet toegankelijk: $title';
+  }
+
+  @override
+  String playbackFailedCorrupted(String title) {
+    return 'Afspelen mislukt: \'$title\' kan niet worden geladen of afgespeeld. Controleer of het bestand niet beschadigd is.';
+  }
+
+  @override
+  String shareSongText(String title) {
+    return 'Luister naar dit nummer: $title';
+  }
+
+  @override
+  String shareSongsText(int count) {
+    return 'Luister naar deze $count nummers';
+  }
+
+  @override
+  String noSettingsFoundFor(String query) {
+    return 'Geen instellingen gevonden voor \'$query\'';
+  }
+
+  @override
+  String get chooseQuickAccentColors => 'Kies snel een accentkleur';
+
+  @override
+  String get fontWeight => 'Letterdikte';
+
+  @override
+  String get changeBaseFontWeight =>
+      'Wijzig de basisdikte van het aangepaste lettertype';
+
+  @override
+  String lyricsFontWeightValue(int weight) {
+    return 'Letterdikte songtekst: $weight';
+  }
+
+  @override
+  String get equalizerSearchDesc =>
+      '18-bands equalizer en audiopresets aanpassen';
+
+  @override
+  String get stopServiceSearchDesc =>
+      'Stop het afspelen en sluit de app wanneer die uit recente apps wordt geveegd';
+
+  @override
+  String get scanNewFolderDesc => 'Een nieuwe map scannen op audiobestanden';
+
+  @override
+  String get includeOtherDeviceAudioShortDesc =>
+      'Beltonen, meldingen en audio van berichtenapps';
+
+  @override
+  String get excludedFolders => 'Uitgesloten mappen';
+
+  @override
+  String get excludedFoldersSearchDesc =>
+      'Specifieke mappen overslaan bij het scannen';
+
+  @override
+  String get clearLibraryData => 'Bibliotheekgegevens wissen';
+
+  @override
+  String get looperPlayerVersion => 'Versie van Looper Player';
+
+  @override
+  String versionLabel(String version) {
+    return 'Versie $version';
+  }
+
+  @override
+  String get none => 'Geen';
+
+  @override
+  String foldersSkippedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count mappen overgeslagen bij het scannen',
+      one: '1 map overgeslagen bij het scannen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get excludedFoldersDesc =>
+      'Nummers in deze mappen worden overgeslagen bij het scannen, ook als ze in een map staan die je hebt toegevoegd.';
+
+  @override
+  String get noExcludedFoldersYet => 'Nog geen uitgesloten mappen.';
+
+  @override
+  String get excludeAFolder => 'Een map uitsluiten';
+
+  @override
+  String get equalizerEnabled18Band => 'Ingeschakeld (18-bands MPV-EQ)';
+
+  @override
+  String get disabled => 'Uitgeschakeld';
+
+  @override
+  String get noIndexedFoldersYet => 'Nog geen geïndexeerde mappen';
+
+  @override
+  String get noIndexedFoldersYetDesc =>
+      'Gebruik \'Bibliotheek opnieuw scannen\' om mappen in de opslag te vinden.';
+
+  @override
+  String get eqDynamicRangeCompressor => 'Dynamiekcompressor';
+
+  @override
+  String get eqThreshold => 'Drempel';
+
+  @override
+  String get eqRatio => 'Verhouding';
+
+  @override
+  String get eqAttack => 'Attack';
+
+  @override
+  String get eqRelease => 'Release';
+
+  @override
+  String get eqHeadphoneCrossfeedWidth => 'Koptelefoon-crossfeed & breedte';
+
+  @override
+  String get eqBinauralCrossfeed => 'Binaurale crossfeed';
+
+  @override
+  String get eqCrossfeedStrength => 'Crossfeed-sterkte';
+
+  @override
+  String get eqStereoWidening => 'Stereoverbreding';
+
+  @override
+  String get eqWideningFactor => 'Verbredingsfactor';
+
+  @override
+  String get eqLoudnessNormalization => 'Luidheidsnormalisatie';
+
+  @override
+  String get eqTargetLoudness => 'Doelluidheid';
+
+  @override
+  String get eqToneShelving => 'Toonshelving (bas / hoog)';
+
+  @override
+  String get eqBassShelf => 'Bas-shelf';
+
+  @override
+  String get eqTrebleShelf => 'Hoge-tonen-shelf';
+
+  @override
+  String get eqTempoPitchControls => 'Tempo- & toonhoogteregeling';
+
+  @override
+  String get eqPitchShift => 'Toonhoogteverschuiving';
+
+  @override
+  String get eqTempoSpeed => 'Temposnelheid';
+
+  @override
+  String get eqVoiceSilenceControls => 'Stem- & stilteregeling';
+
+  @override
+  String get eqSilenceTrimming => 'Stilte inkorten';
+
+  @override
+  String get eqSilenceThreshold => 'Stiltedrempel';
+
+  @override
+  String get eqSpeechEnhancementFilter => 'Spraakverbeteringsfilter';
+
+  @override
+  String get eqHighpassCutoff => 'Hoogdoorlaatgrens';
+
+  @override
+  String get eqLowpassCutoff => 'Laagdoorlaatgrens';
+
+  @override
+  String get eqRetroRoomEffects => 'Retro- & ruimte-effecten';
+
+  @override
+  String get eqLofiEffect => 'Lofi-effect (8-bit-crusher)';
+
+  @override
+  String get eqStudioRoomReverb => 'Studiogalm (echo)';
+
+  @override
+  String get eqVirtualSurround => 'Virtueel 5.1-surroundgeluid';
+
+  @override
+  String get eqRawFilterConsole => 'Console voor ruwe FFmpeg-filters';
+
+  @override
+  String get eqSwitchToSliders => 'Naar schuifregelaars';
+
+  @override
+  String get eqSwitchToGraph => 'Naar grafiek';
+
+  @override
+  String get on => 'Aan';
+
+  @override
+  String get off => 'Uit';
+
+  @override
+  String get eqSongSpecificActive => 'Nummerspecifieke instellingen actief';
+
+  @override
+  String get eqUsingGlobalDefault =>
+      'Algemene standaardinstellingen in gebruik';
+
+  @override
+  String get eqInteractiveGraphHint =>
+      'INTERACTIEVE GRAFIEK (SLEEP PUNTEN VERTICAAL)';
+
+  @override
+  String get eq18BandHint => '18-BANDS EQUALIZER (HORIZONTAAL SCROLLEN)';
+
+  @override
+  String get eqSongSpecific => 'Nummerspecifiek';
+
+  @override
+  String get eqGlobalDefault => 'Algemene standaard';
+
+  @override
+  String get eqEditScopeNote =>
+      'Wijzigingen tijdens het afspelen van een nummer gelden alleen voor dat nummer. Bewerk zonder spelend nummer of gebruik de actie \'Toepassen op algemeen\' om de algemene standaard in te stellen.';
+
+  @override
+  String get presetFlat => 'Vlak';
+
+  @override
+  String get presetBassBooster => 'Basversterker';
+
+  @override
+  String get presetTrebleBooster => 'Hogetonenversterker';
+
+  @override
+  String get presetVocalBooster => 'Stemversterker';
+
+  @override
+  String get presetElectronic => 'Elektronisch';
+
+  @override
+  String get presetRock => 'Rock';
+
+  @override
+  String get presetPop => 'Pop';
+
+  @override
+  String get presetJazz => 'Jazz';
+
+  @override
+  String get save => 'Opslaan';
+
+  @override
+  String get savePreset => 'Preset opslaan';
+
+  @override
+  String get presetName => 'Naam van preset';
+
+  @override
+  String get deletePreset => 'Preset verwijderen';
+
+  @override
+  String deletePresetConfirm(String name) {
+    return 'Preset \'$name\' verwijderen?';
+  }
+
+  @override
+  String get noLyricsSource => 'Geen songtekstbron';
+
+  @override
+  String lyricsSourceLabel(String source) {
+    return 'Bron: $source';
+  }
+
+  @override
+  String get lyricsSourceLocalSidecar => 'Lokaal begeleidend bestand (.lrc)';
+
+  @override
+  String get lyricsSourceCustomFile => 'Eigen LRC-bestand';
+
+  @override
+  String get lyricsSourceNotFoundOnline => 'Niet online gevonden';
+
+  @override
+  String get lyricsProviderLocal => 'Lokaal';
+
+  @override
+  String get checkingLocalLyrics =>
+      'Lokale/ingesloten songteksten controleren...';
+
+  @override
+  String fetchingLyricsFrom(String provider) {
+    return 'Songtekst ophalen van $provider...';
+  }
+
+  @override
+  String get loadedLocalLyrics => 'Lokale/ingesloten songtekst geladen!';
+
+  @override
+  String get noLocalLyricsFound =>
+      'Geen lokale of ingesloten songtekst gevonden';
+
+  @override
+  String lyricsUpdatedFrom(String provider) {
+    return 'Songtekst bijgewerkt via $provider!';
+  }
+
+  @override
+  String noLyricsFoundOn(String provider) {
+    return 'Geen songtekst gevonden op $provider';
+  }
+
+  @override
+  String get gestureTips => 'Gebarentips';
+
+  @override
+  String get gestureTipsDesc =>
+      'Tikken, lang indrukken, knijpen om te zoomen en meer';
+
+  @override
+  String get exportLyrics => 'Songtekst exporteren';
+
+  @override
+  String lyricsExportedTo(String path) {
+    return 'Songtekst geëxporteerd naar: $path';
+  }
+
+  @override
+  String failedToExportLyrics(String error) {
+    return 'Songtekst exporteren mislukt: $error';
+  }
+
+  @override
+  String get gestureTapLine => 'Tik op een regel';
+
+  @override
+  String get gestureTapLineDesc =>
+      'Spring direct naar dat deel van de songtekst.';
+
+  @override
+  String get gestureLongPressLine => 'Houd een regel ingedrukt';
+
+  @override
+  String get gestureLongPressLineDesc =>
+      'Begin met regels selecteren voor een deelbare songtekstkaart. Tik op meer regels om de selectie uit te breiden.';
+
+  @override
+  String get gesturePinch => 'Knijp met twee vingers';
+
+  @override
+  String get gesturePinchDesc =>
+      'Pas de tekstgrootte van de songtekst naar wens aan.';
+
+  @override
+  String get gestureSwipeDown => 'Veeg omlaag';
+
+  @override
+  String get gestureSwipeDownDesc =>
+      'Sluit het songtekstscherm en ga terug naar de speler.';
+
+  @override
+  String get lyricsGestures => 'Songtekstgebaren';
+
+  @override
+  String get lyricsGesturesIntro =>
+      'Een paar dingen die dit scherm kan en die niet altijd duidelijk zijn:';
+
+  @override
+  String linesSelected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count regels geselecteerd',
+      one: '1 regel geselecteerd',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get couldNotGenerateShareImage =>
+      'De afbeelding om te delen kon niet worden gemaakt.';
+
+  @override
+  String get couldNotGenerateImage => 'De afbeelding kon niet worden gemaakt.';
+
+  @override
+  String get savedToGallery => 'Opgeslagen in de galerij.';
+
+  @override
+  String get galleryPermissionDenied =>
+      'Toestemming voor toegang tot de galerij is geweigerd.';
+
+  @override
+  String get couldNotSaveToGallery =>
+      'De afbeelding kon niet in de galerij worden opgeslagen.';
+
+  @override
+  String get shareLyrics => 'Songtekst delen';
+
+  @override
+  String get backgroundColor => 'Achtergrondkleur';
+
+  @override
+  String get lyricsTextColor => 'Tekstkleur songtekst';
+
+  @override
+  String get saveToGallery => 'Opslaan in galerij';
+
+  @override
+  String get preparing => 'Voorbereiden...';
+
+  @override
+  String get trackTitle => 'Titel';
+
+  @override
+  String get composer => 'Componist';
+
+  @override
+  String get unknownGenre => 'Onbekend genre';
+
+  @override
+  String get releaseYear => 'Jaar van uitgave';
+
+  @override
+  String get notAvailable => 'n.v.t.';
+
+  @override
+  String get recordLabel => 'Label';
+
+  @override
+  String get copyright => 'Copyright';
+
+  @override
+  String get encoder => 'Encoder';
+
+  @override
+  String get fileName => 'Bestandsnaam';
+
+  @override
+  String get fileFormat => 'Bestandsformaat';
+
+  @override
+  String get fileSize => 'Bestandsgrootte';
+
+  @override
+  String get absolutePath => 'Absoluut pad';
+
+  @override
+  String get playCount => 'Aantal keer afgespeeld';
+
+  @override
+  String playCountTimes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count keer',
+      one: '1 keer',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get lastPlayed => 'Laatst afgespeeld';
+
+  @override
+  String get filePath => 'Bestandspad';
+
+  @override
+  String get rescan => 'Opnieuw scannen';
+
+  @override
+  String get codec => 'Codec';
+
+  @override
+  String get container => 'Container';
+
+  @override
+  String get sampleRate => 'Samplefrequentie';
+
+  @override
+  String get bitDepth => 'Bitdiepte';
+
+  @override
+  String get decodedFormat => 'Gedecodeerd formaat';
+
+  @override
+  String get bitrate => 'Bitrate';
+
+  @override
+  String get channels => 'Kanalen';
+
+  @override
+  String get nyquist => 'Nyquist';
+
+  @override
+  String get dynamicRange => 'Dynamisch bereik';
+
+  @override
+  String get peak => 'Piek';
+
+  @override
+  String get truePeak => 'Echte piek';
+
+  @override
+  String get clipping => 'Clipping';
+
+  @override
+  String get cutoff => 'Afsnijfrequentie';
+
+  @override
+  String get samples => 'Samples';
+
+  @override
+  String channelShort(int channel) {
+    return 'K $channel';
+  }
+
+  @override
+  String get noneClean => 'Geen (schoon)';
+
+  @override
+  String get reanalyzingAudio => 'Audiostream opnieuw analyseren...';
+
+  @override
+  String get analyzingAudio => 'Audiostream analyseren...';
+
+  @override
+  String sampleRateHz(int rate) {
+    return 'Samplefrequentie: $rate Hz';
+  }
+
+  @override
+  String nyquistKhz(String khz) {
+    return 'Nyquist: $khz kHz';
+  }
+
+  @override
+  String get qualityLossless => 'Verliesvrij';
+
+  @override
+  String get qualityHigh => 'Hoge kwaliteit';
+
+  @override
+  String get qualityStandard => 'Standaardkwaliteit';
+
+  @override
+  String get qualityAudio => 'Audio';
+
+  @override
+  String get addCustomFolder => 'Een eigen map toevoegen';
+
+  @override
+  String get addCustomFolderDesc =>
+      'Staat je muziek in een map met een andere naam of op een SD-kaart, voeg die dan direct toe.';
+
+  @override
+  String get indexingYourLibrary => 'JE BIBLIOTHEEK WORDT GEÏNDEXEERD...';
+
+  @override
+  String get indexingYourLibraryDesc =>
+      'Titels, hoezen en songteksten van je nummers worden aangevuld.';
+
+  @override
+  String welcomeStep(String step, String title) {
+    return 'STAP $step: $title';
+  }
+
+  @override
+  String get includeOtherDeviceAudioAlarmsDesc =>
+      'Beltonen, meldingen, wekkers en audio van berichtenapps';
+
+  @override
+  String get version => 'Versie';
+
+  @override
+  String get noIndexedFoldersDesktopDesc =>
+      'Gebruik \'Bibliotheek opnieuw scannen\' om opslagmappen te vinden';
+
+  @override
+  String get playedLabel => 'Afgespeeld';
+
+  @override
+  String minutesShort(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count min',
+      one: '1 min',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String minuteChip(int count) {
+    return '$count min';
+  }
+
+  @override
+  String songsCountTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nummers',
+      one: '1 nummer',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String songsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'nog $count nummers',
+      one: 'nog 1 nummer',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String sleepTimerWithRemaining(String remaining) {
+    return 'Slaaptimer ($remaining)';
+  }
+
+  @override
+  String get trackInfoSection => 'NUMMERINFO';
+
+  @override
+  String get detailsSection => 'DETAILS';
+
+  @override
+  String get lyricsSection => 'SONGTEKST';
+
+  @override
+  String get editLyricsHint =>
+      'Voer de songtekst in als platte tekst of in gesynchroniseerd LRC-formaat [00:00.00]...';
+
+  @override
+  String addedSongsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nummers toegevoegd',
+      one: '1 nummer toegevoegd',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chooseInternalStorageFolder =>
+      'Kies een map in de interne opslag of op de SD-kaart van dit apparaat.';
+
+  @override
+  String get appCrashedTitle => 'Looper Player is gecrasht';
+
+  @override
+  String get appCrashedDesc =>
+      'Er is een onverwachte fout opgetreden bij het opstarten. Er is een diagnostisch crashrapport gemaakt.';
+
+  @override
+  String get appCrashedDetails =>
+      'Er is een fout opgetreden bij het initialiseren van de database of diensten van de app. Dit kan gebeuren als toegang tot de opslag beperkt is of als databasebestanden beschadigd zijn.';
+
+  @override
+  String get crashReportSaved =>
+      'Diagnostisch crashrapport opgeslagen in de ondersteuningsmap van de app.';
+
+  @override
+  String get shareLog => 'Log delen';
+
+  @override
+  String get restartApp => 'App herstarten';
+
+  @override
+  String get updateAvailableOnPlay =>
+      'Er is een nieuwe versie beschikbaar in Google Play.';
+
+  @override
+  String updateAvailableOnGithub(String version) {
+    return 'Versie $version is beschikbaar op GitHub.';
+  }
+
+  @override
+  String get updateAvailable => 'Update beschikbaar';
+
+  @override
+  String get updateAvailableTitle => 'Update beschikbaar!';
+
+  @override
+  String get visit => 'OPENEN';
+
+  @override
+  String get updateDownloaded => 'Update gedownload';
+
+  @override
+  String get restartToInstallUpdate =>
+      'Herstart Looper Player om deze te installeren.';
+
+  @override
+  String get restart => 'HERSTARTEN';
+
+  @override
+  String backupImportedSummary(int favorites, int stats, int playlists) {
+    return 'Back-up geïmporteerd: $favorites favorieten en $stats afspeelstatistieken samengevoegd, $playlists afspeellijsten gesynchroniseerd';
+  }
+
+  @override
+  String get backupExportFailed =>
+      'Back-up exporteren mislukt: er is een interne fout opgetreden bij het opslaan van het bestand.';
+
+  @override
+  String get backupImportFailed =>
+      'Back-up importeren mislukt: het bestand kan niet worden gelezen of het formaat is ongeldig.';
+
+  @override
+  String get stereo => 'Stereo';
+
+  @override
+  String get mono => 'Mono';
 }

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:looper_player/core/app_fonts.dart';
+import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/features/analyze/domain/analyze_models.dart';
-import 'package:looper_player/ui/screens/android/widgets/premium_section.dart';
-import 'package:looper_player/ui/widgets/optimized_image.dart';
+import 'package:looper_player/ui/android/widgets/premium_section.dart';
+import 'package:looper_player/ui/widgets/common/optimized_image.dart';
+import 'package:looper_player/core/utils/l10n.dart';
 
 /// Ranked "Top Artists" card: every artist's play count summed across their
 /// songs, ordered descending.
@@ -22,7 +23,7 @@ class AnalyzeTopArtistsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Top Artists',
+          context.l10n.topArtists,
           style: AppFonts.jostStyle(
             color: Colors.white,
             fontSize: 18,
@@ -106,7 +107,7 @@ class _ArtistRow extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${stat.songCount} song${stat.songCount == 1 ? '' : 's'} played',
+                  context.l10n.songsPlayedCount(stat.songCount),
                   style: AppFonts.jostStyle(
                     color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 12.5,
@@ -127,7 +128,11 @@ class _MiniRing extends StatelessWidget {
   final double share;
   final int plays;
   final Color accent;
-  const _MiniRing({required this.share, required this.plays, required this.accent});
+  const _MiniRing({
+    required this.share,
+    required this.plays,
+    required this.accent,
+  });
 
   @override
   Widget build(BuildContext context) {

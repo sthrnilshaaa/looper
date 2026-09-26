@@ -31,7 +31,6 @@ class MainActivity : FlutterActivity() {
     private val MEDIA_WRITE_REQUEST_CODE = 9274
     private val MEDIA_BATCH_DELETE_REQUEST_CODE = 9275
     private var wakeLock: PowerManager.WakeLock? = null
-    private var audioFocusManager: AudioFocusManager? = null
     // Real Play In-App Updates in the play flavor, a no-op in the github one.
     private var inAppUpdater: InAppUpdater? = null
     // Pending result for an in-flight pickSafFolder() call, bridged across
@@ -63,6 +62,13 @@ class MainActivity : FlutterActivity() {
         var activeEngine: FlutterEngine? = null
         var stopOnTaskRemoved: Boolean = false
 
+        // Audio-route receivers live as long as the cached engine, not the
+        // Activity: playback carries on in the background after the Activity
+        // is destroyed (back press, swiped from recents), and unplug /
+        // Bluetooth-connect events must still reach Dart then.
+        private var audioRouteEvents: AudioFocusManager? = null
+        private var audioRouteEventsEngine: FlutterEngine? = null
+
         fun sendWidgetAction(context: Context, action: String) {
             val engine = activeEngine
             if (engine != null) {
@@ -90,34 +96,27 @@ class MainActivity : FlutterActivity() {
 
 
 
-        val afm = AudioFocusManager(this, MethodChannel(flutterEngine.dartExecutor.binaryMessenger, AUDIO_FOCUS_CHANNEL))
-        audioFocusManager = afm
         // Registered unconditionally (not tied to holding AudioManager focus):
-        // mpv_audio_kit is the sole audio-focus owner, so this class must never
-        // request focus itself (a second concurrent focus request would steal
+        // mpv_audio_kit is the sole audio-focus owner, so this class never
+        // requests focus itself (a second concurrent focus request would steal
         // focus from mpv's own listener and pause playback). These receivers
         // only need the ordinary broadcasts, not focus, to power "Resume on
-        // Bluetooth Connect" (and a redundant but harmless noisy-pause).
-        afm.registerReceivers()
+        // Bluetooth Connect". Reused when a new Activity attaches to the same
+        // cached engine; application context so it never pins an Activity.
+        val afm = audioRouteEvents?.takeIf { audioRouteEventsEngine === flutterEngine }
+            ?: AudioFocusManager(
+                applicationContext,
+                MethodChannel(flutterEngine.dartExecutor.binaryMessenger, AUDIO_FOCUS_CHANNEL)
+            ).also {
+                audioRouteEvents?.unregisterReceivers()
+                audioRouteEvents = it
+                audioRouteEventsEngine = flutterEngine
+                it.registerReceivers()
+            }
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, AUDIO_FOCUS_CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
-                "requestAudioFocus" -> {
-                    val granted = afm.requestAudioFocus()
-                    result.success(granted)
-                }
-                "abandonAudioFocus" -> {
-                    afm.abandonAudioFocus()
-                    result.success(null)
-                }
-                "setPlaybackInterrupted" -> {
-                    val interrupted = call.argument<Boolean>("interrupted") ?: false
-                    afm.setPlaybackInterrupted(interrupted)
-                    result.success(null)
-                }
                 "syncSettings" -> {
-                    afm.isEnabled = call.argument<Boolean>("enabled") ?: true
-                    afm.pauseOnDuck = call.argument<Boolean>("pauseOnDuck") ?: false
                     afm.resumeOnBluetoothConnect = call.argument<Boolean>("resumeOnBluetoothConnect") ?: false
                     result.success(null)
                 }
@@ -666,10 +665,14 @@ class MainActivity : FlutterActivity() {
 
     override fun onDestroy() {
         releaseWakeLock()
-        audioFocusManager?.unregisterReceivers()
         inAppUpdater?.onDestroy()
         activeEngine = null
         if (stopOnTaskRemoved) {
+            // The engine is destroyed with this Activity (see
+            // shouldDestroyEngineWithHost), so its route receivers go too.
+            audioRouteEvents?.unregisterReceivers()
+            audioRouteEvents = null
+            audioRouteEventsEngine = null
             io.flutter.embedding.engine.FlutterEngineCache.getInstance().remove("looper_cached_engine")
         }
         super.onDestroy()

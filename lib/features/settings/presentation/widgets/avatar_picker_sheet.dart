@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:looper_player/core/app_fonts.dart';
-import 'package:looper_player/features/settings/presentation/settings_notifier.dart';
+import 'package:looper_player/core/theme/app_fonts.dart';
+import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
-import 'package:looper_player/ui/widgets/app_bottom_sheet.dart';
-import 'package:looper_player/ui/widgets/selected_avatar.dart';
+import 'package:looper_player/ui/widgets/sheets/app_bottom_sheet.dart';
+import 'package:looper_player/ui/widgets/common/selected_avatar.dart';
 
 void showAvatarPickerSheet(BuildContext context) {
   showModalBottomSheet(
@@ -25,9 +25,13 @@ class _AvatarPickerSheetContent extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final avatars = ref.watch(avatarAssetsProvider);
     final (selected, dynamicColor) = ref.watch(
-      settingsProvider.select((s) => (s.selectedAvatarAsset, s.avatarDynamicColor)),
+      settingsProvider.select(
+        (s) => (s.selectedAvatarAsset, s.avatarDynamicColor),
+      ),
     );
-    final accentColor = Color(ref.watch(settingsProvider.select((s) => s.accentColor)));
+    final accentColor = Color(
+      ref.watch(settingsProvider.select((s) => s.accentColor)),
+    );
 
     return AppBottomSheetContainer(
       child: Column(
@@ -55,10 +59,14 @@ class _AvatarPickerSheetContent extends ConsumerWidget {
                     (asset) => _AvatarOption(
                       asset: asset,
                       isSelected: asset == selected,
-                      accent: dynamicColor ? Theme.of(context).colorScheme.primary : null,
+                      accent: dynamicColor
+                          ? Theme.of(context).colorScheme.primary
+                          : null,
                       onTap: () {
                         HapticFeedback.lightImpact();
-                        ref.read(settingsProvider.notifier).updateSelectedAvatar(asset);
+                        ref
+                            .read(settingsProvider.notifier)
+                            .updateSelectedAvatar(asset);
                       },
                     ),
                   )
@@ -75,7 +83,10 @@ class _AvatarPickerSheetContent extends ConsumerWidget {
             contentPadding: EdgeInsets.zero,
             title: Text(
               l10n.dynamicAvatarColor,
-              style: AppFonts.jostStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              style: AppFonts.jostStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             subtitle: Text(
               l10n.dynamicAvatarColorDesc,
@@ -84,7 +95,9 @@ class _AvatarPickerSheetContent extends ConsumerWidget {
             activeThumbColor: accentColor,
             value: dynamicColor,
             onChanged: (value) {
-              ref.read(settingsProvider.notifier).updateAvatarDynamicColor(value);
+              ref
+                  .read(settingsProvider.notifier)
+                  .updateAvatarDynamicColor(value);
             },
           ),
           SizedBox(height: MediaQuery.of(context).padding.bottom),
@@ -117,7 +130,9 @@ class _AvatarOption extends StatelessWidget {
           color: Colors.white.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? Theme.of(context).colorScheme.primary : Colors.white12,
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : Colors.white12,
             width: isSelected ? 2 : 1,
           ),
         ),

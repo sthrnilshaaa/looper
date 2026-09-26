@@ -29,6 +29,7 @@ class SongStat {
   final int rank;
   final Song song;
   final int playCount;
+
   /// Play count relative to the #1 song, in [0, 1] — drives proportional
   /// bar widths in the ranked list.
   final double share;
@@ -230,9 +231,7 @@ class AnalyzeSnapshot {
         ),
     ];
 
-    final artistImages = <String, Artist>{
-      for (final a in artists) a.name: a,
-    };
+    final artistImages = <String, Artist>{for (final a in artists) a.name: a};
     final topArtists = _rankBy<ArtistStat>(
       playedSongs,
       keyOf: (s) => s.artist ?? 'Unknown Artist',
@@ -310,7 +309,8 @@ class AnalyzeSnapshot {
       counts[key] = (counts[key] ?? 0) + 1;
       // Prefer a sample that has artwork, for a nicer thumbnail.
       final existing = samples[key];
-      if (existing == null || (existing.artPath == null && song.artPath != null)) {
+      if (existing == null ||
+          (existing.artPath == null && song.artPath != null)) {
         samples[key] = song;
       }
     }

@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
-import 'package:looper_player/core/db_service.dart';
-import 'package:looper_player/features/library/domain/models/models.dart';
+import 'package:looper_player/core/services/storage/db_service.dart';
 import 'lyrics_cache.dart';
 import 'metadata_service.dart';
 import 'lyrics_service.dart';

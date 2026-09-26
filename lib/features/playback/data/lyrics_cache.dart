@@ -13,7 +13,8 @@ class LyricsCache {
   }
 
   static String _generateKey(String artist, String title) {
-    final input = '${artist.trim().toLowerCase()}_${title.trim().toLowerCase()}';
+    final input =
+        '${artist.trim().toLowerCase()}_${title.trim().toLowerCase()}';
     final safeName = input.replaceAll(RegExp(r'[^a-z0-9_]'), '_');
     return '${safeName}_${input.hashCode.abs()}';
   }
@@ -24,9 +25,7 @@ class LyricsCache {
       final key = _generateKey(artist, title);
       final file = File(p.join(dir.path, '$key.lrc'));
       await file.writeAsString(lrc);
-    } catch (e) {
-
-    }
+    } catch (e) {}
   }
 
   static Future<String?> get(String artist, String title) async {
@@ -37,9 +36,7 @@ class LyricsCache {
       if (await file.exists()) {
         return await file.readAsString();
       }
-    } catch (e) {
-
-    }
+    } catch (e) {}
     return null;
   }
 }

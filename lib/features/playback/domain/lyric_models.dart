@@ -70,14 +70,20 @@ class LrcParser {
         final trimmed = line.trim();
         if (trimmed.isEmpty) continue;
         if (metaRegExp.hasMatch(trimmed)) continue;
-        if (trimmed.startsWith('[') && trimmed.endsWith(']') && !trimmed.contains(' ')) continue;
+        if (trimmed.startsWith('[') &&
+            trimmed.endsWith(']') &&
+            !trimmed.contains(' ')) {
+          continue;
+        }
         plainLines.add(trimmed);
       }
 
       if (plainLines.isNotEmpty) {
         final List<LyricLine> result = [];
         final count = plainLines.length;
-        final totalMs = totalDuration.inMilliseconds > 0 ? totalDuration.inMilliseconds : 180000; // fallback to 3 mins
+        final totalMs = totalDuration.inMilliseconds > 0
+            ? totalDuration.inMilliseconds
+            : 180000; // fallback to 3 mins
         final interval = totalMs ~/ count;
         for (var i = 0; i < count; i++) {
           result.add(

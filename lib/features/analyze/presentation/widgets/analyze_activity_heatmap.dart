@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:looper_player/core/app_fonts.dart';
+import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/features/analyze/domain/analyze_models.dart';
-import 'package:looper_player/ui/screens/android/widgets/premium_section.dart';
+import 'package:looper_player/ui/android/widgets/premium_section.dart';
+import 'package:looper_player/core/utils/l10n.dart';
 
-const _weekdayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-const _dayPartLabels = {
-  DayPart.morning: 'AM',
-  DayPart.afternoon: 'Aft',
-  DayPart.evening: 'Eve',
-  DayPart.night: 'Night',
+/// Monday-first narrow weekday labels in the app's language.
+List<String> _weekdayLabels(BuildContext context) {
+  final narrow = MaterialLocalizations.of(
+    context,
+  ).narrowWeekdays; // Sunday-first
+  return [...narrow.skip(1), narrow.first];
+}
+
+String _dayPartLabel(BuildContext context, DayPart part) => switch (part) {
+  DayPart.morning => context.l10n.dayPartMorningShort,
+  DayPart.afternoon => context.l10n.dayPartAfternoonShort,
+  DayPart.evening => context.l10n.dayPartEveningShort,
+  DayPart.night => context.l10n.dayPartNightShort,
 };
 
 /// "When do you listen most" — a 7 (weekday) x 4 (day-part) heatmap grid
@@ -60,7 +68,7 @@ class AnalyzeActivityHeatmap extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Activity Pattern',
+          context.l10n.activityPattern,
           style: AppFonts.jostStyle(
             color: Colors.white,
             fontSize: 18,
@@ -68,7 +76,7 @@ class AnalyzeActivityHeatmap extends StatelessWidget {
           ),
         ),
         Text(
-          'When you listen most',
+          context.l10n.whenYouListenMost,
           style: AppFonts.jostStyle(
             color: Colors.white.withValues(alpha: 0.45),
             fontSize: 12.5,
@@ -93,7 +101,7 @@ class AnalyzeActivityHeatmap extends StatelessWidget {
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            _dayPartLabels[part]!,
+                            _dayPartLabel(context, part),
                             style: AppFonts.jostStyle(
                               color: Colors.white.withValues(alpha: 0.45),
                               fontSize: 10.5,
@@ -109,7 +117,7 @@ class AnalyzeActivityHeatmap extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        for (final label in _weekdayLabels)
+                        for (final label in _weekdayLabels(context))
                           Expanded(
                             child: Center(
                               child: Text(

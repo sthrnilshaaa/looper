@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:looper_player/core/app_fonts.dart';
+import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/features/analyze/domain/analyze_models.dart';
-import 'package:looper_player/features/analyze/presentation/analyze_notifier.dart';
-import 'package:looper_player/features/playback/presentation/playback_notifier.dart';
-import 'package:looper_player/ui/screens/android/widgets/premium_section.dart';
-import 'package:looper_player/ui/widgets/optimized_image.dart';
+import 'package:looper_player/features/analyze/presentation/providers/analyze_notifier.dart';
+import 'package:looper_player/features/playback/presentation/providers/playback/playback_notifier.dart';
+import 'package:looper_player/ui/android/widgets/premium_section.dart';
+import 'package:looper_player/ui/widgets/common/optimized_image.dart';
+import 'package:looper_player/core/utils/l10n.dart';
 
 const List<Color> _rankColors = [
   Color(0xFFFFD54A), // gold
@@ -38,7 +39,7 @@ class AnalyzeTopSongsSection extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Top Songs',
+              context.l10n.topSongs,
               style: AppFonts.jostStyle(
                 color: Colors.white,
                 fontSize: 18,
@@ -112,7 +113,9 @@ class _LimitToggle extends ConsumerWidget {
           child: Text(
             '$value',
             style: AppFonts.jostStyle(
-              color: selected ? Colors.black : Colors.white.withValues(alpha: 0.6),
+              color: selected
+                  ? Colors.black
+                  : Colors.white.withValues(alpha: 0.6),
               fontSize: 13,
               fontWeight: FontWeight.bold,
             ),
@@ -197,7 +200,7 @@ class _TopSongRow extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        stat.song.artist ?? 'Unknown Artist',
+                        stat.song.artist ?? context.l10n.unknownArtist,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppFonts.jostStyle(
@@ -232,9 +235,7 @@ class _TopSongRow extends StatelessWidget {
                     value: animatedShare.clamp(0.02, 1.0),
                     minHeight: 4,
                     backgroundColor: Colors.white.withValues(alpha: 0.06),
-                    valueColor: AlwaysStoppedAnimation(
-                      rankColor ?? accent,
-                    ),
+                    valueColor: AlwaysStoppedAnimation(rankColor ?? accent),
                   ),
                 ),
               ),

@@ -57,7 +57,12 @@ class Song {
 
   // Metadata for search
   @Index(type: IndexType.value, caseSensitive: false)
-  List<String> get searchTerms => [title, artist ?? '', album ?? '', lyrics ?? ''];
+  List<String> get searchTerms => [
+    title,
+    artist ?? '',
+    album ?? '',
+    lyrics ?? '',
+  ];
 }
 
 @collection
@@ -145,6 +150,9 @@ class AppSettings {
   bool blurredArtworkForLyrics = true;
   int accentColor = 0xFF41C25E; // Default Green
   bool audioFocus = true;
+  // Unused: audio focus is owned by mpv_audio_kit, which can't honour
+  // these (nor pauseOnDuck / permanentAudioFocusChange below). Kept only
+  // so the Isar schema and existing databases stay unchanged.
   bool audioFocusRequestOnPlay = true;
   bool audioFocusReleaseOnPause = true;
   bool audioFocusStopOnOtherSession = true;
@@ -163,6 +171,13 @@ class AppSettings {
   bool keepBackgroundGradient = false;
   bool showQualityBadge = true;
   bool enablePlayerGradient = true;
+  // Swaps the static player gradient for slow drifting primary/tertiary
+  // color blobs with grain that react to the music (FFT). Only takes effect
+  // while enablePlayerGradient is on.
+  bool animatePlayerGradient = false;
+  // Same animated gradient on the Home/Songs/Library background. Only takes
+  // effect while keepBackgroundGradient is on.
+  bool animateBackgroundGradient = false;
   bool settingsV2 = false;
   bool settingsV3 = false;
   bool showPerformanceOptimizer = false;
@@ -173,7 +188,14 @@ class AppSettings {
   bool showHomeAlbums = false;
   bool showHomeGenres = true;
   bool showHomeRecent = true;
-  List<String> homeSectionOrder = ['quick_picks', 'songs', 'albums', 'artists', 'genres', 'recent'];
+  List<String> homeSectionOrder = [
+    'quick_picks',
+    'songs',
+    'albums',
+    'artists',
+    'genres',
+    'recent',
+  ];
   bool enableSlideGesture = false;
   bool stopOnTaskRemoved = true;
   bool persistQueue = false;
@@ -188,12 +210,12 @@ class AppSettings {
   bool fadePlayPauseStop = true;
   int playPauseStopFadeLength = 150; // ms (10ms-1000ms)
   bool resumeAfterCall = true;
-  bool pauseOnDuck = false;
+  bool pauseOnDuck = false; // Unused, see audioFocusRequestOnPlay.
   bool resumeOnBluetoothConnect = false;
   bool resumeOnStart = false;
-  bool permanentAudioFocusChange = false;
+  bool permanentAudioFocusChange = false; // Unused, see above.
   bool dynamicColorActiveLyrics = true;
-  bool ambientColorBackground = false;
+  bool ambientColorBackground = true;
   String lyricsAlignment = 'left'; // 'left', 'center', 'right'
   bool dynamicAccentColor = true;
   int sortStrategyIndex = 0;
@@ -204,10 +226,10 @@ class AppSettings {
   int collectionSortOptionIndex = 0;
 
   double homeDarkness = 0.62;
-  double songsDarkness = 0.62;
+  double songsDarkness = 0.45;
   double libraryDarkness = 0.62;
   double musicDarkness = 0.62;
-  double lyricsDarkness = 0.55;
+  double lyricsDarkness = 0.50;
 
   // Home screen app-bar avatar. Filename only (not a full path) - it's
   // always resolved against assets/android_icons/avatars/, so renaming that

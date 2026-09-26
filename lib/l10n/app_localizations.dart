@@ -740,6 +740,30 @@ abstract class AppLocalizations {
   /// **'Keep the background gradient across all application screens'**
   String get keepBackgroundGradientDesc;
 
+  /// No description provided for @animatePlayerGradient.
+  ///
+  /// In en, this message translates to:
+  /// **'Animated Gradient'**
+  String get animatePlayerGradient;
+
+  /// No description provided for @animatePlayerGradientDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Slowly moves the primary and tertiary colors with a soft grain, reacting to the music'**
+  String get animatePlayerGradientDesc;
+
+  /// No description provided for @animateBackgroundGradient.
+  ///
+  /// In en, this message translates to:
+  /// **'Animated Background'**
+  String get animateBackgroundGradient;
+
+  /// No description provided for @animateBackgroundGradientDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Uses the animated gradient on the Home, Songs and Library backgrounds'**
+  String get animateBackgroundGradientDesc;
+
   /// No description provided for @language.
   ///
   /// In en, this message translates to:
@@ -1862,17 +1886,17 @@ abstract class AppLocalizations {
   /// **'Use static text instead of rolling animation for progress duration'**
   String get useStaticTextTimestamps;
 
-  /// No description provided for @verticalMotionEffectPlayer.
+  /// No description provided for @fluidPlayer.
   ///
   /// In en, this message translates to:
-  /// **'Vertical Motion Effect Player'**
-  String get verticalMotionEffectPlayer;
+  /// **'Fluid Player'**
+  String get fluidPlayer;
 
-  /// No description provided for @verticalMotionEffectPlayerDesc.
+  /// No description provided for @fluidPlayerDesc.
   ///
   /// In en, this message translates to:
-  /// **'Swipe down on the expanded player to dismiss it'**
-  String get verticalMotionEffectPlayerDesc;
+  /// **'Drag the mini player up to morph it into the full player'**
+  String get fluidPlayerDesc;
 
   /// No description provided for @viewAll.
   ///
@@ -2977,6 +3001,1500 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enriching {count} songs…'**
   String enrichingSongs(int count);
+
+  /// No description provided for @noListeningHistoryYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No listening history yet'**
+  String get noListeningHistoryYet;
+
+  /// No description provided for @noListeningHistoryYetDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Play a few songs and your personal report card — top songs, artists, albums and genres — will come to life here.'**
+  String get noListeningHistoryYetDesc;
+
+  /// No description provided for @looperAnalyze.
+  ///
+  /// In en, this message translates to:
+  /// **'Looper Analyze'**
+  String get looperAnalyze;
+
+  /// No description provided for @totalPlays.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Plays'**
+  String get totalPlays;
+
+  /// No description provided for @listeningTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening Time'**
+  String get listeningTime;
+
+  /// No description provided for @currentStreakDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Streak (days)'**
+  String get currentStreakDays;
+
+  /// No description provided for @longestStreakDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Longest Streak (days)'**
+  String get longestStreakDays;
+
+  /// No description provided for @analyzePlaysAndSongs.
+  ///
+  /// In en, this message translates to:
+  /// **'{plays} plays • {songs} songs'**
+  String analyzePlaysAndSongs(int plays, int songs);
+
+  /// No description provided for @dayPartMorningShort.
+  ///
+  /// In en, this message translates to:
+  /// **'AM'**
+  String get dayPartMorningShort;
+
+  /// No description provided for @dayPartAfternoonShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Aft'**
+  String get dayPartAfternoonShort;
+
+  /// No description provided for @dayPartEveningShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Eve'**
+  String get dayPartEveningShort;
+
+  /// No description provided for @dayPartNightShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Night'**
+  String get dayPartNightShort;
+
+  /// No description provided for @activityPattern.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity Pattern'**
+  String get activityPattern;
+
+  /// No description provided for @whenYouListenMost.
+  ///
+  /// In en, this message translates to:
+  /// **'When you listen most'**
+  String get whenYouListenMost;
+
+  /// No description provided for @genreBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Genre Breakdown'**
+  String get genreBreakdown;
+
+  /// No description provided for @otherGenre.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get otherGenre;
+
+  /// No description provided for @topAlbums.
+  ///
+  /// In en, this message translates to:
+  /// **'Top Albums'**
+  String get topAlbums;
+
+  /// No description provided for @topArtists.
+  ///
+  /// In en, this message translates to:
+  /// **'Top Artists'**
+  String get topArtists;
+
+  /// No description provided for @topSongs.
+  ///
+  /// In en, this message translates to:
+  /// **'Top Songs'**
+  String get topSongs;
+
+  /// No description provided for @playsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 play} other{{count} plays}}'**
+  String playsCount(int count);
+
+  /// No description provided for @songsPlayedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 song played} other{{count} songs played}}'**
+  String songsPlayedCount(int count);
+
+  /// No description provided for @listeningTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening Trend'**
+  String get listeningTrend;
+
+  /// No description provided for @last30Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get last30Days;
+
+  /// No description provided for @errorWithDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: {error}'**
+  String errorWithDetails(String error);
+
+  /// No description provided for @selectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select All'**
+  String get selectAll;
+
+  /// No description provided for @playlist.
+  ///
+  /// In en, this message translates to:
+  /// **'Playlist'**
+  String get playlist;
+
+  /// No description provided for @songsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 song} other{{count} songs}}'**
+  String songsCount(int count);
+
+  /// No description provided for @recentSearches.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Searches'**
+  String get recentSearches;
+
+  /// No description provided for @lyricsSourceLocalFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Local File'**
+  String get lyricsSourceLocalFile;
+
+  /// No description provided for @lyricsSourceEmbedded.
+  ///
+  /// In en, this message translates to:
+  /// **'Embedded Metadata'**
+  String get lyricsSourceEmbedded;
+
+  /// No description provided for @lyricsProvidedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Lyrics provided by {source}'**
+  String lyricsProvidedBy(String source);
+
+  /// No description provided for @failedToImportLyrics.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to import lyrics: {error}'**
+  String failedToImportLyrics(String error);
+
+  /// No description provided for @lyricsEditorLines.
+  ///
+  /// In en, this message translates to:
+  /// **'Lines'**
+  String get lyricsEditorLines;
+
+  /// No description provided for @lyricsEditorStamped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stamped'**
+  String get lyricsEditorStamped;
+
+  /// No description provided for @lyricsEditorLineNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Line {number}'**
+  String lyricsEditorLineNumber(int number);
+
+  /// No description provided for @lyricsEditorEmptyLine.
+  ///
+  /// In en, this message translates to:
+  /// **'(Empty line)'**
+  String get lyricsEditorEmptyLine;
+
+  /// No description provided for @lyricsEditorNotStamped.
+  ///
+  /// In en, this message translates to:
+  /// **'Not stamped yet'**
+  String get lyricsEditorNotStamped;
+
+  /// No description provided for @pause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get pause;
+
+  /// No description provided for @lyricsEditorAddLineFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one lyric line first.'**
+  String get lyricsEditorAddLineFirst;
+
+  /// No description provided for @lyricsEditorSavedWithSidecar.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved lyrics to database and beside the song file.'**
+  String get lyricsEditorSavedWithSidecar;
+
+  /// No description provided for @lyricsEditorSavedDbOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved lyrics to player database.'**
+  String get lyricsEditorSavedDbOnly;
+
+  /// No description provided for @lyricsEditorSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the lyrics.'**
+  String get lyricsEditorSaveFailed;
+
+  /// No description provided for @saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving...'**
+  String get saving;
+
+  /// No description provided for @saveLrc.
+  ///
+  /// In en, this message translates to:
+  /// **'Save LRC'**
+  String get saveLrc;
+
+  /// No description provided for @lyricsEditorSelectedLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected line {index} of {total}'**
+  String lyricsEditorSelectedLine(int index, int total);
+
+  /// No description provided for @lyricsEditorPickLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a lyric line from the list below.'**
+  String get lyricsEditorPickLine;
+
+  /// No description provided for @stampAndNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Stamp & Next'**
+  String get stampAndNext;
+
+  /// No description provided for @stampNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Stamp Now'**
+  String get stampNow;
+
+  /// No description provided for @lyricsEditorSimpleSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'1. Paste or type one lyric line per row.\n2. Play the song.\n3. Select the current lyric line.\n4. Tap \"Stamp & Next\" when you hear that line.\n5. Save when done.'**
+  String get lyricsEditorSimpleSteps;
+
+  /// No description provided for @lyricsEditorAdvancedSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'1. Edit timestamps directly for each line.\n2. Use \"Use Current Time\" to capture the live playback time.\n3. Use the shift controls to move all stamped lyrics together.\n4. Save to generate the final `.lrc` file.'**
+  String get lyricsEditorAdvancedSteps;
+
+  /// No description provided for @lyricsEditorTipsText.
+  ///
+  /// In en, this message translates to:
+  /// **'- If some lines are not stamped, Flick\'s engine fills their times automatically.\n- Save writes beside the song when possible, otherwise it stores a linked copy in the DB.'**
+  String get lyricsEditorTipsText;
+
+  /// No description provided for @fileNotFoundOrInaccessible.
+  ///
+  /// In en, this message translates to:
+  /// **'File not found or inaccessible: {title}'**
+  String fileNotFoundOrInaccessible(String title);
+
+  /// No description provided for @playbackFailedCorrupted.
+  ///
+  /// In en, this message translates to:
+  /// **'Playback failed: Unable to load or play \"{title}\". Please verify the file is not corrupted.'**
+  String playbackFailedCorrupted(String title);
+
+  /// No description provided for @shareSongText.
+  ///
+  /// In en, this message translates to:
+  /// **'Check out this song: {title}'**
+  String shareSongText(String title);
+
+  /// No description provided for @shareSongsText.
+  ///
+  /// In en, this message translates to:
+  /// **'Check out these {count} songs'**
+  String shareSongsText(int count);
+
+  /// No description provided for @noSettingsFoundFor.
+  ///
+  /// In en, this message translates to:
+  /// **'No settings found for \"{query}\"'**
+  String noSettingsFoundFor(String query);
+
+  /// No description provided for @chooseQuickAccentColors.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose quick accent colors'**
+  String get chooseQuickAccentColors;
+
+  /// No description provided for @fontWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Font Weight'**
+  String get fontWeight;
+
+  /// No description provided for @changeBaseFontWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Change base weight of custom font'**
+  String get changeBaseFontWeight;
+
+  /// No description provided for @lyricsFontWeightValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Lyrics font weight: {weight}'**
+  String lyricsFontWeightValue(int weight);
+
+  /// No description provided for @equalizerSearchDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust 18-band equalizer and audio presets'**
+  String get equalizerSearchDesc;
+
+  /// No description provided for @stopServiceSearchDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop playback and close the app when swiped away from recent panel'**
+  String get stopServiceSearchDesc;
+
+  /// No description provided for @scanNewFolderDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan a new folder for audio files'**
+  String get scanNewFolderDesc;
+
+  /// No description provided for @includeOtherDeviceAudioShortDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Ringtones, notifications and messaging audio'**
+  String get includeOtherDeviceAudioShortDesc;
+
+  /// No description provided for @excludedFolders.
+  ///
+  /// In en, this message translates to:
+  /// **'Excluded Folders'**
+  String get excludedFolders;
+
+  /// No description provided for @excludedFoldersSearchDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip specific folders when scanning'**
+  String get excludedFoldersSearchDesc;
+
+  /// No description provided for @clearLibraryData.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear library data'**
+  String get clearLibraryData;
+
+  /// No description provided for @looperPlayerVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Looper Player Version'**
+  String get looperPlayerVersion;
+
+  /// No description provided for @versionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version}'**
+  String versionLabel(String version);
+
+  /// No description provided for @none.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get none;
+
+  /// No description provided for @foldersSkippedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 folder skipped when scanning} other{{count} folders skipped when scanning}}'**
+  String foldersSkippedCount(int count);
+
+  /// No description provided for @excludedFoldersDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Songs in these folders are skipped during a scan, even if they sit inside a folder you added.'**
+  String get excludedFoldersDesc;
+
+  /// No description provided for @noExcludedFoldersYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No excluded folders yet.'**
+  String get noExcludedFoldersYet;
+
+  /// No description provided for @excludeAFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Exclude a Folder'**
+  String get excludeAFolder;
+
+  /// No description provided for @equalizerEnabled18Band.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled (18-band MPV EQ)'**
+  String get equalizerEnabled18Band;
+
+  /// No description provided for @disabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get disabled;
+
+  /// No description provided for @noIndexedFoldersYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No indexed folders yet'**
+  String get noIndexedFoldersYet;
+
+  /// No description provided for @noIndexedFoldersYetDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Rescan Library to discover folders across storage.'**
+  String get noIndexedFoldersYetDesc;
+
+  /// No description provided for @eqDynamicRangeCompressor.
+  ///
+  /// In en, this message translates to:
+  /// **'Dynamic Range Compressor'**
+  String get eqDynamicRangeCompressor;
+
+  /// No description provided for @eqThreshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Threshold'**
+  String get eqThreshold;
+
+  /// No description provided for @eqRatio.
+  ///
+  /// In en, this message translates to:
+  /// **'Ratio'**
+  String get eqRatio;
+
+  /// No description provided for @eqAttack.
+  ///
+  /// In en, this message translates to:
+  /// **'Attack'**
+  String get eqAttack;
+
+  /// No description provided for @eqRelease.
+  ///
+  /// In en, this message translates to:
+  /// **'Release'**
+  String get eqRelease;
+
+  /// No description provided for @eqHeadphoneCrossfeedWidth.
+  ///
+  /// In en, this message translates to:
+  /// **'Headphone Crossfeed & Width'**
+  String get eqHeadphoneCrossfeedWidth;
+
+  /// No description provided for @eqBinauralCrossfeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Binaural Crossfeed'**
+  String get eqBinauralCrossfeed;
+
+  /// No description provided for @eqCrossfeedStrength.
+  ///
+  /// In en, this message translates to:
+  /// **'Crossfeed Strength'**
+  String get eqCrossfeedStrength;
+
+  /// No description provided for @eqStereoWidening.
+  ///
+  /// In en, this message translates to:
+  /// **'Stereo Widening'**
+  String get eqStereoWidening;
+
+  /// No description provided for @eqWideningFactor.
+  ///
+  /// In en, this message translates to:
+  /// **'Widening Factor'**
+  String get eqWideningFactor;
+
+  /// No description provided for @eqLoudnessNormalization.
+  ///
+  /// In en, this message translates to:
+  /// **'Loudness Normalization'**
+  String get eqLoudnessNormalization;
+
+  /// No description provided for @eqTargetLoudness.
+  ///
+  /// In en, this message translates to:
+  /// **'Target Loudness'**
+  String get eqTargetLoudness;
+
+  /// No description provided for @eqToneShelving.
+  ///
+  /// In en, this message translates to:
+  /// **'Tone Shelving (Bass / Treble)'**
+  String get eqToneShelving;
+
+  /// No description provided for @eqBassShelf.
+  ///
+  /// In en, this message translates to:
+  /// **'Bass Shelf'**
+  String get eqBassShelf;
+
+  /// No description provided for @eqTrebleShelf.
+  ///
+  /// In en, this message translates to:
+  /// **'Treble Shelf'**
+  String get eqTrebleShelf;
+
+  /// No description provided for @eqTempoPitchControls.
+  ///
+  /// In en, this message translates to:
+  /// **'Tempo & Pitch Controls'**
+  String get eqTempoPitchControls;
+
+  /// No description provided for @eqPitchShift.
+  ///
+  /// In en, this message translates to:
+  /// **'Pitch Shift'**
+  String get eqPitchShift;
+
+  /// No description provided for @eqTempoSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Tempo Speed'**
+  String get eqTempoSpeed;
+
+  /// No description provided for @eqVoiceSilenceControls.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice & Silence controls'**
+  String get eqVoiceSilenceControls;
+
+  /// No description provided for @eqSilenceTrimming.
+  ///
+  /// In en, this message translates to:
+  /// **'Silence Trimming'**
+  String get eqSilenceTrimming;
+
+  /// No description provided for @eqSilenceThreshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Silence Threshold'**
+  String get eqSilenceThreshold;
+
+  /// No description provided for @eqSpeechEnhancementFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech Enhancement Filter'**
+  String get eqSpeechEnhancementFilter;
+
+  /// No description provided for @eqHighpassCutoff.
+  ///
+  /// In en, this message translates to:
+  /// **'Highpass Cutoff'**
+  String get eqHighpassCutoff;
+
+  /// No description provided for @eqLowpassCutoff.
+  ///
+  /// In en, this message translates to:
+  /// **'Lowpass Cutoff'**
+  String get eqLowpassCutoff;
+
+  /// No description provided for @eqRetroRoomEffects.
+  ///
+  /// In en, this message translates to:
+  /// **'Retro & Room Effects'**
+  String get eqRetroRoomEffects;
+
+  /// No description provided for @eqLofiEffect.
+  ///
+  /// In en, this message translates to:
+  /// **'Lofi Effect (8-bit Crusher)'**
+  String get eqLofiEffect;
+
+  /// No description provided for @eqStudioRoomReverb.
+  ///
+  /// In en, this message translates to:
+  /// **'Studio Room Reverb (Echo)'**
+  String get eqStudioRoomReverb;
+
+  /// No description provided for @eqVirtualSurround.
+  ///
+  /// In en, this message translates to:
+  /// **'Virtual 5.1 Surround Sound'**
+  String get eqVirtualSurround;
+
+  /// No description provided for @eqRawFilterConsole.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw FFMpeg Filter console'**
+  String get eqRawFilterConsole;
+
+  /// No description provided for @eqSwitchToSliders.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to Sliders'**
+  String get eqSwitchToSliders;
+
+  /// No description provided for @eqSwitchToGraph.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to Graph'**
+  String get eqSwitchToGraph;
+
+  /// No description provided for @on.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get on;
+
+  /// No description provided for @off.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get off;
+
+  /// No description provided for @eqSongSpecificActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Song-specific settings active'**
+  String get eqSongSpecificActive;
+
+  /// No description provided for @eqUsingGlobalDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Using global settings default'**
+  String get eqUsingGlobalDefault;
+
+  /// No description provided for @eqInteractiveGraphHint.
+  ///
+  /// In en, this message translates to:
+  /// **'INTERACTIVE GRAPH (DRAG DOTS VERTICALLY)'**
+  String get eqInteractiveGraphHint;
+
+  /// No description provided for @eq18BandHint.
+  ///
+  /// In en, this message translates to:
+  /// **'18-BAND EQUALIZER (SCROLL HORIZONTALLY)'**
+  String get eq18BandHint;
+
+  /// No description provided for @eqSongSpecific.
+  ///
+  /// In en, this message translates to:
+  /// **'Song-Specific'**
+  String get eqSongSpecific;
+
+  /// No description provided for @eqGlobalDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Global Default'**
+  String get eqGlobalDefault;
+
+  /// No description provided for @eqEditScopeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Edits made when a song is playing apply to that song only. To set the global default, edit when no song is playing, or use the \'Apply to Global\' action.'**
+  String get eqEditScopeNote;
+
+  /// No description provided for @presetFlat.
+  ///
+  /// In en, this message translates to:
+  /// **'Flat'**
+  String get presetFlat;
+
+  /// No description provided for @presetBassBooster.
+  ///
+  /// In en, this message translates to:
+  /// **'Bass Booster'**
+  String get presetBassBooster;
+
+  /// No description provided for @presetTrebleBooster.
+  ///
+  /// In en, this message translates to:
+  /// **'Treble Booster'**
+  String get presetTrebleBooster;
+
+  /// No description provided for @presetVocalBooster.
+  ///
+  /// In en, this message translates to:
+  /// **'Vocal Booster'**
+  String get presetVocalBooster;
+
+  /// No description provided for @presetElectronic.
+  ///
+  /// In en, this message translates to:
+  /// **'Electronic'**
+  String get presetElectronic;
+
+  /// No description provided for @presetRock.
+  ///
+  /// In en, this message translates to:
+  /// **'Rock'**
+  String get presetRock;
+
+  /// No description provided for @presetPop.
+  ///
+  /// In en, this message translates to:
+  /// **'Pop'**
+  String get presetPop;
+
+  /// No description provided for @presetJazz.
+  ///
+  /// In en, this message translates to:
+  /// **'Jazz'**
+  String get presetJazz;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @savePreset.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Preset'**
+  String get savePreset;
+
+  /// No description provided for @presetName.
+  ///
+  /// In en, this message translates to:
+  /// **'Preset name'**
+  String get presetName;
+
+  /// No description provided for @deletePreset.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Preset'**
+  String get deletePreset;
+
+  /// No description provided for @deletePresetConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the \"{name}\" preset?'**
+  String deletePresetConfirm(String name);
+
+  /// No description provided for @noLyricsSource.
+  ///
+  /// In en, this message translates to:
+  /// **'No Lyrics Source'**
+  String get noLyricsSource;
+
+  /// No description provided for @lyricsSourceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Source: {source}'**
+  String lyricsSourceLabel(String source);
+
+  /// No description provided for @lyricsSourceLocalSidecar.
+  ///
+  /// In en, this message translates to:
+  /// **'Local Sidecar (.lrc)'**
+  String get lyricsSourceLocalSidecar;
+
+  /// No description provided for @lyricsSourceCustomFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom LRC File'**
+  String get lyricsSourceCustomFile;
+
+  /// No description provided for @lyricsSourceNotFoundOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Found Online'**
+  String get lyricsSourceNotFoundOnline;
+
+  /// No description provided for @lyricsProviderLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Local'**
+  String get lyricsProviderLocal;
+
+  /// No description provided for @checkingLocalLyrics.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking local/embedded lyrics...'**
+  String get checkingLocalLyrics;
+
+  /// No description provided for @fetchingLyricsFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching lyrics from {provider}...'**
+  String fetchingLyricsFrom(String provider);
+
+  /// No description provided for @loadedLocalLyrics.
+  ///
+  /// In en, this message translates to:
+  /// **'Loaded local/embedded lyrics!'**
+  String get loadedLocalLyrics;
+
+  /// No description provided for @noLocalLyricsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No local or embedded lyrics found'**
+  String get noLocalLyricsFound;
+
+  /// No description provided for @lyricsUpdatedFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Lyrics updated from {provider}!'**
+  String lyricsUpdatedFrom(String provider);
+
+  /// No description provided for @noLyricsFoundOn.
+  ///
+  /// In en, this message translates to:
+  /// **'No lyrics found on {provider}'**
+  String noLyricsFoundOn(String provider);
+
+  /// No description provided for @gestureTips.
+  ///
+  /// In en, this message translates to:
+  /// **'Gesture Tips'**
+  String get gestureTips;
+
+  /// No description provided for @gestureTipsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap, long-press, pinch to zoom & more'**
+  String get gestureTipsDesc;
+
+  /// No description provided for @exportLyrics.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Lyrics'**
+  String get exportLyrics;
+
+  /// No description provided for @lyricsExportedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Lyrics exported to: {path}'**
+  String lyricsExportedTo(String path);
+
+  /// No description provided for @failedToExportLyrics.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to export lyrics: {error}'**
+  String failedToExportLyrics(String error);
+
+  /// No description provided for @gestureTapLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a line'**
+  String get gestureTapLine;
+
+  /// No description provided for @gestureTapLineDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Jump playback straight to that lyric.'**
+  String get gestureTapLineDesc;
+
+  /// No description provided for @gestureLongPressLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Long-press a line'**
+  String get gestureLongPressLine;
+
+  /// No description provided for @gestureLongPressLineDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Start selecting lines to turn into a shareable lyrics card. Tap more lines to extend the selection.'**
+  String get gestureLongPressLineDesc;
+
+  /// No description provided for @gesturePinch.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinch with two fingers'**
+  String get gesturePinch;
+
+  /// No description provided for @gesturePinchDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Resize the lyrics text to your liking.'**
+  String get gesturePinchDesc;
+
+  /// No description provided for @gestureSwipeDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe down'**
+  String get gestureSwipeDown;
+
+  /// No description provided for @gestureSwipeDownDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Close the lyrics screen and return to the player.'**
+  String get gestureSwipeDownDesc;
+
+  /// No description provided for @lyricsGestures.
+  ///
+  /// In en, this message translates to:
+  /// **'Lyrics Gestures'**
+  String get lyricsGestures;
+
+  /// No description provided for @lyricsGesturesIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'A few things this screen can do that aren\'t always obvious:'**
+  String get lyricsGesturesIntro;
+
+  /// No description provided for @linesSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 line selected} other{{count} lines selected}}'**
+  String linesSelected(int count);
+
+  /// No description provided for @couldNotGenerateShareImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not generate the share image.'**
+  String get couldNotGenerateShareImage;
+
+  /// No description provided for @couldNotGenerateImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not generate the image.'**
+  String get couldNotGenerateImage;
+
+  /// No description provided for @savedToGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to gallery.'**
+  String get savedToGallery;
+
+  /// No description provided for @galleryPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission to access the gallery was denied.'**
+  String get galleryPermissionDenied;
+
+  /// No description provided for @couldNotSaveToGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the image to the gallery.'**
+  String get couldNotSaveToGallery;
+
+  /// No description provided for @shareLyrics.
+  ///
+  /// In en, this message translates to:
+  /// **'Share Lyrics'**
+  String get shareLyrics;
+
+  /// No description provided for @backgroundColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Background Color'**
+  String get backgroundColor;
+
+  /// No description provided for @lyricsTextColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Lyrics Text Color'**
+  String get lyricsTextColor;
+
+  /// No description provided for @saveToGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to Gallery'**
+  String get saveToGallery;
+
+  /// No description provided for @preparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing...'**
+  String get preparing;
+
+  /// No description provided for @trackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Track Title'**
+  String get trackTitle;
+
+  /// No description provided for @composer.
+  ///
+  /// In en, this message translates to:
+  /// **'Composer'**
+  String get composer;
+
+  /// No description provided for @unknownGenre.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown Genre'**
+  String get unknownGenre;
+
+  /// No description provided for @releaseYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Release Year'**
+  String get releaseYear;
+
+  /// No description provided for @notAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'N/A'**
+  String get notAvailable;
+
+  /// No description provided for @recordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Label'**
+  String get recordLabel;
+
+  /// No description provided for @copyright.
+  ///
+  /// In en, this message translates to:
+  /// **'Copyright'**
+  String get copyright;
+
+  /// No description provided for @encoder.
+  ///
+  /// In en, this message translates to:
+  /// **'Encoder'**
+  String get encoder;
+
+  /// No description provided for @fileName.
+  ///
+  /// In en, this message translates to:
+  /// **'File Name'**
+  String get fileName;
+
+  /// No description provided for @fileFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'File Format'**
+  String get fileFormat;
+
+  /// No description provided for @fileSize.
+  ///
+  /// In en, this message translates to:
+  /// **'File Size'**
+  String get fileSize;
+
+  /// No description provided for @absolutePath.
+  ///
+  /// In en, this message translates to:
+  /// **'Absolute Path'**
+  String get absolutePath;
+
+  /// No description provided for @playCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Play Count'**
+  String get playCount;
+
+  /// No description provided for @playCountTimes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 time} other{{count} times}}'**
+  String playCountTimes(int count);
+
+  /// No description provided for @lastPlayed.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Played'**
+  String get lastPlayed;
+
+  /// No description provided for @filePath.
+  ///
+  /// In en, this message translates to:
+  /// **'File Path'**
+  String get filePath;
+
+  /// No description provided for @rescan.
+  ///
+  /// In en, this message translates to:
+  /// **'Rescan'**
+  String get rescan;
+
+  /// No description provided for @codec.
+  ///
+  /// In en, this message translates to:
+  /// **'Codec'**
+  String get codec;
+
+  /// No description provided for @container.
+  ///
+  /// In en, this message translates to:
+  /// **'Container'**
+  String get container;
+
+  /// No description provided for @sampleRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Sample Rate'**
+  String get sampleRate;
+
+  /// No description provided for @bitDepth.
+  ///
+  /// In en, this message translates to:
+  /// **'Bit Depth'**
+  String get bitDepth;
+
+  /// No description provided for @decodedFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Decoded Format'**
+  String get decodedFormat;
+
+  /// No description provided for @bitrate.
+  ///
+  /// In en, this message translates to:
+  /// **'Bitrate'**
+  String get bitrate;
+
+  /// No description provided for @channels.
+  ///
+  /// In en, this message translates to:
+  /// **'Channels'**
+  String get channels;
+
+  /// No description provided for @nyquist.
+  ///
+  /// In en, this message translates to:
+  /// **'Nyquist'**
+  String get nyquist;
+
+  /// No description provided for @dynamicRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Dynamic Range'**
+  String get dynamicRange;
+
+  /// No description provided for @peak.
+  ///
+  /// In en, this message translates to:
+  /// **'Peak'**
+  String get peak;
+
+  /// No description provided for @truePeak.
+  ///
+  /// In en, this message translates to:
+  /// **'True Peak'**
+  String get truePeak;
+
+  /// No description provided for @clipping.
+  ///
+  /// In en, this message translates to:
+  /// **'Clipping'**
+  String get clipping;
+
+  /// No description provided for @cutoff.
+  ///
+  /// In en, this message translates to:
+  /// **'Cutoff'**
+  String get cutoff;
+
+  /// No description provided for @samples.
+  ///
+  /// In en, this message translates to:
+  /// **'Samples'**
+  String get samples;
+
+  /// No description provided for @channelShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Ch {channel}'**
+  String channelShort(int channel);
+
+  /// No description provided for @noneClean.
+  ///
+  /// In en, this message translates to:
+  /// **'None (Clean)'**
+  String get noneClean;
+
+  /// No description provided for @reanalyzingAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-analyzing audio stream...'**
+  String get reanalyzingAudio;
+
+  /// No description provided for @analyzingAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing audio stream...'**
+  String get analyzingAudio;
+
+  /// No description provided for @sampleRateHz.
+  ///
+  /// In en, this message translates to:
+  /// **'Sample Rate: {rate} Hz'**
+  String sampleRateHz(int rate);
+
+  /// No description provided for @nyquistKhz.
+  ///
+  /// In en, this message translates to:
+  /// **'Nyquist: {khz} kHz'**
+  String nyquistKhz(String khz);
+
+  /// No description provided for @qualityLossless.
+  ///
+  /// In en, this message translates to:
+  /// **'Lossless'**
+  String get qualityLossless;
+
+  /// No description provided for @qualityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High Quality'**
+  String get qualityHigh;
+
+  /// No description provided for @qualityStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard Quality'**
+  String get qualityStandard;
+
+  /// No description provided for @qualityAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio'**
+  String get qualityAudio;
+
+  /// No description provided for @addCustomFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a Custom Folder'**
+  String get addCustomFolder;
+
+  /// No description provided for @addCustomFolderDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'If your music lives in a folder with a different name, or on an SD card, add it directly.'**
+  String get addCustomFolderDesc;
+
+  /// No description provided for @indexingYourLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'INDEXING YOUR LIBRARY...'**
+  String get indexingYourLibrary;
+
+  /// No description provided for @indexingYourLibraryDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Filling in titles, artwork and lyrics for your songs.'**
+  String get indexingYourLibraryDesc;
+
+  /// No description provided for @welcomeStep.
+  ///
+  /// In en, this message translates to:
+  /// **'STEP {step}: {title}'**
+  String welcomeStep(String step, String title);
+
+  /// No description provided for @includeOtherDeviceAudioAlarmsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Ringtones, notifications, alarms and messaging audio'**
+  String get includeOtherDeviceAudioAlarmsDesc;
+
+  /// No description provided for @version.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get version;
+
+  /// No description provided for @noIndexedFoldersDesktopDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Rescan Library to discover storage folders'**
+  String get noIndexedFoldersDesktopDesc;
+
+  /// No description provided for @playedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Played'**
+  String get playedLabel;
+
+  /// No description provided for @minutesShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 Min} other{{count} Mins}}'**
+  String minutesShort(int count);
+
+  /// No description provided for @minuteChip.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Min'**
+  String minuteChip(int count);
+
+  /// No description provided for @songsCountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 Song} other{{count} Songs}}'**
+  String songsCountTitle(int count);
+
+  /// No description provided for @songsLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 song left} other{{count} songs left}}'**
+  String songsLeft(int count);
+
+  /// No description provided for @sleepTimerWithRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'Sleep Timer ({remaining})'**
+  String sleepTimerWithRemaining(String remaining);
+
+  /// No description provided for @trackInfoSection.
+  ///
+  /// In en, this message translates to:
+  /// **'TRACK INFO'**
+  String get trackInfoSection;
+
+  /// No description provided for @detailsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'DETAILS'**
+  String get detailsSection;
+
+  /// No description provided for @lyricsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'LYRICS'**
+  String get lyricsSection;
+
+  /// No description provided for @editLyricsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter plain lyrics or synchronized LRC lyrics format [00:00.00]...'**
+  String get editLyricsHint;
+
+  /// No description provided for @addedSongsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Added 1 song} other{Added {count} songs}}'**
+  String addedSongsCount(int count);
+
+  /// No description provided for @chooseInternalStorageFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Please choose a folder on this device\'s internal storage or SD card.'**
+  String get chooseInternalStorageFolder;
+
+  /// No description provided for @appCrashedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Looper Player Crashed'**
+  String get appCrashedTitle;
+
+  /// No description provided for @appCrashedDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'An unexpected initialization error occurred. A diagnostic crash report has been generated.'**
+  String get appCrashedDesc;
+
+  /// No description provided for @appCrashedDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'An error occurred during app database or service initialization. This can happen if storage access is restricted or database files are corrupted.'**
+  String get appCrashedDetails;
+
+  /// No description provided for @crashReportSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostic crash report saved to application support folder.'**
+  String get crashReportSaved;
+
+  /// No description provided for @shareLog.
+  ///
+  /// In en, this message translates to:
+  /// **'Share Log'**
+  String get shareLog;
+
+  /// No description provided for @restartApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart App'**
+  String get restartApp;
+
+  /// No description provided for @updateAvailableOnPlay.
+  ///
+  /// In en, this message translates to:
+  /// **'A new version is available on Google Play.'**
+  String get updateAvailableOnPlay;
+
+  /// No description provided for @updateAvailableOnGithub.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version} is available on GitHub.'**
+  String updateAvailableOnGithub(String version);
+
+  /// No description provided for @updateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Update available'**
+  String get updateAvailable;
+
+  /// No description provided for @updateAvailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Available!'**
+  String get updateAvailableTitle;
+
+  /// No description provided for @visit.
+  ///
+  /// In en, this message translates to:
+  /// **'VISIT'**
+  String get visit;
+
+  /// No description provided for @updateDownloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Update downloaded'**
+  String get updateDownloaded;
+
+  /// No description provided for @restartToInstallUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart Looper Player to install it.'**
+  String get restartToInstallUpdate;
+
+  /// No description provided for @restart.
+  ///
+  /// In en, this message translates to:
+  /// **'RESTART'**
+  String get restart;
+
+  /// No description provided for @backupImportedSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup imported: Merged {favorites} favorites, {stats} play stats, synced {playlists} playlists'**
+  String backupImportedSummary(int favorites, int stats, int playlists);
+
+  /// No description provided for @backupExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to export backup: An internal error occurred while saving the backup file.'**
+  String get backupExportFailed;
+
+  /// No description provided for @backupImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to import backup: The file could not be read or the backup format is invalid.'**
+  String get backupImportFailed;
+
+  /// No description provided for @stereo.
+  ///
+  /// In en, this message translates to:
+  /// **'Stereo'**
+  String get stereo;
+
+  /// No description provided for @mono.
+  ///
+  /// In en, this message translates to:
+  /// **'Mono'**
+  String get mono;
 }
 
 class _AppLocalizationsDelegate

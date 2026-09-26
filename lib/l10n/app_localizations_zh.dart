@@ -323,6 +323,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get keepBackgroundGradientDesc => '在所有应用程序屏幕上保持背景渐变';
 
   @override
+  String get animatePlayerGradient => '动态渐变';
+
+  @override
+  String get animatePlayerGradientDesc => '随音乐缓慢流动主色与第三色，并带有柔和颗粒质感';
+
+  @override
+  String get animateBackgroundGradient => '动态背景';
+
+  @override
+  String get animateBackgroundGradientDesc => '在主页、歌曲和音乐库背景中使用动态渐变';
+
+  @override
   String get language => '语言';
 
   @override
@@ -892,10 +904,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get useStaticTextTimestamps => '在进度持续时间内使用静态文本而不是滚动动画';
 
   @override
-  String get verticalMotionEffectPlayer => '播放器垂直手势返回';
+  String get fluidPlayer => '流畅播放器';
 
   @override
-  String get verticalMotionEffectPlayerDesc => '在展开的播放器上向下滑动以关闭它';
+  String get fluidPlayerDesc => '向上拖动迷你播放器，将其变换为完整播放器';
 
   @override
   String get viewAll => '查看全部';
@@ -1468,4 +1480,882 @@ class AppLocalizationsZh extends AppLocalizations {
   String enrichingSongs(int count) {
     return '正在丰富 $count 首歌曲的信息…';
   }
+
+  @override
+  String get noListeningHistoryYet => '暂无收听记录';
+
+  @override
+  String get noListeningHistoryYetDesc =>
+      '播放几首歌曲后，你的专属报告——常听歌曲、艺术家、专辑和流派——就会显示在这里。';
+
+  @override
+  String get looperAnalyze => 'Looper Analyze';
+
+  @override
+  String get totalPlays => '总播放次数';
+
+  @override
+  String get listeningTime => '收听时长';
+
+  @override
+  String get currentStreakDays => '当前连续天数';
+
+  @override
+  String get longestStreakDays => '最长连续天数';
+
+  @override
+  String analyzePlaysAndSongs(int plays, int songs) {
+    return '$plays 次播放 • $songs 首歌曲';
+  }
+
+  @override
+  String get dayPartMorningShort => '上午';
+
+  @override
+  String get dayPartAfternoonShort => '下午';
+
+  @override
+  String get dayPartEveningShort => '傍晚';
+
+  @override
+  String get dayPartNightShort => '夜间';
+
+  @override
+  String get activityPattern => '活动规律';
+
+  @override
+  String get whenYouListenMost => '你最常收听的时间';
+
+  @override
+  String get genreBreakdown => '流派分布';
+
+  @override
+  String get otherGenre => '其他';
+
+  @override
+  String get topAlbums => '热门专辑';
+
+  @override
+  String get topArtists => '热门艺术家';
+
+  @override
+  String get topSongs => '热门歌曲';
+
+  @override
+  String playsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 次播放',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String songsPlayedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '已播放 $count 首歌曲',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listeningTrend => '收听趋势';
+
+  @override
+  String get last30Days => '最近 30 天';
+
+  @override
+  String errorWithDetails(String error) {
+    return '错误：$error';
+  }
+
+  @override
+  String get selectAll => '全选';
+
+  @override
+  String get playlist => '播放列表';
+
+  @override
+  String songsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 首歌曲',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recentSearches => '最近搜索';
+
+  @override
+  String get lyricsSourceLocalFile => '本地文件';
+
+  @override
+  String get lyricsSourceEmbedded => '内嵌元数据';
+
+  @override
+  String lyricsProvidedBy(String source) {
+    return '歌词来源：$source';
+  }
+
+  @override
+  String failedToImportLyrics(String error) {
+    return '导入歌词失败：$error';
+  }
+
+  @override
+  String get lyricsEditorLines => '行数';
+
+  @override
+  String get lyricsEditorStamped => '已标记';
+
+  @override
+  String lyricsEditorLineNumber(int number) {
+    return '第 $number 行';
+  }
+
+  @override
+  String get lyricsEditorEmptyLine => '（空行）';
+
+  @override
+  String get lyricsEditorNotStamped => '尚未标记';
+
+  @override
+  String get pause => '暂停';
+
+  @override
+  String get lyricsEditorAddLineFirst => '请先添加至少一行歌词。';
+
+  @override
+  String get lyricsEditorSavedWithSidecar => '歌词已保存到数据库和歌曲文件旁。';
+
+  @override
+  String get lyricsEditorSavedDbOnly => '歌词已保存到播放器数据库。';
+
+  @override
+  String get lyricsEditorSaveFailed => '无法保存歌词。';
+
+  @override
+  String get saving => '正在保存...';
+
+  @override
+  String get saveLrc => '保存 LRC';
+
+  @override
+  String lyricsEditorSelectedLine(int index, int total) {
+    return '已选第 $index 行，共 $total 行';
+  }
+
+  @override
+  String get lyricsEditorPickLine => '请从下方列表中选择一行歌词。';
+
+  @override
+  String get stampAndNext => '标记并下一行';
+
+  @override
+  String get stampNow => '立即标记';
+
+  @override
+  String get lyricsEditorSimpleSteps =>
+      '1. 每行粘贴或输入一行歌词。\n2. 播放歌曲。\n3. 选择当前歌词行。\n4. 听到该行时点按“标记并下一行”。\n5. 完成后保存。';
+
+  @override
+  String get lyricsEditorAdvancedSteps =>
+      '1. 直接编辑每一行的时间戳。\n2. 使用“使用当前时间”获取当前播放时间。\n3. 使用平移控件整体移动所有已标记的歌词。\n4. 保存以生成最终的 `.lrc` 文件。';
+
+  @override
+  String get lyricsEditorTipsText =>
+      '- 如果部分行未标记，Flick 引擎会自动补全它们的时间。\n- 保存时会尽量写入歌曲旁；否则会在数据库中保存一份关联副本。';
+
+  @override
+  String fileNotFoundOrInaccessible(String title) {
+    return '找不到文件或无法访问：$title';
+  }
+
+  @override
+  String playbackFailedCorrupted(String title) {
+    return '播放失败：无法加载或播放“$title”。请检查文件是否已损坏。';
+  }
+
+  @override
+  String shareSongText(String title) {
+    return '听听这首歌：$title';
+  }
+
+  @override
+  String shareSongsText(int count) {
+    return '听听这 $count 首歌';
+  }
+
+  @override
+  String noSettingsFoundFor(String query) {
+    return '未找到与“$query”相关的设置';
+  }
+
+  @override
+  String get chooseQuickAccentColors => '快速选择强调色';
+
+  @override
+  String get fontWeight => '字重';
+
+  @override
+  String get changeBaseFontWeight => '更改自定义字体的基础字重';
+
+  @override
+  String lyricsFontWeightValue(int weight) {
+    return '歌词字重：$weight';
+  }
+
+  @override
+  String get equalizerSearchDesc => '调整 18 段均衡器和音频预设';
+
+  @override
+  String get stopServiceSearchDesc => '从最近任务中划掉时停止播放并关闭应用';
+
+  @override
+  String get scanNewFolderDesc => '扫描新文件夹中的音频文件';
+
+  @override
+  String get includeOtherDeviceAudioShortDesc => '铃声、通知音和聊天应用音频';
+
+  @override
+  String get excludedFolders => '排除的文件夹';
+
+  @override
+  String get excludedFoldersSearchDesc => '扫描时跳过特定文件夹';
+
+  @override
+  String get clearLibraryData => '清除媒体库数据';
+
+  @override
+  String get looperPlayerVersion => 'Looper Player 版本';
+
+  @override
+  String versionLabel(String version) {
+    return '版本 $version';
+  }
+
+  @override
+  String get none => '无';
+
+  @override
+  String foldersSkippedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '扫描时跳过 $count 个文件夹',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get excludedFoldersDesc => '扫描时会跳过这些文件夹中的歌曲，即使它们位于你添加的文件夹内。';
+
+  @override
+  String get noExcludedFoldersYet => '暂无排除的文件夹。';
+
+  @override
+  String get excludeAFolder => '排除文件夹';
+
+  @override
+  String get equalizerEnabled18Band => '已启用（18 段 MPV 均衡器）';
+
+  @override
+  String get disabled => '已停用';
+
+  @override
+  String get noIndexedFoldersYet => '暂无已索引的文件夹';
+
+  @override
+  String get noIndexedFoldersYetDesc => '使用“重新扫描库”来发现存储中的文件夹。';
+
+  @override
+  String get eqDynamicRangeCompressor => '动态范围压缩器';
+
+  @override
+  String get eqThreshold => '阈值';
+
+  @override
+  String get eqRatio => '压缩比';
+
+  @override
+  String get eqAttack => '启动时间';
+
+  @override
+  String get eqRelease => '释放时间';
+
+  @override
+  String get eqHeadphoneCrossfeedWidth => '耳机交叉馈送与声场宽度';
+
+  @override
+  String get eqBinauralCrossfeed => '双耳交叉馈送';
+
+  @override
+  String get eqCrossfeedStrength => '交叉馈送强度';
+
+  @override
+  String get eqStereoWidening => '立体声扩展';
+
+  @override
+  String get eqWideningFactor => '扩展系数';
+
+  @override
+  String get eqLoudnessNormalization => '响度标准化';
+
+  @override
+  String get eqTargetLoudness => '目标响度';
+
+  @override
+  String get eqToneShelving => '搁架式音调（低音 / 高音）';
+
+  @override
+  String get eqBassShelf => '低音搁架';
+
+  @override
+  String get eqTrebleShelf => '高音搁架';
+
+  @override
+  String get eqTempoPitchControls => '速度与音调控制';
+
+  @override
+  String get eqPitchShift => '变调';
+
+  @override
+  String get eqTempoSpeed => '播放速度';
+
+  @override
+  String get eqVoiceSilenceControls => '人声与静音控制';
+
+  @override
+  String get eqSilenceTrimming => '静音裁剪';
+
+  @override
+  String get eqSilenceThreshold => '静音阈值';
+
+  @override
+  String get eqSpeechEnhancementFilter => '语音增强滤波器';
+
+  @override
+  String get eqHighpassCutoff => '高通截止频率';
+
+  @override
+  String get eqLowpassCutoff => '低通截止频率';
+
+  @override
+  String get eqRetroRoomEffects => '复古与空间效果';
+
+  @override
+  String get eqLofiEffect => 'Lo-fi 效果（8 位失真）';
+
+  @override
+  String get eqStudioRoomReverb => '录音室混响（回声）';
+
+  @override
+  String get eqVirtualSurround => '虚拟 5.1 环绕声';
+
+  @override
+  String get eqRawFilterConsole => '原始 FFmpeg 滤镜控制台';
+
+  @override
+  String get eqSwitchToSliders => '切换到滑块';
+
+  @override
+  String get eqSwitchToGraph => '切换到图表';
+
+  @override
+  String get on => '开';
+
+  @override
+  String get off => '关';
+
+  @override
+  String get eqSongSpecificActive => '当前歌曲的专属设置已生效';
+
+  @override
+  String get eqUsingGlobalDefault => '正在使用全局默认设置';
+
+  @override
+  String get eqInteractiveGraphHint => '交互式图表（上下拖动圆点）';
+
+  @override
+  String get eq18BandHint => '18 段均衡器（左右滑动）';
+
+  @override
+  String get eqSongSpecific => '单曲专属';
+
+  @override
+  String get eqGlobalDefault => '全局默认';
+
+  @override
+  String get eqEditScopeNote =>
+      '播放歌曲时所做的修改仅对该歌曲生效。要设置全局默认值，请在未播放歌曲时编辑，或使用“应用到全局”操作。';
+
+  @override
+  String get presetFlat => '平直';
+
+  @override
+  String get presetBassBooster => '低音增强';
+
+  @override
+  String get presetTrebleBooster => '高音增强';
+
+  @override
+  String get presetVocalBooster => '人声增强';
+
+  @override
+  String get presetElectronic => '电子';
+
+  @override
+  String get presetRock => '摇滚';
+
+  @override
+  String get presetPop => '流行';
+
+  @override
+  String get presetJazz => '爵士';
+
+  @override
+  String get save => '保存';
+
+  @override
+  String get savePreset => '保存预设';
+
+  @override
+  String get presetName => '预设名称';
+
+  @override
+  String get deletePreset => '删除预设';
+
+  @override
+  String deletePresetConfirm(String name) {
+    return '要删除预设“$name”吗？';
+  }
+
+  @override
+  String get noLyricsSource => '无歌词来源';
+
+  @override
+  String lyricsSourceLabel(String source) {
+    return '来源：$source';
+  }
+
+  @override
+  String get lyricsSourceLocalSidecar => '本地附属文件（.lrc）';
+
+  @override
+  String get lyricsSourceCustomFile => '自定义 LRC 文件';
+
+  @override
+  String get lyricsSourceNotFoundOnline => '在线未找到';
+
+  @override
+  String get lyricsProviderLocal => '本地';
+
+  @override
+  String get checkingLocalLyrics => '正在检查本地/内嵌歌词...';
+
+  @override
+  String fetchingLyricsFrom(String provider) {
+    return '正在从 $provider 获取歌词...';
+  }
+
+  @override
+  String get loadedLocalLyrics => '已加载本地/内嵌歌词！';
+
+  @override
+  String get noLocalLyricsFound => '未找到本地或内嵌歌词';
+
+  @override
+  String lyricsUpdatedFrom(String provider) {
+    return '已从 $provider 更新歌词！';
+  }
+
+  @override
+  String noLyricsFoundOn(String provider) {
+    return '在 $provider 上未找到歌词';
+  }
+
+  @override
+  String get gestureTips => '手势提示';
+
+  @override
+  String get gestureTipsDesc => '点按、长按、双指缩放等';
+
+  @override
+  String get exportLyrics => '导出歌词';
+
+  @override
+  String lyricsExportedTo(String path) {
+    return '歌词已导出到：$path';
+  }
+
+  @override
+  String failedToExportLyrics(String error) {
+    return '导出歌词失败：$error';
+  }
+
+  @override
+  String get gestureTapLine => '点按一行';
+
+  @override
+  String get gestureTapLineDesc => '直接跳转到该句歌词播放。';
+
+  @override
+  String get gestureLongPressLine => '长按一行';
+
+  @override
+  String get gestureLongPressLineDesc => '开始选择歌词行，制作可分享的歌词卡片。点按更多行可扩大选择范围。';
+
+  @override
+  String get gesturePinch => '双指缩放';
+
+  @override
+  String get gesturePinchDesc => '按喜好调整歌词文字大小。';
+
+  @override
+  String get gestureSwipeDown => '向下滑动';
+
+  @override
+  String get gestureSwipeDownDesc => '关闭歌词界面并返回播放器。';
+
+  @override
+  String get lyricsGestures => '歌词手势';
+
+  @override
+  String get lyricsGesturesIntro => '这个界面有一些不太显眼的功能：';
+
+  @override
+  String linesSelected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '已选择 $count 行',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get couldNotGenerateShareImage => '无法生成分享图片。';
+
+  @override
+  String get couldNotGenerateImage => '无法生成图片。';
+
+  @override
+  String get savedToGallery => '已保存到相册。';
+
+  @override
+  String get galleryPermissionDenied => '访问相册的权限被拒绝。';
+
+  @override
+  String get couldNotSaveToGallery => '无法将图片保存到相册。';
+
+  @override
+  String get shareLyrics => '分享歌词';
+
+  @override
+  String get backgroundColor => '背景颜色';
+
+  @override
+  String get lyricsTextColor => '歌词文字颜色';
+
+  @override
+  String get saveToGallery => '保存到相册';
+
+  @override
+  String get preparing => '正在准备...';
+
+  @override
+  String get trackTitle => '曲目标题';
+
+  @override
+  String get composer => '作曲';
+
+  @override
+  String get unknownGenre => '未知流派';
+
+  @override
+  String get releaseYear => '发行年份';
+
+  @override
+  String get notAvailable => '无';
+
+  @override
+  String get recordLabel => '唱片公司';
+
+  @override
+  String get copyright => '版权';
+
+  @override
+  String get encoder => '编码器';
+
+  @override
+  String get fileName => '文件名';
+
+  @override
+  String get fileFormat => '文件格式';
+
+  @override
+  String get fileSize => '文件大小';
+
+  @override
+  String get absolutePath => '绝对路径';
+
+  @override
+  String get playCount => '播放次数';
+
+  @override
+  String playCountTimes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 次',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get lastPlayed => '上次播放';
+
+  @override
+  String get filePath => '文件路径';
+
+  @override
+  String get rescan => '重新扫描';
+
+  @override
+  String get codec => '编解码器';
+
+  @override
+  String get container => '容器';
+
+  @override
+  String get sampleRate => '采样率';
+
+  @override
+  String get bitDepth => '位深度';
+
+  @override
+  String get decodedFormat => '解码格式';
+
+  @override
+  String get bitrate => '比特率';
+
+  @override
+  String get channels => '声道';
+
+  @override
+  String get nyquist => '奈奎斯特频率';
+
+  @override
+  String get dynamicRange => '动态范围';
+
+  @override
+  String get peak => '峰值';
+
+  @override
+  String get truePeak => '真峰值';
+
+  @override
+  String get clipping => '削波';
+
+  @override
+  String get cutoff => '截止频率';
+
+  @override
+  String get samples => '采样数';
+
+  @override
+  String channelShort(int channel) {
+    return '声道 $channel';
+  }
+
+  @override
+  String get noneClean => '无（干净）';
+
+  @override
+  String get reanalyzingAudio => '正在重新分析音频流...';
+
+  @override
+  String get analyzingAudio => '正在分析音频流...';
+
+  @override
+  String sampleRateHz(int rate) {
+    return '采样率：$rate Hz';
+  }
+
+  @override
+  String nyquistKhz(String khz) {
+    return '奈奎斯特频率：$khz kHz';
+  }
+
+  @override
+  String get qualityLossless => '无损';
+
+  @override
+  String get qualityHigh => '高品质';
+
+  @override
+  String get qualityStandard => '标准品质';
+
+  @override
+  String get qualityAudio => '音频';
+
+  @override
+  String get addCustomFolder => '添加自定义文件夹';
+
+  @override
+  String get addCustomFolderDesc => '如果你的音乐位于其他名称的文件夹或 SD 卡中，请直接添加。';
+
+  @override
+  String get indexingYourLibrary => '正在索引你的媒体库...';
+
+  @override
+  String get indexingYourLibraryDesc => '正在为你的歌曲补全标题、封面和歌词。';
+
+  @override
+  String welcomeStep(String step, String title) {
+    return '第 $step 步：$title';
+  }
+
+  @override
+  String get includeOtherDeviceAudioAlarmsDesc => '铃声、通知音、闹钟和聊天应用音频';
+
+  @override
+  String get version => '版本';
+
+  @override
+  String get noIndexedFoldersDesktopDesc => '使用“重新扫描库”来发现存储文件夹';
+
+  @override
+  String get playedLabel => '已播放';
+
+  @override
+  String minutesShort(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 分钟',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String minuteChip(int count) {
+    return '$count 分钟';
+  }
+
+  @override
+  String songsCountTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 首歌曲',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String songsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '剩余 $count 首',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String sleepTimerWithRemaining(String remaining) {
+    return '睡眠定时器（$remaining）';
+  }
+
+  @override
+  String get trackInfoSection => '曲目信息';
+
+  @override
+  String get detailsSection => '详细信息';
+
+  @override
+  String get lyricsSection => '歌词';
+
+  @override
+  String get editLyricsHint => '输入纯文本歌词或同步 LRC 格式歌词 [00:00.00]...';
+
+  @override
+  String addedSongsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '已添加 $count 首歌曲',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chooseInternalStorageFolder => '请选择此设备内部存储或 SD 卡上的文件夹。';
+
+  @override
+  String get appCrashedTitle => 'Looper Player 已崩溃';
+
+  @override
+  String get appCrashedDesc => '初始化时发生意外错误，已生成诊断崩溃报告。';
+
+  @override
+  String get appCrashedDetails => '初始化应用数据库或服务时出错。存储访问受限或数据库文件损坏时可能会出现此问题。';
+
+  @override
+  String get crashReportSaved => '诊断崩溃报告已保存到应用支持文件夹。';
+
+  @override
+  String get shareLog => '分享日志';
+
+  @override
+  String get restartApp => '重启应用';
+
+  @override
+  String get updateAvailableOnPlay => 'Google Play 上有新版本可用。';
+
+  @override
+  String updateAvailableOnGithub(String version) {
+    return 'GitHub 上已发布版本 $version。';
+  }
+
+  @override
+  String get updateAvailable => '有可用更新';
+
+  @override
+  String get updateAvailableTitle => '有可用更新！';
+
+  @override
+  String get visit => '查看';
+
+  @override
+  String get updateDownloaded => '更新已下载';
+
+  @override
+  String get restartToInstallUpdate => '重启 Looper Player 即可安装。';
+
+  @override
+  String get restart => '重启';
+
+  @override
+  String backupImportedSummary(int favorites, int stats, int playlists) {
+    return '备份已导入：合并了 $favorites 个收藏和 $stats 条播放统计，同步了 $playlists 个播放列表';
+  }
+
+  @override
+  String get backupExportFailed => '导出备份失败：保存备份文件时发生内部错误。';
+
+  @override
+  String get backupImportFailed => '导入备份失败：无法读取文件或备份格式无效。';
+
+  @override
+  String get stereo => '立体声';
+
+  @override
+  String get mono => '单声道';
 }

@@ -349,6 +349,20 @@ class AppLocalizationsFr extends AppLocalizations {
       'Garder le dégradé de fond sur tous les écrans de l\'application';
 
   @override
+  String get animatePlayerGradient => 'Dégradé animé';
+
+  @override
+  String get animatePlayerGradientDesc =>
+      'Fait bouger lentement les couleurs primaire et tertiaire avec un grain doux, au rythme de la musique';
+
+  @override
+  String get animateBackgroundGradient => 'Arrière-plan animé';
+
+  @override
+  String get animateBackgroundGradientDesc =>
+      'Utilise le dégradé animé en arrière-plan de l\'Accueil, des Titres et de la Bibliothèque';
+
+  @override
   String get language => 'Langue';
 
   @override
@@ -971,12 +985,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'Utiliser du texte statique au lieu d\'une animation pour la progression';
 
   @override
-  String get verticalMotionEffectPlayer =>
-      'Effet de mouvement vertical du lecteur';
+  String get fluidPlayer => 'Lecteur fluide';
 
   @override
-  String get verticalMotionEffectPlayerDesc =>
-      'Glisser vers le bas sur le lecteur étendu pour le fermer';
+  String get fluidPlayerDesc =>
+      'Faites glisser le mini-lecteur vers le haut pour le transformer en lecteur complet';
 
   @override
   String get viewAll => 'Voir tout';
@@ -1597,4 +1610,929 @@ class AppLocalizationsFr extends AppLocalizations {
   String enrichingSongs(int count) {
     return 'Enrichissement de $count morceaux…';
   }
+
+  @override
+  String get noListeningHistoryYet =>
+      'Aucun historique d\'écoute pour l\'instant';
+
+  @override
+  String get noListeningHistoryYetDesc =>
+      'Écoutez quelques titres et votre bilan personnel — titres, artistes, albums et genres favoris — prendra vie ici.';
+
+  @override
+  String get looperAnalyze => 'Looper Analyze';
+
+  @override
+  String get totalPlays => 'Écoutes totales';
+
+  @override
+  String get listeningTime => 'Temps d\'écoute';
+
+  @override
+  String get currentStreakDays => 'Série actuelle (jours)';
+
+  @override
+  String get longestStreakDays => 'Plus longue série (jours)';
+
+  @override
+  String analyzePlaysAndSongs(int plays, int songs) {
+    return '$plays écoutes • $songs titres';
+  }
+
+  @override
+  String get dayPartMorningShort => 'Mat.';
+
+  @override
+  String get dayPartAfternoonShort => 'A-m';
+
+  @override
+  String get dayPartEveningShort => 'Soir';
+
+  @override
+  String get dayPartNightShort => 'Nuit';
+
+  @override
+  String get activityPattern => 'Rythme d\'activité';
+
+  @override
+  String get whenYouListenMost => 'Quand vous écoutez le plus';
+
+  @override
+  String get genreBreakdown => 'Répartition par genre';
+
+  @override
+  String get otherGenre => 'Autres';
+
+  @override
+  String get topAlbums => 'Albums favoris';
+
+  @override
+  String get topArtists => 'Artistes favoris';
+
+  @override
+  String get topSongs => 'Titres favoris';
+
+  @override
+  String playsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count écoutes',
+      one: '1 écoute',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String songsPlayedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count titres écoutés',
+      one: '1 titre écouté',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listeningTrend => 'Tendance d\'écoute';
+
+  @override
+  String get last30Days => '30 derniers jours';
+
+  @override
+  String errorWithDetails(String error) {
+    return 'Erreur : $error';
+  }
+
+  @override
+  String get selectAll => 'Tout sélectionner';
+
+  @override
+  String get playlist => 'Playlist';
+
+  @override
+  String songsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count titres',
+      one: '1 titre',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recentSearches => 'Recherches récentes';
+
+  @override
+  String get lyricsSourceLocalFile => 'Fichier local';
+
+  @override
+  String get lyricsSourceEmbedded => 'Métadonnées intégrées';
+
+  @override
+  String lyricsProvidedBy(String source) {
+    return 'Paroles fournies par $source';
+  }
+
+  @override
+  String failedToImportLyrics(String error) {
+    return 'Échec de l\'importation des paroles : $error';
+  }
+
+  @override
+  String get lyricsEditorLines => 'Lignes';
+
+  @override
+  String get lyricsEditorStamped => 'Horodatées';
+
+  @override
+  String lyricsEditorLineNumber(int number) {
+    return 'Ligne $number';
+  }
+
+  @override
+  String get lyricsEditorEmptyLine => '(Ligne vide)';
+
+  @override
+  String get lyricsEditorNotStamped => 'Pas encore horodatée';
+
+  @override
+  String get pause => 'Pause';
+
+  @override
+  String get lyricsEditorAddLineFirst =>
+      'Ajoutez d\'abord au moins une ligne de paroles.';
+
+  @override
+  String get lyricsEditorSavedWithSidecar =>
+      'Paroles enregistrées dans la base de données et à côté du fichier du titre.';
+
+  @override
+  String get lyricsEditorSavedDbOnly =>
+      'Paroles enregistrées dans la base de données du lecteur.';
+
+  @override
+  String get lyricsEditorSaveFailed => 'Impossible d\'enregistrer les paroles.';
+
+  @override
+  String get saving => 'Enregistrement...';
+
+  @override
+  String get saveLrc => 'Enregistrer le LRC';
+
+  @override
+  String lyricsEditorSelectedLine(int index, int total) {
+    return 'Ligne sélectionnée $index sur $total';
+  }
+
+  @override
+  String get lyricsEditorPickLine =>
+      'Choisissez une ligne dans la liste ci-dessous.';
+
+  @override
+  String get stampAndNext => 'Horodater et suivant';
+
+  @override
+  String get stampNow => 'Horodater';
+
+  @override
+  String get lyricsEditorSimpleSteps =>
+      '1. Collez ou saisissez une ligne de paroles par rangée.\n2. Lancez le titre.\n3. Sélectionnez la ligne en cours.\n4. Appuyez sur « Horodater et suivant » quand vous entendez cette ligne.\n5. Enregistrez une fois terminé.';
+
+  @override
+  String get lyricsEditorAdvancedSteps =>
+      '1. Modifiez directement l\'horodatage de chaque ligne.\n2. Utilisez « Utiliser l\'heure actuelle » pour capturer le temps de lecture.\n3. Utilisez les commandes de décalage pour déplacer ensemble toutes les lignes horodatées.\n4. Enregistrez pour générer le fichier `.lrc` final.';
+
+  @override
+  String get lyricsEditorTipsText =>
+      '- Si certaines lignes ne sont pas horodatées, le moteur de Flick remplit leurs temps automatiquement.\n- L\'enregistrement se fait à côté du titre si possible, sinon une copie liée est stockée dans la base de données.';
+
+  @override
+  String fileNotFoundOrInaccessible(String title) {
+    return 'Fichier introuvable ou inaccessible : $title';
+  }
+
+  @override
+  String playbackFailedCorrupted(String title) {
+    return 'Échec de la lecture : impossible de charger ou de lire « $title ». Vérifiez que le fichier n\'est pas corrompu.';
+  }
+
+  @override
+  String shareSongText(String title) {
+    return 'Écoute ce titre : $title';
+  }
+
+  @override
+  String shareSongsText(int count) {
+    return 'Écoute ces $count titres';
+  }
+
+  @override
+  String noSettingsFoundFor(String query) {
+    return 'Aucun paramètre trouvé pour « $query »';
+  }
+
+  @override
+  String get chooseQuickAccentColors => 'Choisir une couleur d\'accent rapide';
+
+  @override
+  String get fontWeight => 'Graisse de police';
+
+  @override
+  String get changeBaseFontWeight =>
+      'Modifier la graisse de base de la police personnalisée';
+
+  @override
+  String lyricsFontWeightValue(int weight) {
+    return 'Graisse de police des paroles : $weight';
+  }
+
+  @override
+  String get equalizerSearchDesc =>
+      'Régler l\'égaliseur 18 bandes et les préréglages audio';
+
+  @override
+  String get stopServiceSearchDesc =>
+      'Arrêter la lecture et fermer l\'app lorsqu\'elle est balayée hors des apps récentes';
+
+  @override
+  String get scanNewFolderDesc =>
+      'Analyser un nouveau dossier à la recherche de fichiers audio';
+
+  @override
+  String get includeOtherDeviceAudioShortDesc =>
+      'Sonneries, notifications et audio des messageries';
+
+  @override
+  String get excludedFolders => 'Dossiers exclus';
+
+  @override
+  String get excludedFoldersSearchDesc =>
+      'Ignorer certains dossiers lors de l\'analyse';
+
+  @override
+  String get clearLibraryData => 'Effacer les données de la bibliothèque';
+
+  @override
+  String get looperPlayerVersion => 'Version de Looper Player';
+
+  @override
+  String versionLabel(String version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get none => 'Aucun';
+
+  @override
+  String foldersSkippedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dossiers ignorés lors de l\'analyse',
+      one: '1 dossier ignoré lors de l\'analyse',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get excludedFoldersDesc =>
+      'Les titres de ces dossiers sont ignorés lors de l\'analyse, même s\'ils se trouvent dans un dossier que vous avez ajouté.';
+
+  @override
+  String get noExcludedFoldersYet => 'Aucun dossier exclu pour l\'instant.';
+
+  @override
+  String get excludeAFolder => 'Exclure un dossier';
+
+  @override
+  String get equalizerEnabled18Band => 'Activé (égaliseur MPV 18 bandes)';
+
+  @override
+  String get disabled => 'Désactivé';
+
+  @override
+  String get noIndexedFoldersYet => 'Aucun dossier indexé pour l\'instant';
+
+  @override
+  String get noIndexedFoldersYetDesc =>
+      'Utilisez « Analyser à nouveau la bibliothèque » pour découvrir les dossiers du stockage.';
+
+  @override
+  String get eqDynamicRangeCompressor => 'Compresseur de dynamique';
+
+  @override
+  String get eqThreshold => 'Seuil';
+
+  @override
+  String get eqRatio => 'Ratio';
+
+  @override
+  String get eqAttack => 'Attaque';
+
+  @override
+  String get eqRelease => 'Relâchement';
+
+  @override
+  String get eqHeadphoneCrossfeedWidth => 'Crossfeed et largeur pour casque';
+
+  @override
+  String get eqBinauralCrossfeed => 'Crossfeed binaural';
+
+  @override
+  String get eqCrossfeedStrength => 'Intensité du crossfeed';
+
+  @override
+  String get eqStereoWidening => 'Élargissement stéréo';
+
+  @override
+  String get eqWideningFactor => 'Facteur d\'élargissement';
+
+  @override
+  String get eqLoudnessNormalization => 'Normalisation du volume';
+
+  @override
+  String get eqTargetLoudness => 'Volume cible';
+
+  @override
+  String get eqToneShelving => 'Correction de tonalité (graves / aigus)';
+
+  @override
+  String get eqBassShelf => 'Shelf des graves';
+
+  @override
+  String get eqTrebleShelf => 'Shelf des aigus';
+
+  @override
+  String get eqTempoPitchControls => 'Réglages du tempo et de la hauteur';
+
+  @override
+  String get eqPitchShift => 'Décalage de hauteur';
+
+  @override
+  String get eqTempoSpeed => 'Vitesse du tempo';
+
+  @override
+  String get eqVoiceSilenceControls => 'Réglages de la voix et des silences';
+
+  @override
+  String get eqSilenceTrimming => 'Suppression des silences';
+
+  @override
+  String get eqSilenceThreshold => 'Seuil de silence';
+
+  @override
+  String get eqSpeechEnhancementFilter => 'Filtre d\'amélioration de la voix';
+
+  @override
+  String get eqHighpassCutoff => 'Coupure passe-haut';
+
+  @override
+  String get eqLowpassCutoff => 'Coupure passe-bas';
+
+  @override
+  String get eqRetroRoomEffects => 'Effets rétro et de salle';
+
+  @override
+  String get eqLofiEffect => 'Effet lo-fi (bitcrusher 8 bits)';
+
+  @override
+  String get eqStudioRoomReverb => 'Réverbération de studio (écho)';
+
+  @override
+  String get eqVirtualSurround => 'Son surround virtuel 5.1';
+
+  @override
+  String get eqRawFilterConsole => 'Console de filtres FFmpeg bruts';
+
+  @override
+  String get eqSwitchToSliders => 'Passer aux curseurs';
+
+  @override
+  String get eqSwitchToGraph => 'Passer au graphique';
+
+  @override
+  String get on => 'Activé';
+
+  @override
+  String get off => 'Désactivé';
+
+  @override
+  String get eqSongSpecificActive => 'Réglages propres au titre actifs';
+
+  @override
+  String get eqUsingGlobalDefault => 'Réglages globaux par défaut utilisés';
+
+  @override
+  String get eqInteractiveGraphHint =>
+      'GRAPHIQUE INTERACTIF (FAITES GLISSER LES POINTS VERTICALEMENT)';
+
+  @override
+  String get eq18BandHint =>
+      'ÉGALISEUR 18 BANDES (FAITES DÉFILER HORIZONTALEMENT)';
+
+  @override
+  String get eqSongSpecific => 'Propre au titre';
+
+  @override
+  String get eqGlobalDefault => 'Global par défaut';
+
+  @override
+  String get eqEditScopeNote =>
+      'Les modifications faites pendant la lecture d\'un titre ne s\'appliquent qu\'à ce titre. Pour définir le réglage global, modifiez sans titre en lecture ou utilisez l\'action « Appliquer au global ».';
+
+  @override
+  String get presetFlat => 'Neutre';
+
+  @override
+  String get presetBassBooster => 'Renfort des graves';
+
+  @override
+  String get presetTrebleBooster => 'Renfort des aigus';
+
+  @override
+  String get presetVocalBooster => 'Renfort vocal';
+
+  @override
+  String get presetElectronic => 'Électronique';
+
+  @override
+  String get presetRock => 'Rock';
+
+  @override
+  String get presetPop => 'Pop';
+
+  @override
+  String get presetJazz => 'Jazz';
+
+  @override
+  String get save => 'Enregistrer';
+
+  @override
+  String get savePreset => 'Enregistrer le préréglage';
+
+  @override
+  String get presetName => 'Nom du préréglage';
+
+  @override
+  String get deletePreset => 'Supprimer le préréglage';
+
+  @override
+  String deletePresetConfirm(String name) {
+    return 'Supprimer le préréglage « $name » ?';
+  }
+
+  @override
+  String get noLyricsSource => 'Aucune source de paroles';
+
+  @override
+  String lyricsSourceLabel(String source) {
+    return 'Source : $source';
+  }
+
+  @override
+  String get lyricsSourceLocalSidecar => 'Fichier local associé (.lrc)';
+
+  @override
+  String get lyricsSourceCustomFile => 'Fichier LRC personnalisé';
+
+  @override
+  String get lyricsSourceNotFoundOnline => 'Introuvables en ligne';
+
+  @override
+  String get lyricsProviderLocal => 'Local';
+
+  @override
+  String get checkingLocalLyrics => 'Recherche de paroles locales/intégrées...';
+
+  @override
+  String fetchingLyricsFrom(String provider) {
+    return 'Récupération des paroles depuis $provider...';
+  }
+
+  @override
+  String get loadedLocalLyrics => 'Paroles locales/intégrées chargées !';
+
+  @override
+  String get noLocalLyricsFound => 'Aucune parole locale ou intégrée trouvée';
+
+  @override
+  String lyricsUpdatedFrom(String provider) {
+    return 'Paroles mises à jour depuis $provider !';
+  }
+
+  @override
+  String noLyricsFoundOn(String provider) {
+    return 'Aucune parole trouvée sur $provider';
+  }
+
+  @override
+  String get gestureTips => 'Astuces gestuelles';
+
+  @override
+  String get gestureTipsDesc =>
+      'Appui, appui long, pincement pour zoomer et plus';
+
+  @override
+  String get exportLyrics => 'Exporter les paroles';
+
+  @override
+  String lyricsExportedTo(String path) {
+    return 'Paroles exportées vers : $path';
+  }
+
+  @override
+  String failedToExportLyrics(String error) {
+    return 'Échec de l\'exportation des paroles : $error';
+  }
+
+  @override
+  String get gestureTapLine => 'Appuyez sur une ligne';
+
+  @override
+  String get gestureTapLineDesc =>
+      'Passe directement à ce passage des paroles.';
+
+  @override
+  String get gestureLongPressLine => 'Appuyez longuement sur une ligne';
+
+  @override
+  String get gestureLongPressLineDesc =>
+      'Commence la sélection de lignes pour créer une carte de paroles à partager. Appuyez sur d\'autres lignes pour étendre la sélection.';
+
+  @override
+  String get gesturePinch => 'Pincez avec deux doigts';
+
+  @override
+  String get gesturePinchDesc =>
+      'Ajustez la taille du texte des paroles à votre goût.';
+
+  @override
+  String get gestureSwipeDown => 'Balayez vers le bas';
+
+  @override
+  String get gestureSwipeDownDesc =>
+      'Ferme l\'écran des paroles et revient au lecteur.';
+
+  @override
+  String get lyricsGestures => 'Gestes des paroles';
+
+  @override
+  String get lyricsGesturesIntro =>
+      'Quelques fonctions de cet écran qui ne sont pas toujours évidentes :';
+
+  @override
+  String linesSelected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count lignes sélectionnées',
+      one: '1 ligne sélectionnée',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get couldNotGenerateShareImage =>
+      'Impossible de générer l\'image à partager.';
+
+  @override
+  String get couldNotGenerateImage => 'Impossible de générer l\'image.';
+
+  @override
+  String get savedToGallery => 'Enregistrée dans la galerie.';
+
+  @override
+  String get galleryPermissionDenied =>
+      'L\'autorisation d\'accès à la galerie a été refusée.';
+
+  @override
+  String get couldNotSaveToGallery =>
+      'Impossible d\'enregistrer l\'image dans la galerie.';
+
+  @override
+  String get shareLyrics => 'Partager les paroles';
+
+  @override
+  String get backgroundColor => 'Couleur d\'arrière-plan';
+
+  @override
+  String get lyricsTextColor => 'Couleur du texte des paroles';
+
+  @override
+  String get saveToGallery => 'Enregistrer dans la galerie';
+
+  @override
+  String get preparing => 'Préparation...';
+
+  @override
+  String get trackTitle => 'Titre du morceau';
+
+  @override
+  String get composer => 'Compositeur';
+
+  @override
+  String get unknownGenre => 'Genre inconnu';
+
+  @override
+  String get releaseYear => 'Année de sortie';
+
+  @override
+  String get notAvailable => 'N/D';
+
+  @override
+  String get recordLabel => 'Label';
+
+  @override
+  String get copyright => 'Copyright';
+
+  @override
+  String get encoder => 'Encodeur';
+
+  @override
+  String get fileName => 'Nom du fichier';
+
+  @override
+  String get fileFormat => 'Format du fichier';
+
+  @override
+  String get fileSize => 'Taille du fichier';
+
+  @override
+  String get absolutePath => 'Chemin absolu';
+
+  @override
+  String get playCount => 'Nombre d\'écoutes';
+
+  @override
+  String playCountTimes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fois',
+      one: '1 fois',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get lastPlayed => 'Dernière écoute';
+
+  @override
+  String get filePath => 'Chemin du fichier';
+
+  @override
+  String get rescan => 'Réanalyser';
+
+  @override
+  String get codec => 'Codec';
+
+  @override
+  String get container => 'Conteneur';
+
+  @override
+  String get sampleRate => 'Fréquence d\'échantillonnage';
+
+  @override
+  String get bitDepth => 'Profondeur de bits';
+
+  @override
+  String get decodedFormat => 'Format décodé';
+
+  @override
+  String get bitrate => 'Débit binaire';
+
+  @override
+  String get channels => 'Canaux';
+
+  @override
+  String get nyquist => 'Nyquist';
+
+  @override
+  String get dynamicRange => 'Plage dynamique';
+
+  @override
+  String get peak => 'Crête';
+
+  @override
+  String get truePeak => 'Crête réelle';
+
+  @override
+  String get clipping => 'Écrêtage';
+
+  @override
+  String get cutoff => 'Coupure';
+
+  @override
+  String get samples => 'Échantillons';
+
+  @override
+  String channelShort(int channel) {
+    return 'Can. $channel';
+  }
+
+  @override
+  String get noneClean => 'Aucun (propre)';
+
+  @override
+  String get reanalyzingAudio => 'Nouvelle analyse du flux audio...';
+
+  @override
+  String get analyzingAudio => 'Analyse du flux audio...';
+
+  @override
+  String sampleRateHz(int rate) {
+    return 'Fréquence d\'échantillonnage : $rate Hz';
+  }
+
+  @override
+  String nyquistKhz(String khz) {
+    return 'Nyquist : $khz kHz';
+  }
+
+  @override
+  String get qualityLossless => 'Sans perte';
+
+  @override
+  String get qualityHigh => 'Haute qualité';
+
+  @override
+  String get qualityStandard => 'Qualité standard';
+
+  @override
+  String get qualityAudio => 'Audio';
+
+  @override
+  String get addCustomFolder => 'Ajouter un dossier personnalisé';
+
+  @override
+  String get addCustomFolderDesc =>
+      'Si votre musique se trouve dans un dossier au nom différent ou sur une carte SD, ajoutez-le directement.';
+
+  @override
+  String get indexingYourLibrary => 'INDEXATION DE VOTRE BIBLIOTHÈQUE...';
+
+  @override
+  String get indexingYourLibraryDesc =>
+      'Ajout des titres, pochettes et paroles de vos morceaux.';
+
+  @override
+  String welcomeStep(String step, String title) {
+    return 'ÉTAPE $step : $title';
+  }
+
+  @override
+  String get includeOtherDeviceAudioAlarmsDesc =>
+      'Sonneries, notifications, alarmes et audio des messageries';
+
+  @override
+  String get version => 'Version';
+
+  @override
+  String get noIndexedFoldersDesktopDesc =>
+      'Utilisez « Analyser à nouveau la bibliothèque » pour découvrir les dossiers de stockage';
+
+  @override
+  String get playedLabel => 'Écoutés';
+
+  @override
+  String minutesShort(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count min',
+      one: '1 min',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String minuteChip(int count) {
+    return '$count min';
+  }
+
+  @override
+  String songsCountTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count titres',
+      one: '1 titre',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String songsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count titres restants',
+      one: '1 titre restant',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String sleepTimerWithRemaining(String remaining) {
+    return 'Minuterie de veille ($remaining)';
+  }
+
+  @override
+  String get trackInfoSection => 'INFOS DU MORCEAU';
+
+  @override
+  String get detailsSection => 'DÉTAILS';
+
+  @override
+  String get lyricsSection => 'PAROLES';
+
+  @override
+  String get editLyricsHint =>
+      'Saisissez les paroles en texte brut ou au format LRC synchronisé [00:00.00]...';
+
+  @override
+  String addedSongsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count titres ajoutés',
+      one: '1 titre ajouté',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chooseInternalStorageFolder =>
+      'Veuillez choisir un dossier du stockage interne ou de la carte SD de cet appareil.';
+
+  @override
+  String get appCrashedTitle => 'Looper Player a planté';
+
+  @override
+  String get appCrashedDesc =>
+      'Une erreur inattendue s\'est produite au démarrage. Un rapport de diagnostic a été généré.';
+
+  @override
+  String get appCrashedDetails =>
+      'Une erreur s\'est produite lors de l\'initialisation de la base de données ou des services de l\'app. Cela peut arriver si l\'accès au stockage est restreint ou si les fichiers de la base de données sont corrompus.';
+
+  @override
+  String get crashReportSaved =>
+      'Rapport de diagnostic enregistré dans le dossier de support de l\'application.';
+
+  @override
+  String get shareLog => 'Partager le journal';
+
+  @override
+  String get restartApp => 'Redémarrer l\'app';
+
+  @override
+  String get updateAvailableOnPlay =>
+      'Une nouvelle version est disponible sur Google Play.';
+
+  @override
+  String updateAvailableOnGithub(String version) {
+    return 'La version $version est disponible sur GitHub.';
+  }
+
+  @override
+  String get updateAvailable => 'Mise à jour disponible';
+
+  @override
+  String get updateAvailableTitle => 'Mise à jour disponible !';
+
+  @override
+  String get visit => 'OUVRIR';
+
+  @override
+  String get updateDownloaded => 'Mise à jour téléchargée';
+
+  @override
+  String get restartToInstallUpdate =>
+      'Redémarrez Looper Player pour l\'installer.';
+
+  @override
+  String get restart => 'REDÉMARRER';
+
+  @override
+  String backupImportedSummary(int favorites, int stats, int playlists) {
+    return 'Sauvegarde importée : $favorites favoris et $stats statistiques d\'écoute fusionnés, $playlists playlists synchronisées';
+  }
+
+  @override
+  String get backupExportFailed =>
+      'Échec de l\'exportation de la sauvegarde : une erreur interne s\'est produite lors de l\'enregistrement du fichier.';
+
+  @override
+  String get backupImportFailed =>
+      'Échec de l\'importation de la sauvegarde : le fichier est illisible ou son format n\'est pas valide.';
+
+  @override
+  String get stereo => 'Stéréo';
+
+  @override
+  String get mono => 'Mono';
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:looper_player/core/app_fonts.dart';
-import 'package:looper_player/ui/screens/android/widgets/premium_section.dart';
+import 'package:looper_player/core/theme/app_fonts.dart';
+import 'package:looper_player/ui/android/widgets/premium_section.dart';
 
 /// A small glass stat card: an icon chip, a value that counts up from 0 on
 /// first build, and a label underneath. Used for the "report card" grid at

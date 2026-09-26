@@ -4,17 +4,12 @@ description: "Looper Player - A powerful music player."
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 2.6.0+27
+version: 2.7.0+30
 
 environment:
   sdk: ^3.11.0
 
-# Dependencies specify other packages that your package needs in order to work.
-# To automatically upgrade your package dependencies to the latest versions
-# consider running `flutter pub upgrade --major-versions`. Alternatively,
-# dependencies can be manually updated by changing the version numbers below to
-# the latest version available on pub.dev. To see which dependencies have newer
-# versions available, run `flutter pub outdated`.
+
 dependencies:
   flutter:
     sdk: flutter
@@ -27,6 +22,7 @@ dependencies:
   google_fonts: ^8.2.1
   squiggly_slider: ^2.0.0
   adaptive_palette: ^3.1.0
+  material_color_utilities: any
 
   # State Management
   flutter_riverpod: ^3.3.1
@@ -218,6 +214,3 @@ flutter:
         - asset: assets/fonts/Google_Sans/static/GoogleSans-Bold.ttf
           weight: 700
 
-#dependency_overrides:
-#  uuid: ^4.4.2
-#  flutter_rust_bridge: 2.11.1

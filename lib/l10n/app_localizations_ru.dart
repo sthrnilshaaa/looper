@@ -347,6 +347,20 @@ class AppLocalizationsRu extends AppLocalizations {
       'Сохраняйте градиент фона на всех экранах приложений.';
 
   @override
+  String get animatePlayerGradient => 'Анимированный градиент';
+
+  @override
+  String get animatePlayerGradientDesc =>
+      'Плавно перемещает основной и третичный цвета с мягким зерном в такт музыке';
+
+  @override
+  String get animateBackgroundGradient => 'Анимированный фон';
+
+  @override
+  String get animateBackgroundGradientDesc =>
+      'Использует анимированный градиент на фоне Главной, Песен и Библиотеки';
+
+  @override
   String get language => 'Язык';
 
   @override
@@ -967,11 +981,11 @@ class AppLocalizationsRu extends AppLocalizations {
       'Используйте статический текст вместо движущейся анимации для продолжительности прогресса.';
 
   @override
-  String get verticalMotionEffectPlayer => 'Вертикальный жест закрытия плеера';
+  String get fluidPlayer => 'Плавный плеер';
 
   @override
-  String get verticalMotionEffectPlayerDesc =>
-      'Смахните развернутый плеер вниз, чтобы свернуть его';
+  String get fluidPlayerDesc =>
+      'Потяните мини-плеер вверх, чтобы превратить его в полноэкранный плеер';
 
   @override
   String get viewAll => 'Посмотреть все';
@@ -1588,4 +1602,942 @@ class AppLocalizationsRu extends AppLocalizations {
   String enrichingSongs(int count) {
     return 'Обогащение $count песен…';
   }
+
+  @override
+  String get noListeningHistoryYet => 'История прослушивания пока пуста';
+
+  @override
+  String get noListeningHistoryYetDesc =>
+      'Послушайте несколько песен, и здесь появится ваш личный отчёт — любимые песни, исполнители, альбомы и жанры.';
+
+  @override
+  String get looperAnalyze => 'Looper Analyze';
+
+  @override
+  String get totalPlays => 'Всего прослушиваний';
+
+  @override
+  String get listeningTime => 'Время прослушивания';
+
+  @override
+  String get currentStreakDays => 'Текущая серия (дни)';
+
+  @override
+  String get longestStreakDays => 'Самая длинная серия (дни)';
+
+  @override
+  String analyzePlaysAndSongs(int plays, int songs) {
+    return 'Прослушиваний: $plays • Песен: $songs';
+  }
+
+  @override
+  String get dayPartMorningShort => 'Утро';
+
+  @override
+  String get dayPartAfternoonShort => 'День';
+
+  @override
+  String get dayPartEveningShort => 'Вечер';
+
+  @override
+  String get dayPartNightShort => 'Ночь';
+
+  @override
+  String get activityPattern => 'Характер активности';
+
+  @override
+  String get whenYouListenMost => 'Когда вы слушаете больше всего';
+
+  @override
+  String get genreBreakdown => 'Распределение по жанрам';
+
+  @override
+  String get otherGenre => 'Другое';
+
+  @override
+  String get topAlbums => 'Топ альбомов';
+
+  @override
+  String get topArtists => 'Топ исполнителей';
+
+  @override
+  String get topSongs => 'Топ песен';
+
+  @override
+  String playsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count прослушивания',
+      many: '$count прослушиваний',
+      few: '$count прослушивания',
+      one: '$count прослушивание',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String songsPlayedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Прослушано $count песни',
+      many: 'Прослушано $count песен',
+      few: 'Прослушано $count песни',
+      one: 'Прослушана $count песня',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listeningTrend => 'Динамика прослушивания';
+
+  @override
+  String get last30Days => 'Последние 30 дней';
+
+  @override
+  String errorWithDetails(String error) {
+    return 'Ошибка: $error';
+  }
+
+  @override
+  String get selectAll => 'Выбрать все';
+
+  @override
+  String get playlist => 'Плейлист';
+
+  @override
+  String songsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count песни',
+      many: '$count песен',
+      few: '$count песни',
+      one: '$count песня',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recentSearches => 'Недавние запросы';
+
+  @override
+  String get lyricsSourceLocalFile => 'Локальный файл';
+
+  @override
+  String get lyricsSourceEmbedded => 'Встроенные метаданные';
+
+  @override
+  String lyricsProvidedBy(String source) {
+    return 'Текст предоставлен: $source';
+  }
+
+  @override
+  String failedToImportLyrics(String error) {
+    return 'Не удалось импортировать текст: $error';
+  }
+
+  @override
+  String get lyricsEditorLines => 'Строки';
+
+  @override
+  String get lyricsEditorStamped => 'С метками';
+
+  @override
+  String lyricsEditorLineNumber(int number) {
+    return 'Строка $number';
+  }
+
+  @override
+  String get lyricsEditorEmptyLine => '(Пустая строка)';
+
+  @override
+  String get lyricsEditorNotStamped => 'Метка ещё не поставлена';
+
+  @override
+  String get pause => 'Пауза';
+
+  @override
+  String get lyricsEditorAddLineFirst =>
+      'Сначала добавьте хотя бы одну строку текста.';
+
+  @override
+  String get lyricsEditorSavedWithSidecar =>
+      'Текст сохранён в базе данных и рядом с файлом песни.';
+
+  @override
+  String get lyricsEditorSavedDbOnly => 'Текст сохранён в базе данных плеера.';
+
+  @override
+  String get lyricsEditorSaveFailed => 'Не удалось сохранить текст.';
+
+  @override
+  String get saving => 'Сохранение...';
+
+  @override
+  String get saveLrc => 'Сохранить LRC';
+
+  @override
+  String lyricsEditorSelectedLine(int index, int total) {
+    return 'Выбрана строка $index из $total';
+  }
+
+  @override
+  String get lyricsEditorPickLine => 'Выберите строку текста в списке ниже.';
+
+  @override
+  String get stampAndNext => 'Отметить и далее';
+
+  @override
+  String get stampNow => 'Отметить сейчас';
+
+  @override
+  String get lyricsEditorSimpleSteps =>
+      '1. Вставьте или введите по одной строке текста в каждую строку.\n2. Включите песню.\n3. Выберите текущую строку.\n4. Нажмите «Отметить и далее», когда услышите эту строку.\n5. Сохраните, когда закончите.';
+
+  @override
+  String get lyricsEditorAdvancedSteps =>
+      '1. Редактируйте метки времени каждой строки напрямую.\n2. Нажмите «Использовать текущее время», чтобы взять текущую позицию воспроизведения.\n3. Сдвигайте все отмеченные строки вместе с помощью элементов сдвига.\n4. Сохраните, чтобы создать итоговый файл `.lrc`.';
+
+  @override
+  String get lyricsEditorTipsText =>
+      '- Если некоторые строки не отмечены, движок Flick заполнит их время автоматически.\n- При сохранении файл по возможности записывается рядом с песней, иначе связанная копия хранится в базе данных.';
+
+  @override
+  String fileNotFoundOrInaccessible(String title) {
+    return 'Файл не найден или недоступен: $title';
+  }
+
+  @override
+  String playbackFailedCorrupted(String title) {
+    return 'Ошибка воспроизведения: не удалось загрузить или воспроизвести «$title». Убедитесь, что файл не повреждён.';
+  }
+
+  @override
+  String shareSongText(String title) {
+    return 'Послушай эту песню: $title';
+  }
+
+  @override
+  String shareSongsText(int count) {
+    return 'Послушай эти песни ($count)';
+  }
+
+  @override
+  String noSettingsFoundFor(String query) {
+    return 'По запросу «$query» настройки не найдены';
+  }
+
+  @override
+  String get chooseQuickAccentColors => 'Выберите быстрый акцентный цвет';
+
+  @override
+  String get fontWeight => 'Насыщенность шрифта';
+
+  @override
+  String get changeBaseFontWeight =>
+      'Изменить базовую насыщенность своего шрифта';
+
+  @override
+  String lyricsFontWeightValue(int weight) {
+    return 'Насыщенность шрифта текста: $weight';
+  }
+
+  @override
+  String get equalizerSearchDesc =>
+      'Настройка 18-полосного эквалайзера и аудиопресетов';
+
+  @override
+  String get stopServiceSearchDesc =>
+      'Останавливать воспроизведение и закрывать приложение при смахивании из недавних';
+
+  @override
+  String get scanNewFolderDesc => 'Найти аудиофайлы в новой папке';
+
+  @override
+  String get includeOtherDeviceAudioShortDesc =>
+      'Рингтоны, уведомления и звуки мессенджеров';
+
+  @override
+  String get excludedFolders => 'Исключённые папки';
+
+  @override
+  String get excludedFoldersSearchDesc =>
+      'Пропускать выбранные папки при сканировании';
+
+  @override
+  String get clearLibraryData => 'Очистить данные библиотеки';
+
+  @override
+  String get looperPlayerVersion => 'Версия Looper Player';
+
+  @override
+  String versionLabel(String version) {
+    return 'Версия $version';
+  }
+
+  @override
+  String get none => 'Нет';
+
+  @override
+  String foldersSkippedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count папки пропускаются при сканировании',
+      many: '$count папок пропускаются при сканировании',
+      few: '$count папки пропускаются при сканировании',
+      one: '$count папка пропускается при сканировании',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get excludedFoldersDesc =>
+      'Песни в этих папках пропускаются при сканировании, даже если они находятся внутри добавленной вами папки.';
+
+  @override
+  String get noExcludedFoldersYet => 'Исключённых папок пока нет.';
+
+  @override
+  String get excludeAFolder => 'Исключить папку';
+
+  @override
+  String get equalizerEnabled18Band => 'Включён (18-полосный эквалайзер MPV)';
+
+  @override
+  String get disabled => 'Выключен';
+
+  @override
+  String get noIndexedFoldersYet => 'Проиндексированных папок пока нет';
+
+  @override
+  String get noIndexedFoldersYetDesc =>
+      'Используйте «Повторное сканирование библиотеки», чтобы найти папки в хранилище.';
+
+  @override
+  String get eqDynamicRangeCompressor => 'Компрессор динамического диапазона';
+
+  @override
+  String get eqThreshold => 'Порог';
+
+  @override
+  String get eqRatio => 'Коэффициент';
+
+  @override
+  String get eqAttack => 'Атака';
+
+  @override
+  String get eqRelease => 'Восстановление';
+
+  @override
+  String get eqHeadphoneCrossfeedWidth => 'Кроссфид и ширина для наушников';
+
+  @override
+  String get eqBinauralCrossfeed => 'Бинауральный кроссфид';
+
+  @override
+  String get eqCrossfeedStrength => 'Сила кроссфида';
+
+  @override
+  String get eqStereoWidening => 'Расширение стереобазы';
+
+  @override
+  String get eqWideningFactor => 'Коэффициент расширения';
+
+  @override
+  String get eqLoudnessNormalization => 'Нормализация громкости';
+
+  @override
+  String get eqTargetLoudness => 'Целевая громкость';
+
+  @override
+  String get eqToneShelving => 'Полочные фильтры тембра (низкие / высокие)';
+
+  @override
+  String get eqBassShelf => 'Полка низких частот';
+
+  @override
+  String get eqTrebleShelf => 'Полка высоких частот';
+
+  @override
+  String get eqTempoPitchControls => 'Темп и высота тона';
+
+  @override
+  String get eqPitchShift => 'Сдвиг высоты тона';
+
+  @override
+  String get eqTempoSpeed => 'Скорость темпа';
+
+  @override
+  String get eqVoiceSilenceControls => 'Голос и тишина';
+
+  @override
+  String get eqSilenceTrimming => 'Обрезка тишины';
+
+  @override
+  String get eqSilenceThreshold => 'Порог тишины';
+
+  @override
+  String get eqSpeechEnhancementFilter => 'Фильтр улучшения речи';
+
+  @override
+  String get eqHighpassCutoff => 'Срез фильтра верхних частот';
+
+  @override
+  String get eqLowpassCutoff => 'Срез фильтра нижних частот';
+
+  @override
+  String get eqRetroRoomEffects => 'Ретро и эффекты помещения';
+
+  @override
+  String get eqLofiEffect => 'Эффект lo-fi (8-битный кранчер)';
+
+  @override
+  String get eqStudioRoomReverb => 'Студийная реверберация (эхо)';
+
+  @override
+  String get eqVirtualSurround => 'Виртуальный объёмный звук 5.1';
+
+  @override
+  String get eqRawFilterConsole => 'Консоль фильтров FFmpeg';
+
+  @override
+  String get eqSwitchToSliders => 'Переключиться на ползунки';
+
+  @override
+  String get eqSwitchToGraph => 'Переключиться на график';
+
+  @override
+  String get on => 'Вкл';
+
+  @override
+  String get off => 'Выкл';
+
+  @override
+  String get eqSongSpecificActive => 'Активны настройки для этой песни';
+
+  @override
+  String get eqUsingGlobalDefault =>
+      'Используются глобальные настройки по умолчанию';
+
+  @override
+  String get eqInteractiveGraphHint =>
+      'ИНТЕРАКТИВНЫЙ ГРАФИК (ПЕРЕТАСКИВАЙТЕ ТОЧКИ ПО ВЕРТИКАЛИ)';
+
+  @override
+  String get eq18BandHint =>
+      '18-ПОЛОСНЫЙ ЭКВАЛАЙЗЕР (ПРОКРУЧИВАЙТЕ ПО ГОРИЗОНТАЛИ)';
+
+  @override
+  String get eqSongSpecific => 'Для песни';
+
+  @override
+  String get eqGlobalDefault => 'Глобально по умолчанию';
+
+  @override
+  String get eqEditScopeNote =>
+      'Изменения во время воспроизведения песни применяются только к ней. Чтобы задать глобальные настройки, редактируйте, когда ничего не играет, или используйте действие «Применить глобально».';
+
+  @override
+  String get presetFlat => 'Ровный';
+
+  @override
+  String get presetBassBooster => 'Усиление басов';
+
+  @override
+  String get presetTrebleBooster => 'Усиление высоких';
+
+  @override
+  String get presetVocalBooster => 'Усиление вокала';
+
+  @override
+  String get presetElectronic => 'Электроника';
+
+  @override
+  String get presetRock => 'Рок';
+
+  @override
+  String get presetPop => 'Поп';
+
+  @override
+  String get presetJazz => 'Джаз';
+
+  @override
+  String get save => 'Сохранить';
+
+  @override
+  String get savePreset => 'Сохранить пресет';
+
+  @override
+  String get presetName => 'Название пресета';
+
+  @override
+  String get deletePreset => 'Удалить пресет';
+
+  @override
+  String deletePresetConfirm(String name) {
+    return 'Удалить пресет «$name»?';
+  }
+
+  @override
+  String get noLyricsSource => 'Нет источника текста';
+
+  @override
+  String lyricsSourceLabel(String source) {
+    return 'Источник: $source';
+  }
+
+  @override
+  String get lyricsSourceLocalSidecar => 'Локальный файл рядом (.lrc)';
+
+  @override
+  String get lyricsSourceCustomFile => 'Свой LRC-файл';
+
+  @override
+  String get lyricsSourceNotFoundOnline => 'Не найдено в сети';
+
+  @override
+  String get lyricsProviderLocal => 'Локально';
+
+  @override
+  String get checkingLocalLyrics => 'Поиск локальных/встроенных текстов...';
+
+  @override
+  String fetchingLyricsFrom(String provider) {
+    return 'Загрузка текста из $provider...';
+  }
+
+  @override
+  String get loadedLocalLyrics => 'Локальный/встроенный текст загружен!';
+
+  @override
+  String get noLocalLyricsFound => 'Локальный или встроенный текст не найден';
+
+  @override
+  String lyricsUpdatedFrom(String provider) {
+    return 'Текст обновлён из $provider!';
+  }
+
+  @override
+  String noLyricsFoundOn(String provider) {
+    return 'Текст не найден в $provider';
+  }
+
+  @override
+  String get gestureTips => 'Подсказки по жестам';
+
+  @override
+  String get gestureTipsDesc =>
+      'Касание, долгое нажатие, масштабирование щипком и другое';
+
+  @override
+  String get exportLyrics => 'Экспорт текста';
+
+  @override
+  String lyricsExportedTo(String path) {
+    return 'Текст экспортирован в: $path';
+  }
+
+  @override
+  String failedToExportLyrics(String error) {
+    return 'Не удалось экспортировать текст: $error';
+  }
+
+  @override
+  String get gestureTapLine => 'Коснитесь строки';
+
+  @override
+  String get gestureTapLineDesc => 'Перейти к этому месту текста.';
+
+  @override
+  String get gestureLongPressLine => 'Долго нажмите на строку';
+
+  @override
+  String get gestureLongPressLineDesc =>
+      'Начните выбирать строки, чтобы создать карточку с текстом для отправки. Касайтесь других строк, чтобы расширить выбор.';
+
+  @override
+  String get gesturePinch => 'Сведите или разведите два пальца';
+
+  @override
+  String get gesturePinchDesc => 'Измените размер текста по своему вкусу.';
+
+  @override
+  String get gestureSwipeDown => 'Проведите вниз';
+
+  @override
+  String get gestureSwipeDownDesc =>
+      'Закрыть экран текста и вернуться к плееру.';
+
+  @override
+  String get lyricsGestures => 'Жесты на экране текста';
+
+  @override
+  String get lyricsGesturesIntro =>
+      'Несколько возможностей этого экрана, которые не всегда очевидны:';
+
+  @override
+  String linesSelected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Выбрано $count строки',
+      many: 'Выбрано $count строк',
+      few: 'Выбрано $count строки',
+      one: 'Выбрана $count строка',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get couldNotGenerateShareImage =>
+      'Не удалось создать изображение для отправки.';
+
+  @override
+  String get couldNotGenerateImage => 'Не удалось создать изображение.';
+
+  @override
+  String get savedToGallery => 'Сохранено в галерею.';
+
+  @override
+  String get galleryPermissionDenied => 'Доступ к галерее запрещён.';
+
+  @override
+  String get couldNotSaveToGallery =>
+      'Не удалось сохранить изображение в галерею.';
+
+  @override
+  String get shareLyrics => 'Поделиться текстом';
+
+  @override
+  String get backgroundColor => 'Цвет фона';
+
+  @override
+  String get lyricsTextColor => 'Цвет текста песни';
+
+  @override
+  String get saveToGallery => 'Сохранить в галерею';
+
+  @override
+  String get preparing => 'Подготовка...';
+
+  @override
+  String get trackTitle => 'Название трека';
+
+  @override
+  String get composer => 'Композитор';
+
+  @override
+  String get unknownGenre => 'Неизвестный жанр';
+
+  @override
+  String get releaseYear => 'Год выпуска';
+
+  @override
+  String get notAvailable => 'Н/Д';
+
+  @override
+  String get recordLabel => 'Лейбл';
+
+  @override
+  String get copyright => 'Авторские права';
+
+  @override
+  String get encoder => 'Кодировщик';
+
+  @override
+  String get fileName => 'Имя файла';
+
+  @override
+  String get fileFormat => 'Формат файла';
+
+  @override
+  String get fileSize => 'Размер файла';
+
+  @override
+  String get absolutePath => 'Полный путь';
+
+  @override
+  String get playCount => 'Прослушивания';
+
+  @override
+  String playCountTimes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count раза',
+      many: '$count раз',
+      few: '$count раза',
+      one: '$count раз',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get lastPlayed => 'Последнее прослушивание';
+
+  @override
+  String get filePath => 'Путь к файлу';
+
+  @override
+  String get rescan => 'Пересканировать';
+
+  @override
+  String get codec => 'Кодек';
+
+  @override
+  String get container => 'Контейнер';
+
+  @override
+  String get sampleRate => 'Частота дискретизации';
+
+  @override
+  String get bitDepth => 'Разрядность';
+
+  @override
+  String get decodedFormat => 'Декодированный формат';
+
+  @override
+  String get bitrate => 'Битрейт';
+
+  @override
+  String get channels => 'Каналы';
+
+  @override
+  String get nyquist => 'Найквист';
+
+  @override
+  String get dynamicRange => 'Динамический диапазон';
+
+  @override
+  String get peak => 'Пик';
+
+  @override
+  String get truePeak => 'Истинный пик';
+
+  @override
+  String get clipping => 'Клиппинг';
+
+  @override
+  String get cutoff => 'Срез';
+
+  @override
+  String get samples => 'Сэмплы';
+
+  @override
+  String channelShort(int channel) {
+    return 'К $channel';
+  }
+
+  @override
+  String get noneClean => 'Нет (чисто)';
+
+  @override
+  String get reanalyzingAudio => 'Повторный анализ аудиопотока...';
+
+  @override
+  String get analyzingAudio => 'Анализ аудиопотока...';
+
+  @override
+  String sampleRateHz(int rate) {
+    return 'Частота дискретизации: $rate Гц';
+  }
+
+  @override
+  String nyquistKhz(String khz) {
+    return 'Найквист: $khz кГц';
+  }
+
+  @override
+  String get qualityLossless => 'Без потерь';
+
+  @override
+  String get qualityHigh => 'Высокое качество';
+
+  @override
+  String get qualityStandard => 'Стандартное качество';
+
+  @override
+  String get qualityAudio => 'Аудио';
+
+  @override
+  String get addCustomFolder => 'Добавить свою папку';
+
+  @override
+  String get addCustomFolderDesc =>
+      'Если ваша музыка лежит в папке с другим названием или на SD-карте, добавьте её напрямую.';
+
+  @override
+  String get indexingYourLibrary => 'ИНДЕКСАЦИЯ БИБЛИОТЕКИ...';
+
+  @override
+  String get indexingYourLibraryDesc =>
+      'Заполняем названия, обложки и тексты ваших песен.';
+
+  @override
+  String welcomeStep(String step, String title) {
+    return 'ШАГ $step: $title';
+  }
+
+  @override
+  String get includeOtherDeviceAudioAlarmsDesc =>
+      'Рингтоны, уведомления, будильники и звуки мессенджеров';
+
+  @override
+  String get version => 'Версия';
+
+  @override
+  String get noIndexedFoldersDesktopDesc =>
+      'Используйте «Повторное сканирование библиотеки», чтобы найти папки хранилища';
+
+  @override
+  String get playedLabel => 'Прослушано';
+
+  @override
+  String minutesShort(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count мин',
+      many: '$count мин',
+      few: '$count мин',
+      one: '$count мин',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String minuteChip(int count) {
+    return '$count мин';
+  }
+
+  @override
+  String songsCountTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count песни',
+      many: '$count песен',
+      few: '$count песни',
+      one: '$count песня',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String songsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Осталось $count песни',
+      many: 'Осталось $count песен',
+      few: 'Осталось $count песни',
+      one: 'Осталась $count песня',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String sleepTimerWithRemaining(String remaining) {
+    return 'Таймер сна ($remaining)';
+  }
+
+  @override
+  String get trackInfoSection => 'О ТРЕКЕ';
+
+  @override
+  String get detailsSection => 'ПОДРОБНОСТИ';
+
+  @override
+  String get lyricsSection => 'ТЕКСТ';
+
+  @override
+  String get editLyricsHint =>
+      'Введите обычный текст или синхронизированный текст в формате LRC [00:00.00]...';
+
+  @override
+  String addedSongsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Добавлено $count песни',
+      many: 'Добавлено $count песен',
+      few: 'Добавлено $count песни',
+      one: 'Добавлена $count песня',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chooseInternalStorageFolder =>
+      'Выберите папку во внутренней памяти или на SD-карте этого устройства.';
+
+  @override
+  String get appCrashedTitle => 'Сбой Looper Player';
+
+  @override
+  String get appCrashedDesc =>
+      'При запуске произошла непредвиденная ошибка. Создан диагностический отчёт.';
+
+  @override
+  String get appCrashedDetails =>
+      'Ошибка при инициализации базы данных или служб приложения. Это может случиться, если доступ к хранилищу ограничен или файлы базы данных повреждены.';
+
+  @override
+  String get crashReportSaved =>
+      'Диагностический отчёт сохранён в папке поддержки приложения.';
+
+  @override
+  String get shareLog => 'Отправить журнал';
+
+  @override
+  String get restartApp => 'Перезапустить приложение';
+
+  @override
+  String get updateAvailableOnPlay => 'В Google Play доступна новая версия.';
+
+  @override
+  String updateAvailableOnGithub(String version) {
+    return 'Версия $version доступна на GitHub.';
+  }
+
+  @override
+  String get updateAvailable => 'Доступно обновление';
+
+  @override
+  String get updateAvailableTitle => 'Доступно обновление!';
+
+  @override
+  String get visit => 'ОТКРЫТЬ';
+
+  @override
+  String get updateDownloaded => 'Обновление загружено';
+
+  @override
+  String get restartToInstallUpdate =>
+      'Перезапустите Looper Player, чтобы установить его.';
+
+  @override
+  String get restart => 'ПЕРЕЗАПУСК';
+
+  @override
+  String backupImportedSummary(int favorites, int stats, int playlists) {
+    return 'Резервная копия импортирована: объединено избранного — $favorites, статистики прослушиваний — $stats, синхронизировано плейлистов — $playlists';
+  }
+
+  @override
+  String get backupExportFailed =>
+      'Не удалось экспортировать резервную копию: внутренняя ошибка при сохранении файла.';
+
+  @override
+  String get backupImportFailed =>
+      'Не удалось импортировать резервную копию: файл не читается или имеет неверный формат.';
+
+  @override
+  String get stereo => 'Стерео';
+
+  @override
+  String get mono => 'Моно';
 }

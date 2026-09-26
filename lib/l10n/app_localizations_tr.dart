@@ -348,6 +348,20 @@ class AppLocalizationsTr extends AppLocalizations {
       'Arka plan degradesini tüm uygulama ekranlarında koruyun';
 
   @override
+  String get animatePlayerGradient => 'Hareketli Gradyan';
+
+  @override
+  String get animatePlayerGradientDesc =>
+      'Birincil ve üçüncül renkleri yumuşak bir grenle, müziğe tepki vererek yavaşça hareket ettirir';
+
+  @override
+  String get animateBackgroundGradient => 'Hareketli Arka Plan';
+
+  @override
+  String get animateBackgroundGradientDesc =>
+      'Ana Sayfa, Şarkılar ve Kitaplık arka planlarında hareketli gradyanı kullanır';
+
+  @override
   String get language => 'Dil';
 
   @override
@@ -963,11 +977,11 @@ class AppLocalizationsTr extends AppLocalizations {
       'İlerleme süresi için yuvarlanan animasyon yerine statik metin kullanın';
 
   @override
-  String get verticalMotionEffectPlayer => 'Dikey Hareket Efektli Oynatıcı';
+  String get fluidPlayer => 'Akıcı Oynatıcı';
 
   @override
-  String get verticalMotionEffectPlayerDesc =>
-      'Genişletilmiş oynatıcıyı kapatmak için aşağı kaydırın';
+  String get fluidPlayerDesc =>
+      'Mini oynatıcıyı tam oynatıcıya dönüştürmek için yukarı sürükleyin';
 
   @override
   String get viewAll => 'Tümünü Görüntüle';
@@ -1583,4 +1597,907 @@ class AppLocalizationsTr extends AppLocalizations {
   String enrichingSongs(int count) {
     return '$count şarkı zenginleştiriliyor…';
   }
+
+  @override
+  String get noListeningHistoryYet => 'Henüz dinleme geçmişi yok';
+
+  @override
+  String get noListeningHistoryYetDesc =>
+      'Birkaç şarkı çal; en çok dinlediğin şarkılar, sanatçılar, albümler ve türlerle kişisel karnen burada hayat bulacak.';
+
+  @override
+  String get looperAnalyze => 'Looper Analyze';
+
+  @override
+  String get totalPlays => 'Toplam Dinleme';
+
+  @override
+  String get listeningTime => 'Dinleme Süresi';
+
+  @override
+  String get currentStreakDays => 'Mevcut Seri (gün)';
+
+  @override
+  String get longestStreakDays => 'En Uzun Seri (gün)';
+
+  @override
+  String analyzePlaysAndSongs(int plays, int songs) {
+    return '$plays dinleme • $songs şarkı';
+  }
+
+  @override
+  String get dayPartMorningShort => 'Sabah';
+
+  @override
+  String get dayPartAfternoonShort => 'Öğl.';
+
+  @override
+  String get dayPartEveningShort => 'Akşam';
+
+  @override
+  String get dayPartNightShort => 'Gece';
+
+  @override
+  String get activityPattern => 'Etkinlik Düzeni';
+
+  @override
+  String get whenYouListenMost => 'En çok ne zaman dinliyorsun';
+
+  @override
+  String get genreBreakdown => 'Tür Dağılımı';
+
+  @override
+  String get otherGenre => 'Diğer';
+
+  @override
+  String get topAlbums => 'En İyi Albümler';
+
+  @override
+  String get topArtists => 'En İyi Sanatçılar';
+
+  @override
+  String get topSongs => 'En İyi Şarkılar';
+
+  @override
+  String playsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dinleme',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String songsPlayedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count şarkı dinlendi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listeningTrend => 'Dinleme Eğilimi';
+
+  @override
+  String get last30Days => 'Son 30 gün';
+
+  @override
+  String errorWithDetails(String error) {
+    return 'Hata: $error';
+  }
+
+  @override
+  String get selectAll => 'Tümünü Seç';
+
+  @override
+  String get playlist => 'Çalma Listesi';
+
+  @override
+  String songsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count şarkı',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recentSearches => 'Son Aramalar';
+
+  @override
+  String get lyricsSourceLocalFile => 'Yerel Dosya';
+
+  @override
+  String get lyricsSourceEmbedded => 'Gömülü Meta Veri';
+
+  @override
+  String lyricsProvidedBy(String source) {
+    return 'Şarkı sözlerini sağlayan: $source';
+  }
+
+  @override
+  String failedToImportLyrics(String error) {
+    return 'Şarkı sözleri içe aktarılamadı: $error';
+  }
+
+  @override
+  String get lyricsEditorLines => 'Satırlar';
+
+  @override
+  String get lyricsEditorStamped => 'Damgalı';
+
+  @override
+  String lyricsEditorLineNumber(int number) {
+    return 'Satır $number';
+  }
+
+  @override
+  String get lyricsEditorEmptyLine => '(Boş satır)';
+
+  @override
+  String get lyricsEditorNotStamped => 'Henüz damgalanmadı';
+
+  @override
+  String get pause => 'Duraklat';
+
+  @override
+  String get lyricsEditorAddLineFirst => 'Önce en az bir söz satırı ekle.';
+
+  @override
+  String get lyricsEditorSavedWithSidecar =>
+      'Sözler veritabanına ve şarkı dosyasının yanına kaydedildi.';
+
+  @override
+  String get lyricsEditorSavedDbOnly =>
+      'Sözler oynatıcı veritabanına kaydedildi.';
+
+  @override
+  String get lyricsEditorSaveFailed => 'Sözler kaydedilemedi.';
+
+  @override
+  String get saving => 'Kaydediliyor...';
+
+  @override
+  String get saveLrc => 'LRC Kaydet';
+
+  @override
+  String lyricsEditorSelectedLine(int index, int total) {
+    return 'Seçili satır $index / $total';
+  }
+
+  @override
+  String get lyricsEditorPickLine => 'Aşağıdaki listeden bir söz satırı seç.';
+
+  @override
+  String get stampAndNext => 'Damgala ve Sonraki';
+
+  @override
+  String get stampNow => 'Şimdi Damgala';
+
+  @override
+  String get lyricsEditorSimpleSteps =>
+      '1. Her satıra bir söz satırı yapıştır veya yaz.\n2. Şarkıyı çal.\n3. Geçerli söz satırını seç.\n4. O satırı duyduğunda \"Damgala ve Sonraki\"ye dokun.\n5. Bitince kaydet.';
+
+  @override
+  String get lyricsEditorAdvancedSteps =>
+      '1. Her satırın zaman damgasını doğrudan düzenle.\n2. Anlık çalma süresini almak için \"Geçerli Zamanı Kullan\"ı kullan.\n3. Tüm damgalı satırları birlikte kaydırmak için kaydırma kontrollerini kullan.\n4. Son `.lrc` dosyasını oluşturmak için kaydet.';
+
+  @override
+  String get lyricsEditorTipsText =>
+      '- Bazı satırlar damgalanmamışsa Flick motoru sürelerini otomatik doldurur.\n- Kaydetme mümkünse şarkının yanına yazar, değilse bağlantılı bir kopyayı veritabanında saklar.';
+
+  @override
+  String fileNotFoundOrInaccessible(String title) {
+    return 'Dosya bulunamadı veya erişilemiyor: $title';
+  }
+
+  @override
+  String playbackFailedCorrupted(String title) {
+    return 'Çalma başarısız: \"$title\" yüklenemedi veya çalınamadı. Lütfen dosyanın bozuk olmadığından emin ol.';
+  }
+
+  @override
+  String shareSongText(String title) {
+    return 'Bu şarkıya göz at: $title';
+  }
+
+  @override
+  String shareSongsText(int count) {
+    return 'Bu $count şarkıya göz at';
+  }
+
+  @override
+  String noSettingsFoundFor(String query) {
+    return '\"$query\" için ayar bulunamadı';
+  }
+
+  @override
+  String get chooseQuickAccentColors => 'Hızlı vurgu rengi seç';
+
+  @override
+  String get fontWeight => 'Yazı Tipi Kalınlığı';
+
+  @override
+  String get changeBaseFontWeight =>
+      'Özel yazı tipinin temel kalınlığını değiştir';
+
+  @override
+  String lyricsFontWeightValue(int weight) {
+    return 'Söz yazı tipi kalınlığı: $weight';
+  }
+
+  @override
+  String get equalizerSearchDesc =>
+      '18 bantlı ekolayzeri ve ses ön ayarlarını düzenle';
+
+  @override
+  String get stopServiceSearchDesc =>
+      'Son uygulamalardan kaydırıldığında çalmayı durdur ve uygulamayı kapat';
+
+  @override
+  String get scanNewFolderDesc => 'Yeni bir klasörde ses dosyası tara';
+
+  @override
+  String get includeOtherDeviceAudioShortDesc =>
+      'Zil sesleri, bildirimler ve mesajlaşma sesleri';
+
+  @override
+  String get excludedFolders => 'Hariç Tutulan Klasörler';
+
+  @override
+  String get excludedFoldersSearchDesc =>
+      'Tarama sırasında belirli klasörleri atla';
+
+  @override
+  String get clearLibraryData => 'Kütüphane verilerini temizle';
+
+  @override
+  String get looperPlayerVersion => 'Looper Player Sürümü';
+
+  @override
+  String versionLabel(String version) {
+    return 'Sürüm $version';
+  }
+
+  @override
+  String get none => 'Yok';
+
+  @override
+  String foldersSkippedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Taramada $count klasör atlanıyor',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get excludedFoldersDesc =>
+      'Bu klasörlerdeki şarkılar, eklediğin bir klasörün içinde olsalar bile taramada atlanır.';
+
+  @override
+  String get noExcludedFoldersYet => 'Henüz hariç tutulan klasör yok.';
+
+  @override
+  String get excludeAFolder => 'Klasör Hariç Tut';
+
+  @override
+  String get equalizerEnabled18Band => 'Etkin (18 bantlı MPV EQ)';
+
+  @override
+  String get disabled => 'Devre dışı';
+
+  @override
+  String get noIndexedFoldersYet => 'Henüz dizine eklenmiş klasör yok';
+
+  @override
+  String get noIndexedFoldersYetDesc =>
+      'Depolamadaki klasörleri bulmak için \"Kütüphaneyi Yeniden Tara\"yı kullan.';
+
+  @override
+  String get eqDynamicRangeCompressor => 'Dinamik Aralık Kompresörü';
+
+  @override
+  String get eqThreshold => 'Eşik';
+
+  @override
+  String get eqRatio => 'Oran';
+
+  @override
+  String get eqAttack => 'Atak';
+
+  @override
+  String get eqRelease => 'Bırakma';
+
+  @override
+  String get eqHeadphoneCrossfeedWidth => 'Kulaklık Crossfeed ve Genişlik';
+
+  @override
+  String get eqBinauralCrossfeed => 'Binaural Crossfeed';
+
+  @override
+  String get eqCrossfeedStrength => 'Crossfeed Gücü';
+
+  @override
+  String get eqStereoWidening => 'Stereo Genişletme';
+
+  @override
+  String get eqWideningFactor => 'Genişletme Katsayısı';
+
+  @override
+  String get eqLoudnessNormalization => 'Ses Yüksekliği Normalleştirme';
+
+  @override
+  String get eqTargetLoudness => 'Hedef Ses Yüksekliği';
+
+  @override
+  String get eqToneShelving => 'Ton Rafı (Bas / Tiz)';
+
+  @override
+  String get eqBassShelf => 'Bas Rafı';
+
+  @override
+  String get eqTrebleShelf => 'Tiz Rafı';
+
+  @override
+  String get eqTempoPitchControls => 'Tempo ve Perde Kontrolleri';
+
+  @override
+  String get eqPitchShift => 'Perde Kaydırma';
+
+  @override
+  String get eqTempoSpeed => 'Tempo Hızı';
+
+  @override
+  String get eqVoiceSilenceControls => 'Ses ve sessizlik kontrolleri';
+
+  @override
+  String get eqSilenceTrimming => 'Sessizlik Kırpma';
+
+  @override
+  String get eqSilenceThreshold => 'Sessizlik Eşiği';
+
+  @override
+  String get eqSpeechEnhancementFilter => 'Konuşma İyileştirme Filtresi';
+
+  @override
+  String get eqHighpassCutoff => 'Yüksek Geçiren Kesim';
+
+  @override
+  String get eqLowpassCutoff => 'Alçak Geçiren Kesim';
+
+  @override
+  String get eqRetroRoomEffects => 'Retro ve Oda Efektleri';
+
+  @override
+  String get eqLofiEffect => 'Lofi Efekti (8-bit Crusher)';
+
+  @override
+  String get eqStudioRoomReverb => 'Stüdyo Oda Yankısı (Eko)';
+
+  @override
+  String get eqVirtualSurround => 'Sanal 5.1 Surround Ses';
+
+  @override
+  String get eqRawFilterConsole => 'Ham FFmpeg Filtre konsolu';
+
+  @override
+  String get eqSwitchToSliders => 'Kaydırıcılara Geç';
+
+  @override
+  String get eqSwitchToGraph => 'Grafiğe Geç';
+
+  @override
+  String get on => 'Açık';
+
+  @override
+  String get off => 'Kapalı';
+
+  @override
+  String get eqSongSpecificActive => 'Şarkıya özel ayarlar etkin';
+
+  @override
+  String get eqUsingGlobalDefault => 'Genel varsayılan ayarlar kullanılıyor';
+
+  @override
+  String get eqInteractiveGraphHint =>
+      'ETKİLEŞİMLİ GRAFİK (NOKTALARI DİKEY SÜRÜKLE)';
+
+  @override
+  String get eq18BandHint => '18 BANTLI EKOLAYZER (YATAY KAYDIR)';
+
+  @override
+  String get eqSongSpecific => 'Şarkıya Özel';
+
+  @override
+  String get eqGlobalDefault => 'Genel Varsayılan';
+
+  @override
+  String get eqEditScopeNote =>
+      'Bir şarkı çalarken yapılan değişiklikler yalnızca o şarkıya uygulanır. Genel varsayılanı ayarlamak için şarkı çalmıyorken düzenle veya \'Genele Uygula\' işlemini kullan.';
+
+  @override
+  String get presetFlat => 'Düz';
+
+  @override
+  String get presetBassBooster => 'Bas Güçlendirici';
+
+  @override
+  String get presetTrebleBooster => 'Tiz Güçlendirici';
+
+  @override
+  String get presetVocalBooster => 'Vokal Güçlendirici';
+
+  @override
+  String get presetElectronic => 'Elektronik';
+
+  @override
+  String get presetRock => 'Rock';
+
+  @override
+  String get presetPop => 'Pop';
+
+  @override
+  String get presetJazz => 'Caz';
+
+  @override
+  String get save => 'Kaydet';
+
+  @override
+  String get savePreset => 'Ön Ayarı Kaydet';
+
+  @override
+  String get presetName => 'Ön ayar adı';
+
+  @override
+  String get deletePreset => 'Ön Ayarı Sil';
+
+  @override
+  String deletePresetConfirm(String name) {
+    return '\"$name\" ön ayarı silinsin mi?';
+  }
+
+  @override
+  String get noLyricsSource => 'Söz Kaynağı Yok';
+
+  @override
+  String lyricsSourceLabel(String source) {
+    return 'Kaynak: $source';
+  }
+
+  @override
+  String get lyricsSourceLocalSidecar => 'Yerel Yan Dosya (.lrc)';
+
+  @override
+  String get lyricsSourceCustomFile => 'Özel LRC Dosyası';
+
+  @override
+  String get lyricsSourceNotFoundOnline => 'Çevrimiçi Bulunamadı';
+
+  @override
+  String get lyricsProviderLocal => 'Yerel';
+
+  @override
+  String get checkingLocalLyrics => 'Yerel/gömülü sözler kontrol ediliyor...';
+
+  @override
+  String fetchingLyricsFrom(String provider) {
+    return 'Sözler $provider üzerinden alınıyor...';
+  }
+
+  @override
+  String get loadedLocalLyrics => 'Yerel/gömülü sözler yüklendi!';
+
+  @override
+  String get noLocalLyricsFound => 'Yerel veya gömülü söz bulunamadı';
+
+  @override
+  String lyricsUpdatedFrom(String provider) {
+    return 'Sözler $provider üzerinden güncellendi!';
+  }
+
+  @override
+  String noLyricsFoundOn(String provider) {
+    return '$provider üzerinde söz bulunamadı';
+  }
+
+  @override
+  String get gestureTips => 'Hareket İpuçları';
+
+  @override
+  String get gestureTipsDesc =>
+      'Dokun, uzun bas, yakınlaştırmak için sıkıştır ve dahası';
+
+  @override
+  String get exportLyrics => 'Sözleri Dışa Aktar';
+
+  @override
+  String lyricsExportedTo(String path) {
+    return 'Sözler şuraya aktarıldı: $path';
+  }
+
+  @override
+  String failedToExportLyrics(String error) {
+    return 'Sözler dışa aktarılamadı: $error';
+  }
+
+  @override
+  String get gestureTapLine => 'Bir satıra dokun';
+
+  @override
+  String get gestureTapLineDesc => 'Çalmayı doğrudan o söze atlatır.';
+
+  @override
+  String get gestureLongPressLine => 'Bir satıra uzun bas';
+
+  @override
+  String get gestureLongPressLineDesc =>
+      'Paylaşılabilir bir söz kartı için satır seçmeye başla. Seçimi genişletmek için başka satırlara dokun.';
+
+  @override
+  String get gesturePinch => 'İki parmakla sıkıştır';
+
+  @override
+  String get gesturePinchDesc => 'Söz metninin boyutunu istediğin gibi ayarla.';
+
+  @override
+  String get gestureSwipeDown => 'Aşağı kaydır';
+
+  @override
+  String get gestureSwipeDownDesc => 'Söz ekranını kapatıp oynatıcıya döner.';
+
+  @override
+  String get lyricsGestures => 'Söz Hareketleri';
+
+  @override
+  String get lyricsGesturesIntro =>
+      'Bu ekranın yapabildiği, her zaman belli olmayan birkaç şey:';
+
+  @override
+  String linesSelected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count satır seçildi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get couldNotGenerateShareImage => 'Paylaşım görseli oluşturulamadı.';
+
+  @override
+  String get couldNotGenerateImage => 'Görsel oluşturulamadı.';
+
+  @override
+  String get savedToGallery => 'Galeriye kaydedildi.';
+
+  @override
+  String get galleryPermissionDenied => 'Galeriye erişim izni reddedildi.';
+
+  @override
+  String get couldNotSaveToGallery => 'Görsel galeriye kaydedilemedi.';
+
+  @override
+  String get shareLyrics => 'Sözleri Paylaş';
+
+  @override
+  String get backgroundColor => 'Arka Plan Rengi';
+
+  @override
+  String get lyricsTextColor => 'Söz Metni Rengi';
+
+  @override
+  String get saveToGallery => 'Galeriye Kaydet';
+
+  @override
+  String get preparing => 'Hazırlanıyor...';
+
+  @override
+  String get trackTitle => 'Parça Adı';
+
+  @override
+  String get composer => 'Besteci';
+
+  @override
+  String get unknownGenre => 'Bilinmeyen Tür';
+
+  @override
+  String get releaseYear => 'Çıkış Yılı';
+
+  @override
+  String get notAvailable => 'Yok';
+
+  @override
+  String get recordLabel => 'Plak Şirketi';
+
+  @override
+  String get copyright => 'Telif Hakkı';
+
+  @override
+  String get encoder => 'Kodlayıcı';
+
+  @override
+  String get fileName => 'Dosya Adı';
+
+  @override
+  String get fileFormat => 'Dosya Biçimi';
+
+  @override
+  String get fileSize => 'Dosya Boyutu';
+
+  @override
+  String get absolutePath => 'Tam Yol';
+
+  @override
+  String get playCount => 'Dinlenme Sayısı';
+
+  @override
+  String playCountTimes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kez',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get lastPlayed => 'Son Dinlenme';
+
+  @override
+  String get filePath => 'Dosya Yolu';
+
+  @override
+  String get rescan => 'Yeniden Tara';
+
+  @override
+  String get codec => 'Kodek';
+
+  @override
+  String get container => 'Kapsayıcı';
+
+  @override
+  String get sampleRate => 'Örnekleme Hızı';
+
+  @override
+  String get bitDepth => 'Bit Derinliği';
+
+  @override
+  String get decodedFormat => 'Çözülmüş Biçim';
+
+  @override
+  String get bitrate => 'Bit Hızı';
+
+  @override
+  String get channels => 'Kanallar';
+
+  @override
+  String get nyquist => 'Nyquist';
+
+  @override
+  String get dynamicRange => 'Dinamik Aralık';
+
+  @override
+  String get peak => 'Tepe';
+
+  @override
+  String get truePeak => 'Gerçek Tepe';
+
+  @override
+  String get clipping => 'Kırpılma';
+
+  @override
+  String get cutoff => 'Kesim';
+
+  @override
+  String get samples => 'Örnekler';
+
+  @override
+  String channelShort(int channel) {
+    return 'K $channel';
+  }
+
+  @override
+  String get noneClean => 'Yok (Temiz)';
+
+  @override
+  String get reanalyzingAudio => 'Ses akışı yeniden analiz ediliyor...';
+
+  @override
+  String get analyzingAudio => 'Ses akışı analiz ediliyor...';
+
+  @override
+  String sampleRateHz(int rate) {
+    return 'Örnekleme Hızı: $rate Hz';
+  }
+
+  @override
+  String nyquistKhz(String khz) {
+    return 'Nyquist: $khz kHz';
+  }
+
+  @override
+  String get qualityLossless => 'Kayıpsız';
+
+  @override
+  String get qualityHigh => 'Yüksek Kalite';
+
+  @override
+  String get qualityStandard => 'Standart Kalite';
+
+  @override
+  String get qualityAudio => 'Ses';
+
+  @override
+  String get addCustomFolder => 'Özel Klasör Ekle';
+
+  @override
+  String get addCustomFolderDesc =>
+      'Müziğin farklı adlı bir klasörde veya SD kartta ise doğrudan ekle.';
+
+  @override
+  String get indexingYourLibrary => 'KÜTÜPHANEN DİZİNE EKLENİYOR...';
+
+  @override
+  String get indexingYourLibraryDesc =>
+      'Şarkılarının adları, kapakları ve sözleri tamamlanıyor.';
+
+  @override
+  String welcomeStep(String step, String title) {
+    return 'ADIM $step: $title';
+  }
+
+  @override
+  String get includeOtherDeviceAudioAlarmsDesc =>
+      'Zil sesleri, bildirimler, alarmlar ve mesajlaşma sesleri';
+
+  @override
+  String get version => 'Sürüm';
+
+  @override
+  String get noIndexedFoldersDesktopDesc =>
+      'Depolama klasörlerini bulmak için \"Kütüphaneyi Yeniden Tara\"yı kullan';
+
+  @override
+  String get playedLabel => 'Dinlenenler';
+
+  @override
+  String minutesShort(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Dk',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String minuteChip(int count) {
+    return '$count Dk';
+  }
+
+  @override
+  String songsCountTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Şarkı',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String songsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count şarkı kaldı',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String sleepTimerWithRemaining(String remaining) {
+    return 'Uyku Zamanlayıcısı ($remaining)';
+  }
+
+  @override
+  String get trackInfoSection => 'PARÇA BİLGİSİ';
+
+  @override
+  String get detailsSection => 'AYRINTILAR';
+
+  @override
+  String get lyricsSection => 'SÖZLER';
+
+  @override
+  String get editLyricsHint =>
+      'Düz metin veya senkronize LRC biçiminde [00:00.00] sözleri gir...';
+
+  @override
+  String addedSongsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count şarkı eklendi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chooseInternalStorageFolder =>
+      'Lütfen bu cihazın dahili depolamasında veya SD kartında bir klasör seç.';
+
+  @override
+  String get appCrashedTitle => 'Looper Player Çöktü';
+
+  @override
+  String get appCrashedDesc =>
+      'Başlatma sırasında beklenmeyen bir hata oluştu. Bir tanılama raporu oluşturuldu.';
+
+  @override
+  String get appCrashedDetails =>
+      'Uygulama veritabanı veya hizmetleri başlatılırken bir hata oluştu. Depolama erişimi kısıtlıysa veya veritabanı dosyaları bozuksa bu olabilir.';
+
+  @override
+  String get crashReportSaved =>
+      'Tanılama raporu uygulama destek klasörüne kaydedildi.';
+
+  @override
+  String get shareLog => 'Günlüğü Paylaş';
+
+  @override
+  String get restartApp => 'Uygulamayı Yeniden Başlat';
+
+  @override
+  String get updateAvailableOnPlay => 'Google Play\'de yeni bir sürüm mevcut.';
+
+  @override
+  String updateAvailableOnGithub(String version) {
+    return '$version sürümü GitHub\'da mevcut.';
+  }
+
+  @override
+  String get updateAvailable => 'Güncelleme mevcut';
+
+  @override
+  String get updateAvailableTitle => 'Güncelleme Mevcut!';
+
+  @override
+  String get visit => 'AÇ';
+
+  @override
+  String get updateDownloaded => 'Güncelleme indirildi';
+
+  @override
+  String get restartToInstallUpdate =>
+      'Yüklemek için Looper Player\'ı yeniden başlat.';
+
+  @override
+  String get restart => 'YENİDEN BAŞLAT';
+
+  @override
+  String backupImportedSummary(int favorites, int stats, int playlists) {
+    return 'Yedek içe aktarıldı: $favorites favori ve $stats dinleme istatistiği birleştirildi, $playlists çalma listesi eşitlendi';
+  }
+
+  @override
+  String get backupExportFailed =>
+      'Yedek dışa aktarılamadı: Yedek dosyası kaydedilirken dahili bir hata oluştu.';
+
+  @override
+  String get backupImportFailed =>
+      'Yedek içe aktarılamadı: Dosya okunamadı veya yedek biçimi geçersiz.';
+
+  @override
+  String get stereo => 'Stereo';
+
+  @override
+  String get mono => 'Mono';
 }

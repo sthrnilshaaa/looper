@@ -344,6 +344,20 @@ class AppLocalizationsHi extends AppLocalizations {
       'सभी एप्लिकेशन स्क्रीन पर बैकग्राउंड ग्रेडिएंट बनाए रखें';
 
   @override
+  String get animatePlayerGradient => 'एनिमेटेड ग्रेडिएंट';
+
+  @override
+  String get animatePlayerGradientDesc =>
+      'संगीत के साथ प्राइमरी और टर्शियरी रंगों को हल्के ग्रेन के साथ धीरे-धीरे चलाता है';
+
+  @override
+  String get animateBackgroundGradient => 'एनिमेटेड बैकग्राउंड';
+
+  @override
+  String get animateBackgroundGradientDesc =>
+      'होम, गाने और लाइब्रेरी के बैकग्राउंड पर एनिमेटेड ग्रेडिएंट का उपयोग करता है';
+
+  @override
   String get language => 'भाषा';
 
   @override
@@ -961,11 +975,11 @@ class AppLocalizationsHi extends AppLocalizations {
       'रोलिंग एनीमेशन के बजाय स्थिर पाठ का उपयोग करें';
 
   @override
-  String get verticalMotionEffectPlayer => 'वर्टिकल मोशन प्लेयर';
+  String get fluidPlayer => 'फ़्लूइड प्लेयर';
 
   @override
-  String get verticalMotionEffectPlayerDesc =>
-      'खोलने के बाद प्लेयर को बंद करने के लिए नीचे स्वाइप करें';
+  String get fluidPlayerDesc =>
+      'मिनी प्लेयर को ऊपर खींचकर पूरे प्लेयर में बदलें';
 
   @override
   String get viewAll => 'सभी देखें';
@@ -1577,4 +1591,917 @@ class AppLocalizationsHi extends AppLocalizations {
   String enrichingSongs(int count) {
     return '$count गानों को समृद्ध किया जा रहा है…';
   }
+
+  @override
+  String get noListeningHistoryYet => 'अभी तक सुनने का कोई इतिहास नहीं';
+
+  @override
+  String get noListeningHistoryYetDesc =>
+      'कुछ गाने चलाएं और आपका निजी रिपोर्ट कार्ड — टॉप गाने, कलाकार, एल्बम और शैलियां — यहां दिखने लगेगा।';
+
+  @override
+  String get looperAnalyze => 'Looper Analyze';
+
+  @override
+  String get totalPlays => 'कुल प्ले';
+
+  @override
+  String get listeningTime => 'सुनने का समय';
+
+  @override
+  String get currentStreakDays => 'मौजूदा सिलसिला (दिन)';
+
+  @override
+  String get longestStreakDays => 'सबसे लंबा सिलसिला (दिन)';
+
+  @override
+  String analyzePlaysAndSongs(int plays, int songs) {
+    return '$plays प्ले • $songs गाने';
+  }
+
+  @override
+  String get dayPartMorningShort => 'सुबह';
+
+  @override
+  String get dayPartAfternoonShort => 'दोपहर';
+
+  @override
+  String get dayPartEveningShort => 'शाम';
+
+  @override
+  String get dayPartNightShort => 'रात';
+
+  @override
+  String get activityPattern => 'गतिविधि पैटर्न';
+
+  @override
+  String get whenYouListenMost => 'आप सबसे ज़्यादा कब सुनते हैं';
+
+  @override
+  String get genreBreakdown => 'शैली के अनुसार बंटवारा';
+
+  @override
+  String get otherGenre => 'अन्य';
+
+  @override
+  String get topAlbums => 'टॉप एल्बम';
+
+  @override
+  String get topArtists => 'टॉप कलाकार';
+
+  @override
+  String get topSongs => 'टॉप गाने';
+
+  @override
+  String playsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count प्ले',
+      one: '1 प्ले',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String songsPlayedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count गाने चलाए',
+      one: '1 गाना चलाया',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listeningTrend => 'सुनने का रुझान';
+
+  @override
+  String get last30Days => 'पिछले 30 दिन';
+
+  @override
+  String errorWithDetails(String error) {
+    return 'त्रुटि: $error';
+  }
+
+  @override
+  String get selectAll => 'सभी चुनें';
+
+  @override
+  String get playlist => 'प्लेलिस्ट';
+
+  @override
+  String songsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count गाने',
+      one: '1 गाना',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recentSearches => 'हाल की खोजें';
+
+  @override
+  String get lyricsSourceLocalFile => 'लोकल फ़ाइल';
+
+  @override
+  String get lyricsSourceEmbedded => 'एम्बेड किया गया मेटाडेटा';
+
+  @override
+  String lyricsProvidedBy(String source) {
+    return 'बोल $source द्वारा उपलब्ध कराए गए';
+  }
+
+  @override
+  String failedToImportLyrics(String error) {
+    return 'बोल इम्पोर्ट नहीं हो सके: $error';
+  }
+
+  @override
+  String get lyricsEditorLines => 'पंक्तियां';
+
+  @override
+  String get lyricsEditorStamped => 'स्टैम्प की गईं';
+
+  @override
+  String lyricsEditorLineNumber(int number) {
+    return 'पंक्ति $number';
+  }
+
+  @override
+  String get lyricsEditorEmptyLine => '(खाली पंक्ति)';
+
+  @override
+  String get lyricsEditorNotStamped => 'अभी स्टैम्प नहीं हुई';
+
+  @override
+  String get pause => 'रोकें';
+
+  @override
+  String get lyricsEditorAddLineFirst =>
+      'पहले कम से कम एक बोल की पंक्ति जोड़ें।';
+
+  @override
+  String get lyricsEditorSavedWithSidecar =>
+      'बोल डेटाबेस में और गाने की फ़ाइल के पास सेव किए गए।';
+
+  @override
+  String get lyricsEditorSavedDbOnly => 'बोल प्लेयर डेटाबेस में सेव किए गए।';
+
+  @override
+  String get lyricsEditorSaveFailed => 'बोल सेव नहीं हो सके।';
+
+  @override
+  String get saving => 'सेव हो रहा है...';
+
+  @override
+  String get saveLrc => 'LRC सेव करें';
+
+  @override
+  String lyricsEditorSelectedLine(int index, int total) {
+    return 'चुनी गई पंक्ति $index / $total';
+  }
+
+  @override
+  String get lyricsEditorPickLine => 'नीचे दी गई सूची से एक पंक्ति चुनें।';
+
+  @override
+  String get stampAndNext => 'स्टैम्प करें और आगे';
+
+  @override
+  String get stampNow => 'अभी स्टैम्प करें';
+
+  @override
+  String get lyricsEditorSimpleSteps =>
+      '1. हर पंक्ति में बोल की एक पंक्ति चिपकाएं या टाइप करें।\n2. गाना चलाएं।\n3. मौजूदा पंक्ति चुनें।\n4. वह पंक्ति सुनते ही \"स्टैम्प करें और आगे\" पर टैप करें।\n5. हो जाने पर सेव करें।';
+
+  @override
+  String get lyricsEditorAdvancedSteps =>
+      '1. हर पंक्ति का टाइमस्टैम्प सीधे बदलें।\n2. मौजूदा प्लेबैक समय लेने के लिए \"मौजूदा समय इस्तेमाल करें\" का उपयोग करें।\n3. सभी स्टैम्प की गई पंक्तियों को एक साथ खिसकाने के लिए शिफ़्ट कंट्रोल का उपयोग करें।\n4. अंतिम `.lrc` फ़ाइल बनाने के लिए सेव करें।';
+
+  @override
+  String get lyricsEditorTipsText =>
+      '- अगर कुछ पंक्तियां स्टैम्प नहीं हैं, तो Flick का इंजन उनका समय अपने आप भर देता है।\n- सेव करने पर संभव हो तो फ़ाइल गाने के पास लिखी जाती है, वरना डेटाबेस में एक लिंक की गई कॉपी रखी जाती है।';
+
+  @override
+  String fileNotFoundOrInaccessible(String title) {
+    return 'फ़ाइल नहीं मिली या उस तक पहुंच नहीं है: $title';
+  }
+
+  @override
+  String playbackFailedCorrupted(String title) {
+    return 'प्लेबैक विफल: \"$title\" लोड या चलाया नहीं जा सका। कृपया जांचें कि फ़ाइल खराब तो नहीं है।';
+  }
+
+  @override
+  String shareSongText(String title) {
+    return 'यह गाना सुनें: $title';
+  }
+
+  @override
+  String shareSongsText(int count) {
+    return 'ये $count गाने सुनें';
+  }
+
+  @override
+  String noSettingsFoundFor(String query) {
+    return '\"$query\" के लिए कोई सेटिंग नहीं मिली';
+  }
+
+  @override
+  String get chooseQuickAccentColors => 'झटपट एक्सेंट रंग चुनें';
+
+  @override
+  String get fontWeight => 'फ़ॉन्ट मोटाई';
+
+  @override
+  String get changeBaseFontWeight => 'कस्टम फ़ॉन्ट की बेस मोटाई बदलें';
+
+  @override
+  String lyricsFontWeightValue(int weight) {
+    return 'बोल के फ़ॉन्ट की मोटाई: $weight';
+  }
+
+  @override
+  String get equalizerSearchDesc => '18-बैंड इक्वलाइज़र और ऑडियो प्रीसेट बदलें';
+
+  @override
+  String get stopServiceSearchDesc =>
+      'हाल के ऐप्स से हटाने पर प्लेबैक रोकें और ऐप बंद करें';
+
+  @override
+  String get scanNewFolderDesc => 'ऑडियो फ़ाइलों के लिए नया फ़ोल्डर स्कैन करें';
+
+  @override
+  String get includeOtherDeviceAudioShortDesc =>
+      'रिंगटोन, नोटिफ़िकेशन और मैसेजिंग ऑडियो';
+
+  @override
+  String get excludedFolders => 'बाहर रखे गए फ़ोल्डर';
+
+  @override
+  String get excludedFoldersSearchDesc => 'स्कैन करते समय कुछ फ़ोल्डर छोड़ें';
+
+  @override
+  String get clearLibraryData => 'लाइब्रेरी डेटा साफ़ करें';
+
+  @override
+  String get looperPlayerVersion => 'Looper Player वर्शन';
+
+  @override
+  String versionLabel(String version) {
+    return 'वर्शन $version';
+  }
+
+  @override
+  String get none => 'कोई नहीं';
+
+  @override
+  String foldersSkippedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'स्कैन में $count फ़ोल्डर छोड़े जाते हैं',
+      one: 'स्कैन में 1 फ़ोल्डर छोड़ा जाता है',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get excludedFoldersDesc =>
+      'इन फ़ोल्डरों के गाने स्कैन में छोड़ दिए जाते हैं, भले ही वे आपके जोड़े गए फ़ोल्डर के अंदर हों।';
+
+  @override
+  String get noExcludedFoldersYet => 'अभी कोई फ़ोल्डर बाहर नहीं रखा गया है।';
+
+  @override
+  String get excludeAFolder => 'फ़ोल्डर बाहर रखें';
+
+  @override
+  String get equalizerEnabled18Band => 'चालू (18-बैंड MPV EQ)';
+
+  @override
+  String get disabled => 'बंद';
+
+  @override
+  String get noIndexedFoldersYet => 'अभी कोई इंडेक्स किया गया फ़ोल्डर नहीं';
+
+  @override
+  String get noIndexedFoldersYetDesc =>
+      'स्टोरेज में फ़ोल्डर खोजने के लिए \"लाइब्रेरी रीस्कैन करें\" का उपयोग करें।';
+
+  @override
+  String get eqDynamicRangeCompressor => 'डायनामिक रेंज कंप्रेसर';
+
+  @override
+  String get eqThreshold => 'थ्रेशोल्ड';
+
+  @override
+  String get eqRatio => 'अनुपात';
+
+  @override
+  String get eqAttack => 'अटैक';
+
+  @override
+  String get eqRelease => 'रिलीज़';
+
+  @override
+  String get eqHeadphoneCrossfeedWidth => 'हेडफ़ोन क्रॉसफ़ीड और चौड़ाई';
+
+  @override
+  String get eqBinauralCrossfeed => 'बाइनॉरल क्रॉसफ़ीड';
+
+  @override
+  String get eqCrossfeedStrength => 'क्रॉसफ़ीड की ताकत';
+
+  @override
+  String get eqStereoWidening => 'स्टीरियो विस्तार';
+
+  @override
+  String get eqWideningFactor => 'विस्तार गुणांक';
+
+  @override
+  String get eqLoudnessNormalization => 'लाउडनेस नॉर्मलाइज़ेशन';
+
+  @override
+  String get eqTargetLoudness => 'लक्ष्य लाउडनेस';
+
+  @override
+  String get eqToneShelving => 'टोन शेल्विंग (बेस / ट्रेबल)';
+
+  @override
+  String get eqBassShelf => 'बेस शेल्फ़';
+
+  @override
+  String get eqTrebleShelf => 'ट्रेबल शेल्फ़';
+
+  @override
+  String get eqTempoPitchControls => 'टेम्पो और पिच कंट्रोल';
+
+  @override
+  String get eqPitchShift => 'पिच शिफ़्ट';
+
+  @override
+  String get eqTempoSpeed => 'टेम्पो स्पीड';
+
+  @override
+  String get eqVoiceSilenceControls => 'आवाज़ और खामोशी कंट्रोल';
+
+  @override
+  String get eqSilenceTrimming => 'खामोशी काटें';
+
+  @override
+  String get eqSilenceThreshold => 'खामोशी थ्रेशोल्ड';
+
+  @override
+  String get eqSpeechEnhancementFilter => 'आवाज़ सुधार फ़िल्टर';
+
+  @override
+  String get eqHighpassCutoff => 'हाईपास कटऑफ़';
+
+  @override
+  String get eqLowpassCutoff => 'लोपास कटऑफ़';
+
+  @override
+  String get eqRetroRoomEffects => 'रेट्रो और रूम इफ़ेक्ट';
+
+  @override
+  String get eqLofiEffect => 'लो-फ़ाई इफ़ेक्ट (8-बिट क्रशर)';
+
+  @override
+  String get eqStudioRoomReverb => 'स्टूडियो रूम रिवर्ब (गूंज)';
+
+  @override
+  String get eqVirtualSurround => 'वर्चुअल 5.1 सराउंड साउंड';
+
+  @override
+  String get eqRawFilterConsole => 'रॉ FFmpeg फ़िल्टर कंसोल';
+
+  @override
+  String get eqSwitchToSliders => 'स्लाइडर पर जाएं';
+
+  @override
+  String get eqSwitchToGraph => 'ग्राफ़ पर जाएं';
+
+  @override
+  String get on => 'चालू';
+
+  @override
+  String get off => 'बंद';
+
+  @override
+  String get eqSongSpecificActive => 'गाने की अपनी सेटिंग चालू है';
+
+  @override
+  String get eqUsingGlobalDefault =>
+      'ग्लोबल डिफ़ॉल्ट सेटिंग इस्तेमाल हो रही है';
+
+  @override
+  String get eqInteractiveGraphHint =>
+      'इंटरैक्टिव ग्राफ़ (बिंदुओं को ऊपर-नीचे खींचें)';
+
+  @override
+  String get eq18BandHint => '18-बैंड इक्वलाइज़र (दाएं-बाएं स्क्रॉल करें)';
+
+  @override
+  String get eqSongSpecific => 'गाने के लिए';
+
+  @override
+  String get eqGlobalDefault => 'ग्लोबल डिफ़ॉल्ट';
+
+  @override
+  String get eqEditScopeNote =>
+      'कोई गाना चलते समय किए गए बदलाव सिर्फ़ उसी गाने पर लागू होते हैं। ग्लोबल डिफ़ॉल्ट सेट करने के लिए कोई गाना न चलते समय बदलाव करें या \'ग्लोबल पर लागू करें\' का उपयोग करें।';
+
+  @override
+  String get presetFlat => 'फ़्लैट';
+
+  @override
+  String get presetBassBooster => 'बेस बूस्टर';
+
+  @override
+  String get presetTrebleBooster => 'ट्रेबल बूस्टर';
+
+  @override
+  String get presetVocalBooster => 'वोकल बूस्टर';
+
+  @override
+  String get presetElectronic => 'इलेक्ट्रॉनिक';
+
+  @override
+  String get presetRock => 'रॉक';
+
+  @override
+  String get presetPop => 'पॉप';
+
+  @override
+  String get presetJazz => 'जैज़';
+
+  @override
+  String get save => 'सेव करें';
+
+  @override
+  String get savePreset => 'प्रीसेट सेव करें';
+
+  @override
+  String get presetName => 'प्रीसेट का नाम';
+
+  @override
+  String get deletePreset => 'प्रीसेट हटाएं';
+
+  @override
+  String deletePresetConfirm(String name) {
+    return '\"$name\" प्रीसेट हटाएं?';
+  }
+
+  @override
+  String get noLyricsSource => 'बोल का कोई स्रोत नहीं';
+
+  @override
+  String lyricsSourceLabel(String source) {
+    return 'स्रोत: $source';
+  }
+
+  @override
+  String get lyricsSourceLocalSidecar => 'लोकल साइडकार (.lrc)';
+
+  @override
+  String get lyricsSourceCustomFile => 'कस्टम LRC फ़ाइल';
+
+  @override
+  String get lyricsSourceNotFoundOnline => 'ऑनलाइन नहीं मिले';
+
+  @override
+  String get lyricsProviderLocal => 'लोकल';
+
+  @override
+  String get checkingLocalLyrics =>
+      'लोकल/एम्बेड किए गए बोल जांचे जा रहे हैं...';
+
+  @override
+  String fetchingLyricsFrom(String provider) {
+    return '$provider से बोल लाए जा रहे हैं...';
+  }
+
+  @override
+  String get loadedLocalLyrics => 'लोकल/एम्बेड किए गए बोल लोड हो गए!';
+
+  @override
+  String get noLocalLyricsFound => 'कोई लोकल या एम्बेड किए गए बोल नहीं मिले';
+
+  @override
+  String lyricsUpdatedFrom(String provider) {
+    return '$provider से बोल अपडेट हो गए!';
+  }
+
+  @override
+  String noLyricsFoundOn(String provider) {
+    return '$provider पर बोल नहीं मिले';
+  }
+
+  @override
+  String get gestureTips => 'जेस्चर टिप्स';
+
+  @override
+  String get gestureTipsDesc =>
+      'टैप, लंबा दबाएं, ज़ूम के लिए पिंच करें और भी बहुत कुछ';
+
+  @override
+  String get exportLyrics => 'बोल एक्सपोर्ट करें';
+
+  @override
+  String lyricsExportedTo(String path) {
+    return 'बोल यहां एक्सपोर्ट किए गए: $path';
+  }
+
+  @override
+  String failedToExportLyrics(String error) {
+    return 'बोल एक्सपोर्ट नहीं हो सके: $error';
+  }
+
+  @override
+  String get gestureTapLine => 'किसी पंक्ति पर टैप करें';
+
+  @override
+  String get gestureTapLineDesc => 'प्लेबैक सीधे उस बोल पर पहुंच जाता है।';
+
+  @override
+  String get gestureLongPressLine => 'किसी पंक्ति को देर तक दबाएं';
+
+  @override
+  String get gestureLongPressLineDesc =>
+      'शेयर करने लायक बोल कार्ड बनाने के लिए पंक्तियां चुनना शुरू करें। चुनाव बढ़ाने के लिए और पंक्तियों पर टैप करें।';
+
+  @override
+  String get gesturePinch => 'दो उंगलियों से पिंच करें';
+
+  @override
+  String get gesturePinchDesc => 'बोल के टेक्स्ट का आकार अपनी पसंद से बदलें।';
+
+  @override
+  String get gestureSwipeDown => 'नीचे स्वाइप करें';
+
+  @override
+  String get gestureSwipeDownDesc => 'बोल की स्क्रीन बंद करके प्लेयर पर लौटें।';
+
+  @override
+  String get lyricsGestures => 'बोल के जेस्चर';
+
+  @override
+  String get lyricsGesturesIntro =>
+      'इस स्क्रीन की कुछ खूबियां जो हमेशा साफ़ नहीं दिखतीं:';
+
+  @override
+  String linesSelected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count पंक्तियां चुनी गईं',
+      one: '1 पंक्ति चुनी गई',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get couldNotGenerateShareImage => 'शेयर करने के लिए इमेज नहीं बन सकी।';
+
+  @override
+  String get couldNotGenerateImage => 'इमेज नहीं बन सकी।';
+
+  @override
+  String get savedToGallery => 'गैलरी में सेव हो गई।';
+
+  @override
+  String get galleryPermissionDenied => 'गैलरी तक पहुंच की अनुमति नहीं मिली।';
+
+  @override
+  String get couldNotSaveToGallery => 'इमेज गैलरी में सेव नहीं हो सकी।';
+
+  @override
+  String get shareLyrics => 'बोल शेयर करें';
+
+  @override
+  String get backgroundColor => 'बैकग्राउंड का रंग';
+
+  @override
+  String get lyricsTextColor => 'बोल के टेक्स्ट का रंग';
+
+  @override
+  String get saveToGallery => 'गैलरी में सेव करें';
+
+  @override
+  String get preparing => 'तैयार हो रहा है...';
+
+  @override
+  String get trackTitle => 'ट्रैक का नाम';
+
+  @override
+  String get composer => 'संगीतकार';
+
+  @override
+  String get unknownGenre => 'अज्ञात शैली';
+
+  @override
+  String get releaseYear => 'रिलीज़ वर्ष';
+
+  @override
+  String get notAvailable => 'उपलब्ध नहीं';
+
+  @override
+  String get recordLabel => 'लेबल';
+
+  @override
+  String get copyright => 'कॉपीराइट';
+
+  @override
+  String get encoder => 'एनकोडर';
+
+  @override
+  String get fileName => 'फ़ाइल का नाम';
+
+  @override
+  String get fileFormat => 'फ़ाइल फ़ॉर्मैट';
+
+  @override
+  String get fileSize => 'फ़ाइल का आकार';
+
+  @override
+  String get absolutePath => 'पूरा पाथ';
+
+  @override
+  String get playCount => 'प्ले संख्या';
+
+  @override
+  String playCountTimes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count बार',
+      one: '1 बार',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get lastPlayed => 'आखिरी बार चलाया';
+
+  @override
+  String get filePath => 'फ़ाइल पाथ';
+
+  @override
+  String get rescan => 'फिर से स्कैन करें';
+
+  @override
+  String get codec => 'कोडेक';
+
+  @override
+  String get container => 'कंटेनर';
+
+  @override
+  String get sampleRate => 'सैंपल रेट';
+
+  @override
+  String get bitDepth => 'बिट डेप्थ';
+
+  @override
+  String get decodedFormat => 'डिकोड किया गया फ़ॉर्मैट';
+
+  @override
+  String get bitrate => 'बिटरेट';
+
+  @override
+  String get channels => 'चैनल';
+
+  @override
+  String get nyquist => 'नाइक्विस्ट';
+
+  @override
+  String get dynamicRange => 'डायनामिक रेंज';
+
+  @override
+  String get peak => 'पीक';
+
+  @override
+  String get truePeak => 'ट्रू पीक';
+
+  @override
+  String get clipping => 'क्लिपिंग';
+
+  @override
+  String get cutoff => 'कटऑफ़';
+
+  @override
+  String get samples => 'सैंपल';
+
+  @override
+  String channelShort(int channel) {
+    return 'चै $channel';
+  }
+
+  @override
+  String get noneClean => 'कोई नहीं (साफ़)';
+
+  @override
+  String get reanalyzingAudio =>
+      'ऑडियो स्ट्रीम का फिर से विश्लेषण हो रहा है...';
+
+  @override
+  String get analyzingAudio => 'ऑडियो स्ट्रीम का विश्लेषण हो रहा है...';
+
+  @override
+  String sampleRateHz(int rate) {
+    return 'सैंपल रेट: $rate Hz';
+  }
+
+  @override
+  String nyquistKhz(String khz) {
+    return 'नाइक्विस्ट: $khz kHz';
+  }
+
+  @override
+  String get qualityLossless => 'लॉसलेस';
+
+  @override
+  String get qualityHigh => 'हाई क्वालिटी';
+
+  @override
+  String get qualityStandard => 'स्टैंडर्ड क्वालिटी';
+
+  @override
+  String get qualityAudio => 'ऑडियो';
+
+  @override
+  String get addCustomFolder => 'कस्टम फ़ोल्डर जोड़ें';
+
+  @override
+  String get addCustomFolderDesc =>
+      'अगर आपका संगीत किसी अलग नाम वाले फ़ोल्डर में या SD कार्ड पर है, तो उसे सीधे जोड़ें।';
+
+  @override
+  String get indexingYourLibrary => 'आपकी लाइब्रेरी इंडेक्स हो रही है...';
+
+  @override
+  String get indexingYourLibraryDesc =>
+      'आपके गानों के नाम, आर्टवर्क और बोल भरे जा रहे हैं।';
+
+  @override
+  String welcomeStep(String step, String title) {
+    return 'चरण $step: $title';
+  }
+
+  @override
+  String get includeOtherDeviceAudioAlarmsDesc =>
+      'रिंगटोन, नोटिफ़िकेशन, अलार्म और मैसेजिंग ऑडियो';
+
+  @override
+  String get version => 'वर्शन';
+
+  @override
+  String get noIndexedFoldersDesktopDesc =>
+      'स्टोरेज फ़ोल्डर खोजने के लिए \"लाइब्रेरी रीस्कैन करें\" का उपयोग करें';
+
+  @override
+  String get playedLabel => 'चलाए गए';
+
+  @override
+  String minutesShort(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count मिनट',
+      one: '1 मिनट',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String minuteChip(int count) {
+    return '$count मिनट';
+  }
+
+  @override
+  String songsCountTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count गाने',
+      one: '1 गाना',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String songsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count गाने बाकी',
+      one: '1 गाना बाकी',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String sleepTimerWithRemaining(String remaining) {
+    return 'स्लीप टाइमर ($remaining)';
+  }
+
+  @override
+  String get trackInfoSection => 'ट्रैक जानकारी';
+
+  @override
+  String get detailsSection => 'विवरण';
+
+  @override
+  String get lyricsSection => 'बोल';
+
+  @override
+  String get editLyricsHint =>
+      'सादे बोल या सिंक्रनाइज़ किए गए LRC फ़ॉर्मैट [00:00.00] में बोल डालें...';
+
+  @override
+  String addedSongsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count गाने जोड़े गए',
+      one: '1 गाना जोड़ा गया',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chooseInternalStorageFolder =>
+      'कृपया इस डिवाइस के इंटरनल स्टोरेज या SD कार्ड पर कोई फ़ोल्डर चुनें।';
+
+  @override
+  String get appCrashedTitle => 'Looper Player क्रैश हो गया';
+
+  @override
+  String get appCrashedDesc =>
+      'शुरू होते समय एक अनपेक्षित त्रुटि हुई। एक डायग्नॉस्टिक क्रैश रिपोर्ट बनाई गई है।';
+
+  @override
+  String get appCrashedDetails =>
+      'ऐप डेटाबेस या सेवा शुरू करते समय त्रुटि हुई। ऐसा तब हो सकता है जब स्टोरेज तक पहुंच सीमित हो या डेटाबेस फ़ाइलें खराब हों।';
+
+  @override
+  String get crashReportSaved =>
+      'डायग्नॉस्टिक क्रैश रिपोर्ट ऐप्लिकेशन सपोर्ट फ़ोल्डर में सेव की गई।';
+
+  @override
+  String get shareLog => 'लॉग शेयर करें';
+
+  @override
+  String get restartApp => 'ऐप रीस्टार्ट करें';
+
+  @override
+  String get updateAvailableOnPlay => 'Google Play पर नया वर्शन उपलब्ध है।';
+
+  @override
+  String updateAvailableOnGithub(String version) {
+    return 'वर्शन $version GitHub पर उपलब्ध है।';
+  }
+
+  @override
+  String get updateAvailable => 'अपडेट उपलब्ध है';
+
+  @override
+  String get updateAvailableTitle => 'अपडेट उपलब्ध है!';
+
+  @override
+  String get visit => 'खोलें';
+
+  @override
+  String get updateDownloaded => 'अपडेट डाउनलोड हो गया';
+
+  @override
+  String get restartToInstallUpdate =>
+      'इसे इंस्टॉल करने के लिए Looper Player रीस्टार्ट करें।';
+
+  @override
+  String get restart => 'रीस्टार्ट करें';
+
+  @override
+  String backupImportedSummary(int favorites, int stats, int playlists) {
+    return 'बैकअप इम्पोर्ट हुआ: $favorites पसंदीदा और $stats प्ले आंकड़े मिलाए गए, $playlists प्लेलिस्ट सिंक की गईं';
+  }
+
+  @override
+  String get backupExportFailed =>
+      'बैकअप एक्सपोर्ट विफल: बैकअप फ़ाइल सेव करते समय अंदरूनी त्रुटि हुई।';
+
+  @override
+  String get backupImportFailed =>
+      'बैकअप इम्पोर्ट विफल: फ़ाइल पढ़ी नहीं जा सकी या बैकअप फ़ॉर्मैट अमान्य है।';
+
+  @override
+  String get stereo => 'स्टीरियो';
+
+  @override
+  String get mono => 'मोनो';
 }

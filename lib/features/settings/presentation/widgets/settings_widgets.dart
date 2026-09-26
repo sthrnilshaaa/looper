@@ -5,10 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:looper_player/features/library/data/saf_folder_service.dart';
-import 'package:looper_player/features/library/presentation/library_notifier.dart';
-import 'package:looper_player/features/settings/presentation/settings_notifier.dart';
-import 'package:looper_player/core/app_fonts.dart';
+import 'package:looper_player/features/library/data/services/saf_folder_service.dart';
+import 'package:looper_player/features/library/presentation/providers/library/library_notifier.dart';
+import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
+import 'package:looper_player/core/theme/app_fonts.dart';
+import 'package:looper_player/core/utils/l10n.dart';
 
 class ColorCircle extends StatelessWidget {
   final Color color;
@@ -121,14 +122,14 @@ class LibraryFoldersList extends ConsumerWidget {
     final folders = ref.watch(settingsProvider).libraryFolders;
 
     if (folders.isEmpty) {
-      return const ListTile(
+      return ListTile(
         leading: Icon(LucideIcons.folderSearch, color: Colors.white38),
         title: Text(
-          'No indexed folders yet',
+          context.l10n.noIndexedFoldersYet,
           style: TextStyle(color: Colors.white54, fontSize: 14),
         ),
         subtitle: Text(
-          'Use Rescan Library to discover folders across storage.',
+          context.l10n.noIndexedFoldersYetDesc,
           style: TextStyle(color: Colors.white38, fontSize: 11),
         ),
       );
@@ -169,9 +170,7 @@ class LibraryFoldersList extends ConsumerWidget {
                   // re-add the folder on the very next refresh. This also
                   // deletes the folder's already-indexed songs immediately,
                   // instead of waiting for a scan to notice they're gone.
-                  await ref
-                      .read(excludedFoldersProvider.notifier)
-                      .add(path);
+                  await ref.read(excludedFoldersProvider.notifier).add(path);
                 },
               ),
             ),

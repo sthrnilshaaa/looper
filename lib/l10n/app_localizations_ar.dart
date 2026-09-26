@@ -346,6 +346,20 @@ class AppLocalizationsAr extends AppLocalizations {
       'حافظ على تدرج الخلفية عبر جميع شاشات التطبيق';
 
   @override
+  String get animatePlayerGradient => 'تدرج متحرك';
+
+  @override
+  String get animatePlayerGradientDesc =>
+      'يحرك الألوان الأساسية والثالثية ببطء مع حبيبات ناعمة، متفاعلاً مع الموسيقى';
+
+  @override
+  String get animateBackgroundGradient => 'خلفية متحركة';
+
+  @override
+  String get animateBackgroundGradientDesc =>
+      'يستخدم التدرج المتحرك في خلفيات الرئيسية والأغاني والمكتبة';
+
+  @override
   String get language => 'لغة';
 
   @override
@@ -947,11 +961,11 @@ class AppLocalizationsAr extends AppLocalizations {
       'استخدم نصًا ثابتًا بدلاً من الرسوم المتحركة المتدحرجة لمدة التقدم';
 
   @override
-  String get verticalMotionEffectPlayer => 'تأثير الحركة الرأسية للمشغل';
+  String get fluidPlayer => 'المشغل السلس';
 
   @override
-  String get verticalMotionEffectPlayerDesc =>
-      'اسحب لأسفل على المشغل الموسع لإغلاقه';
+  String get fluidPlayerDesc =>
+      'اسحب المشغل المصغر لأعلى لتحويله إلى المشغل الكامل';
 
   @override
   String get viewAll => 'عرض الكل';
@@ -1561,4 +1575,912 @@ class AppLocalizationsAr extends AppLocalizations {
   String enrichingSongs(int count) {
     return 'جارِ” إثراء $count أغنية…';
   }
+
+  @override
+  String get noListeningHistoryYet => 'لا يوجد سجل استماع بعد';
+
+  @override
+  String get noListeningHistoryYetDesc =>
+      'شغّل بعض الأغاني وسيظهر تقريرك الشخصي هنا — أبرز الأغاني والفنانين والألبومات والأنواع.';
+
+  @override
+  String get looperAnalyze => 'Looper Analyze';
+
+  @override
+  String get totalPlays => 'إجمالي مرات التشغيل';
+
+  @override
+  String get listeningTime => 'وقت الاستماع';
+
+  @override
+  String get currentStreakDays => 'السلسلة الحالية (أيام)';
+
+  @override
+  String get longestStreakDays => 'أطول سلسلة (أيام)';
+
+  @override
+  String analyzePlaysAndSongs(int plays, int songs) {
+    return '$plays تشغيل • $songs أغنية';
+  }
+
+  @override
+  String get dayPartMorningShort => 'صباحًا';
+
+  @override
+  String get dayPartAfternoonShort => 'ظهرًا';
+
+  @override
+  String get dayPartEveningShort => 'مساءً';
+
+  @override
+  String get dayPartNightShort => 'ليلًا';
+
+  @override
+  String get activityPattern => 'نمط النشاط';
+
+  @override
+  String get whenYouListenMost => 'متى تستمع أكثر';
+
+  @override
+  String get genreBreakdown => 'توزيع الأنواع';
+
+  @override
+  String get otherGenre => 'أخرى';
+
+  @override
+  String get topAlbums => 'أبرز الألبومات';
+
+  @override
+  String get topArtists => 'أبرز الفنانين';
+
+  @override
+  String get topSongs => 'أبرز الأغاني';
+
+  @override
+  String playsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count مرات تشغيل',
+      one: 'تشغيل واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String songsPlayedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تم تشغيل $count أغنية',
+      one: 'تم تشغيل أغنية واحدة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listeningTrend => 'اتجاه الاستماع';
+
+  @override
+  String get last30Days => 'آخر 30 يومًا';
+
+  @override
+  String errorWithDetails(String error) {
+    return 'خطأ: $error';
+  }
+
+  @override
+  String get selectAll => 'تحديد الكل';
+
+  @override
+  String get playlist => 'قائمة تشغيل';
+
+  @override
+  String songsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count أغنية',
+      one: 'أغنية واحدة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recentSearches => 'عمليات البحث الأخيرة';
+
+  @override
+  String get lyricsSourceLocalFile => 'ملف محلي';
+
+  @override
+  String get lyricsSourceEmbedded => 'بيانات وصفية مضمّنة';
+
+  @override
+  String lyricsProvidedBy(String source) {
+    return 'الكلمات مقدمة من $source';
+  }
+
+  @override
+  String failedToImportLyrics(String error) {
+    return 'تعذّر استيراد الكلمات: $error';
+  }
+
+  @override
+  String get lyricsEditorLines => 'الأسطر';
+
+  @override
+  String get lyricsEditorStamped => 'المختومة';
+
+  @override
+  String lyricsEditorLineNumber(int number) {
+    return 'السطر $number';
+  }
+
+  @override
+  String get lyricsEditorEmptyLine => '(سطر فارغ)';
+
+  @override
+  String get lyricsEditorNotStamped => 'لم يُختم بعد';
+
+  @override
+  String get pause => 'إيقاف مؤقت';
+
+  @override
+  String get lyricsEditorAddLineFirst =>
+      'أضف سطرًا واحدًا على الأقل من الكلمات أولًا.';
+
+  @override
+  String get lyricsEditorSavedWithSidecar =>
+      'تم حفظ الكلمات في قاعدة البيانات وبجانب ملف الأغنية.';
+
+  @override
+  String get lyricsEditorSavedDbOnly =>
+      'تم حفظ الكلمات في قاعدة بيانات المشغّل.';
+
+  @override
+  String get lyricsEditorSaveFailed => 'تعذّر حفظ الكلمات.';
+
+  @override
+  String get saving => 'جارٍ الحفظ...';
+
+  @override
+  String get saveLrc => 'حفظ LRC';
+
+  @override
+  String lyricsEditorSelectedLine(int index, int total) {
+    return 'السطر المحدد $index من $total';
+  }
+
+  @override
+  String get lyricsEditorPickLine => 'اختر سطرًا من القائمة أدناه.';
+
+  @override
+  String get stampAndNext => 'ختم والتالي';
+
+  @override
+  String get stampNow => 'ختم الآن';
+
+  @override
+  String get lyricsEditorSimpleSteps =>
+      '1. الصق أو اكتب سطرًا واحدًا من الكلمات في كل صف.\n2. شغّل الأغنية.\n3. حدد السطر الحالي.\n4. اضغط «ختم والتالي» عندما تسمع ذلك السطر.\n5. احفظ عند الانتهاء.';
+
+  @override
+  String get lyricsEditorAdvancedSteps =>
+      '1. عدّل الطوابع الزمنية لكل سطر مباشرة.\n2. استخدم «استخدام الوقت الحالي» لالتقاط وقت التشغيل الحالي.\n3. استخدم أدوات الإزاحة لتحريك كل الأسطر المختومة معًا.\n4. احفظ لإنشاء ملف `.lrc` النهائي.';
+
+  @override
+  String get lyricsEditorTipsText =>
+      '- إذا لم تُختم بعض الأسطر، يملأ محرك Flick أوقاتها تلقائيًا.\n- يكتب الحفظ بجانب الأغنية عند الإمكان، وإلا يخزّن نسخة مرتبطة في قاعدة البيانات.';
+
+  @override
+  String fileNotFoundOrInaccessible(String title) {
+    return 'الملف غير موجود أو يتعذّر الوصول إليه: $title';
+  }
+
+  @override
+  String playbackFailedCorrupted(String title) {
+    return 'فشل التشغيل: تعذّر تحميل «$title» أو تشغيله. يرجى التأكد من أن الملف غير تالف.';
+  }
+
+  @override
+  String shareSongText(String title) {
+    return 'استمع إلى هذه الأغنية: $title';
+  }
+
+  @override
+  String shareSongsText(int count) {
+    return 'استمع إلى هذه الأغاني ($count)';
+  }
+
+  @override
+  String noSettingsFoundFor(String query) {
+    return 'لم يتم العثور على إعدادات لـ «$query»';
+  }
+
+  @override
+  String get chooseQuickAccentColors => 'اختر ألوان تمييز سريعة';
+
+  @override
+  String get fontWeight => 'سُمك الخط';
+
+  @override
+  String get changeBaseFontWeight => 'تغيير السُمك الأساسي للخط المخصص';
+
+  @override
+  String lyricsFontWeightValue(int weight) {
+    return 'سُمك خط الكلمات: $weight';
+  }
+
+  @override
+  String get equalizerSearchDesc =>
+      'ضبط معادل الصوت بـ 18 نطاقًا والإعدادات الصوتية المسبقة';
+
+  @override
+  String get stopServiceSearchDesc =>
+      'إيقاف التشغيل وإغلاق التطبيق عند سحبه من التطبيقات الحديثة';
+
+  @override
+  String get scanNewFolderDesc => 'فحص مجلد جديد بحثًا عن ملفات صوتية';
+
+  @override
+  String get includeOtherDeviceAudioShortDesc =>
+      'النغمات والإشعارات وأصوات تطبيقات المراسلة';
+
+  @override
+  String get excludedFolders => 'المجلدات المستبعدة';
+
+  @override
+  String get excludedFoldersSearchDesc => 'تخطي مجلدات محددة أثناء الفحص';
+
+  @override
+  String get clearLibraryData => 'مسح بيانات المكتبة';
+
+  @override
+  String get looperPlayerVersion => 'إصدار Looper Player';
+
+  @override
+  String versionLabel(String version) {
+    return 'الإصدار $version';
+  }
+
+  @override
+  String get none => 'لا شيء';
+
+  @override
+  String foldersSkippedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'يتم تخطي $count مجلدات أثناء الفحص',
+      one: 'يتم تخطي مجلد واحد أثناء الفحص',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get excludedFoldersDesc =>
+      'يتم تخطي الأغاني في هذه المجلدات أثناء الفحص، حتى لو كانت داخل مجلد أضفته.';
+
+  @override
+  String get noExcludedFoldersYet => 'لا توجد مجلدات مستبعدة بعد.';
+
+  @override
+  String get excludeAFolder => 'استبعاد مجلد';
+
+  @override
+  String get equalizerEnabled18Band => 'مفعّل (معادل MPV بـ 18 نطاقًا)';
+
+  @override
+  String get disabled => 'معطّل';
+
+  @override
+  String get noIndexedFoldersYet => 'لا توجد مجلدات مفهرسة بعد';
+
+  @override
+  String get noIndexedFoldersYetDesc =>
+      'استخدم «إعادة تفحص المكتبة» لاكتشاف المجلدات في وحدة التخزين.';
+
+  @override
+  String get eqDynamicRangeCompressor => 'ضاغط النطاق الديناميكي';
+
+  @override
+  String get eqThreshold => 'العتبة';
+
+  @override
+  String get eqRatio => 'النسبة';
+
+  @override
+  String get eqAttack => 'الهجوم';
+
+  @override
+  String get eqRelease => 'التحرير';
+
+  @override
+  String get eqHeadphoneCrossfeedWidth => 'التغذية المتقاطعة والعرض للسماعات';
+
+  @override
+  String get eqBinauralCrossfeed => 'تغذية متقاطعة ثنائية الأذن';
+
+  @override
+  String get eqCrossfeedStrength => 'قوة التغذية المتقاطعة';
+
+  @override
+  String get eqStereoWidening => 'توسيع الستيريو';
+
+  @override
+  String get eqWideningFactor => 'معامل التوسيع';
+
+  @override
+  String get eqLoudnessNormalization => 'توحيد مستوى الصوت';
+
+  @override
+  String get eqTargetLoudness => 'مستوى الصوت المستهدف';
+
+  @override
+  String get eqToneShelving => 'رفوف النغمة (جهير / حاد)';
+
+  @override
+  String get eqBassShelf => 'رف الجهير';
+
+  @override
+  String get eqTrebleShelf => 'رف الحاد';
+
+  @override
+  String get eqTempoPitchControls => 'عناصر التحكم في الإيقاع وطبقة الصوت';
+
+  @override
+  String get eqPitchShift => 'إزاحة طبقة الصوت';
+
+  @override
+  String get eqTempoSpeed => 'سرعة الإيقاع';
+
+  @override
+  String get eqVoiceSilenceControls => 'عناصر التحكم في الصوت والصمت';
+
+  @override
+  String get eqSilenceTrimming => 'قص الصمت';
+
+  @override
+  String get eqSilenceThreshold => 'عتبة الصمت';
+
+  @override
+  String get eqSpeechEnhancementFilter => 'مرشّح تحسين الكلام';
+
+  @override
+  String get eqHighpassCutoff => 'قطع التمرير العالي';
+
+  @override
+  String get eqLowpassCutoff => 'قطع التمرير المنخفض';
+
+  @override
+  String get eqRetroRoomEffects => 'تأثيرات كلاسيكية وتأثيرات الغرفة';
+
+  @override
+  String get eqLofiEffect => 'تأثير لو-فاي (ضاغط 8 بت)';
+
+  @override
+  String get eqStudioRoomReverb => 'صدى غرفة الاستوديو';
+
+  @override
+  String get eqVirtualSurround => 'صوت محيطي افتراضي 5.1';
+
+  @override
+  String get eqRawFilterConsole => 'وحدة مرشحات FFmpeg الخام';
+
+  @override
+  String get eqSwitchToSliders => 'التبديل إلى أشرطة التمرير';
+
+  @override
+  String get eqSwitchToGraph => 'التبديل إلى الرسم البياني';
+
+  @override
+  String get on => 'تشغيل';
+
+  @override
+  String get off => 'إيقاف';
+
+  @override
+  String get eqSongSpecificActive => 'إعدادات خاصة بالأغنية مفعّلة';
+
+  @override
+  String get eqUsingGlobalDefault => 'يتم استخدام الإعدادات العامة الافتراضية';
+
+  @override
+  String get eqInteractiveGraphHint => 'رسم بياني تفاعلي (اسحب النقاط عموديًا)';
+
+  @override
+  String get eq18BandHint => 'معادل بـ 18 نطاقًا (مرّر أفقيًا)';
+
+  @override
+  String get eqSongSpecific => 'خاص بالأغنية';
+
+  @override
+  String get eqGlobalDefault => 'الافتراضي العام';
+
+  @override
+  String get eqEditScopeNote =>
+      'التعديلات أثناء تشغيل أغنية تنطبق على تلك الأغنية فقط. لضبط الإعداد العام، عدّل عندما لا تكون هناك أغنية قيد التشغيل، أو استخدم إجراء «تطبيق على الإعداد العام».';
+
+  @override
+  String get presetFlat => 'مسطّح';
+
+  @override
+  String get presetBassBooster => 'معزّز الجهير';
+
+  @override
+  String get presetTrebleBooster => 'معزّز الحاد';
+
+  @override
+  String get presetVocalBooster => 'معزّز الغناء';
+
+  @override
+  String get presetElectronic => 'إلكتروني';
+
+  @override
+  String get presetRock => 'روك';
+
+  @override
+  String get presetPop => 'بوب';
+
+  @override
+  String get presetJazz => 'جاز';
+
+  @override
+  String get save => 'حفظ';
+
+  @override
+  String get savePreset => 'حفظ الإعداد المسبق';
+
+  @override
+  String get presetName => 'اسم الإعداد المسبق';
+
+  @override
+  String get deletePreset => 'حذف الإعداد المسبق';
+
+  @override
+  String deletePresetConfirm(String name) {
+    return 'هل تريد حذف الإعداد المسبق «$name»؟';
+  }
+
+  @override
+  String get noLyricsSource => 'لا يوجد مصدر للكلمات';
+
+  @override
+  String lyricsSourceLabel(String source) {
+    return 'المصدر: $source';
+  }
+
+  @override
+  String get lyricsSourceLocalSidecar => 'ملف محلي مرافق (.lrc)';
+
+  @override
+  String get lyricsSourceCustomFile => 'ملف LRC مخصص';
+
+  @override
+  String get lyricsSourceNotFoundOnline => 'غير موجودة على الإنترنت';
+
+  @override
+  String get lyricsProviderLocal => 'محلي';
+
+  @override
+  String get checkingLocalLyrics => 'جارٍ البحث عن كلمات محلية/مضمّنة...';
+
+  @override
+  String fetchingLyricsFrom(String provider) {
+    return 'جارٍ جلب الكلمات من $provider...';
+  }
+
+  @override
+  String get loadedLocalLyrics => 'تم تحميل الكلمات المحلية/المضمّنة!';
+
+  @override
+  String get noLocalLyricsFound => 'لم يتم العثور على كلمات محلية أو مضمّنة';
+
+  @override
+  String lyricsUpdatedFrom(String provider) {
+    return 'تم تحديث الكلمات من $provider!';
+  }
+
+  @override
+  String noLyricsFoundOn(String provider) {
+    return 'لم يتم العثور على كلمات في $provider';
+  }
+
+  @override
+  String get gestureTips => 'نصائح الإيماءات';
+
+  @override
+  String get gestureTipsDesc => 'النقر والضغط المطوّل والقرص للتكبير والمزيد';
+
+  @override
+  String get exportLyrics => 'تصدير الكلمات';
+
+  @override
+  String lyricsExportedTo(String path) {
+    return 'تم تصدير الكلمات إلى: $path';
+  }
+
+  @override
+  String failedToExportLyrics(String error) {
+    return 'تعذّر تصدير الكلمات: $error';
+  }
+
+  @override
+  String get gestureTapLine => 'انقر على سطر';
+
+  @override
+  String get gestureTapLineDesc => 'انتقل مباشرة إلى ذلك الجزء من الكلمات.';
+
+  @override
+  String get gestureLongPressLine => 'اضغط مطولًا على سطر';
+
+  @override
+  String get gestureLongPressLineDesc =>
+      'ابدأ تحديد الأسطر لتحويلها إلى بطاقة كلمات قابلة للمشاركة. انقر على أسطر أخرى لتوسيع التحديد.';
+
+  @override
+  String get gesturePinch => 'اقرص بإصبعين';
+
+  @override
+  String get gesturePinchDesc => 'غيّر حجم نص الكلمات كما تحب.';
+
+  @override
+  String get gestureSwipeDown => 'اسحب للأسفل';
+
+  @override
+  String get gestureSwipeDownDesc => 'أغلق شاشة الكلمات وارجع إلى المشغّل.';
+
+  @override
+  String get lyricsGestures => 'إيماءات الكلمات';
+
+  @override
+  String get lyricsGesturesIntro =>
+      'بعض ما يمكن لهذه الشاشة فعله وقد لا يكون واضحًا دائمًا:';
+
+  @override
+  String linesSelected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تم تحديد $count أسطر',
+      one: 'تم تحديد سطر واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get couldNotGenerateShareImage => 'تعذّر إنشاء صورة المشاركة.';
+
+  @override
+  String get couldNotGenerateImage => 'تعذّر إنشاء الصورة.';
+
+  @override
+  String get savedToGallery => 'تم الحفظ في المعرض.';
+
+  @override
+  String get galleryPermissionDenied => 'تم رفض إذن الوصول إلى المعرض.';
+
+  @override
+  String get couldNotSaveToGallery => 'تعذّر حفظ الصورة في المعرض.';
+
+  @override
+  String get shareLyrics => 'مشاركة الكلمات';
+
+  @override
+  String get backgroundColor => 'لون الخلفية';
+
+  @override
+  String get lyricsTextColor => 'لون نص الكلمات';
+
+  @override
+  String get saveToGallery => 'حفظ في المعرض';
+
+  @override
+  String get preparing => 'جارٍ التحضير...';
+
+  @override
+  String get trackTitle => 'عنوان المقطع';
+
+  @override
+  String get composer => 'الملحّن';
+
+  @override
+  String get unknownGenre => 'نوع غير معروف';
+
+  @override
+  String get releaseYear => 'سنة الإصدار';
+
+  @override
+  String get notAvailable => 'غير متاح';
+
+  @override
+  String get recordLabel => 'شركة الإنتاج';
+
+  @override
+  String get copyright => 'حقوق النشر';
+
+  @override
+  String get encoder => 'المُرمِّز';
+
+  @override
+  String get fileName => 'اسم الملف';
+
+  @override
+  String get fileFormat => 'تنسيق الملف';
+
+  @override
+  String get fileSize => 'حجم الملف';
+
+  @override
+  String get absolutePath => 'المسار الكامل';
+
+  @override
+  String get playCount => 'عدد مرات التشغيل';
+
+  @override
+  String playCountTimes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count مرات',
+      one: 'مرة واحدة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get lastPlayed => 'آخر تشغيل';
+
+  @override
+  String get filePath => 'مسار الملف';
+
+  @override
+  String get rescan => 'إعادة الفحص';
+
+  @override
+  String get codec => 'الترميز';
+
+  @override
+  String get container => 'الحاوية';
+
+  @override
+  String get sampleRate => 'معدل العينة';
+
+  @override
+  String get bitDepth => 'عمق البت';
+
+  @override
+  String get decodedFormat => 'التنسيق بعد فك الترميز';
+
+  @override
+  String get bitrate => 'معدل البت';
+
+  @override
+  String get channels => 'القنوات';
+
+  @override
+  String get nyquist => 'نايكويست';
+
+  @override
+  String get dynamicRange => 'النطاق الديناميكي';
+
+  @override
+  String get peak => 'الذروة';
+
+  @override
+  String get truePeak => 'الذروة الحقيقية';
+
+  @override
+  String get clipping => 'التشويه بالقص';
+
+  @override
+  String get cutoff => 'القطع';
+
+  @override
+  String get samples => 'العينات';
+
+  @override
+  String channelShort(int channel) {
+    return 'ق $channel';
+  }
+
+  @override
+  String get noneClean => 'لا يوجد (نظيف)';
+
+  @override
+  String get reanalyzingAudio => 'جارٍ إعادة تحليل تدفق الصوت...';
+
+  @override
+  String get analyzingAudio => 'جارٍ تحليل تدفق الصوت...';
+
+  @override
+  String sampleRateHz(int rate) {
+    return 'معدل العينة: $rate هرتز';
+  }
+
+  @override
+  String nyquistKhz(String khz) {
+    return 'نايكويست: $khz كيلوهرتز';
+  }
+
+  @override
+  String get qualityLossless => 'بدون فقدان';
+
+  @override
+  String get qualityHigh => 'جودة عالية';
+
+  @override
+  String get qualityStandard => 'جودة قياسية';
+
+  @override
+  String get qualityAudio => 'صوت';
+
+  @override
+  String get addCustomFolder => 'إضافة مجلد مخصص';
+
+  @override
+  String get addCustomFolderDesc =>
+      'إذا كانت موسيقاك في مجلد باسم مختلف أو على بطاقة SD، فأضفه مباشرة.';
+
+  @override
+  String get indexingYourLibrary => 'جارٍ فهرسة مكتبتك...';
+
+  @override
+  String get indexingYourLibraryDesc =>
+      'جارٍ استكمال العناوين والأغلفة والكلمات لأغانيك.';
+
+  @override
+  String welcomeStep(String step, String title) {
+    return 'الخطوة $step: $title';
+  }
+
+  @override
+  String get includeOtherDeviceAudioAlarmsDesc =>
+      'النغمات والإشعارات والمنبّهات وأصوات تطبيقات المراسلة';
+
+  @override
+  String get version => 'الإصدار';
+
+  @override
+  String get noIndexedFoldersDesktopDesc =>
+      'استخدم «إعادة تفحص المكتبة» لاكتشاف مجلدات التخزين';
+
+  @override
+  String get playedLabel => 'المُشغَّلة';
+
+  @override
+  String minutesShort(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count دقيقة',
+      one: 'دقيقة واحدة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String minuteChip(int count) {
+    return '$count دقيقة';
+  }
+
+  @override
+  String songsCountTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count أغنية',
+      one: 'أغنية واحدة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String songsLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تبقّت $count أغنية',
+      one: 'تبقّت أغنية واحدة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String sleepTimerWithRemaining(String remaining) {
+    return 'مؤقت النوم ($remaining)';
+  }
+
+  @override
+  String get trackInfoSection => 'معلومات المقطع';
+
+  @override
+  String get detailsSection => 'التفاصيل';
+
+  @override
+  String get lyricsSection => 'الكلمات';
+
+  @override
+  String get editLyricsHint =>
+      'أدخل الكلمات كنص عادي أو بتنسيق LRC المتزامن [00:00.00]...';
+
+  @override
+  String addedSongsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تمت إضافة $count أغنية',
+      one: 'تمت إضافة أغنية واحدة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chooseInternalStorageFolder =>
+      'يرجى اختيار مجلد في وحدة التخزين الداخلية أو بطاقة SD لهذا الجهاز.';
+
+  @override
+  String get appCrashedTitle => 'تعطّل Looper Player';
+
+  @override
+  String get appCrashedDesc =>
+      'حدث خطأ غير متوقع أثناء التهيئة. تم إنشاء تقرير تشخيصي.';
+
+  @override
+  String get appCrashedDetails =>
+      'حدث خطأ أثناء تهيئة قاعدة بيانات التطبيق أو خدماته. قد يحدث هذا إذا كان الوصول إلى التخزين مقيدًا أو كانت ملفات قاعدة البيانات تالفة.';
+
+  @override
+  String get crashReportSaved => 'تم حفظ التقرير التشخيصي في مجلد دعم التطبيق.';
+
+  @override
+  String get shareLog => 'مشاركة السجل';
+
+  @override
+  String get restartApp => 'إعادة تشغيل التطبيق';
+
+  @override
+  String get updateAvailableOnPlay => 'يتوفر إصدار جديد على Google Play.';
+
+  @override
+  String updateAvailableOnGithub(String version) {
+    return 'الإصدار $version متاح على GitHub.';
+  }
+
+  @override
+  String get updateAvailable => 'يتوفر تحديث';
+
+  @override
+  String get updateAvailableTitle => 'يتوفر تحديث!';
+
+  @override
+  String get visit => 'فتح';
+
+  @override
+  String get updateDownloaded => 'تم تنزيل التحديث';
+
+  @override
+  String get restartToInstallUpdate => 'أعد تشغيل Looper Player لتثبيته.';
+
+  @override
+  String get restart => 'إعادة التشغيل';
+
+  @override
+  String backupImportedSummary(int favorites, int stats, int playlists) {
+    return 'تم استيراد النسخة الاحتياطية: دمج $favorites من المفضلة و$stats من إحصاءات التشغيل، ومزامنة $playlists من قوائم التشغيل';
+  }
+
+  @override
+  String get backupExportFailed =>
+      'فشل تصدير النسخة الاحتياطية: حدث خطأ داخلي أثناء حفظ الملف.';
+
+  @override
+  String get backupImportFailed =>
+      'فشل استيراد النسخة الاحتياطية: تعذّرت قراءة الملف أو أن تنسيقه غير صالح.';
+
+  @override
+  String get stereo => 'ستيريو';
+
+  @override
+  String get mono => 'أحادي';
 }

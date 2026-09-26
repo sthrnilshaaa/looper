@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:looper_player/core/app_fonts.dart';
+import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/features/analyze/domain/analyze_models.dart';
-import 'package:looper_player/ui/screens/android/widgets/premium_section.dart';
+import 'package:looper_player/ui/android/widgets/premium_section.dart';
+import 'package:looper_player/core/utils/l10n.dart';
 
 /// Last-30-days listening trend — a hand-painted animated bar chart built
 /// from the play-event log. Bars grow in from the baseline on first build.
@@ -22,7 +23,7 @@ class AnalyzeTrendChart extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Listening Trend',
+          context.l10n.listeningTrend,
           style: AppFonts.jostStyle(
             color: Colors.white,
             fontSize: 18,
@@ -30,7 +31,7 @@ class AnalyzeTrendChart extends StatelessWidget {
           ),
         ),
         Text(
-          'Last 30 days',
+          context.l10n.last30Days,
           style: AppFonts.jostStyle(
             color: Colors.white.withValues(alpha: 0.45),
             fontSize: 12.5,
@@ -95,7 +96,11 @@ class _TrendPainter extends CustomPainter {
   final double progress;
   final Color color;
 
-  _TrendPainter({required this.counts, required this.progress, required this.color});
+  _TrendPainter({
+    required this.counts,
+    required this.progress,
+    required this.color,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {

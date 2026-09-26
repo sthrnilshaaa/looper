@@ -1,8 +1,9 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:looper_player/core/app_fonts.dart';
+import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/features/analyze/domain/analyze_models.dart';
-import 'package:looper_player/ui/screens/android/widgets/premium_section.dart';
+import 'package:looper_player/ui/android/widgets/premium_section.dart';
+import 'package:looper_player/core/utils/l10n.dart';
 
 /// Genre breakdown: an animated donut ring (hand-painted, no chart
 /// dependency) that sweeps in on first build, paired with a legend.
@@ -17,7 +18,7 @@ class AnalyzeGenreDonut extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Genre Breakdown',
+          context.l10n.genreBreakdown,
           style: AppFonts.jostStyle(
             color: Colors.white,
             fontSize: 18,
@@ -58,7 +59,7 @@ class AnalyzeGenreDonut extends StatelessWidget {
                           ),
                           if (genres.isNotEmpty)
                             Text(
-                              genres.first.name,
+                              _genreLabel(context, genres.first.name),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: AppFonts.jostStyle(
@@ -76,9 +77,7 @@ class AnalyzeGenreDonut extends StatelessWidget {
               Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final g in genres) _LegendRow(genre: g),
-                  ],
+                  children: [for (final g in genres) _LegendRow(genre: g)],
                 ),
               ),
             ],
@@ -102,15 +101,21 @@ class _LegendRow extends StatelessWidget {
           Container(
             width: 9,
             height: 9,
-            decoration: BoxDecoration(color: genre.color, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: genre.color,
+              shape: BoxShape.circle,
+            ),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              genre.name,
+              _genreLabel(context, genre.name),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppFonts.jostStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 12.5),
+              style: AppFonts.jostStyle(
+                color: Colors.white.withValues(alpha: 0.85),
+                fontSize: 12.5,
+              ),
             ),
           ),
           Text(
@@ -167,3 +172,8 @@ class _DonutPainter extends CustomPainter {
   bool shouldRepaint(covariant _DonutPainter oldDelegate) =>
       oldDelegate.progress != progress || oldDelegate.genres != genres;
 }
+
+/// The analyzer groups small genres under the English sentinel 'Other';
+/// show it in the app's language.
+String _genreLabel(BuildContext context, String name) =>
+    name == 'Other' ? context.l10n.otherGenre : name;

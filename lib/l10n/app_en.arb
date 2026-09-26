@@ -116,6 +116,10 @@
   "internetMode": "Internet Mode",
   "keepBackgroundGradient": "Keep Background Gradient",
   "keepBackgroundGradientDesc": "Keep the background gradient across all application screens",
+  "animatePlayerGradient": "Animated Gradient",
+  "animatePlayerGradientDesc": "Slowly moves the primary and tertiary colors with a soft grain, reacting to the music",
+  "animateBackgroundGradient": "Animated Background",
+  "animateBackgroundGradientDesc": "Uses the animated gradient on the Home, Songs and Library backgrounds",
   "language": "Language",
   "left": "Left",
   "library": "Library",
@@ -311,8 +315,8 @@
   "updateLibraryIndexing": "Update library files indexing",
   "useAbsoluteBlackBg": "Use absolute black for backgrounds",
   "useStaticTextTimestamps": "Use static text instead of rolling animation for progress duration",
-  "verticalMotionEffectPlayer": "Vertical Motion Effect Player",
-  "verticalMotionEffectPlayerDesc": "Swipe down on the expanded player to dismiss it",
+  "fluidPlayer": "Fluid Player",
+  "fluidPlayerDesc": "Drag the mini player up to morph it into the full player",
   "viewAll": "View All",
   "visitOfficialRepository": "Visit official repository on GitHub",
   "welcomeAboutDesc": "Looper Player is a next-generation Music-OS built for premium offline audio playback. Features real-time dynamic lyrics generation, advanced audio session management with call mute handling, adaptive background theming, and multi-format music library support. Fully optimized for maximum battery efficiency.",
@@ -531,5 +535,535 @@
         "type": "int"
       }
     }
-  }
+  },
+  "noListeningHistoryYet": "No listening history yet",
+  "noListeningHistoryYetDesc": "Play a few songs and your personal report card — top songs, artists, albums and genres — will come to life here.",
+  "looperAnalyze": "Looper Analyze",
+  "totalPlays": "Total Plays",
+  "listeningTime": "Listening Time",
+  "currentStreakDays": "Current Streak (days)",
+  "longestStreakDays": "Longest Streak (days)",
+  "analyzePlaysAndSongs": "{plays} plays • {songs} songs",
+  "@analyzePlaysAndSongs": {
+    "placeholders": {
+      "plays": {
+        "type": "int"
+      },
+      "songs": {
+        "type": "int"
+      }
+    }
+  },
+  "dayPartMorningShort": "AM",
+  "dayPartAfternoonShort": "Aft",
+  "dayPartEveningShort": "Eve",
+  "dayPartNightShort": "Night",
+  "activityPattern": "Activity Pattern",
+  "whenYouListenMost": "When you listen most",
+  "genreBreakdown": "Genre Breakdown",
+  "otherGenre": "Other",
+  "topAlbums": "Top Albums",
+  "topArtists": "Top Artists",
+  "topSongs": "Top Songs",
+  "playsCount": "{count, plural, =1{1 play} other{{count} plays}}",
+  "@playsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "songsPlayedCount": "{count, plural, =1{1 song played} other{{count} songs played}}",
+  "@songsPlayedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "listeningTrend": "Listening Trend",
+  "last30Days": "Last 30 days",
+  "errorWithDetails": "Error: {error}",
+  "@errorWithDetails": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "selectAll": "Select All",
+  "playlist": "Playlist",
+  "songsCount": "{count, plural, =1{1 song} other{{count} songs}}",
+  "@songsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recentSearches": "Recent Searches",
+  "lyricsSourceLocalFile": "Local File",
+  "lyricsSourceEmbedded": "Embedded Metadata",
+  "lyricsProvidedBy": "Lyrics provided by {source}",
+  "@lyricsProvidedBy": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToImportLyrics": "Failed to import lyrics: {error}",
+  "@failedToImportLyrics": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "lyricsEditorLines": "Lines",
+  "lyricsEditorStamped": "Stamped",
+  "lyricsEditorLineNumber": "Line {number}",
+  "@lyricsEditorLineNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "lyricsEditorEmptyLine": "(Empty line)",
+  "lyricsEditorNotStamped": "Not stamped yet",
+  "pause": "Pause",
+  "lyricsEditorAddLineFirst": "Add at least one lyric line first.",
+  "lyricsEditorSavedWithSidecar": "Saved lyrics to database and beside the song file.",
+  "lyricsEditorSavedDbOnly": "Saved lyrics to player database.",
+  "lyricsEditorSaveFailed": "Could not save the lyrics.",
+  "saving": "Saving...",
+  "saveLrc": "Save LRC",
+  "lyricsEditorSelectedLine": "Selected line {index} of {total}",
+  "@lyricsEditorSelectedLine": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "lyricsEditorPickLine": "Pick a lyric line from the list below.",
+  "stampAndNext": "Stamp & Next",
+  "stampNow": "Stamp Now",
+  "lyricsEditorSimpleSteps": "1. Paste or type one lyric line per row.\n2. Play the song.\n3. Select the current lyric line.\n4. Tap \"Stamp & Next\" when you hear that line.\n5. Save when done.",
+  "lyricsEditorAdvancedSteps": "1. Edit timestamps directly for each line.\n2. Use \"Use Current Time\" to capture the live playback time.\n3. Use the shift controls to move all stamped lyrics together.\n4. Save to generate the final `.lrc` file.",
+  "lyricsEditorTipsText": "- If some lines are not stamped, Flick's engine fills their times automatically.\n- Save writes beside the song when possible, otherwise it stores a linked copy in the DB.",
+  "fileNotFoundOrInaccessible": "File not found or inaccessible: {title}",
+  "@fileNotFoundOrInaccessible": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "playbackFailedCorrupted": "Playback failed: Unable to load or play \"{title}\". Please verify the file is not corrupted.",
+  "@playbackFailedCorrupted": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "shareSongText": "Check out this song: {title}",
+  "@shareSongText": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "shareSongsText": "Check out these {count} songs",
+  "@shareSongsText": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noSettingsFoundFor": "No settings found for \"{query}\"",
+  "@noSettingsFoundFor": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "chooseQuickAccentColors": "Choose quick accent colors",
+  "fontWeight": "Font Weight",
+  "changeBaseFontWeight": "Change base weight of custom font",
+  "lyricsFontWeightValue": "Lyrics font weight: {weight}",
+  "@lyricsFontWeightValue": {
+    "placeholders": {
+      "weight": {
+        "type": "int"
+      }
+    }
+  },
+  "equalizerSearchDesc": "Adjust 18-band equalizer and audio presets",
+  "stopServiceSearchDesc": "Stop playback and close the app when swiped away from recent panel",
+  "scanNewFolderDesc": "Scan a new folder for audio files",
+  "includeOtherDeviceAudioShortDesc": "Ringtones, notifications and messaging audio",
+  "excludedFolders": "Excluded Folders",
+  "excludedFoldersSearchDesc": "Skip specific folders when scanning",
+  "clearLibraryData": "Clear library data",
+  "looperPlayerVersion": "Looper Player Version",
+  "versionLabel": "Version {version}",
+  "@versionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "none": "None",
+  "foldersSkippedCount": "{count, plural, =1{1 folder skipped when scanning} other{{count} folders skipped when scanning}}",
+  "@foldersSkippedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "excludedFoldersDesc": "Songs in these folders are skipped during a scan, even if they sit inside a folder you added.",
+  "noExcludedFoldersYet": "No excluded folders yet.",
+  "excludeAFolder": "Exclude a Folder",
+  "equalizerEnabled18Band": "Enabled (18-band MPV EQ)",
+  "disabled": "Disabled",
+  "noIndexedFoldersYet": "No indexed folders yet",
+  "noIndexedFoldersYetDesc": "Use Rescan Library to discover folders across storage.",
+  "eqDynamicRangeCompressor": "Dynamic Range Compressor",
+  "eqThreshold": "Threshold",
+  "eqRatio": "Ratio",
+  "eqAttack": "Attack",
+  "eqRelease": "Release",
+  "eqHeadphoneCrossfeedWidth": "Headphone Crossfeed & Width",
+  "eqBinauralCrossfeed": "Binaural Crossfeed",
+  "eqCrossfeedStrength": "Crossfeed Strength",
+  "eqStereoWidening": "Stereo Widening",
+  "eqWideningFactor": "Widening Factor",
+  "eqLoudnessNormalization": "Loudness Normalization",
+  "eqTargetLoudness": "Target Loudness",
+  "eqToneShelving": "Tone Shelving (Bass / Treble)",
+  "eqBassShelf": "Bass Shelf",
+  "eqTrebleShelf": "Treble Shelf",
+  "eqTempoPitchControls": "Tempo & Pitch Controls",
+  "eqPitchShift": "Pitch Shift",
+  "eqTempoSpeed": "Tempo Speed",
+  "eqVoiceSilenceControls": "Voice & Silence controls",
+  "eqSilenceTrimming": "Silence Trimming",
+  "eqSilenceThreshold": "Silence Threshold",
+  "eqSpeechEnhancementFilter": "Speech Enhancement Filter",
+  "eqHighpassCutoff": "Highpass Cutoff",
+  "eqLowpassCutoff": "Lowpass Cutoff",
+  "eqRetroRoomEffects": "Retro & Room Effects",
+  "eqLofiEffect": "Lofi Effect (8-bit Crusher)",
+  "eqStudioRoomReverb": "Studio Room Reverb (Echo)",
+  "eqVirtualSurround": "Virtual 5.1 Surround Sound",
+  "eqRawFilterConsole": "Raw FFMpeg Filter console",
+  "eqSwitchToSliders": "Switch to Sliders",
+  "eqSwitchToGraph": "Switch to Graph",
+  "on": "On",
+  "off": "Off",
+  "eqSongSpecificActive": "Song-specific settings active",
+  "eqUsingGlobalDefault": "Using global settings default",
+  "eqInteractiveGraphHint": "INTERACTIVE GRAPH (DRAG DOTS VERTICALLY)",
+  "eq18BandHint": "18-BAND EQUALIZER (SCROLL HORIZONTALLY)",
+  "eqSongSpecific": "Song-Specific",
+  "eqGlobalDefault": "Global Default",
+  "eqEditScopeNote": "Edits made when a song is playing apply to that song only. To set the global default, edit when no song is playing, or use the 'Apply to Global' action.",
+  "presetFlat": "Flat",
+  "presetBassBooster": "Bass Booster",
+  "presetTrebleBooster": "Treble Booster",
+  "presetVocalBooster": "Vocal Booster",
+  "presetElectronic": "Electronic",
+  "presetRock": "Rock",
+  "presetPop": "Pop",
+  "presetJazz": "Jazz",
+  "save": "Save",
+  "savePreset": "Save Preset",
+  "presetName": "Preset name",
+  "deletePreset": "Delete Preset",
+  "deletePresetConfirm": "Delete the \"{name}\" preset?",
+  "@deletePresetConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noLyricsSource": "No Lyrics Source",
+  "lyricsSourceLabel": "Source: {source}",
+  "@lyricsSourceLabel": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "lyricsSourceLocalSidecar": "Local Sidecar (.lrc)",
+  "lyricsSourceCustomFile": "Custom LRC File",
+  "lyricsSourceNotFoundOnline": "Not Found Online",
+  "lyricsProviderLocal": "Local",
+  "checkingLocalLyrics": "Checking local/embedded lyrics...",
+  "fetchingLyricsFrom": "Fetching lyrics from {provider}...",
+  "@fetchingLyricsFrom": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "loadedLocalLyrics": "Loaded local/embedded lyrics!",
+  "noLocalLyricsFound": "No local or embedded lyrics found",
+  "lyricsUpdatedFrom": "Lyrics updated from {provider}!",
+  "@lyricsUpdatedFrom": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "noLyricsFoundOn": "No lyrics found on {provider}",
+  "@noLyricsFoundOn": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "gestureTips": "Gesture Tips",
+  "gestureTipsDesc": "Tap, long-press, pinch to zoom & more",
+  "exportLyrics": "Export Lyrics",
+  "lyricsExportedTo": "Lyrics exported to: {path}",
+  "@lyricsExportedTo": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToExportLyrics": "Failed to export lyrics: {error}",
+  "@failedToExportLyrics": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "gestureTapLine": "Tap a line",
+  "gestureTapLineDesc": "Jump playback straight to that lyric.",
+  "gestureLongPressLine": "Long-press a line",
+  "gestureLongPressLineDesc": "Start selecting lines to turn into a shareable lyrics card. Tap more lines to extend the selection.",
+  "gesturePinch": "Pinch with two fingers",
+  "gesturePinchDesc": "Resize the lyrics text to your liking.",
+  "gestureSwipeDown": "Swipe down",
+  "gestureSwipeDownDesc": "Close the lyrics screen and return to the player.",
+  "lyricsGestures": "Lyrics Gestures",
+  "lyricsGesturesIntro": "A few things this screen can do that aren't always obvious:",
+  "linesSelected": "{count, plural, =1{1 line selected} other{{count} lines selected}}",
+  "@linesSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "couldNotGenerateShareImage": "Could not generate the share image.",
+  "couldNotGenerateImage": "Could not generate the image.",
+  "savedToGallery": "Saved to gallery.",
+  "galleryPermissionDenied": "Permission to access the gallery was denied.",
+  "couldNotSaveToGallery": "Could not save the image to the gallery.",
+  "shareLyrics": "Share Lyrics",
+  "backgroundColor": "Background Color",
+  "lyricsTextColor": "Lyrics Text Color",
+  "saveToGallery": "Save to Gallery",
+  "preparing": "Preparing...",
+  "trackTitle": "Track Title",
+  "composer": "Composer",
+  "unknownGenre": "Unknown Genre",
+  "releaseYear": "Release Year",
+  "notAvailable": "N/A",
+  "recordLabel": "Label",
+  "copyright": "Copyright",
+  "encoder": "Encoder",
+  "fileName": "File Name",
+  "fileFormat": "File Format",
+  "fileSize": "File Size",
+  "absolutePath": "Absolute Path",
+  "playCount": "Play Count",
+  "playCountTimes": "{count, plural, =1{1 time} other{{count} times}}",
+  "@playCountTimes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lastPlayed": "Last Played",
+  "filePath": "File Path",
+  "rescan": "Rescan",
+  "codec": "Codec",
+  "container": "Container",
+  "sampleRate": "Sample Rate",
+  "bitDepth": "Bit Depth",
+  "decodedFormat": "Decoded Format",
+  "bitrate": "Bitrate",
+  "channels": "Channels",
+  "nyquist": "Nyquist",
+  "dynamicRange": "Dynamic Range",
+  "peak": "Peak",
+  "truePeak": "True Peak",
+  "clipping": "Clipping",
+  "cutoff": "Cutoff",
+  "samples": "Samples",
+  "channelShort": "Ch {channel}",
+  "@channelShort": {
+    "placeholders": {
+      "channel": {
+        "type": "int"
+      }
+    }
+  },
+  "noneClean": "None (Clean)",
+  "reanalyzingAudio": "Re-analyzing audio stream...",
+  "analyzingAudio": "Analyzing audio stream...",
+  "sampleRateHz": "Sample Rate: {rate} Hz",
+  "@sampleRateHz": {
+    "placeholders": {
+      "rate": {
+        "type": "int"
+      }
+    }
+  },
+  "nyquistKhz": "Nyquist: {khz} kHz",
+  "@nyquistKhz": {
+    "placeholders": {
+      "khz": {
+        "type": "String"
+      }
+    }
+  },
+  "qualityLossless": "Lossless",
+  "qualityHigh": "High Quality",
+  "qualityStandard": "Standard Quality",
+  "qualityAudio": "Audio",
+  "addCustomFolder": "Add a Custom Folder",
+  "addCustomFolderDesc": "If your music lives in a folder with a different name, or on an SD card, add it directly.",
+  "indexingYourLibrary": "INDEXING YOUR LIBRARY...",
+  "indexingYourLibraryDesc": "Filling in titles, artwork and lyrics for your songs.",
+  "welcomeStep": "STEP {step}: {title}",
+  "@welcomeStep": {
+    "placeholders": {
+      "step": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "includeOtherDeviceAudioAlarmsDesc": "Ringtones, notifications, alarms and messaging audio",
+  "version": "Version",
+  "noIndexedFoldersDesktopDesc": "Use Rescan Library to discover storage folders",
+  "playedLabel": "Played",
+  "minutesShort": "{count, plural, =1{1 Min} other{{count} Mins}}",
+  "@minutesShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "minuteChip": "{count} Min",
+  "@minuteChip": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "songsCountTitle": "{count, plural, =1{1 Song} other{{count} Songs}}",
+  "@songsCountTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "songsLeft": "{count, plural, =1{1 song left} other{{count} songs left}}",
+  "@songsLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sleepTimerWithRemaining": "Sleep Timer ({remaining})",
+  "@sleepTimerWithRemaining": {
+    "placeholders": {
+      "remaining": {
+        "type": "String"
+      }
+    }
+  },
+  "trackInfoSection": "TRACK INFO",
+  "detailsSection": "DETAILS",
+  "lyricsSection": "LYRICS",
+  "editLyricsHint": "Enter plain lyrics or synchronized LRC lyrics format [00:00.00]...",
+  "addedSongsCount": "{count, plural, =1{Added 1 song} other{Added {count} songs}}",
+  "@addedSongsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chooseInternalStorageFolder": "Please choose a folder on this device's internal storage or SD card.",
+  "appCrashedTitle": "Looper Player Crashed",
+  "appCrashedDesc": "An unexpected initialization error occurred. A diagnostic crash report has been generated.",
+  "appCrashedDetails": "An error occurred during app database or service initialization. This can happen if storage access is restricted or database files are corrupted.",
+  "crashReportSaved": "Diagnostic crash report saved to application support folder.",
+  "shareLog": "Share Log",
+  "restartApp": "Restart App",
+  "updateAvailableOnPlay": "A new version is available on Google Play.",
+  "updateAvailableOnGithub": "Version {version} is available on GitHub.",
+  "@updateAvailableOnGithub": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updateAvailable": "Update available",
+  "updateAvailableTitle": "Update Available!",
+  "visit": "VISIT",
+  "updateDownloaded": "Update downloaded",
+  "restartToInstallUpdate": "Restart Looper Player to install it.",
+  "restart": "RESTART",
+  "backupImportedSummary": "Backup imported: Merged {favorites} favorites, {stats} play stats, synced {playlists} playlists",
+  "@backupImportedSummary": {
+    "placeholders": {
+      "favorites": {
+        "type": "int"
+      },
+      "stats": {
+        "type": "int"
+      },
+      "playlists": {
+        "type": "int"
+      }
+    }
+  },
+  "backupExportFailed": "Failed to export backup: An internal error occurred while saving the backup file.",
+  "backupImportFailed": "Failed to import backup: The file could not be read or the backup format is invalid.",
+  "stereo": "Stereo",
+  "mono": "Mono"
 }

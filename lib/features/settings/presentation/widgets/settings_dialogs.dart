@@ -3,12 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_hsvcolor_picker/flutter_hsvcolor_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:looper_player/core/app_fonts.dart';
-import 'package:looper_player/core/db_service.dart';
-import 'package:looper_player/features/library/domain/models/models.dart';
-import 'package:looper_player/features/settings/presentation/settings_notifier.dart';
+import 'package:looper_player/core/theme/app_fonts.dart';
+import 'package:looper_player/core/services/storage/db_service.dart';
+import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
-import 'package:looper_player/ui/widgets/app_bottom_sheet.dart';
+import 'package:looper_player/ui/widgets/sheets/app_bottom_sheet.dart';
 
 void showCustomColorPicker(
   BuildContext context,
@@ -34,7 +33,7 @@ void showCustomColorPicker(
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                     Text(
+                    Text(
                       l10n.customAccentColor,
                       style: AppFonts.jostStyle(
                         color: Colors.white,
@@ -114,7 +113,14 @@ void showReorderBottomSheet(
           final currentSettings = ref.watch(settingsProvider);
           final currentOrder = List<String>.from(
             currentSettings.homeSectionOrder.isEmpty
-                ? ['quick_picks', 'songs', 'albums', 'artists', 'genres', 'recent']
+                ? [
+                    'quick_picks',
+                    'songs',
+                    'albums',
+                    'artists',
+                    'genres',
+                    'recent',
+                  ]
                 : currentSettings.homeSectionOrder,
           );
 
@@ -168,7 +174,10 @@ void showReorderBottomSheet(
                 const SizedBox(height: 6),
                 Text(
                   l10n.reorderDashboardSectionsDesc,
-                  style: AppFonts.jostStyle(color: Colors.white54, fontSize: 13),
+                  style: AppFonts.jostStyle(
+                    color: Colors.white54,
+                    fontSize: 13,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 Flexible(
@@ -312,7 +321,10 @@ void showClearDialog(BuildContext context, AppLocalizations l10n) {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text(l10n.cancel, style: AppFonts.jostStyle(color: Colors.white38)),
+          child: Text(
+            l10n.cancel,
+            style: AppFonts.jostStyle(color: Colors.white38),
+          ),
         ),
         TextButton(
           onPressed: () async {
@@ -325,7 +337,10 @@ void showClearDialog(BuildContext context, AppLocalizations l10n) {
               Navigator.pop(context);
             }
           },
-          child: Text(l10n.clear, style: AppFonts.jostStyle(color: Colors.redAccent)),
+          child: Text(
+            l10n.clear,
+            style: AppFonts.jostStyle(color: Colors.redAccent),
+          ),
         ),
       ],
     ),
