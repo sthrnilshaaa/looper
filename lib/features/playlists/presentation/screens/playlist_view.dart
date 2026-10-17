@@ -51,6 +51,16 @@ class PlaylistList extends _$PlaylistList {
   }
 }
 
+// Keep the playlist record and its songs reactive independently: importing,
+// enrichment, file removal and metadata edits need not modify the playlist.
+final _playlistRecordProvider = StreamProvider.autoDispose
+    .family<Playlist?, int>(
+      (ref, playlistId) => DbService.isar.playlists.watchObject(
+        playlistId,
+        fireImmediately: true,
+      ),
+    );
+
 @Riverpod(keepAlive: true)
 Stream<List<Playlist>> dashboardPlaylists(Ref ref) {
   return DbService.isar.playlists
@@ -61,18 +71,20 @@ Stream<List<Playlist>> dashboardPlaylists(Ref ref) {
 }
 
 @Riverpod(keepAlive: true)
-Stream<List<Song>> playlistSongs(Ref ref, int playlistId) {
-  return DbService.isar.playlists
-      .watchObject(playlistId, fireImmediately: true)
-      .asyncMap((playlist) async {
-        if (playlist == null || playlist.songPaths.isEmpty) return <Song>[];
-
-        final songs = await DbService.isar.songs
-            .filter()
-            .anyOf(playlist.songPaths, (q, path) => q.pathEqualTo(path))
-            .findAll();
-
-        final songMap = {for (var s in songs) s.path: s};
+Stream<List<Song>> playlistSongs(Ref ref, int playlistId) async* {
+  final playlist = await ref.watch(_playlistRecordProvider(playlistId).future);
+  if (playlist == null || playlist.songPaths.isEmpty) {
+    yield <Song>[];
+    return;
+  }
+  yield* DbService.isar.songs
+      .filter()
+      .anyOf(playlist.songPaths, (q, path) => q.pathEqualTo(path))
+      .watch(fireImmediately: true)
+      .map((songs) {
+        final songMap = {for (final song in songs) song.path: song};
+        // Preserve saved order and repeated entries; unavailable songs are
+        // omitted consistently with the playable song list.
         return playlist.songPaths
             .map((path) => songMap[path])
             .whereType<Song>()
