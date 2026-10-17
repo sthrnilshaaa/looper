@@ -1,12 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:looper_player/features/library/domain/models/models.dart';
+import 'package:looper_player/ui/widgets/common/queue_entry_fade.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:looper_player/features/playback/presentation/providers/playback/playback_notifier.dart';
 import 'package:looper_player/ui/widgets/common/optimized_image.dart';
-import 'package:looper_player/core/utils/ui_utils.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/core/utils/l10n.dart';
 
@@ -15,23 +14,20 @@ class QueueView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final queue = ref.watch(playbackProvider.select((s) => s.queue));
-    final currentSongPath = ref.watch(
-      playbackProvider.select((s) => s.currentSong?.path),
+    final playback = ref.watch(
+      playbackProvider.select(
+        (s) => (
+          queue: s.queue,
+          ids: s.queueEntryIds,
+          manual: s.manualQueueEntryIds,
+          index: s.currentQueueIndex,
+        ),
+      ),
     );
+    final queue = playback.queue;
     final l10n = AppLocalizations.of(context)!;
-
-    // Rotate the queue list so that the current song is at the top
-    final currentIdx = queue.indexWhere((s) => s.path == currentSongPath);
-    final List<Song> displayedQueue;
-    if (currentIdx != -1) {
-      displayedQueue = [
-        ...queue.sublist(currentIdx),
-        ...queue.sublist(0, currentIdx),
-      ];
-    } else {
-      displayedQueue = List.from(queue);
-    }
+    final startIndex = playback.index.clamp(0, queue.length);
+    final displayedQueue = queue.sublist(startIndex);
 
     return Column(
       children: [
@@ -43,11 +39,15 @@ class QueueView extends ConsumerWidget {
           child: Row(
             children: [
               if (!Platform.isAndroid)
-                Text(
-                  l10n.playQueue,
-                  style: AppFonts.jostStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.normal,
+                Flexible(
+                  child: Text(
+                    l10n.playQueue,
+                    style: AppFonts.jostStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.normal,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               const Spacer(),
@@ -80,20 +80,23 @@ class QueueView extends ConsumerWidget {
                   ),
                   itemCount: displayedQueue.length,
                   onReorder: (oldIndex, newIndex) {
-                    if (newIndex == 0) newIndex = 1;
                     ref
                         .read(playbackProvider.notifier)
-                        .reorderQueue(oldIndex, newIndex);
+                        .reorderQueue(
+                          startIndex + oldIndex,
+                          startIndex + newIndex,
+                        );
                   },
                   itemBuilder: (context, index) {
                     final song = displayedQueue[index];
-                    final isCurrent = currentSongPath == song.path;
-                    final originalIndex = queue.indexWhere(
-                      (s) => s.path == song.path,
-                    );
+                    final originalIndex = startIndex + index;
+                    final entryId = playback.ids[originalIndex];
+                    final isCurrent = originalIndex == playback.index;
+                    final automatic =
+                        !isCurrent && !playback.manual.contains(entryId);
 
                     return Dismissible(
-                      key: ValueKey('queue_view_${song.path}_$index'),
+                      key: ValueKey('queue_view_$entryId'),
                       direction: DismissDirection.endToStart,
                       onDismissed: (_) {
                         ref
@@ -107,7 +110,7 @@ class QueueView extends ConsumerWidget {
                         child: const Icon(LucideIcons.x, color: Colors.red),
                       ),
                       child: AnimatedContainer(
-                        key: ValueKey('queue_tile_${song.path}_$index'),
+                        key: ValueKey('queue_tile_$entryId'),
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeOutCubic,
                         margin: const EdgeInsets.only(bottom: 8),
@@ -122,37 +125,50 @@ class QueueView extends ConsumerWidget {
                         child: Material(
                           color: Colors.transparent,
                           child: ListTile(
-                            leading: OptimizedImage(
-                              imagePath: song.artPath,
-                              width: 44,
-                              height: 44,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            title: Text(
-                              song.title,
-                              style: AppFonts.jostStyle(
-                                fontWeight: isCurrent
-                                    ? FontWeight.normal
-                                    : FontWeight.normal,
-                                color: isCurrent
-                                    ? Theme.of(context).colorScheme.primary
-                                    : null,
+                            leading: QueueEntryFade(
+                              automatic: automatic,
+                              automaticOpacity: 0.4,
+                              child: OptimizedImage(
+                                imagePath: song.artPath,
+                                width: 44,
+                                height: 44,
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
-                            subtitle: Text(
-                              song.artist ?? context.l10n.unknownArtist,
-                              style: AppFonts.jostStyle(fontSize: 12),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            title: QueueEntryFade(
+                              automatic: automatic,
+                              automaticOpacity: 0.5,
+                              child: Text(
+                                song.title,
+                                style: AppFonts.jostStyle(
+                                  fontWeight: isCurrent
+                                      ? FontWeight.normal
+                                      : FontWeight.normal,
+                                  color: isCurrent
+                                      ? Theme.of(context).colorScheme.primary
+                                      : null,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            subtitle: QueueEntryFade(
+                              automatic: automatic,
+                              child: Text(
+                                song.artist ?? context.l10n.unknownArtist,
+                                style: AppFonts.jostStyle(fontSize: 12),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                             trailing: isCurrent
-                                ? const Padding(
-                                    padding: EdgeInsets.only(right: 20.0),
+                                ? Padding(
+                                    padding: const EdgeInsets.only(right: 20.0),
                                     child: Icon(
                                       LucideIcons.volume2,
-                                      color: Colors.yellow,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
                                       size: 20,
                                     ),
                                   )

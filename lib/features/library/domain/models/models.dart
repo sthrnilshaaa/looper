@@ -147,6 +147,8 @@ class AppSettings {
   int? lastPlayedSongId;
   List<int> lastQueueSongIds = [];
   int lastQueueIndex = -1;
+  List<int> lastQueueManualIndices = [];
+  List<int> lastQueueOriginalOrder = [];
   double volume = 1.0;
   int lastPositionMs = 0;
   bool shuffle = false;

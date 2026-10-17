@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:looper_player/features/playback/domain/playback_queue.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:looper_player/core/utils/logger_helper.dart';
@@ -37,9 +38,21 @@ part 'maintenance.dart';
 @Riverpod(keepAlive: true)
 class Playback extends _$Playback {
   late final Player player;
-  List<Song> _playlist = [];
-  List<Song> _originalPlaylist = [];
-  int _currentIndex = -1;
+  final PlaybackQueue _queue = PlaybackQueue();
+  List<Song> get _playlist => _queue.songs;
+  int get _currentIndex => _queue.currentIndex;
+
+  void _publishQueue() {
+    state = state.copyWith(
+      queue: _queue.songs,
+      queueEntryIds: _queue.entries.map((entry) => entry.id).toList(),
+      manualQueueEntryIds: _queue.pendingManual
+          .map((entry) => entry.id)
+          .toSet(),
+      currentQueueIndex: _currentIndex,
+    );
+  }
+
   bool _isTransitioning = false;
   int _activeCrossfadeId = 0;
   Timer? _silenceTimer;
@@ -50,7 +63,6 @@ class Playback extends _$Playback {
   // decoupled from _lastWidgetPositionUpdate.
   int _lastProgressSaveCheckpoint = 0;
   static const int _progressSaveIntervalMs = 20000;
-  int _manualQueueCount = 0;
   DateTime _lastSeekTime = DateTime.fromMillisecondsSinceEpoch(0);
   // A track end that arrived while play() was still loading a song. mpv
   // flips `completed` back to false on START_FILE, so a `true` seen after
@@ -375,23 +387,21 @@ class Playback extends _$Playback {
     final savedIndex = settings.lastQueueIndex;
 
     if (settings.persistQueue && savedSongIds.isNotEmpty) {
-      final List<Song> loadedSongs = [];
-      for (final id in savedSongIds) {
-        final song = await DbService.isar.songs.get(id);
-        if (song != null) {
-          loadedSongs.add(song);
-        }
-      }
-      if (loadedSongs.isNotEmpty) {
-        _playlist = loadedSongs;
-        _originalPlaylist = List.from(loadedSongs);
-        _currentIndex = (savedIndex >= 0 && savedIndex < loadedSongs.length)
-            ? savedIndex
-            : 0;
-        final song = _playlist[_currentIndex];
+      final loadedSongs = await Future.wait(
+        savedSongIds.map((id) => DbService.isar.songs.get(id)),
+      );
+      _queue.restore(
+        loadedSongs,
+        index: savedIndex,
+        manualIndices: settings.lastQueueManualIndices,
+        originalOrder: settings.lastQueueOriginalOrder,
+      );
+      _publishQueue();
+      if (_queue.current != null) {
+        final song = _queue.current!.song;
         state = state.copyWith(
           queue: List.from(_playlist),
-          queueSourceKey: collectionKey(loadedSongs),
+          queueSourceKey: collectionKey(_queue.songs),
           currentSong: song,
           isRestoredSession: true,
           position: Duration(milliseconds: settings.lastPositionMs),
@@ -404,7 +414,12 @@ class Playback extends _$Playback {
         _updateWidgetState();
 
         final initialPos = Duration(milliseconds: settings.lastPositionMs);
+        final restoredEntryId = _queue.current?.id;
         Future.delayed(const Duration(milliseconds: 500), () async {
+          if (_queue.current?.id != restoredEntryId ||
+              state.currentSong?.path != song.path) {
+            return;
+          }
           await play(
             song,
             forceDisableCrossfade: true,
@@ -426,12 +441,17 @@ class Playback extends _$Playback {
         );
         ref.read(lyricsProvider.notifier).fetchForSong(song);
         ref.read(equalizerProvider.notifier).onSongChanged(song);
-        _playlist = [song];
-        _currentIndex = 0;
+        _queue.load([song]);
+        _publishQueue();
         _updateWidgetState(); // Sync initial song data with home screen widgets on launch
 
         final initialPos = Duration(milliseconds: settings.lastPositionMs);
+        final restoredEntryId = _queue.current?.id;
         Future.delayed(const Duration(milliseconds: 500), () async {
+          if (_queue.current?.id != restoredEntryId ||
+              state.currentSong?.path != song.path) {
+            return;
+          }
           await play(
             song,
             forceDisableCrossfade: true,
@@ -445,18 +465,13 @@ class Playback extends _$Playback {
           .read(settingsProvider.notifier)
           .updateLastQueueState([], -1, null, positionMs: 0);
     }
-
-    // Ensure dynamic queue is populated right after startup loading finishes
-    await _ensureDynamicQueue();
   }
 
   Future<void> playAtIndex(int index) async {
-    if (index >= 0 && index < _playlist.length) {
-      final endOfManual = _currentIndex + _manualQueueCount;
-      _manualQueueCount = (index < endOfManual) ? endOfManual - index : 0;
-      _currentIndex = index;
-      await play(_playlist[_currentIndex]);
-    }
+    if (index < 0 || index >= _queue.entries.length) return;
+    _queue.select(index);
+    _publishQueue();
+    await play(_queue.current!.song);
   }
 
   /// Starts a collection, or continues its current track without seeking.
@@ -466,9 +481,6 @@ class Playback extends _$Playback {
     int? sourcePlaylistId,
   }) async {
     if (songs.isEmpty) return;
-    // Enabling shuffle rearranges the old queue. Preserve its manual entries
-    // before that rearrangement changes which songs follow the current one.
-    final manualSongs = _manualQueueSongs;
     if (shuffle && !state.isShuffle) await toggleShuffle();
 
     final currentIndex = songs.indexWhere(
@@ -476,7 +488,6 @@ class Playback extends _$Playback {
     );
     _setPlaylist(
       songs,
-      manualSongs: manualSongs,
       initialIndex: shuffle
           ? math.Random().nextInt(songs.length)
           : math.max(0, currentIndex),
@@ -511,67 +522,21 @@ class Playback extends _$Playback {
   }) {
     _setPlaylist(
       songs,
-      manualSongs: _manualQueueSongs,
       initialIndex: initialIndex,
       continueCurrent: continueCurrent,
       sourcePlaylistId: sourcePlaylistId,
     );
   }
 
-  List<Song> get _manualQueueSongs {
-    final start = _currentIndex + 1;
-    final end = (start + _manualQueueCount).clamp(0, _playlist.length);
-    return (start < _playlist.length)
-        ? _playlist.sublist(start, end)
-        : <Song>[];
-  }
-
   void _setPlaylist(
     List<Song> songs, {
-    required List<Song> manualSongs,
     int initialIndex = 0,
     bool continueCurrent = false,
     int? sourcePlaylistId,
   }) {
-    _originalPlaylist = List.from(songs);
-
-    if (state.isShuffle) {
-      if (songs.isNotEmpty) {
-        final currentSong = songs[initialIndex];
-        final remaining = List<Song>.from(songs)..removeAt(initialIndex);
-        remaining.shuffle();
-        _playlist = [currentSong, ...remaining];
-        _currentIndex = 0;
-      } else {
-        _playlist = [];
-        _currentIndex = -1;
-      }
-    } else {
-      _playlist = List.from(songs);
-      _currentIndex = initialIndex;
-    }
-
-    // Re-insert manual queue songs after the new current song
-    if (_currentIndex != -1 && manualSongs.isNotEmpty) {
-      _playlist.insertAll(_currentIndex + 1, manualSongs);
-      // Also insert into _originalPlaylist at corresponding position
-      final origIdx = _originalPlaylist.indexWhere(
-        (s) => s.path == _playlist[_currentIndex].path,
-      );
-      if (origIdx != -1) {
-        _originalPlaylist.insertAll(origIdx + 1, manualSongs);
-      } else {
-        _originalPlaylist.addAll(manualSongs);
-      }
-      _manualQueueCount = manualSongs.length;
-    } else {
-      _manualQueueCount = 0;
-    }
-
-    state = state.copyWith(
-      queue: List.from(_playlist),
-      queueSourceKey: collectionKey(songs),
-    );
+    _queue.load(songs, initialIndex: initialIndex, shuffle: state.isShuffle);
+    _publishQueue();
+    state = state.copyWith(queueSourceKey: collectionKey(songs));
     if (_playlist.isNotEmpty && _currentIndex != -1) {
       if (continueCurrent &&
           _playlist[_currentIndex].path == state.currentSong?.path) {
@@ -872,35 +837,13 @@ class Playback extends _$Playback {
       await ref.read(settingsProvider.notifier).updateLastPlayedSong(song.id);
     }
 
-    final idx = _playlist.indexWhere((s) => s.path == song.path);
-    if (idx != -1) {
-      final endOfManual = _currentIndex + _manualQueueCount;
-      _manualQueueCount = (idx < endOfManual) ? endOfManual - idx : 0;
-      _currentIndex = idx;
-    } else {
-      if (_currentIndex == -1) {
-        _playlist = [song];
-        _originalPlaylist = [song];
-        _currentIndex = 0;
-        _manualQueueCount = 0;
-        state = state.copyWith(queueSourceKey: collectionKey([song]));
-      } else {
-        final currentSong = _playlist[_currentIndex];
-        _playlist.insert(_currentIndex + 1, song);
-        final origIdx = _originalPlaylist.indexWhere(
-          (s) => s.path == currentSong.path,
-        );
-        if (origIdx != -1) {
-          _originalPlaylist.insert(origIdx + 1, song);
-        } else {
-          _originalPlaylist.add(song);
-        }
-        _currentIndex++;
-      }
-      state = state.copyWith(queue: List.from(_playlist));
+    final hadQueue = _queue.entries.isNotEmpty;
+    _queue.selectSong(song);
+    _publishQueue();
+    if (!hadQueue) {
+      state = state.copyWith(queueSourceKey: collectionKey([song]));
     }
     _updateNotification();
-    await _ensureDynamicQueue();
     await _saveQueueState();
 
     // Explicit initialPosition (e.g. the "Persist Last Queue" app-restart
@@ -936,93 +879,15 @@ class Playback extends _$Playback {
   }
 
   void addToQueue(Song song) {
-    // Remove duplicate upcoming songs if present
-    final startSearchIndex = _currentIndex + _manualQueueCount;
-    for (int i = _playlist.length - 1; i > startSearchIndex; i--) {
-      if (_playlist[i].path == song.path) {
-        _playlist.removeAt(i);
-      }
-    }
-    // Also remove from _originalPlaylist to prevent duplicates
-    _originalPlaylist.removeWhere((s) => s.path == song.path);
-
-    if (state.isShuffle) {
-      // Insert randomly into the remaining queue
-      final minIndex = _currentIndex + 1;
-      final maxIndex = _playlist.length;
-      final insertIndex = minIndex >= maxIndex
-          ? minIndex
-          : minIndex + math.Random().nextInt(maxIndex - minIndex + 1);
-
-      if (insertIndex >= _playlist.length) {
-        _playlist.add(song);
-      } else {
-        _playlist.insert(insertIndex, song);
-      }
-      _originalPlaylist.add(song); // Keep original playlist appended
-    } else {
-      final insertIndex = _currentIndex + 1 + _manualQueueCount;
-      if (insertIndex >= _playlist.length) {
-        _playlist.add(song);
-      } else {
-        _playlist.insert(insertIndex, song);
-      }
-
-      // Also insert into _originalPlaylist at corresponding position
-      final refSongIdx = _currentIndex + _manualQueueCount;
-      if (refSongIdx >= 0 && refSongIdx < _playlist.length) {
-        final refSong = _playlist[refSongIdx];
-        final origIdx = _originalPlaylist.indexWhere(
-          (s) => s.path == refSong.path,
-        );
-        if (origIdx != -1) {
-          _originalPlaylist.insert(origIdx + 1, song);
-        } else {
-          _originalPlaylist.add(song);
-        }
-      } else {
-        _originalPlaylist.add(song);
-      }
-    }
-    _manualQueueCount++;
-
-    state = state.copyWith(queue: List.from(_playlist));
+    _queue.add(song);
+    _publishQueue();
+    unawaited(_saveQueueState());
   }
 
   void addNext(Song song) {
-    // Remove from the upcoming queue (if present) to prevent immediate duplicate playback
-    for (int i = _playlist.length - 1; i > _currentIndex; i--) {
-      if (_playlist[i].path == song.path) {
-        _playlist.removeAt(i);
-        if (i <= _currentIndex + _manualQueueCount) {
-          if (_manualQueueCount > 0) _manualQueueCount--;
-        }
-      }
-    }
-    _originalPlaylist.removeWhere((s) => s.path == song.path);
-
-    final insertIndex = _currentIndex + 1;
-    if (insertIndex >= _playlist.length) {
-      _playlist.add(song);
-    } else {
-      _playlist.insert(insertIndex, song);
-    }
-
-    if (state.currentSong != null) {
-      final origIdx = _originalPlaylist.indexWhere(
-        (s) => s.path == state.currentSong!.path,
-      );
-      if (origIdx != -1) {
-        _originalPlaylist.insert(origIdx + 1, song);
-      } else {
-        _originalPlaylist.add(song);
-      }
-    } else {
-      _originalPlaylist.add(song);
-    }
-    _manualQueueCount++;
-
-    state = state.copyWith(queue: List.from(_playlist));
+    _queue.add(song, next: true);
+    _publishQueue();
+    unawaited(_saveQueueState());
   }
 
   /// Ends the current segment (if any) and folds its elapsed wall-clock time
@@ -1356,61 +1221,33 @@ class Playback extends _$Playback {
   }
 
   Future<void> skipNext({bool isManual = true}) async {
-    if (_playlist.isEmpty) return;
-
-    final nextIndex = _currentIndex + 1;
-    if (nextIndex >= _playlist.length) {
-      if (state.repeatMode != RepeatMode.all) {
-        await _pauseAtPlaybackEnd();
-        return;
-      }
+    if (!_queue.advance(
+      repeatAll: state.repeatMode == RepeatMode.all,
+      shuffled: state.isShuffle,
+    )) {
+      if (_queue.entries.isNotEmpty) await _pauseAtPlaybackEnd();
+      return;
     }
-
-    _currentIndex++;
-    if (_currentIndex >= _playlist.length) {
-      if (state.repeatMode == RepeatMode.all) {
-        if (state.isShuffle) {
-          final newPlaylist = List<Song>.from(_originalPlaylist)..shuffle();
-          if (_playlist.isNotEmpty &&
-              newPlaylist.isNotEmpty &&
-              newPlaylist.first.path == _playlist.last.path &&
-              newPlaylist.length > 1) {
-            final swapIdx = 1 + math.Random().nextInt(newPlaylist.length - 1);
-            final temp = newPlaylist[0];
-            newPlaylist[0] = newPlaylist[swapIdx];
-            newPlaylist[swapIdx] = temp;
-          }
-          _playlist = newPlaylist;
-          _currentIndex = 0;
-          state = state.copyWith(queue: List.from(_playlist));
-        } else {
-          _currentIndex = 0;
-        }
-      } else {
-        _currentIndex = 0;
-      }
-    }
-    if (_manualQueueCount > 0) {
-      _manualQueueCount--;
-    }
-
-    await play(_playlist[_currentIndex]);
+    _publishQueue();
+    await play(_queue.current!.song);
   }
 
   Future<void> skipPrevious({bool force = false}) async {
-    if (_playlist.isEmpty) return;
+    if (_queue.entries.isEmpty) return;
     if (!force && state.position.inSeconds > 3) {
       await seek(Duration.zero);
       return;
     }
-
-    _currentIndex--;
-    if (_currentIndex < 0) {
-      _currentIndex = state.repeatMode == RepeatMode.all
-          ? _playlist.length - 1
-          : 0;
-    }
-    await play(_playlist[_currentIndex]);
+    final previous = _currentIndex - 1;
+    _queue.select(
+      previous < 0
+          ? state.repeatMode == RepeatMode.all
+                ? _queue.entries.length - 1
+                : 0
+          : previous,
+    );
+    _publishQueue();
+    await play(_queue.current!.song);
   }
 
   Future<void> seekRelative(int seconds) async {
@@ -1430,53 +1267,8 @@ class Playback extends _$Playback {
     state = state.copyWith(isShuffle: newState);
     await ref.read(settingsProvider.notifier).updateShuffle(newState);
 
-    if (newState) {
-      // Turn Shuffle ON:
-      // Generate a single shuffled playback order while keeping the current song active.
-      if (_playlist.isEmpty) {
-        _playlist = [];
-        _currentIndex = -1;
-      } else {
-        final currentSong = _playlist[_currentIndex];
-        final playedSongs = _playlist.sublist(0, _currentIndex);
-
-        // Filter unplayed songs from original queue
-        final remainingSongs = List<Song>.from(_originalPlaylist);
-        for (final song in playedSongs) {
-          final idx = remainingSongs.indexWhere((s) => s.path == song.path);
-          if (idx != -1) remainingSongs.removeAt(idx);
-        }
-        final curIdx = remainingSongs.indexWhere(
-          (s) => s.path == currentSong.path,
-        );
-        if (curIdx != -1) remainingSongs.removeAt(curIdx);
-
-        // Shuffle only the remaining unplayed songs
-        remainingSongs.shuffle();
-
-        _playlist = [...playedSongs, currentSong, ...remainingSongs];
-        _currentIndex = playedSongs.length;
-      }
-    } else {
-      // Turn Shuffle OFF:
-      // Restore the original queue order after the current song
-      if (_playlist.isEmpty) {
-        _playlist = [];
-        _currentIndex = -1;
-      } else {
-        final currentSong = _playlist[_currentIndex];
-        int newIndex = _originalPlaylist.indexWhere(
-          (s) => s.path == currentSong.path,
-        );
-        if (newIndex == -1) {
-          newIndex = _currentIndex.clamp(0, _originalPlaylist.length);
-        }
-        _playlist = List.from(_originalPlaylist);
-        _currentIndex = newIndex;
-      }
-    }
-
-    state = state.copyWith(queue: List.from(_playlist));
+    _queue.shuffle(newState);
+    _publishQueue();
     await _saveQueueState();
     _updateNotification();
   }
@@ -1534,101 +1326,64 @@ class Playback extends _$Playback {
     _applyVolume();
   }
 
-  Future<void> reorderQueue(
-    int oldIndex,
-    int newIndex, {
-    String? rotationSongPath,
-  }) async {
-    if (_playlist.isEmpty) return;
-
-    final targetSongPath = rotationSongPath ?? state.currentSong?.path;
-    final rotationIdx = targetSongPath != null
-        ? _playlist.indexWhere((s) => s.path == targetSongPath)
-        : -1;
-
-    if (rotationIdx == -1) {
-      // Non-rotated standard reorder
-      if (newIndex > oldIndex) newIndex -= 1;
-      final song = _playlist.removeAt(oldIndex);
-      _playlist.insert(newIndex, song);
-    } else {
-      // 1. Reconstruct the rotated list (displayed list)
-      final List<Song> displayedQueue = [
-        ..._playlist.sublist(rotationIdx),
-        ..._playlist.sublist(0, rotationIdx),
-      ];
-
-      // 2. Perform the reorder on the rotated list
-      if (newIndex > oldIndex) newIndex -= 1;
-      final song = displayedQueue.removeAt(oldIndex);
-      displayedQueue.insert(newIndex, song);
-
-      // 3. Rotate it back to align rotationIdx with its original index
-      final n = displayedQueue.length;
-      final k = (n - rotationIdx) % n;
-
-      _playlist = [
-        ...displayedQueue.sublist(k),
-        ...displayedQueue.sublist(0, k),
-      ];
-    }
-
-    if (!state.isShuffle) {
-      _originalPlaylist = List.from(_playlist);
-    } else {
-      final played = _playlist.sublist(0, _currentIndex);
-      final current = _playlist[_currentIndex];
-      final unplayed = _playlist.sublist(_currentIndex + 1);
-      _originalPlaylist = [...played, current, ...unplayed];
-    }
-
-    // 4. Update state and save
-    state = state.copyWith(queue: List.from(_playlist));
-    if (state.currentSong != null) {
-      _currentIndex = _playlist.indexWhere(
-        (s) => s.path == state.currentSong!.path,
-      );
-    }
+  Future<void> reorderQueue(int oldIndex, int newIndex) async {
+    _queue.reorder(oldIndex, newIndex);
+    _publishQueue();
     await _saveQueueState();
   }
 
   Future<void> removeFromQueue(int index) async {
-    if (index >= 0 && index < _playlist.length) {
-      final song = _playlist[index];
-      if (index == _currentIndex) {
-        await skipNext();
+    if (index < 0 || index >= _queue.entries.length) return;
+    final wasCurrent = index == _currentIndex;
+    _queue.remove(index);
+    _publishQueue();
+    if (wasCurrent) {
+      if (index < _queue.entries.length) {
+        await playAtIndex(index);
+      } else if (state.repeatMode == RepeatMode.all &&
+          _queue.entries.isNotEmpty) {
+        await playAtIndex(0);
+      } else {
+        await _stopRemovedCurrent();
       }
-      final endOfManual = _currentIndex + _manualQueueCount;
-      if (index > _currentIndex && index <= endOfManual) {
-        if (_manualQueueCount > 0) _manualQueueCount--;
-      }
-      _playlist.removeAt(index);
-      final origIdx = _originalPlaylist.indexWhere((s) => s.path == song.path);
-      if (origIdx != -1) {
-        _originalPlaylist.removeAt(origIdx);
-      }
-      state = state.copyWith(queue: List.from(_playlist));
-      if (state.currentSong != null) {
-        _currentIndex = _playlist.indexWhere(
-          (s) => s.path == state.currentSong!.path,
-        );
-      }
-      await _ensureDynamicQueue();
     }
+    await _saveQueueState();
+  }
+
+  Future<void> _stopRemovedCurrent() async {
+    _activeCrossfadeId++;
+    _pendingCompletion = false;
+    _silenceTimer?.cancel();
+    _songCompletionTimer?.cancel();
+    _resumePositionAfterStop = null;
+    _pauseListenSegment();
+    unawaited(_flushListenedTime());
+    _queue.clear();
+    _publishQueue();
+    _isTransitioning = false;
+    await _disarmAutoResumeAfterFocusGain();
+    await player.stop();
+    state = state.copyWith(
+      currentSong: null,
+      isPlaying: false,
+      position: Duration.zero,
+      duration: Duration.zero,
+      queueSourceKey: null,
+    );
+    ref.read(equalizerProvider.notifier).onSongChanged(null);
+    _updateNotification();
   }
 
   Future<void> clearQueue() async {
-    _playlist = [];
-    _originalPlaylist = [];
-    _currentIndex = -1;
-    _manualQueueCount = 0;
+    _queue.clear();
+    await _stopRemovedCurrent();
     state = PlaybackState(
       volume: state.volume,
       isShuffle: state.isShuffle,
       repeatMode: state.repeatMode,
     );
-    await player.stop();
-    await _ensureDynamicQueue();
+    _publishQueue();
+    await _saveQueueState();
   }
 
   Future<void> toggleFavorite() async {
@@ -1648,8 +1403,7 @@ class Playback extends _$Playback {
     final freshSong = await DbService.isar.songs.get(song.id) ?? song;
 
     // Sync the in-memory playlist entry too
-    final idx = _playlist.indexWhere((s) => s.id == freshSong.id);
-    if (idx != -1) _playlist[idx] = freshSong;
+    _queue.updateSong(freshSong);
 
     state = state.copyWith(currentSong: freshSong, queue: List.from(_playlist));
     _updateNotification();
@@ -1717,9 +1471,9 @@ class Playback extends _$Playback {
   }
 
   void clearAllSongsEqualizer() {
-    for (int i = 0; i < _playlist.length; i++) {
-      _playlist[i].hasCustomEqualizer = false;
-      _playlist[i].equalizerGains = null;
+    for (final entry in _queue.entries) {
+      entry.song.hasCustomEqualizer = false;
+      entry.song.equalizerGains = null;
     }
     final song = state.currentSong;
     if (song != null) {
@@ -1847,8 +1601,7 @@ class Playback extends _$Playback {
       );
 
       // Update the in-memory playlist
-      final idx = _playlist.indexWhere((s) => s.id == song.id);
-      if (idx != -1) _playlist[idx] = song;
+      _queue.updateSong(song);
 
       // Reflect changes in live playback state if this is the current song
       if (isCurrent) {
@@ -1928,42 +1681,25 @@ class Playback extends _$Playback {
       });
       dbSuccess = true;
 
-      // Update in-memory queue
-      _playlist.removeWhere((s) => s.id == song.id);
-
-      if (isCurrent) {
-        if (_playlist.isNotEmpty) {
-          if (_currentIndex >= _playlist.length) {
-            _currentIndex = 0;
-          }
-          final nextSong = _playlist[_currentIndex];
-          state = state.copyWith(
-            currentSong: nextSong,
-            queue: List.from(_playlist),
-          );
-          // Play or load the next song
-          await play(nextSong, play: wasPlaying);
-        } else {
-          // Playlist is empty now
-          _currentIndex = -1;
-          state = PlaybackState(
-            volume: state.volume,
-            isShuffle: state.isShuffle,
-            repeatMode: state.repeatMode,
-            queue: [],
-          );
-          ref.read(equalizerProvider.notifier).onSongChanged(null);
-          await ref.read(settingsProvider.notifier).updateLastPlayedSong(null);
-        }
-      } else {
-        // Adjust _currentIndex if the deleted song was before the current one
-        if (state.currentSong != null) {
-          _currentIndex = _playlist.indexWhere(
-            (s) => s.id == state.currentSong!.id,
-          );
-        }
-        state = state.copyWith(queue: List.from(_playlist));
+      // Remove every occurrence of the deleted file from both queue orders.
+      final nextEntry = _queue.entries
+          .skip(_currentIndex + 1)
+          .where((entry) => entry.song.id != song.id)
+          .firstOrNull;
+      for (var i = _queue.entries.length - 1; i >= 0; i--) {
+        if (_queue.entries[i].song.id == song.id) _queue.remove(i);
       }
+      _publishQueue();
+      if (isCurrent) {
+        if (nextEntry != null) {
+          _queue.select(_queue.entries.indexOf(nextEntry));
+          _publishQueue();
+          await play(nextEntry.song, play: wasPlaying);
+        } else {
+          await _stopRemovedCurrent();
+        }
+      }
+      await _saveQueueState();
 
       // Clean up orphaned artists and albums
       await _cleanUpOrphanedArtistsAndAlbums();
@@ -2380,46 +2116,9 @@ class Playback extends _$Playback {
           _currentIndex,
           state.currentSong?.id,
           positionMs: state.position.inMilliseconds,
+          manualIndices: _queue.manualIndices,
+          originalOrder: _queue.originalOrder,
         );
-  }
-
-  Future<void> _ensureDynamicQueue() async {
-    final allSongs = await DbService.isar.songs.where().findAll();
-    if (allSongs.isEmpty) return;
-
-    bool playlistChanged = false;
-
-    // 1. If playlist is empty, populate it with a random song
-    if (_playlist.isEmpty) {
-      final randomSong = allSongs[math.Random().nextInt(allSongs.length)];
-      _playlist = [randomSong];
-      _originalPlaylist = [randomSong];
-      _currentIndex = 0;
-      _manualQueueCount = 0;
-      playlistChanged = true;
-    }
-
-    // 2. Ensure we have at least 5 songs ahead of the current index (dynamic queue auto-fill)
-    const int bufferSize = 5;
-    while (_playlist.length - 1 - _currentIndex < bufferSize) {
-      final lastSong = _playlist.isNotEmpty ? _playlist.last : null;
-      var candidates = allSongs;
-      if (lastSong != null) {
-        candidates = allSongs.where((s) => s.path != lastSong.path).toList();
-      }
-      if (candidates.isEmpty) {
-        candidates = allSongs;
-      }
-      final nextSong = candidates[math.Random().nextInt(candidates.length)];
-      _playlist.add(nextSong);
-      _originalPlaylist.add(nextSong);
-      playlistChanged = true;
-    }
-
-    if (playlistChanged) {
-      state = state.copyWith(queue: List.from(_playlist));
-      await _saveQueueState();
-    }
   }
 
   /// Duration of the play/pause/stop fade, or zero when fading is off.
