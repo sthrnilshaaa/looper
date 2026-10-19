@@ -15,6 +15,9 @@ class PlaybackState {
 
   final bool isScrubbing;
   final List<Song> queue;
+  final List<int> queueEntryIds;
+  final Set<int> manualQueueEntryIds;
+  final int currentQueueIndex;
 
   /// [collectionKey] of the songs the current queue was loaded from, so a
   /// collection can tell whether it is the one playing (shuffled or not).
@@ -42,6 +45,9 @@ class PlaybackState {
     this.volume = 1.0,
     this.isScrubbing = false,
     this.queue = const [],
+    this.queueEntryIds = const [],
+    this.manualQueueEntryIds = const {},
+    this.currentQueueIndex = -1,
     this.queueSourceKey,
     this.isRestoredSession = false,
     this.isSleepTimerActive = false,
@@ -61,6 +67,9 @@ class PlaybackState {
     double? volume,
     bool? isScrubbing,
     List<Song>? queue,
+    List<int>? queueEntryIds,
+    Set<int>? manualQueueEntryIds,
+    int? currentQueueIndex,
     Object? queueSourceKey = _sentinel,
     bool? isRestoredSession,
     bool? isSleepTimerActive,
@@ -81,6 +90,9 @@ class PlaybackState {
       volume: volume ?? this.volume,
       isScrubbing: isScrubbing ?? this.isScrubbing,
       queue: queue ?? this.queue,
+      queueEntryIds: queueEntryIds ?? this.queueEntryIds,
+      manualQueueEntryIds: manualQueueEntryIds ?? this.manualQueueEntryIds,
+      currentQueueIndex: currentQueueIndex ?? this.currentQueueIndex,
       queueSourceKey: queueSourceKey == _sentinel
           ? this.queueSourceKey
           : queueSourceKey as int?,
