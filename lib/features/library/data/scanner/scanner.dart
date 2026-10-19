@@ -26,6 +26,14 @@ part 'metadata_extraction.dart';
 part 'artwork_lookup.dart';
 
 class LibraryScanner {
+  LibraryScanner({Future<Metadata> Function(String path)? metadataReader})
+    : _metadataReader = metadataReader ?? _readMetadata;
+
+  final Future<Metadata> Function(String path) _metadataReader;
+
+  static Future<Metadata> _readMetadata(String path) =>
+      MetadataGod.readMetadata(file: path);
+
   final List<String> supportedExtensions = [
     '.mp3',
     '.flac',
@@ -393,6 +401,9 @@ class LibraryScanner {
         // hasn't indexed it) shouldn't wipe one already known - e.g. the
         // quick insert's MediaStore genre, or a user edit.
         song.genre ??= existingDbSong.genre;
+        if ((song.duration ?? 0) <= 0 && (existingDbSong.duration ?? 0) > 0) {
+          song.duration = existingDbSong.duration;
+        }
         song.lyrics = LyricsFetcher.mergeScanned(
           existingDbSong.lyrics,
           song.lyrics,
@@ -467,7 +478,13 @@ class LibraryScanner {
         .needsEnrichmentEqualTo(false)
         .genreIsNull()
         .findAll();
-    if (pending.isEmpty && genreless.isEmpty) return;
+    final durationless = await DbService.isar.songs
+        .filter()
+        .needsEnrichmentEqualTo(false)
+        .and()
+        .group((q) => q.durationIsNull().or().durationLessThan(1))
+        .findAll();
+    if (pending.isEmpty && genreless.isEmpty && durationless.isEmpty) return;
 
     final mediaStoreItems = await _queryMediaStoreNative(
       includeSystemAndMessagingAudio: includeSystemAndMessagingAudio,
@@ -497,6 +514,9 @@ class LibraryScanner {
         await DbService.isar.songs.putAll(backfilled);
       });
     }
+    // Repair older rows without re-importing playlists or replacing song
+    // metadata/user edits. Missing durations remain eligible on the next pass.
+    await _repairMissingDurations(durationless, mediaStoreMap);
     if (pending.isEmpty) return;
 
     final dbSongsMap = {for (final s in pending) s.path: s};
@@ -706,9 +726,7 @@ class LibraryScanner {
     try {
       Metadata? metadata;
       try {
-        metadata = await MetadataGod.readMetadata(
-          file: file.path,
-        ).timeout(tagTimeout);
+        metadata = await _metadataReader(file.path).timeout(tagTimeout);
       } on TimeoutException {
         transient = true;
       } catch (_) {}
@@ -716,7 +734,8 @@ class LibraryScanner {
       // Linux has no native tag fallback, so when metadata_god couldn't
       // read the file (or failed to initialise at all) ask ffprobe.
       LinuxTags? linuxTags;
-      if (Platform.isLinux && metadata == null) {
+      if (Platform.isLinux &&
+          (metadata == null || (metadata.durationMs ?? 0) <= 0)) {
         try {
           linuxTags = await LinuxTagReader.read(file.path, timeout: tagTimeout);
         } on TimeoutException {
@@ -728,7 +747,8 @@ class LibraryScanner {
       String? artist = metadata?.artist ?? linuxTags?.artist;
       String? album = metadata?.album ?? linuxTags?.album;
       String? genre = _cleanGenre(metadata?.genre ?? linuxTags?.genre);
-      int? durationMs = metadata?.durationMs?.toInt() ?? linuxTags?.durationMs;
+      int? durationMs = metadata?.durationMs?.toInt();
+      if ((durationMs ?? 0) <= 0) durationMs = linuxTags?.durationMs;
       int? trackNumber = metadata?.trackNumber ?? linuxTags?.trackNumber;
       int? year = metadata?.year ?? linuxTags?.year;
       List<int>? pictureData = metadata?.picture?.data;

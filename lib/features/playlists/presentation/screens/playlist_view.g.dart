@@ -155,7 +155,7 @@ final class PlaylistSongsProvider
   }
 }
 
-String _$playlistSongsHash() => r'f7d6253a4d8695d3cb913cbcabb1daba63f4cd31';
+String _$playlistSongsHash() => r'6a52d6d31ff51b2f7c40515ed9a25671e0d48e52';
 
 final class PlaylistSongsFamily extends $Family
     with $FunctionalFamilyOverride<Stream<List<Song>>, int> {

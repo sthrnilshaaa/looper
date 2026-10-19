@@ -77,6 +77,7 @@ extension _CollectionHeader on CollectionDetailView {
     String titleToRender,
     String? subtitleToRender,
     List<Song> songsToRender, {
+    bool songsLoading = false,
     bool canReorder = false,
     Key? titleKey,
     Artist? reactiveArtist,
@@ -110,6 +111,7 @@ extension _CollectionHeader on CollectionDetailView {
                 songsToRender,
                 l10n,
                 fontSize: 16,
+                songsLoading: songsLoading,
                 color: Colors.white.withValues(alpha: 0.5),
               ),
             ),

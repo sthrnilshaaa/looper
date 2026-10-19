@@ -74,6 +74,7 @@ class CollectionDetailView extends ConsumerWidget {
   });
 
   String _durationLabel(List<Song> songs, AppLocalizations l10n) {
+    if (songs.any((song) => (song.duration ?? 0) <= 0)) return l10n.unknown;
     final totalMs = songs.fold<int>(
       0,
       (sum, song) => sum + (song.duration ?? 0),
@@ -88,6 +89,7 @@ class CollectionDetailView extends ConsumerWidget {
     String? label,
     List<Song> songs,
     AppLocalizations l10n, {
+    bool songsLoading = false,
     required double fontSize,
     required Color color,
   }) {
@@ -96,7 +98,7 @@ class CollectionDetailView extends ConsumerWidget {
     // Keep all of the metadata readable when the header is narrow or text is
     // enlarged. A single Text wraps within the column's available width.
     return Text(
-      '${hasLabel ? '$label • ' : ''}${l10n.songsCount(songs.length)} • ${_durationLabel(songs, l10n)}',
+      '${hasLabel ? '$label • ' : ''}${l10n.songsCount(songs.length)} • ${songsLoading ? l10n.unknown : _durationLabel(songs, l10n)}',
       style: style,
     );
   }
@@ -175,6 +177,10 @@ class CollectionDetailView extends ConsumerWidget {
         ? ref.watch(songsForAlbumProvider(reactiveAlbum.name))
         : null;
 
+    final songsLoading = playlistSongsAsync != null
+        ? !playlistSongsAsync.hasValue
+        : albumSongsAsync != null && !albumSongsAsync.hasValue;
+
     final songsToRender = playlistSongsAsync != null
         ? (playlistSongsAsync.value ?? <Song>[])
         : albumSongsAsync != null
@@ -243,6 +249,7 @@ class CollectionDetailView extends ConsumerWidget {
         art: artToRender,
         imageUrl: imageUrlToRender,
         songs: sortedSongs,
+        songsLoading: songsLoading,
         reactivePlaylist: reactivePlaylist,
         reactiveAlbum: reactiveAlbum,
         reactiveArtist: reactiveArtist,
@@ -332,6 +339,7 @@ class CollectionDetailView extends ConsumerWidget {
                                     titleToRender,
                                     subtitleToRender,
                                     sortedSongs,
+                                    songsLoading: songsLoading,
                                     canReorder:
                                         canReorderPlaylist &&
                                         sortedSongs.length > 1,
@@ -362,6 +370,7 @@ class CollectionDetailView extends ConsumerWidget {
                                       titleToRender,
                                       subtitleToRender,
                                       sortedSongs,
+                                      songsLoading: songsLoading,
                                       canReorder:
                                           canReorderPlaylist &&
                                           sortedSongs.length > 1,
