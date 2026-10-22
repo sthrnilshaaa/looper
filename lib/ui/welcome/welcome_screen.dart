@@ -1,3 +1,4 @@
+import 'package:looper_player/core/utils/desktop_paths.dart';
 import 'dart:io';
 import 'package:looper_player/core/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
@@ -260,6 +261,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         }
       } catch (_) {}
       scanRoots.add(defaultPath);
+    } else if (Platform.isWindows) {
+      scanRoots.add(windowsMusicFolder(Platform.environment));
     } else if (Platform.isAndroid && await StorageAccess.hasAllFilesAccess()) {
       // github flavor with All Files Access: walk the whole internal storage
       // root and every SD card. These are coarse roots - the real per-song

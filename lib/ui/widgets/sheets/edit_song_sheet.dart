@@ -1,3 +1,4 @@
+import 'package:looper_player/core/utils/desktop_paths.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -226,7 +227,7 @@ class _EditSongSheetState extends ConsumerState<EditSongSheet> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  widget.song.path.split('/').last,
+                  displayFileName(widget.song.path),
                   style: AppFonts.jostStyle(
                     color: Colors.white38,
                     fontSize: 12,

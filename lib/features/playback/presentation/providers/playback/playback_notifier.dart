@@ -1,3 +1,4 @@
+import 'package:looper_player/core/utils/desktop_paths.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
@@ -1100,7 +1101,7 @@ class Playback extends _$Playback {
 
       song = Song()
         ..path = path
-        ..title = metadata.title ?? path.split('/').last
+        ..title = metadata.title ?? displayFileName(path)
         ..artist = metadata.artist
         ..album = metadata.album
         ..duration = metadata.durationMs?.toInt()

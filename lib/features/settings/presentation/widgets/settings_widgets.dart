@@ -1,3 +1,4 @@
+import 'package:looper_player/core/utils/desktop_paths.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -143,7 +144,7 @@ class LibraryFoldersList extends ConsumerWidget {
               contentPadding: const EdgeInsets.symmetric(horizontal: 20),
               leading: const Icon(LucideIcons.folder, color: Colors.white70),
               title: Text(
-                path.split('/').last,
+                displayFileName(path),
                 style: AppFonts.jostStyle(color: Colors.white, fontSize: 14),
               ),
               subtitle: Text(

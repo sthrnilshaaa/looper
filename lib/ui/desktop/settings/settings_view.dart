@@ -1,3 +1,4 @@
+import 'package:looper_player/core/utils/desktop_paths.dart';
 import 'dart:io';
 import 'package:looper_player/core/utils/ui_scale_steps.dart';
 import 'package:looper_player/core/utils/ui_utils.dart';
