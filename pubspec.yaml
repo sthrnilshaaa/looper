@@ -67,6 +67,7 @@ dependencies:
   vibration: ^3.2.1
   skeletonizer: ^3.0.0
   crypto: ^3.0.7
+  audio_metadata_reader: ^1.8.1
 
 
 dev_dependencies:

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:metadata_god/metadata_god.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:looper_player/features/library/data/scanner/windows_tag_reader.dart';
 
 import '../../../../core/services/storage/db_service.dart';
 
@@ -722,6 +723,16 @@ class LibraryScanner {
         } on TimeoutException {
           transient = true;
         }
+      } else if (Platform.isWindows && metadata == null) {
+        // Windows has no system ffmpeg; read the tags in pure Dart instead.
+        try {
+          linuxTags = await WindowsTagReader.read(
+            file.path,
+            timeout: tagTimeout,
+          );
+        } on TimeoutException {
+          transient = true;
+        }
       }
 
       String? title = metadata?.title ?? linuxTags?.title;
@@ -781,6 +792,17 @@ class LibraryScanner {
       if (pictureData == null && Platform.isLinux) {
         try {
           pictureData = await LinuxTagReader.readCover(
+            file.path,
+            timeout: pictureTimeout,
+          );
+        } on TimeoutException {
+          transient = true;
+        }
+      }
+
+      if (pictureData == null && Platform.isWindows) {
+        try {
+          pictureData = await WindowsTagReader.readCover(
             file.path,
             timeout: pictureTimeout,
           );
