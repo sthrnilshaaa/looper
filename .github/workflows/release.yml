@@ -334,7 +334,10 @@ jobs:
       - name: Smoke Test
         shell: pwsh
         run: |
-          $exe = "build\windows\x64\runner\Release\looper_player.exe"
+          $zip = Get-ChildItem dist\windows\*_windows_x64.zip | Select-Object -First 1
+          Expand-Archive -LiteralPath $zip.FullName -DestinationPath "$env:RUNNER_TEMP\smoke" -Force
+          $exe = Get-ChildItem "$env:RUNNER_TEMP\smoke" -Recurse -Filter looper_player.exe | Select-Object -First 1 -ExpandProperty FullName
+          Write-Output "Testing $exe"
           $started = Get-Date
           $p = Start-Process -FilePath $exe -PassThru
           Start-Sleep -Seconds 20
@@ -342,11 +345,21 @@ jobs:
             Write-Output "::error::looper_player.exe exited early with code $($p.ExitCode)"
             exit 1
           }
-          $db = Get-ChildItem -Path $env:APPDATA -Recurse -Filter *.isar -ErrorAction SilentlyContinue |
+          # A visible top-level window (not left hidden at launch).
+          $p.Refresh()
+          $window = $p.MainWindowHandle
+          # path_provider: %APPDATA%\<CompanyName>\<ProductName> from Runner.rc.
+          $dataDir = Join-Path $env:APPDATA "Looper\Looper Player"
+          $db = Get-ChildItem -LiteralPath $dataDir -Filter *.isar -ErrorAction SilentlyContinue |
             Where-Object { $_.LastWriteTime -ge $started.AddSeconds(-5) }
           Stop-Process -Id $p.Id -Force
+          if ($window -eq [IntPtr]::Zero) {
+            Write-Output "::error::looper_player.exe is running but has no visible window"
+            exit 1
+          }
           if (-not $db) {
-            Write-Output "::error::The app did not create its database under $env:APPDATA"
+            Write-Output "::error::The app did not create its database in $dataDir"
+            Get-ChildItem -LiteralPath $dataDir -ErrorAction SilentlyContinue
             exit 1
           }
           $db | ForEach-Object { Write-Output "Database: $($_.FullName)" }
@@ -365,8 +378,10 @@ jobs:
     if: >-
       always() && inputs.release_tag != '' &&
       needs.prepare.result == 'success' &&
-      !contains(needs.*.result, 'failure') &&
-      !contains(needs.*.result, 'cancelled')
+      needs.build-android.result != 'failure' &&
+      needs.build-android.result != 'cancelled' &&
+      needs.build-linux.result != 'failure' &&
+      needs.build-linux.result != 'cancelled'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: release

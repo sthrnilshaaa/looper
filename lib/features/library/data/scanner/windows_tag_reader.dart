@@ -18,7 +18,7 @@ class WindowsTagReader {
     String path, {
     required Duration timeout,
   }) async {
-    final metadata = await _parse(path, getImage: false).timeout(timeout);
+    final metadata = await _parse(path, getImage: false, timeout: timeout);
     if (metadata == null) return null;
     String? text(String? value) {
       final trimmed = value?.trim();
@@ -43,7 +43,7 @@ class WindowsTagReader {
     String path, {
     required Duration timeout,
   }) async {
-    final metadata = await _parse(path, getImage: true).timeout(timeout);
+    final metadata = await _parse(path, getImage: true, timeout: timeout);
     final pictures = metadata?.pictures ?? const [];
     for (final picture in pictures) {
       if (picture.bytes.isNotEmpty) return picture.bytes;
@@ -51,19 +51,56 @@ class WindowsTagReader {
     return null;
   }
 
-  static Future<String?> readLyrics(String path) async {
-    final lyrics = (await _parse(path, getImage: false))?.lyrics?.trim();
-    return (lyrics == null || lyrics.isEmpty) ? null : lyrics;
+  /// Lyrics never throw: a timeout also returns null.
+  static Future<String?> readLyrics(
+    String path, {
+    Duration timeout = const Duration(seconds: 6),
+  }) async {
+    try {
+      final metadata = await _parse(path, getImage: false, timeout: timeout);
+      final lyrics = metadata?.lyrics?.trim();
+      return (lyrics == null || lyrics.isEmpty) ? null : lyrics;
+    } on TimeoutException {
+      return null;
+    }
   }
 
   /// Parses off the UI isolate; any parse error becomes null.
-  static Future<AudioMetadata?> _parse(String path, {required bool getImage}) {
-    return Isolate.run(() {
+  static Future<AudioMetadata?> _parse(
+    String path, {
+    required bool getImage,
+    required Duration timeout,
+  }) {
+    return runKillable(() {
       try {
         return readMetadata(File(path), getImage: getImage);
       } catch (_) {
         return null;
       }
-    });
+    }, timeout);
+  }
+
+  /// Runs [fn] in a new isolate. On [timeout] the isolate is killed (a parser
+  /// stuck on a broken file would otherwise keep a CPU core busy) and a
+  /// [TimeoutException] is thrown. [fn] must not throw.
+  static Future<T> runKillable<T>(T Function() fn, Duration timeout) async {
+    final port = ReceivePort();
+    final isolate = await Isolate.spawn<SendPort>(
+      (send) => Isolate.exit(send, fn()),
+      port.sendPort,
+      onExit: port.sendPort,
+    );
+    try {
+      final result = await port.first.timeout(timeout);
+      // A null message is the onExit notice: the isolate died without a
+      // result. Only possible when T is nullable (fn returned null) or fn
+      // crashed; both read as "no result".
+      return result as T;
+    } on TimeoutException {
+      isolate.kill(priority: Isolate.immediate);
+      rethrow;
+    } finally {
+      port.close();
+    }
   }
 }

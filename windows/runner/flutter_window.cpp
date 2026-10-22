@@ -2,6 +2,12 @@
 
 #include <optional>
 
+namespace {
+// Shows the window if Dart hasn't within this long after the first frame.
+constexpr UINT_PTR kShowFallbackTimerId = 0x4C50;
+constexpr UINT kShowFallbackDelayMs = 5000;
+}  // namespace
+
 #include "flutter/generated_plugin_registrant.h"
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
@@ -28,8 +34,11 @@ bool FlutterWindow::OnCreate() {
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   // window_manager shows the window from Dart once it is sized and
-  // positioned (waitUntilReadyToShow), so it never flashes at launch.
-  flutter_controller_->engine()->SetNextFrameCallback([&]() {});
+  // positioned (waitUntilReadyToShow), so it never flashes at launch. If the
+  // Dart side fails before showing it, a timer shows it anyway.
+  flutter_controller_->engine()->SetNextFrameCallback([&]() {
+    SetTimer(GetHandle(), kShowFallbackTimerId, kShowFallbackDelayMs, nullptr);
+  });
 
   // Flutter can complete the first frame before the "show window" callback is
   // registered. The following call ensures a frame is pending to ensure the
@@ -64,6 +73,15 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
   switch (message) {
     case WM_FONTCHANGE:
       flutter_controller_->engine()->ReloadSystemFonts();
+      break;
+    case WM_TIMER:
+      if (wparam == kShowFallbackTimerId) {
+        KillTimer(hwnd, kShowFallbackTimerId);
+        if (!IsWindowVisible(hwnd)) {
+          this->Show();
+        }
+        return 0;
+      }
       break;
   }
 

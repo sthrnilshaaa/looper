@@ -914,6 +914,22 @@ package_windows() {
     fi
     echo "🎯 Windows executable: $binary_name.exe"
 
+    # Flutter doesn't ship the Visual C++ runtime; PCs without the VC++
+    # Redistributable couldn't start the app. Bundle it next to the exe
+    # (app-local deployment).
+    local system32 dll
+    system32="$(cygpath -u "${SYSTEMROOT:-C:\\Windows}")/System32"
+    for dll in msvcp140.dll vcruntime140.dll vcruntime140_1.dll; do
+        if [[ -f "$build_dir/$dll" ]]; then
+            continue
+        elif [[ -f "$system32/$dll" ]]; then
+            cp "$system32/$dll" "$build_dir/"
+            echo "➕ Bundled $dll"
+        else
+            echo "⚠️  $dll not found in $system32; users may need the VC++ Redistributable"
+        fi
+    done
+
     mkdir -p "$WINDOWS_DIST_DIR"
     local base="${APP_NAME}_${VERSION}_windows_x64"
     local zip_file="$WINDOWS_DIST_DIR/${base}.zip"
