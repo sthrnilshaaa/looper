@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:looper_player/core/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -154,7 +155,7 @@ class SettingsCategoryScreen extends ConsumerWidget {
     } else if (categoryId == 'playback') {
       children = [
         const LanguageTile(),
-        if (!Platform.isLinux) ...[
+        if (!UiUtils.isDesktop) ...[
           const Divider(height: 1, indent: 72, color: Colors.white10),
           const FluidPlayerTile(),
         ],

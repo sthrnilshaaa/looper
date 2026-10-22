@@ -334,7 +334,7 @@ class SettingsView extends ConsumerWidget {
                       },
                       isLast: false,
                     ),
-                    if (!Platform.isLinux)
+                    if (!UiUtils.isDesktop)
                       _PremiumSwitchRow(
                         icon: LucideIcons.move,
                         title: l10n.fluidPlayer,

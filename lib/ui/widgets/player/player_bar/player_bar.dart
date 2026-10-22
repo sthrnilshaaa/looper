@@ -409,10 +409,10 @@ class _PremiumPlayerBar extends ConsumerWidget {
             width: 100,
             child: SliderTheme(
               data: SliderTheme.of(context).copyWith(
-                trackHeight: Platform.isLinux ? 4.0 : 6.0,
+                trackHeight: UiUtils.isDesktop ? 4.0 : 6.0,
                 trackShape: const EqualHeightTrackShape(),
                 thumbShape: LineThumbShape(
-                  thumbHeight: Platform.isLinux ? 8 : 0,
+                  thumbHeight: UiUtils.isDesktop ? 8 : 0,
                   thumbWidth: 3,
                 ),
                 overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),

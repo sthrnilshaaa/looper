@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:looper_player/core/utils/ui_utils.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,7 +25,7 @@ class SongFavoriteButton extends ConsumerWidget {
     final favorite =
         ref.watch(_favoriteProvider(song.id)).value ?? song.isFavorite;
     // Linux keeps its original red heart; Android uses a star.
-    if (Platform.isLinux) {
+    if (UiUtils.isDesktop) {
       return IconButton(
         visualDensity: VisualDensity.compact,
         tooltip: context.l10n.toggleFavorite,

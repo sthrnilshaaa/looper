@@ -374,7 +374,7 @@ extension _SettingsSearch on _SettingsViewState {
         category: l10n.playbackAudio,
         widget: const LanguageTile(),
       ),
-      if (!Platform.isLinux)
+      if (!UiUtils.isDesktop)
         SettingsSearchItem(
           title: l10n.fluidPlayer,
           subtitle: l10n.fluidPlayerDesc,
