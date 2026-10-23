@@ -1,3 +1,4 @@
+import 'artist_catalog.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
@@ -128,11 +129,8 @@ class ArtworkDownloaderService {
                 await DbService.isar.albums.put(album);
               }
             }
-            if (song.artist != null) {
-              final artist = await DbService.isar.artists
-                  .filter()
-                  .nameEqualTo(song.artist!)
-                  .findFirst();
+            for (final name in await ArtistCatalog.namesForSong(song)) {
+              final artist = await ArtistCatalog.find(name);
               if (artist != null &&
                   (artist.artPath == null || artist.artPath!.isEmpty)) {
                 artist.artPath = artPath;

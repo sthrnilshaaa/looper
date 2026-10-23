@@ -9,6 +9,7 @@ import 'package:looper_player/features/library/data/scanner/scanner.dart';
 import 'package:looper_player/features/library/domain/song_full_plays.dart';
 import 'package:looper_player/core/services/storage/db_service.dart';
 import 'package:looper_player/features/library/data/services/artist_image_service.dart';
+import 'package:looper_player/features/library/data/services/artist_catalog.dart';
 import 'package:isar_community/isar.dart';
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
 import 'package:looper_player/features/playback/data/lyrics_fetcher.dart';
@@ -85,6 +86,9 @@ class Library extends _$Library {
     }
 
     _loadLibrary();
+
+    // Splits combined "A / B" artist entries left by older versions.
+    unawaited(_syncArtists());
 
     // Independent of the rescan-staleness check above: a previous session's
     // Pass 2 (see LibraryScanner.enrichPendingSongs) can be left mid-way
@@ -215,6 +219,17 @@ class Library extends _$Library {
       LoggerHelper.write('Library._enrichPendingSongs failed', e, s);
     } finally {
       _isEnriching = false;
+    }
+    // Enrichment replaces quick-scan artist tags with the real ones.
+    await _syncArtists();
+  }
+
+  /// Rebuilds the artist list from the songs' artist tags.
+  Future<void> _syncArtists() async {
+    try {
+      await ArtistCatalog.sync();
+    } catch (e, s) {
+      LoggerHelper.write('Library._syncArtists failed', e, s);
     }
   }
 
@@ -497,7 +512,6 @@ class Library extends _$Library {
         // Clean up empty albums & artists
         final remainingSongs = await DbService.isar.songs.where().findAll();
         final activeAlbumNames = remainingSongs.map((s) => s.album).toSet();
-        final activeArtistNames = remainingSongs.map((s) => s.artist).toSet();
 
         // Load all albums and artists
         final allAlbums = await DbService.isar.albums.where().findAll();
@@ -509,14 +523,7 @@ class Library extends _$Library {
           await DbService.isar.albums.deleteAll(albumsToDelete);
         }
 
-        final allArtists = await DbService.isar.artists.where().findAll();
-        final artistsToDelete = allArtists
-            .where((art) => !activeArtistNames.contains(art.name))
-            .map((art) => art.id)
-            .toList();
-        if (artistsToDelete.isNotEmpty) {
-          await DbService.isar.artists.deleteAll(artistsToDelete);
-        }
+        await ArtistCatalog.syncInTxn();
       }
     });
   }
@@ -584,6 +591,7 @@ class Library extends _$Library {
         if (songs.isNotEmpty) {
           await DbService.isar.songs.putAll(songs);
         }
+        if (artist != null) await ArtistCatalog.syncInTxn();
       });
       return true;
     } catch (e) {

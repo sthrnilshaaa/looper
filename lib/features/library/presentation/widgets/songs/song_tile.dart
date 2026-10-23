@@ -1,3 +1,5 @@
+import 'package:looper_player/core/providers/collection_navigation.dart';
+import 'package:looper_player/ui/widgets/common/song_artist_picker.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/core/utils/song_metadata.dart';
 import 'package:flutter/material.dart';
@@ -57,26 +59,16 @@ class SongTile extends ConsumerWidget {
   });
 
   Future<void> _openArtist(BuildContext context, WidgetRef ref) async {
-    final artistName = song.artist;
-    if (artistName == null || artistName.trim().isEmpty) return;
-    final artistSongs = await DbService.isar.songs
-        .filter()
-        .artistEqualTo(artistName)
-        .findAll();
-    final artist = await DbService.isar.artists
-        .filter()
-        .nameEqualTo(artistName)
-        .findFirst();
-    if (!context.mounted) return;
-    ref
+    if (song.artist == null || song.artist!.trim().isEmpty) return;
+    // A song by several artists asks which one to open.
+    final artistName = await pickSongArtist(context, song);
+    if (artistName == null || !context.mounted) return;
+    await ref
         .read(appNavigationProvider.notifier)
-        .showCollection(
-          title: artistName,
+        .showArtistNamed(
+          artistName,
           subtitle: l10n.artists,
-          art: artist?.artPath ?? song.artPath,
-          imageUrl: artist?.artistImageUrl,
-          songs: artistSongs,
-          artist: artist,
+          fallbackArt: song.artPath,
         );
   }
 

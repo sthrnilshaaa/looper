@@ -18,9 +18,9 @@ import '../services/artwork_downloader_service.dart';
 import '../services/saf_folder_service.dart';
 import '../../../../core/services/storage/local_json_store.dart';
 import 'scan_result.dart';
-import 'artist_parser.dart';
+import '../../domain/artist_names.dart';
+import '../services/artist_catalog.dart';
 import 'linux_tag_reader.dart';
-export 'artist_parser.dart';
 part 'scan_paths.dart';
 part 'media_sources.dart';
 part 'metadata_extraction.dart';
@@ -428,17 +428,23 @@ class LibraryScanner {
         }
       }
 
-      final primaryArtistName = ArtistParser.primaryArtist(metadata.artist);
-      final existingArtist = artistByName[primaryArtistName];
-      if (existingArtist == null) {
-        final artistObj = Artist()
-          ..name = primaryArtistName
-          ..artPath = artPath;
-        artistByName[artistObj.name] = artistObj;
-        artistsToPut.add(artistObj);
-      } else if (existingArtist.artPath == null && artPath != null) {
-        existingArtist.artPath = artPath;
-        artistsToPut.add(existingArtist);
+      // Strong separators only here; ArtistCatalog.sync() after the scan
+      // also splits "A & B" style credits once the whole library is known.
+      for (final name in ArtistNames.strongOnly.namesFor(
+        metadata.artist,
+        song.title,
+      )) {
+        final existingArtist = artistByName[name];
+        if (existingArtist == null) {
+          final artistObj = Artist()
+            ..name = name
+            ..artPath = artPath;
+          artistByName[artistObj.name] = artistObj;
+          artistsToPut.add(artistObj);
+        } else if (existingArtist.artPath == null && artPath != null) {
+          existingArtist.artPath = artPath;
+          artistsToPut.add(existingArtist);
+        }
       }
     }
 
@@ -635,17 +641,8 @@ class LibraryScanner {
           }
         }
 
-        // Cleanup orphaned artists
-        final allArtists = await DbService.isar.artists.where().findAll();
-        for (final artist in allArtists) {
-          final count = await DbService.isar.songs
-              .filter()
-              .artistEqualTo(artist.name)
-              .count();
-          if (count == 0) {
-            await DbService.isar.artists.delete(artist.id);
-          }
-        }
+        // Drop artists no remaining song credits.
+        await ArtistCatalog.syncInTxn();
       });
     } catch (_) {}
     return removedCount;

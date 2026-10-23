@@ -1,3 +1,4 @@
+import 'package:looper_player/features/library/data/services/artist_catalog.dart';
 import 'package:looper_player/core/providers/collection_navigation.dart';
 import 'dart:async';
 

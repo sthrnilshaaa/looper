@@ -9,10 +9,7 @@ class _ArtistResultCard extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     return InkWell(
       onTap: () async {
-        final songs = await DbService.isar.songs
-            .filter()
-            .artistEqualTo(artist.name)
-            .findAll();
+        final songs = await ArtistCatalog.songsFor(artist.name);
         ref
             .read(appNavigationProvider.notifier)
             .showCollection(

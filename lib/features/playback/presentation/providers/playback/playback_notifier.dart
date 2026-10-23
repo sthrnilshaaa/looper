@@ -17,6 +17,7 @@ import 'package:mpv_audio_kit/mpv_audio_kit.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
 import 'package:looper_player/core/providers/providers.dart';
 import 'package:looper_player/features/library/data/scanner/scanner.dart';
+import 'package:looper_player/features/library/data/services/artist_catalog.dart';
 import 'package:looper_player/features/playback/data/lyrics_cache.dart';
 import 'package:looper_player/features/playback/data/lyrics_fetcher.dart';
 import 'package:window_manager/window_manager.dart';
@@ -1870,6 +1871,10 @@ class Playback extends _$Playback {
             : LyricsFetcher.userLyrics(lyrics);
         if (renamedPath != null) song.path = renamedPath;
         await DbService.isar.songs.put(song);
+        // A new artist or title credit gets (or loses) its artist entry.
+        if (artist != null || title != null) {
+          await ArtistCatalog.syncInTxn();
+        }
       });
 
       // The lyrics cache is keyed by artist/title - move it along.

@@ -1,3 +1,5 @@
+import 'package:looper_player/core/providers/collection_navigation.dart';
+import 'package:looper_player/ui/widgets/common/song_artist_picker.dart';
 import 'dart:math' as math;
 
 import 'package:looper_player/core/utils/song_metadata.dart';
@@ -615,14 +617,15 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                         child: InkWell(
                           onTap: () async {
                             if (song.artist != null) {
-                              final artistSongs = await DbService.isar.songs
-                                  .filter()
-                                  .artistEqualTo(song.artist!)
-                                  .findAll();
-                              final artist = await DbService.isar.artists
-                                  .filter()
-                                  .nameEqualTo(song.artist!)
-                                  .findFirst();
+                              // A song by several artists asks which one
+                              // to open; dismissing that keeps the player.
+                              final artistName = await pickSongArtist(
+                                context,
+                                song,
+                              );
+                              if (artistName == null || !context.mounted) {
+                                return;
+                              }
 
                               if (enableSlide) {
                                 ref
@@ -632,16 +635,14 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                                     .bump();
                               }
 
-                              ref
+                              await ref
                                   .read(appNavigationProvider.notifier)
-                                  .showCollection(
-                                    title: song.artist!,
+                                  .showArtistNamed(
+                                    artistName,
                                     subtitle: l10n.artists,
-                                    art: artist?.artPath ?? song.artPath,
-                                    imageUrl: artist?.artistImageUrl,
-                                    songs: artistSongs,
-                                    artist: artist,
+                                    fallbackArt: song.artPath,
                                   );
+                              if (!context.mounted) return;
                             }
                             if (!enableSlide) {
                               Navigator.pop(context);
