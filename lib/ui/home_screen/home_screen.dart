@@ -24,6 +24,7 @@ import 'package:looper_player/core/providers/navigation_provider.dart';
 import 'package:looper_player/features/library/presentation/screens/smart_views.dart';
 import 'package:looper_player/ui/desktop/settings/settings_view.dart';
 import 'package:looper_player/ui/welcome/welcome_screen.dart';
+import 'package:looper_player/ui/desktop/welcome/desktop_welcome_screen.dart';
 import 'package:looper_player/ui/widgets/common/folder_picker_helper.dart';
 
 import 'package:looper_player/ui/widgets/collection_detail/collection_detail_view.dart';
@@ -109,7 +110,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ref.watch(lyricsProvider);
 
     final isSetupComplete = ref.watch(welcomeBypassedProvider);
-    final bool showWelcome = !isSetupComplete && !library.isScanning;
+    // The setup screen runs its own scan, so it stays up while scanning.
+    final bool showWelcome = !isSetupComplete;
     final bool isNarrow =
         Responsive.windowClass(MediaQuery.of(context).size.width) ==
         WindowClass.compact;
@@ -269,10 +271,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Column(
               children: [
                 // Custom Title Bar always at the top
-                SizedBox(height: 36, child: CustomTitleBar(showMenu: isNarrow)),
+                SizedBox(
+                  height: 36,
+                  child: CustomTitleBar(showMenu: isNarrow && !showWelcome),
+                ),
                 Expanded(
                   child: showWelcome
-                      ? const WelcomeScreen()
+                      ? const DesktopWelcomeScreen()
                       : LayoutBuilder(
                           builder: (context, constraints) {
                             final bool isNarrowLayout =

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:metadata_god/metadata_god.dart';
+import 'package:looper_player/features/library/data/scanner/windows_tag_reader.dart';
 
 import 'lyrics_formats/id3_sylt_reader.dart';
 
@@ -22,6 +23,9 @@ class MetadataService {
     }
     if (Platform.isLinux) {
       return await _getLyricsLinux(path);
+    }
+    if (Platform.isWindows) {
+      return await WindowsTagReader.readLyrics(path);
     }
     return null;
   }

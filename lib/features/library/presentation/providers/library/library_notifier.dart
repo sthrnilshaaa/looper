@@ -1,3 +1,4 @@
+import 'package:looper_player/core/utils/desktop_paths.dart';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -789,6 +790,8 @@ class Library extends _$Library {
             }
           } catch (_) {}
           scanRoots.add(defaultPath);
+        } else if (Platform.isWindows) {
+          scanRoots.add(windowsMusicFolder(Platform.environment));
         }
 
         for (final f in savedFolders) {
@@ -819,11 +822,13 @@ class Library extends _$Library {
             }
           } else if (Platform.isLinux) {
             scanRoots.add('${Platform.environment['HOME']}/Music');
+          } else if (Platform.isWindows) {
+            scanRoots.add(windowsMusicFolder(Platform.environment));
           }
         }
       }
 
-      if (scanRoots.isEmpty) {
+      if (scanRoots.isEmpty && !Platform.isWindows) {
         scanRoots.add('/storage/emulated/0');
       }
 

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:looper_player/core/utils/ui_utils.dart';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -54,7 +55,7 @@ class LooperAnalyzeView extends ConsumerWidget {
             children: [
               // The Linux shell already paints the current song's artwork
               // behind every page, so this page adds no background of its own.
-              if (!Platform.isLinux)
+              if (!UiUtils.isDesktop)
                 Positioned.fill(
                   child: topSong?.artPath != null
                       ? _BlurredBackgroundArt(artPath: topSong!.artPath!)
@@ -71,11 +72,11 @@ class LooperAnalyzeView extends ConsumerWidget {
                           ),
                         ),
                 ),
-              if (!Platform.isLinux)
+              if (!UiUtils.isDesktop)
                 Positioned.fill(
                   child: Container(color: Colors.black.withValues(alpha: 0.72)),
                 ),
-              if (!Platform.isLinux)
+              if (!UiUtils.isDesktop)
                 Positioned.fill(
                   child: DecoratedBox(
                     decoration: BoxDecoration(
@@ -270,7 +271,7 @@ class _BlurredBackgroundArt extends StatelessWidget {
   Widget build(BuildContext context) {
     // On a desktop window the 80px art is stretched much further than on a
     // phone, so it needs a wider blur and smooth upscaling to not look blocky.
-    final desktop = Platform.isLinux;
+    final desktop = UiUtils.isDesktop;
     final sigma = desktop ? 48.0 : 18.0;
     return RepaintBoundary(
       child: ImageFiltered(

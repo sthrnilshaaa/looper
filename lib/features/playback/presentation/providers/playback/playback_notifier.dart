@@ -1,3 +1,6 @@
+import 'package:looper_player/features/library/data/scanner/windows_tag_reader.dart';
+import 'package:looper_player/features/library/data/scanner/linux_tag_reader.dart';
+import 'package:looper_player/core/utils/desktop_paths.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
@@ -1084,6 +1087,11 @@ class Playback extends _$Playback {
         .findAll();
     Song? song = songs.isEmpty ? null : songs.first;
 
+    // metadata_god can't start on Windows; read the file in pure Dart.
+    if (song == null && Platform.isWindows) {
+      song = await _songFromFileWindows(path);
+    }
+
     if (song == null) {
       // Create a temporary song object from metadata
       final metadata = await MetadataGod.readMetadata(file: path);
@@ -1100,7 +1108,7 @@ class Playback extends _$Playback {
 
       song = Song()
         ..path = path
-        ..title = metadata.title ?? path.split('/').last
+        ..title = metadata.title ?? displayFileName(path)
         ..artist = metadata.artist
         ..album = metadata.album
         ..duration = metadata.durationMs?.toInt()
@@ -1108,6 +1116,32 @@ class Playback extends _$Playback {
     }
 
     await play(song);
+  }
+
+  Future<Song> _songFromFileWindows(String path) async {
+    const timeout = Duration(seconds: 10);
+    LinuxTags? tags;
+    Uint8List? cover;
+    try {
+      tags = await WindowsTagReader.read(path, timeout: timeout);
+      cover = await WindowsTagReader.readCover(path, timeout: timeout);
+    } on TimeoutException {
+      // Play it anyway with the file name as the title.
+    }
+    String? artPath;
+    if (cover != null) {
+      artPath = await LibraryScanner().saveAlbumArt(
+        tags?.album ?? 'unknown',
+        cover,
+      );
+    }
+    return Song()
+      ..path = path
+      ..title = tags?.title ?? displayFileName(path)
+      ..artist = tags?.artist
+      ..album = tags?.album
+      ..duration = tags?.durationMs
+      ..artPath = artPath;
   }
 
   Future<void> stop() async {

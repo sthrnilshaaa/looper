@@ -22,7 +22,7 @@ class _PremiumLibraryFoldersList extends ConsumerWidget {
           .map(
             (path) => _PremiumActionRow(
               icon: LucideIcons.folder,
-              title: path.split('/').last,
+              title: displayFileName(path),
               subtitle: path,
               isLast: false,
               onTap: () {},

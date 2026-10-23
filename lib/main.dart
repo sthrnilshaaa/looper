@@ -130,6 +130,13 @@ void main(List<String> args) async {
         });
       } catch (e, s) {
         LoggerHelper.write('Failed to initialize Window Manager', e, s);
+        // The Windows runner leaves the window hidden for window_manager to
+        // show; make sure a failed setup can't leave it invisible.
+        if (Platform.isWindows) {
+          try {
+            await windowManager.show();
+          } catch (_) {}
+        }
       }
     }
   }();
