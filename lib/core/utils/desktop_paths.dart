@@ -16,3 +16,16 @@ String displayFileName(String path, {bool? windows}) {
   final name = p.windows.basename(path);
   return name.isEmpty || name == p.windows.rootPrefix(path) ? path : name;
 }
+
+/// The user's Music folder on Linux or Windows. On Linux this asks
+/// `xdg-user-dir`, so a renamed or translated folder is still found.
+Future<String> desktopMusicFolder() async {
+  if (Platform.isWindows) return windowsMusicFolder(Platform.environment);
+  var path = '${Platform.environment['HOME']}/Music';
+  try {
+    final result = await Process.run('xdg-user-dir', ['MUSIC']);
+    final out = result.stdout.toString().trim();
+    if (result.exitCode == 0 && out.isNotEmpty) path = out;
+  } catch (_) {}
+  return path;
+}

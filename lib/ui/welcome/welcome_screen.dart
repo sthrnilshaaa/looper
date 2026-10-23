@@ -34,9 +34,15 @@ class WelcomeBypassed extends _$WelcomeBypassed {
     final forceWelcome = ref.watch(forceWelcomeProvider);
     if (forceWelcome) return false;
 
-    // On desktop platforms (Linux, Windows, macOS), bypass mobile permission screen
+    // Desktop (Linux, Windows, macOS) shows its own setup screen only while
+    // there is no library yet. Until the library has loaded, assume set up,
+    // so returning users never see the setup screen flash.
     if (!Platform.isAndroid && !Platform.isIOS) {
-      return true;
+      if (!ref.watch(libraryProvider.select((s) => s.isInitialized))) {
+        return true;
+      }
+      return ref.read(libraryProvider).songs.isNotEmpty ||
+          ref.read(settingsProvider).libraryFolders.isNotEmpty;
     }
 
     // Re-derive when forceWelcome changes, and once more when the library

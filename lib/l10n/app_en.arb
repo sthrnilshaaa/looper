@@ -1396,5 +1396,48 @@
         "type": "int"
       }
     }
-  }
+  },
+  "desktopWelcomeTagline": "Your offline music, beautifully played.",
+  "desktopWelcomeGetStarted": "GET STARTED",
+  "desktopWelcomeSetupTitle": "Set up your library",
+  "desktopWelcomeSetupDesc": "Looper plays the music files on this computer. Start with your Music folder, or pick any folder where you keep songs.",
+  "desktopWelcomeMusicFolder": "Your Music folder",
+  "desktopWelcomeFolderReady": "Ready",
+  "desktopWelcomeFolderMissing": "Not found",
+  "desktopWelcomeScanMusicFolder": "Scan Music folder",
+  "desktopWelcomeChooseFolder": "Choose another folder",
+  "desktopWelcomeFormats": "Supports MP3, FLAC, M4A, WAV, OGG and more",
+  "desktopWelcomeAddLater": "You can add more folders anytime in Settings.",
+  "desktopWelcomeFeaturesLabel": "WHAT'S INSIDE",
+  "desktopWelcomeFeaturesTitle": "Made for listening",
+  "desktopWelcomeLyricsTitle": "Synced lyrics",
+  "desktopWelcomeLyricsDesc": "Line- and word-synced lyrics that follow along as you listen.",
+  "desktopWelcomeEqTitle": "Equalizer",
+  "desktopWelcomeEqDesc": "Shape the sound with presets or your own curve.",
+  "desktopWelcomeLibraryTitle": "Smart library",
+  "desktopWelcomeLibraryDesc": "Albums, artists, genres and folders, sorted from your tags.",
+  "desktopWelcomeNoAccountTitle": "No account needed",
+  "desktopWelcomeNoAccountDesc": "No sign-in, no setup. Looper plays straight from your files.",
+  "desktopWelcomeScanningFolder": "Looking for music in {folder}",
+  "@desktopWelcomeScanningFolder": {
+    "placeholders": {
+      "folder": {
+        "type": "String"
+      }
+    }
+  },
+  "desktopWelcomeNoSongsDesc": "No supported audio files were found in {folder}.",
+  "@desktopWelcomeNoSongsDesc": {
+    "placeholders": {
+      "folder": {
+        "type": "String"
+      }
+    }
+  },
+  "desktopWelcomeNoSongsTip": "Copy your music files into this folder, or choose the folder where you already keep them.",
+  "desktopWelcomeScanAgain": "Scan again",
+  "desktopWelcomeFloatingTitle": "Floating lyrics",
+  "desktopWelcomeFloatingDesc": "Keep lyrics on top of other windows while you work.",
+  "desktopWelcomeInsightsTitle": "Listening insights",
+  "desktopWelcomeInsightsDesc": "See your top songs, artists and listening time in Looper Analyze."
 }
