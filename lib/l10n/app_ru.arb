@@ -1018,5 +1018,7 @@
   "desktopWelcomeFloatingTitle": "Плавающие тексты",
   "desktopWelcomeFloatingDesc": "Тексты песен поверх других окон, пока вы работаете.",
   "desktopWelcomeInsightsTitle": "Статистика прослушивания",
-  "desktopWelcomeInsightsDesc": "Любимые песни, исполнители и время прослушивания в Looper Analyze."
+  "desktopWelcomeInsightsDesc": "Любимые песни, исполнители и время прослушивания в Looper Analyze.",
+  "groupByAlbum": "Группировать по альбомам",
+  "groupByAlbumDesc": "Показывать песни исполнителя по альбомам"
 }

@@ -384,6 +384,7 @@ class Settings extends _$Settings {
       ..artistSortOptionIndex = s.artistSortOptionIndex
       ..genreSortOptionIndex = s.genreSortOptionIndex
       ..collectionSortOptionIndex = s.collectionSortOptionIndex
+      ..artistGroupByAlbum = s.artistGroupByAlbum
       ..homeDarkness = s.homeDarkness
       ..desktopBackgroundDarkness = s.desktopBackgroundDarkness
       ..songsDarkness = s.songsDarkness
@@ -729,6 +730,9 @@ class Settings extends _$Settings {
 
   Future<void> updateCollectionSortOptionIndex(int index) =>
       _update((s) => s..collectionSortOptionIndex = index);
+
+  Future<void> updateArtistGroupByAlbum(bool value) =>
+      _update((s) => s..artistGroupByAlbum = value);
 
   Future<void> updateHomeDarkness(double value) =>
       _update((s) => s..homeDarkness = value);

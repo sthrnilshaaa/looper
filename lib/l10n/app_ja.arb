@@ -1018,5 +1018,7 @@
   "desktopWelcomeFloatingTitle": "フローティング歌詞",
   "desktopWelcomeFloatingDesc": "作業中も歌詞をほかのウィンドウの上に表示。",
   "desktopWelcomeInsightsTitle": "リスニング統計",
-  "desktopWelcomeInsightsDesc": "Looper Analyze でよく聴く曲やアーティスト、再生時間をチェック。"
+  "desktopWelcomeInsightsDesc": "Looper Analyze でよく聴く曲やアーティスト、再生時間をチェック。",
+  "groupByAlbum": "アルバムごとにまとめる",
+  "groupByAlbumDesc": "アーティストの曲をアルバムごとに表示"
 }

@@ -1018,5 +1018,7 @@
   "desktopWelcomeFloatingTitle": "Paroles flottantes",
   "desktopWelcomeFloatingDesc": "Gardez les paroles au-dessus des autres fenêtres pendant que vous travaillez.",
   "desktopWelcomeInsightsTitle": "Statistiques d'écoute",
-  "desktopWelcomeInsightsDesc": "Retrouvez vos titres et artistes préférés et votre temps d'écoute dans Looper Analyze."
+  "desktopWelcomeInsightsDesc": "Retrouvez vos titres et artistes préférés et votre temps d'écoute dans Looper Analyze.",
+  "groupByAlbum": "Regrouper par album",
+  "groupByAlbumDesc": "Afficher les titres de l'artiste sous leurs albums"
 }

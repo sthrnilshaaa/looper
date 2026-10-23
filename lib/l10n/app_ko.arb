@@ -1018,5 +1018,7 @@
   "desktopWelcomeFloatingTitle": "플로팅 가사",
   "desktopWelcomeFloatingDesc": "작업하는 동안 가사를 다른 창 위에 띄워 두세요.",
   "desktopWelcomeInsightsTitle": "감상 통계",
-  "desktopWelcomeInsightsDesc": "Looper Analyze에서 많이 들은 곡과 아티스트, 감상 시간을 확인하세요."
+  "desktopWelcomeInsightsDesc": "Looper Analyze에서 많이 들은 곡과 아티스트, 감상 시간을 확인하세요.",
+  "groupByAlbum": "앨범별로 묶기",
+  "groupByAlbumDesc": "아티스트의 곡을 앨범별로 표시"
 }

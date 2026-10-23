@@ -10,9 +10,7 @@ extension _CollectionSortSheet on CollectionDetailView {
       builder: (context) {
         final l10n = AppLocalizations.of(context)!;
         final bool isArtistCollection =
-            (subtitle != null &&
-                (subtitle!.toLowerCase() == 'artist' ||
-                    subtitle == l10n.artist)) ||
+            _isArtistPage(l10n) ||
             (songs.isNotEmpty &&
                 songs.every(
                   (s) => s.artist?.toLowerCase() == title.toLowerCase(),
@@ -31,6 +29,10 @@ extension _CollectionSortSheet on CollectionDetailView {
                 ),
               ),
               const SizedBox(height: 16),
+              if (isArtistCollection) ...[
+                const _GroupByAlbumToggle(),
+                const SizedBox(height: 12),
+              ],
               PremiumSection(
                 borderRadius: BorderRadius.circular(20),
                 padding: EdgeInsets.zero,
@@ -175,6 +177,73 @@ extension _CollectionSortSheet on CollectionDetailView {
             if (isSelected)
               Icon(LucideIcons.check, color: accentColor, size: 20),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// "Group by album" switch at the top of an artist page's sort sheet.
+class _GroupByAlbumToggle extends ConsumerWidget {
+  const _GroupByAlbumToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final value = ref.watch(
+      settingsProvider.select((s) => s.artistGroupByAlbum),
+    );
+    final accent = Color(
+      ref.watch(settingsProvider.select((s) => s.accentColor)),
+    );
+    void toggle() {
+      AppHaptics.light();
+      ref.read(settingsProvider.notifier).updateArtistGroupByAlbum(!value);
+    }
+
+    return PremiumSection(
+      borderRadius: BorderRadius.circular(20),
+      padding: EdgeInsets.zero,
+      useExpanded: false,
+      child: InkWell(
+        onTap: toggle,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 12, 12),
+          child: Row(
+            children: [
+              Icon(LucideIcons.disc3, size: 20, color: accent),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.groupByAlbum,
+                      style: AppFonts.jostStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      l10n.groupByAlbumDesc,
+                      style: AppFonts.jostStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: value,
+                activeThumbColor: accent,
+                onChanged: (_) => toggle(),
+              ),
+            ],
+          ),
         ),
       ),
     );

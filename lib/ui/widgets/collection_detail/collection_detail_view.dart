@@ -33,6 +33,7 @@ part 'collection_header.dart';
 part 'desktop_collection.dart';
 part 'sort_sheet.dart';
 part 'playlist_options.dart';
+part 'album_groups.dart';
 
 /// The big title of each open collection, which [CollectionPinnedBar]
 /// watches to know when to show its own small one.
@@ -72,6 +73,16 @@ class CollectionDetailView extends ConsumerWidget {
     this.album,
     this.artist,
   });
+
+  /// Whether this page shows an artist (as opposed to an album, playlist or
+  /// other song list).
+  bool _isArtistPage(AppLocalizations l10n) =>
+      playlist == null &&
+      album == null &&
+      (artist != null ||
+          subtitle == l10n.artist ||
+          subtitle == l10n.artists ||
+          subtitle?.toLowerCase() == 'artist');
 
   String _durationLabel(List<Song> songs, AppLocalizations l10n) {
     if (songs.any((song) => (song.duration ?? 0) <= 0)) return l10n.unknown;
@@ -195,7 +206,7 @@ class CollectionDetailView extends ConsumerWidget {
           0,
           CollectionSortOption.values.length - 1,
         )];
-    final sortedSongs = List<Song>.from(songsToRender);
+    var sortedSongs = List<Song>.from(songsToRender);
     switch (sortOption) {
       case CollectionSortOption.defaultOrder:
         break;
@@ -240,6 +251,27 @@ class CollectionDetailView extends ConsumerWidget {
         reactivePlaylist != null &&
         sortOption == CollectionSortOption.defaultOrder;
 
+    // Artist pages can list their songs under album headers. The flattened
+    // grouped order is also the play order.
+    final groupByAlbum =
+        ref.watch(settingsProvider.select((s) => s.artistGroupByAlbum)) &&
+        _isArtistPage(AppLocalizations.of(context)!);
+    final albumGroups = groupByAlbum && sortedSongs.isNotEmpty
+        ? _groupByAlbum(sortedSongs, sortOption)
+        : null;
+    if (albumGroups != null) {
+      sortedSongs = [for (final g in albumGroups) ...g.songs];
+    }
+    // Header or song index, in display order.
+    final groupedItems = albumGroups == null
+        ? null
+        : <Object>[
+            for (final g in albumGroups) ...[
+              g,
+              for (var i = 0; i < g.songs.length; i++) g.start + i,
+            ],
+          ];
+
     if (UiUtils.isDesktop) {
       return _buildDesktop(
         context,
@@ -255,6 +287,7 @@ class CollectionDetailView extends ConsumerWidget {
         reactiveArtist: reactiveArtist,
         canReorder: canReorderPlaylist && sortedSongs.isNotEmpty,
         activePath: activeSong?.path,
+        groupedItems: groupedItems,
       );
     }
 
@@ -384,7 +417,19 @@ class CollectionDetailView extends ConsumerWidget {
                     ],
                   ),
                 ),
-                if (sortedSongs.isNotEmpty)
+                if (groupedItems != null)
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate((context, i) {
+                      final item = groupedItems[i];
+                      return item is _AlbumGroup
+                          ? _AlbumGroupHeader(
+                              group: item,
+                              padding: const EdgeInsets.fromLTRB(16, 20, 8, 8),
+                            )
+                          : songRow(item as int);
+                    }, childCount: groupedItems.length),
+                  )
+                else if (sortedSongs.isNotEmpty)
                   // Dragging to reorder only makes sense while sortedSongs is
                   // actually the playlist's own saved order - once a sort
                   // option (title/artist/duration/...) is applied, a row's

@@ -1439,5 +1439,7 @@
   "desktopWelcomeFloatingTitle": "Floating lyrics",
   "desktopWelcomeFloatingDesc": "Keep lyrics on top of other windows while you work.",
   "desktopWelcomeInsightsTitle": "Listening insights",
-  "desktopWelcomeInsightsDesc": "See your top songs, artists and listening time in Looper Analyze."
+  "desktopWelcomeInsightsDesc": "See your top songs, artists and listening time in Looper Analyze.",
+  "groupByAlbum": "Group by album",
+  "groupByAlbumDesc": "Show the artist's songs under their albums"
 }

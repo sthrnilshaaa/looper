@@ -1018,5 +1018,7 @@
   "desktopWelcomeFloatingTitle": "悬浮歌词",
   "desktopWelcomeFloatingDesc": "工作时让歌词始终显示在其他窗口之上。",
   "desktopWelcomeInsightsTitle": "收听统计",
-  "desktopWelcomeInsightsDesc": "在 Looper Analyze 中查看你最常听的歌曲、艺人和收听时长。"
+  "desktopWelcomeInsightsDesc": "在 Looper Analyze 中查看你最常听的歌曲、艺人和收听时长。",
+  "groupByAlbum": "按专辑分组",
+  "groupByAlbumDesc": "按专辑显示该艺人的歌曲"
 }

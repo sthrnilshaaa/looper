@@ -1018,5 +1018,7 @@
   "desktopWelcomeFloatingTitle": "फ़्लोटिंग बोल",
   "desktopWelcomeFloatingDesc": "काम करते समय बोल को दूसरी विंडो के ऊपर रखें।",
   "desktopWelcomeInsightsTitle": "सुनने की जानकारी",
-  "desktopWelcomeInsightsDesc": "Looper Analyze में अपने टॉप गाने, कलाकार और सुनने का समय देखें।"
+  "desktopWelcomeInsightsDesc": "Looper Analyze में अपने टॉप गाने, कलाकार और सुनने का समय देखें।",
+  "groupByAlbum": "एल्बम के अनुसार समूह",
+  "groupByAlbumDesc": "कलाकार के गाने उनके एल्बम के अंतर्गत दिखाएँ"
 }

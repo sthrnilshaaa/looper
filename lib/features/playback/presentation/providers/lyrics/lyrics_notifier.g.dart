@@ -152,7 +152,7 @@ final class LyricsFullscreenProvider
   }
 }
 
-String _$lyricsFullscreenHash() => r'd747664526d554131231ad2c6d510f5ce768ff74';
+String _$lyricsFullscreenHash() => r'49a9e9d5bb0bd6e0df667f976073cc3e59018b02';
 
 /// Desktop only: the lyrics page shown alone (no sidebar, top bar or player
 /// bar) with the window in full screen.

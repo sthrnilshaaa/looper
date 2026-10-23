@@ -20,6 +20,7 @@ extension _DesktopCollection on CollectionDetailView {
     required Artist? reactiveArtist,
     required bool canReorder,
     required String? activePath,
+    List<Object>? groupedItems,
   }) {
     final l10n = AppLocalizations.of(context)!;
     // Lit only while this collection is the one playing shuffled.
@@ -28,6 +29,20 @@ extension _DesktopCollection on CollectionDetailView {
       playbackProvider.select((s) => s.isShuffle && s.queueSourceKey == key),
     );
 
+    // Grouped by album, numbering restarts with each album.
+    final groupStarts = <int>[
+      for (final item in groupedItems ?? const <Object>[])
+        if (item is _AlbumGroup) item.start,
+    ];
+    int numberFor(int index) {
+      var start = 0;
+      for (final s in groupStarts) {
+        if (s > index) break;
+        start = s;
+      }
+      return index - start + 1;
+    }
+
     Widget row(int index, {int? reorderIndex}) {
       final song = songs[index];
       return _DesktopSongRow(
@@ -35,6 +50,7 @@ extension _DesktopCollection on CollectionDetailView {
         song: song,
         songs: songs,
         index: index,
+        number: numberFor(index),
         playlist: reactivePlaylist,
         isCurrent: song.path == activePath,
         reorderIndex: reorderIndex,
@@ -226,7 +242,24 @@ extension _DesktopCollection on CollectionDetailView {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               // Dragging to reorder only applies to a playlist in its own saved
               // order (see the mobile layout).
-              sliver: canReorder
+              sliver: groupedItems != null
+                  ? SliverList(
+                      delegate: SliverChildBuilderDelegate((context, i) {
+                        final item = groupedItems[i];
+                        return item is _AlbumGroup
+                            ? _AlbumGroupHeader(
+                                group: item,
+                                padding: const EdgeInsets.fromLTRB(
+                                  0,
+                                  20,
+                                  12,
+                                  8,
+                                ),
+                              )
+                            : row(item as int);
+                      }, childCount: groupedItems.length),
+                    )
+                  : canReorder
                   ? SliverReorderableList(
                       itemExtent: 56,
                       itemCount: songs.length,
@@ -307,6 +340,9 @@ class _DesktopSongRow extends ConsumerStatefulWidget {
   final Song song;
   final List<Song> songs;
   final int index;
+
+  /// The number shown at the start of the row.
+  final int number;
   final Playlist? playlist;
   final bool isCurrent;
   final int? reorderIndex;
@@ -316,6 +352,7 @@ class _DesktopSongRow extends ConsumerStatefulWidget {
     required this.song,
     required this.songs,
     required this.index,
+    required this.number,
     required this.isCurrent,
     this.playlist,
     this.reorderIndex,
@@ -384,7 +421,7 @@ class _DesktopSongRowState extends ConsumerState<_DesktopSongRow> {
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.center,
                   child: Text(
-                    '${widget.index + 1}',
+                    '${widget.number}',
                     maxLines: 1,
                     style: AppFonts.jostStyle(
                       color: Colors.white.withValues(alpha: 0.45),

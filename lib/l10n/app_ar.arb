@@ -1018,5 +1018,7 @@
   "desktopWelcomeFloatingTitle": "كلمات عائمة",
   "desktopWelcomeFloatingDesc": "أبقِ الكلمات فوق النوافذ الأخرى أثناء عملك.",
   "desktopWelcomeInsightsTitle": "إحصاءات الاستماع",
-  "desktopWelcomeInsightsDesc": "اطّلع على أكثر أغانيك وفنانيك استماعًا ووقت الاستماع في Looper Analyze."
+  "desktopWelcomeInsightsDesc": "اطّلع على أكثر أغانيك وفنانيك استماعًا ووقت الاستماع في Looper Analyze.",
+  "groupByAlbum": "تجميع حسب الألبوم",
+  "groupByAlbumDesc": "عرض أغاني الفنان تحت ألبوماتها"
 }

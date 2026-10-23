@@ -290,6 +290,9 @@ class AppSettings {
   int genreSortOptionIndex = 0;
   int collectionSortOptionIndex = 0;
 
+  /// Artist pages list songs under album headers instead of one list.
+  bool artistGroupByAlbum = false;
+
   double homeDarkness = 0.62;
   double songsDarkness = 0.45;
   double libraryDarkness = 0.62;

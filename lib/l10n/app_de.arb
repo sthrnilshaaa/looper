@@ -1018,5 +1018,7 @@
   "desktopWelcomeFloatingTitle": "Schwebende Songtexte",
   "desktopWelcomeFloatingDesc": "Behalte die Songtexte über anderen Fenstern, während du arbeitest.",
   "desktopWelcomeInsightsTitle": "Hör-Statistiken",
-  "desktopWelcomeInsightsDesc": "Sieh deine Top-Songs, Künstler und Hörzeit in Looper Analyze."
+  "desktopWelcomeInsightsDesc": "Sieh deine Top-Songs, Künstler und Hörzeit in Looper Analyze.",
+  "groupByAlbum": "Nach Album gruppieren",
+  "groupByAlbumDesc": "Songs des Künstlers unter ihren Alben anzeigen"
 }
