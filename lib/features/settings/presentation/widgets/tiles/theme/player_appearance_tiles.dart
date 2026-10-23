@@ -102,6 +102,27 @@ class ShowQualityBadgeTile extends ConsumerWidget {
   }
 }
 
+/// Lists an artist page's songs under album headers. Off by default.
+class GroupArtistByAlbumTile extends ConsumerWidget {
+  const GroupArtistByAlbumTile({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final l10n = AppLocalizations.of(context)!;
+    return SwitchListTile(
+      secondary: const Icon(LucideIcons.libraryBig, color: Colors.white70),
+      title: Text(l10n.groupByAlbum, style: _tileTitleStyle()),
+      subtitle: Text(l10n.groupByAlbumDesc, style: _tileSubtitleStyle()),
+      activeThumbColor: Color(settings.accentColor),
+      value: settings.artistGroupByAlbum,
+      onChanged: (value) {
+        ref.read(settingsProvider.notifier).updateArtistGroupByAlbum(value);
+      },
+    );
+  }
+}
+
 /// Adds the album after the artist ("Artist • Album") under song titles.
 class ShowAlbumNextToArtistTile extends ConsumerWidget {
   const ShowAlbumNextToArtistTile({super.key});

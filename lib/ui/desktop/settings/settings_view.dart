@@ -335,6 +335,19 @@ class SettingsView extends ConsumerWidget {
                       },
                       isLast: false,
                     ),
+                    _PremiumSwitchRow(
+                      icon: LucideIcons.libraryBig,
+                      title: l10n.groupByAlbum,
+                      subtitle: l10n.groupByAlbumDesc,
+                      value: settings.artistGroupByAlbum,
+                      onChanged: (value) {
+                        AppHaptics.light();
+                        ref
+                            .read(settingsProvider.notifier)
+                            .updateArtistGroupByAlbum(value);
+                      },
+                      isLast: UiUtils.isDesktop,
+                    ),
                     if (!UiUtils.isDesktop)
                       _PremiumSwitchRow(
                         icon: LucideIcons.move,

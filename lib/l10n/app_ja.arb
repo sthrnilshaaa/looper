@@ -1020,5 +1020,5 @@
   "desktopWelcomeInsightsTitle": "リスニング統計",
   "desktopWelcomeInsightsDesc": "Looper Analyze でよく聴く曲やアーティスト、再生時間をチェック。",
   "groupByAlbum": "アルバムごとにまとめる",
-  "groupByAlbumDesc": "アーティストの曲をアルバムごとに表示"
+  "groupByAlbumDesc": "アーティストページで曲をアルバムごとに表示"
 }

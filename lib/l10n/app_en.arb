@@ -1441,5 +1441,5 @@
   "desktopWelcomeInsightsTitle": "Listening insights",
   "desktopWelcomeInsightsDesc": "See your top songs, artists and listening time in Looper Analyze.",
   "groupByAlbum": "Group by album",
-  "groupByAlbumDesc": "Show the artist's songs under their albums"
+  "groupByAlbumDesc": "On artist pages, list songs under their albums"
 }

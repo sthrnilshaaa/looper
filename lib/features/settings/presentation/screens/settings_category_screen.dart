@@ -106,6 +106,7 @@ class SettingsCategoryScreen extends ConsumerWidget {
               const ShowAlbumInQuickPicksTile(),
           ],
         ),
+        (title: l10n.library, tiles: const [GroupArtistByAlbumTile()]),
         (
           title: l10n.lyrics,
           tiles: [

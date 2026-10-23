@@ -247,6 +247,12 @@ extension _SettingsSearch on _SettingsViewState {
         widget: const SegmentedUtilityButtonsTile(),
       ),
       SettingsSearchItem(
+        title: l10n.groupByAlbum,
+        subtitle: l10n.groupByAlbumDesc,
+        category: '${l10n.theme} · ${l10n.library}',
+        widget: const GroupArtistByAlbumTile(),
+      ),
+      SettingsSearchItem(
         title: l10n.showAlbumNextToArtist,
         subtitle: l10n.showAlbumNextToArtistDesc,
         category: '${l10n.theme} · ${l10n.nowPlaying}',
