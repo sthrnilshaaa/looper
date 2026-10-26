@@ -5,16 +5,10 @@ class _ScanningLottieAnimation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RepaintBoundary(
-      child: SizedBox(
-        width: 400.s,
-        height: 300.s,
-        child: Lottie.asset(
-          AppAssets.loadingAnimation,
-          fit: BoxFit.contain,
-          repeat: true,
-        ),
-      ),
+    // Sized to the screen and shown on a tilted 3D stage.
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 24),
+      child: FirstScanStage(maxWidth: 380),
     );
   }
 }

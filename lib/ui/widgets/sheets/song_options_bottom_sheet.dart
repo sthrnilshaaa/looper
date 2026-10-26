@@ -1,3 +1,5 @@
+import 'package:looper_player/core/motion/app_routes.dart';
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'dart:ui';
 
 import 'package:looper_player/core/utils/song_metadata.dart';
@@ -90,7 +92,7 @@ class _SongOptionsSheetContent extends ConsumerWidget {
     final notifier = ref.read(playbackProvider.notifier);
     final l10n = AppLocalizations.of(context)!;
 
-    showDialog(
+    showTaskDialog(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
@@ -292,7 +294,7 @@ class _SongOptionsSheetContent extends ConsumerWidget {
           const Divider(color: Colors.white10, height: 1),
           Flexible(
             child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: const LooperScrollPhysics(),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 8.0,
@@ -429,10 +431,7 @@ class _SongOptionsSheetContent extends ConsumerWidget {
                             }
                             Navigator.push(
                               parentContext,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const AndroidEqualizerScreen(),
-                              ),
+                              riseRoute(const AndroidEqualizerScreen()),
                             );
                           },
                         ),
@@ -463,10 +462,7 @@ class _SongOptionsSheetContent extends ConsumerWidget {
                             Navigator.pop(context);
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    SongInfoScreen(song: song),
-                              ),
+                              riseRoute(SongInfoScreen(song: song)),
                             );
                           },
                         ),

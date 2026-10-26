@@ -1,3 +1,4 @@
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'package:looper_player/core/providers/collection_navigation.dart';
 import 'dart:math' as math;
 
@@ -244,11 +245,7 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab> {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Centered independently of the Stack below so it stays put
-              // regardless of how wide the avatar or the icon buttons are.
-              const Center(child: EnrichmentIndicator()),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // Square avatars sit centered in a 40dp slot as before; a
                   // wide logo keeps the 38dp height and grows to the right
@@ -259,6 +256,20 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab> {
                       constraints: const BoxConstraints(minWidth: 40),
                       child: const Center(
                         child: SelectedAvatar(size: 38, maxWidth: 130),
+                      ),
+                    ),
+                  ),
+                  // The enriching pill takes only the space between the
+                  // avatar and the buttons (shrinking to fit instead of
+                  // sliding under them on narrow screens / long languages).
+                  const Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: EnrichmentIndicator(),
+                        ),
                       ),
                     ),
                   ),
@@ -826,7 +837,7 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab> {
               .refreshLibrary(showVisualIndicator: true),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
+              parent: LooperScrollPhysics(),
             ),
             slivers: orderedSlivers,
           ),

@@ -1,6 +1,11 @@
+import 'package:looper_player/ui/android/shell/music_bar/fluid_player_motion.dart'
+    show kFluidHandoff;
+import 'package:looper_player/ui/android/player/lyrics/lyrics_route.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart' hide RepeatMode;
+import 'package:flutter/physics.dart';
+import 'package:looper_player/core/motion/rubber_band.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/core/services/storage/db_service.dart';
@@ -45,9 +50,29 @@ class _GestureArtworkWithFeedbackState
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   late AnimationController _snapController;
-  Animation<double>? _snapAnimation;
   bool _isNext = true;
-  double _dragOffset = 0.0;
+  // The swipe offset lives in notifiers, not State: a drag frame only
+  // repaints the two moving covers (their ValueListenableBuilders), never
+  // rebuilds the artwork area, visualizer or frame.
+  final ValueNotifier<double> _drag = ValueNotifier<double>(0.0);
+  // Whether a swipe is under way (|offset| > 1) - changes twice per swipe.
+  final ValueNotifier<bool> _swiping = ValueNotifier<bool>(false);
+  double get _dragOffset => _drag.value;
+  set _dragOffset(double value) {
+    _drag.value = value;
+    _swiping.value = value.abs() > 1.0;
+  }
+
+  // Finger travel of the current swipe, before rubber-banding (only differs
+  // from _dragOffset when there's no song on that side).
+  double _fingerOffset = 0.0;
+
+  /// Space between neighbouring covers while swiping.
+  static const double _gap = 16.0;
+
+  /// Critically damped: settles with the finger's speed, no overshoot.
+  static final SpringDescription _swipeSpring =
+      SpringDescription.withDampingRatio(mass: 1, stiffness: 520, ratio: 1);
   bool _skipSlideTransition = false;
   bool _isSwipeTriggered = false;
 
@@ -72,30 +97,28 @@ class _GestureArtworkWithFeedbackState
       parent: _fadeController,
       curve: Curves.easeOut,
     );
-    _snapController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 320),
-    );
+    // Unbounded: its value is the cover's offset in px.
+    _snapController = AnimationController.unbounded(vsync: this);
     _snapController.addListener(() {
-      final animation = _snapAnimation;
-      if (animation == null) return;
-      setState(() {
-        _dragOffset = animation.value;
-      });
+      _dragOffset = _snapController.value;
     });
   }
 
-  /// Slides the artwork from where the finger left it to [end]: back to rest
-  /// (0), or off to the side when the swipe skips. One plain ease-out for
-  /// both, so letting go never overshoots or bounces.
-  TickerFuture _slideTo(double end) {
-    _snapAnimation = _snapController.drive(
-      Tween<double>(
-        begin: _dragOffset,
-        end: end,
-      ).chain(CurveTween(curve: Curves.easeOutCubic)),
+  /// Slides the artwork from where the finger left it to [end] - back to
+  /// rest (0), or off to the side when the swipe skips - on a critically
+  /// damped spring that starts at the finger's [velocity] (px/s), so letting
+  /// go never changes speed and never overshoots.
+  TickerFuture _slideTo(double end, {double velocity = 0.0}) {
+    _snapController.value = _dragOffset;
+    return _snapController.animateWith(
+      SpringSimulation(
+        _swipeSpring,
+        _dragOffset,
+        end,
+        velocity.clamp(-6000.0, 6000.0).toDouble(),
+        snapToEnd: true,
+      ),
     );
-    return _snapController.forward(from: 0.0);
   }
 
   @override
@@ -110,6 +133,8 @@ class _GestureArtworkWithFeedbackState
       } else {
         _skipSlideTransition = false;
       }
+      _snapController.stop();
+      _fingerOffset = 0.0;
       setState(() {
         _dragOffset = 0.0;
       });
@@ -125,8 +150,14 @@ class _GestureArtworkWithFeedbackState
     }
   }
 
+  /// 0 at rest, 1 when the cover has travelled a full slot.
+  double _swipeProgress(double slideExtent) =>
+      (_dragOffset.abs() / (slideExtent + _gap)).clamp(0.0, 1.0).toDouble();
+
   @override
   void dispose() {
+    _drag.dispose();
+    _swiping.dispose();
     _fadeController.dispose();
     _snapController.dispose();
     super.dispose();
@@ -160,7 +191,14 @@ class _GestureArtworkWithFeedbackState
     // or play/pause then has to land instantly: a paused transition would
     // sit at its first frame and flash the old art (or the old inset) on the
     // handoff frame before jumping to the end.
-    final bool animate = TickerMode.of(context);
+    // The Fluid Player now wakes this player at the start of an open, so a
+    // song that changed while it was collapsed lands here mid-open: switch
+    // it instantly then (the morphing art covers it) instead of playing the
+    // change animation during the open.
+    final bool animate =
+        TickerMode.of(context) &&
+        (!enableSlide ||
+            ref.read(playerExpandProgressProvider).value >= kFluidHandoff);
     final queue = ref.watch(playbackProvider.select((s) => s.queue));
     final repeatMode = ref.watch(playbackProvider.select((s) => s.repeatMode));
     final currentIdx = queue.indexWhere((s) => s.path == widget.song.path);
@@ -311,9 +349,25 @@ class _GestureArtworkWithFeedbackState
         );
       }
     }
-    final Song? bgSong = _dragOffset < 0
-        ? (nextSong ?? widget.song)
-        : (_dragOffset > 0 ? (prevSong ?? widget.song) : null);
+    // Neighbour covers, built once per real change; a swipe frame only
+    // moves one of them. None at the ends of the queue (the cover
+    // rubber-bands there instead).
+    Widget? neighbourCard(Song? s) {
+      if (s == null) return null;
+      final String? art = s.artPath;
+      return OptimizedImage(
+        imagePath: art != null && !art.startsWith('http') ? art : null,
+        imageUrl: art != null && art.startsWith('http') ? art : null,
+        borderRadius: BorderRadius.circular(12),
+        fit: BoxFit.cover,
+        cacheWidth: isLandscape
+            ? computedCacheWidth
+            : (slideExtent * MediaQuery.devicePixelRatioOf(context)).toInt(),
+      );
+    }
+
+    final Widget? nextCard = neighbourCard(nextSong);
+    final Widget? prevCard = neighbourCard(prevSong);
 
     return GestureDetector(
       onTap: widget.onTap,
@@ -331,52 +385,53 @@ class _GestureArtworkWithFeedbackState
           _triggerFeedback('forward');
         }
       },
-      onHorizontalDragUpdate: (details) {
+      onHorizontalDragStart: (_) {
+        // Catch a cover that is still settling: continue from where it is.
         _snapController.stop();
-        setState(() {
-          _dragOffset += details.delta.dx;
-        });
+        _fingerOffset = _dragOffset;
+      },
+      onHorizontalDragUpdate: (details) {
+        _fingerOffset += details.delta.dx;
+        // No song on that side: the cover resists like the end of a list.
+        final bool blocked =
+            (_fingerOffset < 0 && nextSong == null) ||
+            (_fingerOffset > 0 && prevSong == null);
+        _dragOffset = blocked
+            ? _fingerOffset.sign *
+                  rubberBand(_fingerOffset.abs(), slideExtent * 0.18)
+            : _fingerOffset;
       },
       onHorizontalDragEnd: (details) {
-        final threshold = slideExtent * 0.25;
+        final double velocity = details.velocity.pixelsPerSecond.dx;
+        // Decide by where the throw would carry the cover, so a short fast
+        // flick and a long slow drag both work.
+        final double projected = _dragOffset + velocity * 0.15;
+        final double threshold = slideExtent * 0.3;
+        final double out = slideExtent + _gap;
 
-        if (_dragOffset < -threshold ||
-            (details.primaryVelocity != null &&
-                details.primaryVelocity! < -300)) {
-          // Swipe Left -> Skip Next
-          if (nextSong == null) {
-            _slideTo(0.0);
-          } else {
-            setState(() {
-              _isNext = true;
-              _isSwipeTriggered = true;
-            });
-            AppHaptics.medium();
-            _slideTo(-slideExtent).then((_) {
-              ref.read(playbackProvider.notifier).skipNext();
-            });
-          }
-        } else if (_dragOffset > threshold ||
-            (details.primaryVelocity != null &&
-                details.primaryVelocity! > 300)) {
-          // Swipe Right -> Skip Previous
-          if (prevSong == null) {
-            _slideTo(0.0);
-          } else {
-            setState(() {
-              _isNext = false;
-              _isSwipeTriggered = true;
-            });
-            AppHaptics.medium();
-            _slideTo(slideExtent).then((_) {
-              ref.read(playbackProvider.notifier).skipPrevious(force: true);
-            });
-          }
+        if (projected < -threshold && nextSong != null) {
+          setState(() {
+            _isNext = true;
+            _isSwipeTriggered = true;
+          });
+          AppHaptics.medium();
+          _slideTo(-out, velocity: velocity).then((_) {
+            ref.read(playbackProvider.notifier).skipNext();
+          });
+        } else if (projected > threshold && prevSong != null) {
+          setState(() {
+            _isNext = false;
+            _isSwipeTriggered = true;
+          });
+          AppHaptics.medium();
+          _slideTo(out, velocity: velocity).then((_) {
+            ref.read(playbackProvider.notifier).skipPrevious(force: true);
+          });
         } else {
-          // Snap Back
-          _slideTo(0.0);
+          _slideTo(0.0, velocity: velocity);
         }
       },
+      onHorizontalDragCancel: () => _slideTo(0.0),
       // Hidden while the Fluid Player's morphing art stands in for it. Only
       // this wrapper follows the expand progress; the artwork below is built
       // once per real change.
@@ -384,7 +439,9 @@ class _GestureArtworkWithFeedbackState
         valueListenable: ref.watch(playerExpandProgressProvider),
         builder: (context, expandProgress, child) {
           return Opacity(
-            opacity: !enableSlide || expandProgress >= 0.99 ? 1.0 : 0.0,
+            opacity: !enableSlide || expandProgress >= kFluidHandoff
+                ? 1.0
+                : 0.0,
             child: child,
           );
         },
@@ -395,55 +452,62 @@ class _GestureArtworkWithFeedbackState
           // The music-reactive effect (Artwork visualizer setting) sits
           // outside the carousel frame so its glow/ring can reach past the
           // cover; it steps aside while the cover is being swiped.
-          child: ArtworkVisualizer(
-            artPath: widget.song.artPath,
-            suspended: _dragOffset.abs() > 1.0,
+          child: ValueListenableBuilder<bool>(
+            valueListenable: _swiping,
+            builder: (context, swiping, child) => ArtworkVisualizer(
+              artPath: widget.song.artPath,
+              suspended: swiping,
+              child: child!,
+            ),
             child: _ArtCarouselFrame(
               clip: isLandscape,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Background Card for real-time carousel transitions (flat horizontal slide)
-                  if (bgSong != null && _dragOffset.abs() > 1.0)
-                    Positioned.fill(
-                      child: Transform.translate(
-                        offset: Offset(
-                          _dragOffset < 0
-                              ? _dragOffset + slideExtent
-                              : _dragOffset - slideExtent,
-                          0,
-                        ),
-                        child: ClipRRect(
-                          // borderRadius: BorderRadius.circular(12),
-                          child: OptimizedImage(
-                            imagePath:
-                                bgSong.artPath != null &&
-                                    !bgSong.artPath!.startsWith('http')
-                                ? bgSong.artPath
-                                : null,
-                            imageUrl:
-                                bgSong.artPath != null &&
-                                    bgSong.artPath!.startsWith('http')
-                                ? bgSong.artPath
-                                : null,
-                            borderRadius: BorderRadius.circular(12),
-
-                            fit: BoxFit.cover,
-                            cacheWidth: isLandscape
-                                ? computedCacheWidth
-                                : (slideExtent * dpr).toInt(),
+                  // Neighbour cover sliding in (flat horizontal slide).
+                  Positioned.fill(
+                    child: ValueListenableBuilder<double>(
+                      valueListenable: _drag,
+                      builder: (context, offset, _) {
+                        final Widget? card = offset < 0
+                            ? nextCard
+                            : (offset > 0 ? prevCard : null);
+                        if (card == null || offset.abs() <= 1.0) {
+                          return const SizedBox.shrink();
+                        }
+                        return Transform.translate(
+                          offset: Offset(
+                            offset < 0
+                                ? offset + slideExtent + _gap
+                                : offset - slideExtent - _gap,
+                            0,
                           ),
+                          child: Transform.scale(
+                            scale: 0.95 + 0.05 * _swipeProgress(slideExtent),
+                            child: card,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  // Active cover, following the finger. Dips slightly as it
+                  // travels, so the incoming cover reads as taking its place.
+                  Positioned.fill(
+                    child: ValueListenableBuilder<double>(
+                      valueListenable: _drag,
+                      builder: (context, offset, child) => Transform.translate(
+                        offset: Offset(offset, 0),
+                        child: Transform.scale(
+                          scale: 1.0 - 0.05 * _swipeProgress(slideExtent),
+                          child: child,
                         ),
                       ),
-                    ),
-
-                  // Active Sliding Artwork (flat horizontal slide)
-                  Positioned.fill(
-                    child: Transform.translate(
-                      offset: Offset(_dragOffset, 0),
-                      child: enableSlide
-                          ? artworkSwitcher
-                          : Hero(tag: 'album_art', child: artworkSwitcher),
+                      child: Hero(
+                        tag: 'album_art',
+                        flightShuttleBuilder: artworkFlightShuttle,
+                        child: artworkSwitcher,
+                      ),
                     ),
                   ),
                   // Feedback Overlay

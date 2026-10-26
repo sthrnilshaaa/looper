@@ -1,3 +1,4 @@
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
@@ -417,9 +418,9 @@ class _AdvancedLyricRendererState extends ConsumerState<AdvancedLyricRenderer>
       }
     });
     if (nearest == null) return _scrollController.position.pixels;
-    final base = RenderAbstractViewport.of(nearestBox!)
-        .getOffsetToReveal(nearestBox!, _anchor)
-        .offset;
+    final base = RenderAbstractViewport.of(
+      nearestBox!,
+    ).getOffsetToReveal(nearestBox!, _anchor).offset;
     return base + (index - nearest!) * heights / count;
   }
 
@@ -434,8 +435,9 @@ class _AdvancedLyricRendererState extends ConsumerState<AdvancedLyricRenderer>
       // again once it has been laid out.
       if (attempt >= 4) return;
       position.jumpTo(
-        _estimatedOffset(index)
-            .clamp(position.minScrollExtent, position.maxScrollExtent),
+        _estimatedOffset(
+          index,
+        ).clamp(position.minScrollExtent, position.maxScrollExtent),
       );
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => _follow(index, animate: animate, attempt: attempt + 1),
@@ -591,7 +593,7 @@ class _AdvancedLyricRendererState extends ConsumerState<AdvancedLyricRenderer>
         child: LayoutBuilder(
           builder: (context, constraints) => ListView.builder(
             controller: _scrollController,
-            physics: const BouncingScrollPhysics(),
+            physics: const LooperScrollPhysics(),
             itemCount: widget.lines.length + 1,
             padding: EdgeInsets.only(
               top: 60.s,

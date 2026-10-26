@@ -1,3 +1,4 @@
+import 'package:looper_player/ui/android/player/lyrics/lyrics_route.dart';
 import 'package:looper_player/core/providers/collection_navigation.dart';
 import 'package:looper_player/ui/widgets/common/song_artist_picker.dart';
 import 'dart:math' as math;
@@ -166,15 +167,7 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
 
   void _showLyrics(BuildContext context) {
     AppHaptics.light();
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const AndroidLyricsScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-      ),
-    );
+    Navigator.of(context).push(lyricsRoute());
   }
 
   void _showMoreOptionsBottomSheet(BuildContext context, WidgetRef ref) {
@@ -260,7 +253,8 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
       required Widget child,
       HeroFlightShuttleBuilder? flightShuttleBuilder,
     }) {
-      if (enableSlide) return child;
+      // Heroes fly in the Fluid Player too (the lyrics switch). They are
+      // inert while it is collapsed: its layer turns HeroMode off.
       return Hero(
         tag: tag,
         flightShuttleBuilder:
@@ -491,11 +485,11 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                           );
 
                           final fromStyle = _scaledHeroStyle(
-                            _getHeroStyle(fromHero, fallbackFrom),
+                            heroTextStyle(fromHeroContext, fallbackFrom),
                             fromHeroContext,
                           );
                           final toStyle = _scaledHeroStyle(
-                            _getHeroStyle(toHero, fallbackTo),
+                            heroTextStyle(toHeroContext, fallbackTo),
                             toHeroContext,
                           );
 
@@ -509,8 +503,10 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                               return Material(
                                 type: MaterialType.transparency,
                                 child: ClipRect(
-                                  child: Align(
+                                  child: OverflowBox(
                                     alignment: Alignment.centerLeft,
+                                    minWidth: 0,
+                                    maxWidth: double.infinity,
                                     child: Text(
                                       song.title,
                                       style: TextStyle.lerp(
@@ -519,7 +515,7 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                                         lerpValue,
                                       ),
                                       maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                      overflow: TextOverflow.clip,
                                       softWrap: false,
                                     ),
                                   ),
@@ -568,11 +564,11 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                           );
 
                           final fromStyle = _scaledHeroStyle(
-                            _getHeroStyle(fromHero, fallbackFrom),
+                            heroTextStyle(fromHeroContext, fallbackFrom),
                             fromHeroContext,
                           );
                           final toStyle = _scaledHeroStyle(
-                            _getHeroStyle(toHero, fallbackTo),
+                            heroTextStyle(toHeroContext, fallbackTo),
                             toHeroContext,
                           );
 
@@ -585,9 +581,14 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                                   : 1.0 - animation.value;
                               return Material(
                                 type: MaterialType.transparency,
+                                // Clipped, not ellipsized: both ends are
+                                // clipped ScrollingTexts, so a "…" in
+                                // flight would snap away on landing.
                                 child: ClipRect(
-                                  child: Align(
+                                  child: OverflowBox(
                                     alignment: Alignment.centerLeft,
+                                    minWidth: 0,
+                                    maxWidth: double.infinity,
                                     child: Text(
                                       artistAlbumLabel(
                                         song,
@@ -600,7 +601,7 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                                         lerpValue,
                                       ),
                                       maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                      overflow: TextOverflow.clip,
                                       softWrap: false,
                                     ),
                                   ),

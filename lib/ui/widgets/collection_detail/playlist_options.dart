@@ -226,7 +226,7 @@ extension _CollectionPlaylistOptions on CollectionDetailView {
     Playlist playlist,
   ) {
     final controller = TextEditingController(text: playlist.name);
-    showDialog(
+    showTaskDialog(
       context: context,
       builder: (context) {
         final l10n = AppLocalizations.of(context)!;
@@ -269,7 +269,7 @@ extension _CollectionPlaylistOptions on CollectionDetailView {
     WidgetRef ref,
     Playlist playlist,
   ) {
-    showDialog(
+    showTaskDialog(
       context: context,
       builder: (context) {
         final l10n = AppLocalizations.of(context)!;

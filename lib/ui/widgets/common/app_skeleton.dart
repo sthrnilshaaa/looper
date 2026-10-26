@@ -1,3 +1,4 @@
+import 'package:looper_player/core/motion/pause_when_offscreen.dart';
 import 'package:flutter/material.dart';
 import 'package:looper_player/core/utils/motion.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -20,24 +21,27 @@ class AppSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = Theme.of(context).colorScheme.primary;
+    // The shimmer loops forever: pause it while scrolled off screen.
     return ExcludeSemantics(
-      child: Skeletonizer(
-        ignorePointers: true,
-        justifyMultiLineText: justifyMultiLineText,
-        textBoneBorderRadius: textBoneBorderRadius,
-        // Still bones, no sweeping highlight, when system animations are off.
-        effect: Motion.reducedOf(context)
-            ? SolidColorEffect(color: Colors.white.withValues(alpha: 0.07))
-            : ShimmerEffect(
-                baseColor: Colors.white.withValues(alpha: 0.07),
-                highlightColor: Color.lerp(
-                  Colors.white,
-                  accent,
-                  0.35,
-                )!.withValues(alpha: 0.2),
-                duration: const Duration(milliseconds: 1600),
-              ),
-        child: child,
+      child: PauseWhenOffscreen(
+        child: Skeletonizer(
+          ignorePointers: true,
+          justifyMultiLineText: justifyMultiLineText,
+          textBoneBorderRadius: textBoneBorderRadius,
+          // Still bones, no sweeping highlight, when system animations are off.
+          effect: Motion.reducedOf(context)
+              ? SolidColorEffect(color: Colors.white.withValues(alpha: 0.07))
+              : ShimmerEffect(
+                  baseColor: Colors.white.withValues(alpha: 0.07),
+                  highlightColor: Color.lerp(
+                    Colors.white,
+                    accent,
+                    0.35,
+                  )!.withValues(alpha: 0.2),
+                  duration: const Duration(milliseconds: 1600),
+                ),
+          child: child,
+        ),
       ),
     );
   }

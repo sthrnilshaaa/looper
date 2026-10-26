@@ -1,6 +1,8 @@
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
@@ -126,7 +128,7 @@ class _ProgressBarStyleSheetState
               child: ListView(
                 shrinkWrap: true,
                 padding: const EdgeInsets.only(bottom: 24),
-                physics: const BouncingScrollPhysics(),
+                physics: const LooperScrollPhysics(),
                 children: [
                   StyleSectionLabel(l10n.progressWave, accent: accent),
                   StyleSwitchRow(
@@ -274,30 +276,36 @@ class _ProgressPreview extends StatefulWidget {
   State<_ProgressPreview> createState() => _ProgressPreviewState();
 }
 
-class _ProgressPreviewState extends State<_ProgressPreview> {
+class _ProgressPreviewState extends State<_ProgressPreview>
+    with SingleTickerProviderStateMixin {
   static const Duration _duration = Duration(minutes: 3, seconds: 30);
   static const Duration _step = Duration(milliseconds: 250);
 
   Duration _position = const Duration(minutes: 1, seconds: 12);
   bool _playing = true;
   bool _scrubbing = false;
-  Timer? _timer;
+  // A Ticker rather than a periodic Timer, so the fake playback stops
+  // whenever nobody can see it (sheet covered, app in background).
+  late final Ticker _ticker;
+  Duration _lastStep = Duration.zero;
 
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(_step, (_) {
+    _ticker = createTicker((elapsed) {
+      if (elapsed - _lastStep < _step) return;
+      _lastStep = elapsed;
       if (!_playing || _scrubbing) return;
       setState(() {
         _position += _step;
         if (_position >= _duration) _position = Duration.zero;
       });
-    });
+    })..start();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _ticker.dispose();
     super.dispose();
   }
 

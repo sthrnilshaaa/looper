@@ -23,11 +23,11 @@ extension _SettingsSupportUsDialog on _SettingsViewState {
             MediaQuery.of(context).padding.bottom + 24,
           ),
           child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
+            physics: const LooperScrollPhysics(),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const _PulsingHeart(),
+                const PauseWhenOffscreen(child: _PulsingHeart()),
                 const SizedBox(height: 16),
                 Text(
                   l10n.supportDevelopment,

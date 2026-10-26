@@ -61,7 +61,7 @@ extension _SettingsSearch on _SettingsViewState {
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      physics: const BouncingScrollPhysics(),
+      physics: const LooperScrollPhysics(),
       itemCount: filteredItems.length,
       itemBuilder: (context, index) {
         final item = filteredItems[index];

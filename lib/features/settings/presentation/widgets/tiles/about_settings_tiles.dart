@@ -1,3 +1,4 @@
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -330,7 +331,7 @@ class MaintainersRow extends ConsumerWidget {
       height: 76,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
+        physics: const LooperScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         itemCount: people.length,
         separatorBuilder: (_, _) => const SizedBox(width: 12),

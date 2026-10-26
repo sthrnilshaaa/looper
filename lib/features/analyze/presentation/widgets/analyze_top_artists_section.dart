@@ -1,3 +1,4 @@
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/core/providers/navigation_provider.dart';
@@ -53,7 +54,7 @@ class AnalyzeTopArtistsSection extends ConsumerWidget {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             clipBehavior: Clip.none,
-            physics: const BouncingScrollPhysics(),
+            physics: const LooperScrollPhysics(),
             itemCount: topArtists.length,
             separatorBuilder: (_, _) => const SizedBox(width: 14),
             itemBuilder: (context, i) => _ArtistAvatar(

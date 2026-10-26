@@ -646,21 +646,30 @@ class _AndroidMainScreenState extends ConsumerState<AndroidMainScreen>
                 ],
 
                 Positioned.fill(
-                  child: Navigator(
-                    key: navigatorKey,
-                    observers: [_navDepthObserver],
-                    onGenerateRoute: (settings) {
-                      return PageRouteBuilder(
-                        pageBuilder: (context, animation, secondaryAnimation) =>
-                            _buildTabStack(),
-                        // The tab stack gets the same covered/uncovered parallax
-                        // as pushed pages, so popping back to it eases it in
-                        // instead of snapping it on in the last frame.
-                        transitionsBuilder:
-                            (context, animation, secondaryAnimation, child) =>
-                                _coveredTransition(secondaryAnimation, child),
-                      );
-                    },
+                  // Not painted (and its tickers paused) while the Fluid
+                  // Player covers the whole screen: Home's list, images and
+                  // GIFs were still drawn under the opaque player every
+                  // frame.
+                  child: _HiddenUnderFluidPlayer(
+                    progress: expandProgress,
+                    enabled: settings.enableSlideGesture,
+                    child: Navigator(
+                      key: navigatorKey,
+                      observers: [_navDepthObserver],
+                      onGenerateRoute: (settings) {
+                        return PageRouteBuilder(
+                          pageBuilder:
+                              (context, animation, secondaryAnimation) =>
+                                  _buildTabStack(),
+                          // The tab stack gets the same covered/uncovered parallax
+                          // as pushed pages, so popping back to it eases it in
+                          // instead of snapping it on in the last frame.
+                          transitionsBuilder:
+                              (context, animation, secondaryAnimation, child) =>
+                                  _coveredTransition(secondaryAnimation, child),
+                        );
+                      },
+                    ),
                   ),
                 ),
                 // Backdrop behind the navbar - always present and faded with it
@@ -991,6 +1000,37 @@ class _AndroidMainScreenState extends ConsumerState<AndroidMainScreen>
           ],
         );
       },
+    );
+  }
+}
+
+/// Hides [child] - no paint, tickers paused - while the Fluid Player is
+/// fully open over it. Layout and state are kept, so collapsing shows it
+/// again on the next frame.
+class _HiddenUnderFluidPlayer extends StatelessWidget {
+  const _HiddenUnderFluidPlayer({
+    required this.progress,
+    required this.enabled,
+    required this.child,
+  });
+
+  final ValueNotifier<double> progress;
+  final bool enabled;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!enabled) return child;
+    return ValueListenableBuilder<double>(
+      valueListenable: progress,
+      builder: (context, p, child) {
+        final bool covered = p >= kFluidHandoff;
+        return Offstage(
+          offstage: covered,
+          child: TickerMode(enabled: !covered, child: child!),
+        );
+      },
+      child: child,
     );
   }
 }

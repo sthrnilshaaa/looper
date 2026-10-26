@@ -67,7 +67,7 @@ void _showSortBottomSheet(
                 const Divider(color: Colors.white10, height: 24),
                 Flexible(
                   child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
+                    physics: const LooperScrollPhysics(),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20.0,

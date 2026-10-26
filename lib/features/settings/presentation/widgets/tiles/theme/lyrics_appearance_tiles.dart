@@ -106,7 +106,7 @@ class ActiveLyricsIntensityTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     final intensity = settings.activeLyricsIntensity.isNaN
-        ? 0.0
+        ? 0.35
         : settings.activeLyricsIntensity;
     // Same color the lyrics screen uses.
     final previewColor = activeLyricsColor(

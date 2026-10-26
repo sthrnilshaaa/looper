@@ -149,7 +149,8 @@ class AdvancedLyricLine extends ConsumerWidget {
     // Calculate dynamic opacity based on distance from active line for a smoother transition
     double lineOpacity = 1.0;
     if (isSelected) {
-      lineOpacity = 1.0; // selected lines should read clearly regardless of playback position
+      lineOpacity =
+          1.0; // selected lines should read clearly regardless of playback position
     } else if (selectionActive) {
       lineOpacity =
           0.18; // dim everything else while the user is picking lines to share

@@ -119,6 +119,7 @@ class Library extends _$Library {
   /// this only removes redundant, immediately-superseded intermediate ones.
   void _pauseWatches() {
     _songsSubscription?.cancel();
+    _songsDebounce?.cancel();
     _artistsSubscription?.cancel();
     _albumsSubscription?.cancel();
     _playlistsSubscription?.cancel();
@@ -993,21 +994,52 @@ class Library extends _$Library {
     }
   }
 
+  // Library updates after the first load wait for a quiet moment: every
+  // song change writes play count / last played / resume position, and each
+  // write re-queried the whole collection and rebuilt every screen built on
+  // it (Home's rows, the Songs list) in the middle of the song-change
+  // animation - 22-28 ms frames on a 120 Hz phone. Debounced, a burst of
+  // skips costs one rebuild, after the motion has settled.
+  Timer? _songsDebounce;
+  List<Song>? _pendingSongs;
+  static const Duration _songsSettle = Duration(milliseconds: 700);
+
   void _watchSongs() {
     _songsSubscription?.cancel();
+    _songsDebounce?.cancel();
+    // The first result of each subscription (launch, a sort change) applies
+    // at once; only the later, write-driven ones wait.
+    bool first = true;
     _songsSubscription = _buildSongsQuery().watch(fireImmediately: true).listen(
       (songs) {
-        if (state.sortStrategy == SongSortStrategy.fullPlays) {
-          songs = List<Song>.of(songs)
-            ..sort(
-              state.isAscending
-                  ? (a, b) => compareByFullPlays(b, a)
-                  : compareByFullPlays,
-            );
+        if (first || !state.isInitialized) {
+          first = false;
+          _songsDebounce?.cancel();
+          _pendingSongs = null;
+          _applySongs(songs);
+          return;
         }
-        state = state.copyWith(songs: songs, isInitialized: true);
+        _pendingSongs = songs;
+        _songsDebounce?.cancel();
+        _songsDebounce = Timer(_songsSettle, () {
+          final List<Song>? pending = _pendingSongs;
+          _pendingSongs = null;
+          if (pending != null) _applySongs(pending);
+        });
       },
     );
+  }
+
+  void _applySongs(List<Song> songs) {
+    if (state.sortStrategy == SongSortStrategy.fullPlays) {
+      songs = List<Song>.of(songs)
+        ..sort(
+          state.isAscending
+              ? (a, b) => compareByFullPlays(b, a)
+              : compareByFullPlays,
+        );
+    }
+    state = state.copyWith(songs: songs, isInitialized: true);
   }
 
   void _watchArtists() {

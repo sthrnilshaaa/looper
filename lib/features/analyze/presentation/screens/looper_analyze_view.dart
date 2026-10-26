@@ -1,3 +1,4 @@
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'dart:io';
 import 'package:looper_player/core/utils/ui_utils.dart';
 import 'dart:ui';
@@ -243,7 +244,7 @@ class _AnalyzeBody extends ConsumerWidget {
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 160),
-      physics: const BouncingScrollPhysics(
+      physics: const LooperScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
       child: twoColumns

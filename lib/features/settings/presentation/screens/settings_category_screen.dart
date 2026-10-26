@@ -1,3 +1,4 @@
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'dart:io';
 import 'package:looper_player/core/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
@@ -347,7 +348,7 @@ class SettingsCategoryScreen extends ConsumerWidget {
                   horizontal: 16.0,
                   vertical: 12.0,
                 ),
-                physics: const BouncingScrollPhysics(),
+                physics: const LooperScrollPhysics(),
                 children: categoryId == 'about'
                     ? [
                         // Top Section Card

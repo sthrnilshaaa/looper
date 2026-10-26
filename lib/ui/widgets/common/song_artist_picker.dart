@@ -1,3 +1,4 @@
+import 'package:looper_player/core/motion/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:looper_player/core/utils/l10n.dart';
 import 'package:looper_player/core/utils/ui_utils.dart';
@@ -45,7 +46,7 @@ Future<String?> pickSongArtist(BuildContext context, Song song) async {
   );
 
   if (UiUtils.isDesktop) {
-    return showDialog<String>(
+    return showTaskDialog<String>(
       context: context,
       builder: (context) => SimpleDialog(
         backgroundColor: const Color(0xFF1F1F1F),

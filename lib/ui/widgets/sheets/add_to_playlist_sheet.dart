@@ -1,3 +1,5 @@
+import 'package:looper_player/core/motion/app_routes.dart';
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
@@ -60,7 +62,7 @@ Future<String?> _askPlaylistName(BuildContext context, String suggested) {
   final l10n = context.l10n;
   final controller = TextEditingController(text: suggested)
     ..selection = TextSelection(baseOffset: 0, extentOffset: suggested.length);
-  return showDialog<String>(
+  return showTaskDialog<String>(
     context: context,
     builder: (dialogContext) {
       void submit() {
@@ -162,7 +164,7 @@ class _AddToPlaylistSheet extends ConsumerWidget {
               ),
               child: ListView.builder(
                 shrinkWrap: true,
-                physics: const BouncingScrollPhysics(),
+                physics: const LooperScrollPhysics(),
                 itemCount: playlists.length,
                 itemBuilder: (context, index) {
                   final playlist = playlists[index];

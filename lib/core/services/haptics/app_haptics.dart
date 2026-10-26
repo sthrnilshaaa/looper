@@ -26,6 +26,13 @@ class AppHaptics {
   /// the settings notifier writes it whenever settings load or change.
   static bool enabled = true;
 
+  /// Mirrors the haptic strength setting: 0 = Low (the tuning below, as
+  /// designed), 1 = Medium, 2 = High. Scales every pulse's strength,
+  /// capped at what the motor can do.
+  static int strength = 0;
+
+  static const List<double> _strengthScale = [1.0, 1.6, 2.3];
+
   static const _channel = MethodChannel('com.looper.player/haptics');
 
   /// Nothing to warm up any more; kept so startup code needs no change.
@@ -95,8 +102,9 @@ class AppHaptics {
     if (!enabled) return;
     _run(() async {
       if (!Platform.isAndroid) return desktop();
+      final double k = _strengthScale[strength.clamp(0, 2)];
       await _channel.invokeMethod<void>('play', {
-        'pulses': [for (final p in pulses) p.encode()],
+        'pulses': [for (final p in pulses) p.encode(k)],
       });
     });
   }
@@ -136,5 +144,13 @@ class _Pulse {
   final int amplitude;
   final int gap;
 
-  List<int> encode() => [gap, ms, amplitude, primitive, scale];
+  /// [k] scales the strength: the primitive scale (percent, max 100) and the
+  /// waveform amplitude (max 255); durations and gaps stay the same.
+  List<int> encode([double k = 1.0]) => [
+    gap,
+    ms,
+    (amplitude * k).round().clamp(1, 255),
+    primitive,
+    (scale * k).round().clamp(1, 100),
+  ];
 }

@@ -66,7 +66,7 @@ extension _HomeTabSections on _AndroidHomeTabState {
             height: listHeight,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
+              physics: const LooperScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 12),
               itemCount: itemCount,
               itemBuilder: itemBuilder,

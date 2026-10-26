@@ -40,7 +40,7 @@ final class AppThemeProvider extends $NotifierProvider<AppTheme, ThemeState> {
   }
 }
 
-String _$appThemeHash() => r'd996a7e6b56e48ddb307e572fd50b4288bf3aa60';
+String _$appThemeHash() => r'e21e3c63a0f72331e144a775de87a6369c354029';
 
 abstract class _$AppTheme extends $Notifier<ThemeState> {
   ThemeState build();

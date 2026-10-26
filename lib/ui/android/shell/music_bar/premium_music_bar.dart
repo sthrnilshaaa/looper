@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:looper_player/core/utils/song_metadata.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
+import 'package:flutter/rendering.dart';
+import 'package:looper_player/core/utils/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/features/playback/presentation/providers/playback/playback_notifier.dart';
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
@@ -19,7 +21,6 @@ import 'package:looper_player/ui/widgets/common/scrolling_text.dart';
 import 'package:looper_player/core/providers/player_expand_focus.dart';
 import 'package:looper_player/core/providers/player_expand_provider.dart';
 import 'package:looper_player/features/library/domain/models/models.dart';
-
 
 import 'fluid_player_motion.dart';
 import '../../widgets/premium_section.dart';
@@ -53,17 +54,35 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
   Offset _dragOffset = Offset.zero;
   bool _isDragging = false;
   bool _isPushing = false;
+  // Pointer that caught the panel mid-flight, until it lifts.
+  int? _catchPointer;
+  // Set for a throw's bounce: the expanded content (artwork, controls)
+  // holds still and only the background overshoots, so the artwork never
+  // looks like it slips off its spot and back. Finger stretch moves
+  // everything. Cleared once the bounce is over, or once a finger that
+  // caught it has brought the panel back inside 0..1.
+  bool _holdContent = false;
+  // Drag-down dismiss (collapsed mini bar): 0..1 slide-out + fade, starting
+  // from the sink [_dismissFrom] (px) the finger left it at.
+  late final AnimationController _dismissController;
+  double _dismissFrom = 0.0;
 
   @override
   void initState() {
     super.initState();
     _expandProgress = ref.read(playerExpandProgressProvider);
-    _dragController = AnimationController(
+    // Unbounded: values past 0..1 are the finger's (or a bounce's) overshoot
+    // beyond an end, shown as rubber-band stretch (FluidPlayerGeometry
+    // .stretchOf). Everything else only ever sees the clamped progress.
+    _dragController = AnimationController.unbounded(
       vsync: this,
-      duration: const Duration(milliseconds: 380),
       value: _expandProgress.value,
     )..addListener(_onExpandTick);
     _restFrom = _restTo = widget.restingBottom;
+    _dismissController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 240),
+    );
     _restController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -92,22 +111,80 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
   // never jumps in speed. snapToEnd lands exactly on 0/1, so settled layers
   // end at opacity 1.0 (no leftover compositing layer) and the p > 0.99
   // handoffs always fire.
-  void _settle(double target, {double velocity = 0.0}) {
+  //
+  // A firm finger throw toward the target (allowBounce) uses the soft
+  // bounce spring: it carries a little past the end - shown as rubber-band
+  // stretch - and settles back once. Slow releases, releases from inside a
+  // stretch, taps and programmatic opens land dead.
+  void _settle(
+    double target, {
+    double velocity = 0.0,
+    bool allowBounce = false,
+  }) {
+    final double r = _dragController.value;
+    final double v = velocity.clamp(-8.0, 8.0).toDouble();
+    // Only when opening: there only the background overshoots (see
+    // _holdContent). A bounce on minimizing would sink the mini bar and its
+    // artwork past rest and back - the same "offset" look.
+    final bool bounce =
+        allowBounce &&
+        target == 1.0 &&
+        r >= 0.0 &&
+        r <= 1.0 &&
+        !Motion.reduced &&
+        v.abs() >= kFluidBounceVelocity &&
+        (target - r) * v > 0;
+    if (bounce) {
+      _holdContent = true;
+    } else if (r <= 1.0) {
+      _holdContent = false;
+    }
     _dragController.animateWith(
       SpringSimulation(
-        fluidPlayerSpring,
-        _dragController.value,
+        bounce ? fluidPlayerBounceSpring : fluidPlayerSpring,
+        r,
         target,
-        velocity.clamp(-8.0, 8.0).toDouble(),
+        v,
         snapToEnd: true,
       ),
     );
   }
 
+  // Drag-down dismiss of the collapsed mini bar (as in the classic bar):
+  // it slides the rest of the way off the bottom and fades, then the queue
+  // is cleared. Reset to rest once the bar has gone (see build).
+  void _dismiss(FluidPlayerGeometry geometry) {
+    _dragController.stop();
+    _dismissFrom = -geometry.stretchOf(_dragController.value);
+    AppHaptics.medium();
+    _dismissController.forward(from: 0.0).then((_) {
+      if (!mounted) return;
+      ref.read(playbackProvider.notifier).clearQueue();
+    });
+  }
+
+  // Release target: from inside a stretch, always back to the stretched end
+  // (a rubber band, so a small flick while letting go never flips it);
+  // otherwise velocity first, then position.
+  double _releaseTarget(double pixelsPerSecondDy) {
+    final double r = _dragController.value;
+    if (r > 1.0) return 1.0;
+    if (r < 0.0) return 0.0;
+    if (pixelsPerSecondDy < -200) return 1.0;
+    if (pixelsPerSecondDy > 200) return 0.0;
+    return r > 0.4 ? 1.0 : 0.0;
+  }
+
   // Runs every animation frame / drag event. Only feeds the shared notifier -
   // nothing here may call setState, or the whole bar rebuilds per frame.
   void _onExpandTick() {
-    final double next = _dragController.value;
+    if (_holdContent &&
+        _dragController.value <= 1.0 &&
+        (_isDragging || !_dragController.isAnimating)) {
+      _holdContent = false;
+    }
+    final double next = FluidPlayerGeometry.progressOf(_dragController.value);
+    if (next == _expandProgress.value) return;
     dismissFocusWhenPlayerExpands(_expandProgress.value, next);
     _expandProgress.value = next;
   }
@@ -116,6 +193,7 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
   void dispose() {
     _dragController.dispose();
     _restController.dispose();
+    _dismissController.dispose();
     super.dispose();
   }
 
@@ -158,7 +236,17 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
       }
     });
 
-    if (song == null) return const SizedBox.shrink();
+    if (song == null) {
+      // Dismissed: put the bar back at rest, hidden, for the next song.
+      if (_dismissController.value != 0.0) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _dismissController.value = 0.0;
+          _dragController.value = 0.0;
+        });
+      }
+      return const SizedBox.shrink();
+    }
 
     if (!settings.enableSlideGesture) {
       final Size windowSize = MediaQuery.sizeOf(context);
@@ -405,248 +493,369 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
       morphPlayingIcon = SongPlaybackIndicator(isPlaying: isPlaying);
     }
 
-    return GestureDetector(
-      // Only the drag lives up here; taps are handled by the mini bar and
-      // the expanded player's own controls.
-      onPanStart: (details) {
-        _isDragging = true;
-        _dragController.stop();
-      },
-      onPanUpdate: (details) {
-        final double travel = _geometry(windowSize).travel;
-        _dragController.value -= details.delta.dy / travel;
-      },
-      onPanEnd: (details) {
-        _isDragging = false;
-        final FluidPlayerGeometry geometry = _geometry(windowSize);
-        final double dy = details.velocity.pixelsPerSecond.dy;
-        final double target;
-        if (dy < -200) {
-          target = 1.0;
-        } else if (dy > 200) {
-          target = 0.0;
-        } else {
-          target = _dragController.value > 0.4 ? 1.0 : 0.0;
+    // Catch: a finger landing on the moving panel stops it on that frame
+    // (a Listener, so no gesture-arena delay). The _CatchShield below
+    // swallows that touch, so catching never also taps a button or the
+    // mini bar; dragging from there continues from the frozen spot.
+    return Listener(
+      onPointerDown: (event) {
+        if (_dismissController.isAnimating) return;
+        if (_dragController.isAnimating) {
+          _dragController.stop();
+          _catchPointer = event.pointer;
         }
-        _settle(target, velocity: geometry.progressVelocity(dy));
       },
-      onPanCancel: () {
-        if (!_isDragging) return;
-        _isDragging = false;
-        _settle(_dragController.value > 0.4 ? 1.0 : 0.0);
-      },
-      child: AnimatedBuilder(
-        animation: Listenable.merge([_expandProgress, _restController]),
-        builder: (context, _) {
-          final double p = _expandProgress.value;
+      onPointerUp: (event) => _releaseCatch(event.pointer),
+      onPointerCancel: (event) => _releaseCatch(event.pointer),
+      child: GestureDetector(
+        // Only the drag lives up here; taps are handled by the mini bar and
+        // the expanded player's own controls.
+        onPanStart: (details) {
+          _isDragging = true;
+          _dragController.stop();
+          // A fresh drag from rest moves everything; a finger that caught a
+          // bounce keeps the content held until it is back inside 0..1.
+          if (_catchPointer == null) _holdContent = false;
+        },
+        onPanUpdate: (details) {
+          // Linear in the unbounded position; past an end the overshoot is
+          // damped on output (stretchOf), which gives the rubber band.
+          final double travel = _geometry(windowSize).travel;
+          _dragController.value -= details.delta.dy / travel;
+        },
+        onPanEnd: (details) {
+          _isDragging = false;
           final FluidPlayerGeometry geometry = _geometry(windowSize);
-          final Rect panel = geometry.panelRect(p);
-          final RRect panelRRect = RRect.fromRectAndRadius(
-            panel,
-            const Radius.circular(FluidPlayerGeometry.panelRadius),
+          final double dy = details.velocity.pixelsPerSecond.dy;
+          // Pushed down past the collapsed bar: far enough (finger 70 px,
+          // like the classic bar) or flicked down -> dismiss the player.
+          final double r = _dragController.value;
+          if (r < 0.0 && (-r * geometry.travel > 70.0 || dy > 700.0)) {
+            _dismiss(geometry);
+            return;
+          }
+          _settle(
+            _releaseTarget(dy),
+            velocity: geometry.progressVelocity(dy),
+            allowBounce: true,
           );
-          final double shadowAlpha = 0.3 * (1.0 - p * 5.0).clamp(0.0, 1.0);
+        },
+        onPanCancel: () {
+          if (!_isDragging) return;
+          _isDragging = false;
+          _settle(_releaseTarget(0.0));
+        },
+        child: AnimatedBuilder(
+          animation: _dismissController,
+          builder: (context, child) {
+            final double t = _dismissController.value;
+            if (t == 0.0) return child!;
+            return Opacity(
+              opacity: 1.0 - Curves.easeIn.transform(t),
+              child: child,
+            );
+          },
+          child: AnimatedBuilder(
+            animation: Listenable.merge([
+              _dragController,
+              _restController,
+              _dismissController,
+            ]),
+            builder: (context, _) {
+              final double r = _dragController.value;
+              final double p = FluidPlayerGeometry.progressOf(r);
+              final FluidPlayerGeometry geometry = _geometry(windowSize);
+              final double dismissT = Curves.easeInCubic.transform(
+                _dismissController.value,
+              );
+              final double stretch = dismissT > 0
+                  ? -lerpDouble(_dismissFrom, geometry.dismissTravel, dismissT)!
+                  : geometry.stretchOf(r);
+              final double lift = stretch > 0 ? stretch : 0.0;
+              final double contentLift = _holdContent ? 0.0 : lift;
+              final Rect panel = geometry.panelRect(p, stretch: stretch);
+              final RRect panelRRect = RRect.fromRectAndRadius(
+                panel,
+                const Radius.circular(FluidPlayerGeometry.panelRadius),
+              );
+              final double shadowAlpha = 0.3 * (1.0 - p * 5.0).clamp(0.0, 1.0);
 
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              // Shadow + hairline border of the panel. Fades out in the
-              // first 20% so the blurred shadow isn't redrawn across a
-              // screen-sized rect for the whole motion.
-              if (p < 0.99)
-                Positioned.fromRect(
-                  rect: panel,
-                  child: IgnorePointer(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(
-                          FluidPlayerGeometry.panelRadius,
-                        ),
-                        border: Border.all(
-                          color: Colors.white.withValues(
-                            alpha: 0.05 * (1.0 - p),
-                          ),
-                          width: 1.2,
-                        ),
-                        boxShadow: shadowAlpha > 0
-                            ? [
-                                BoxShadow(
-                                  color: Colors.black.withValues(
-                                    alpha: shadowAlpha,
-                                  ),
-                                  blurRadius: 15,
-                                  spreadRadius: 2,
-                                ),
-                              ]
-                            : null,
-                      ),
-                    ),
-                  ),
-                ),
-              ClipRRect(
-                clipper: _FluidPanelClipper(panelRRect),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // 1. Minimized background. Faded through its color and
-                    // blur strength rather than an Opacity: a BackdropFilter
-                    // under an Opacity forces an extra offscreen pass.
-                    if (p < 0.99)
-                      Positioned.fill(
-                        key: const ValueKey('fluid_bg_minimized'),
-                        child: () {
-                          final Widget fill = ColoredBox(
-                            color: minimizedBgColor.withValues(
-                              alpha: minimizedBgColor.a * (1.0 - p),
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Shadow + hairline border of the panel. Fades out in the
+                  // first 20% so the blurred shadow isn't redrawn across a
+                  // screen-sized rect for the whole motion.
+                  if (p < kFluidHandoff)
+                    Positioned.fromRect(
+                      rect: panel,
+                      child: IgnorePointer(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(
+                              FluidPlayerGeometry.panelRadius,
                             ),
-                          );
-                          if (!isBlurActive) return fill;
-                          return BackdropFilter(
-                            filter: ImageFilter.blur(
-                              sigmaX: 3.0 * (1.0 - p),
-                              sigmaY: 3.0 * (1.0 - p),
+                            border: Border.all(
+                              color: Colors.white.withValues(
+                                alpha: 0.05 * (1.0 - p),
+                              ),
+                              width: 1.2,
                             ),
-                            child: fill,
-                          );
-                        }(),
-                      ),
-
-                    // 2. Expanded background, pinned to the screen.
-                    Positioned.fill(
-                      key: const ValueKey('fluid_bg_expanded'),
-                      child: _fluidLayer(
-                        visible: p > 0.01,
-                        tickers: p > 0.01,
-                        child: Opacity(opacity: p, child: expandedBackground),
-                      ),
-                    ),
-
-                    // 3. Mini bar content, riding the panel's top-left corner.
-                    Positioned(
-                      key: const ValueKey('fluid_mini'),
-                      left: 0,
-                      top: 0,
-                      width: geometry.miniWidth,
-                      height: FluidPlayerGeometry.miniHeight,
-                      child: Transform.translate(
-                        offset: geometry.miniOrigin(p),
-                        child: _fluidLayer(
-                          visible: p < 0.34,
-                          tickers: p < 0.34,
-                          child: Opacity(
-                            opacity: (1.0 - p * 3.0).clamp(0.0, 1.0),
-                            child: miniContent,
+                            boxShadow: shadowAlpha > 0
+                                ? [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: shadowAlpha,
+                                      ),
+                                      blurRadius: 15,
+                                      spreadRadius: 2,
+                                    ),
+                                  ]
+                                : null,
                           ),
                         ),
                       ),
                     ),
-
-                    // 4. Expanded player, pinned to the screen. Kept mounted
-                    // while collapsed so expanding never builds it, decodes
-                    // its images or loads its icons mid-motion; its tickers
-                    // (squiggle, marquee) only run once it has settled open.
-                    Positioned.fill(
-                      key: const ValueKey('fluid_expanded'),
-                      child: _fluidLayer(
-                        visible: p > 0.01,
-                        tickers: p >= 0.99,
-                        child: expandedPlayer,
-                      ),
-                    ),
-
-                    // 5. Morphing album art (flying/scaling between layouts).
-                    if (morphImage != null && p < 0.99)
-                      () {
-                        final Rect art = geometry.morphArtRect(
-                          p,
-                          expandedArtRect,
-                        );
-                        final double scale = art.width / expandedArtRect.width;
-                        // The real artwork's drop shadow, faded in over the
-                        // last stretch so it doesn't pop in at the handoff.
-                        // In the unscaled box, like the radius.
-                        final double shadowT = ((p - 0.6) / 0.39)
-                            .clamp(0.0, 1.0)
-                            .toDouble();
-                        return Positioned(
-                          key: const ValueKey('fluid_morph_art'),
-                          left: 0,
-                          top: 0,
-                          width: expandedArtRect.width,
-                          height: expandedArtRect.height,
-                          child: IgnorePointer(
-                            child: Transform(
-                              transform: Matrix4.translationValues(
-                                art.left,
-                                art.top,
-                                0,
-                              )..scaleByDouble(scale, scale, 1.0, 1.0),
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(
-                                    FluidPlayerGeometry.morphArtRadius(p) /
-                                        scale,
+                  ClipRRect(
+                    clipper: _FluidPanelClipper(panelRRect),
+                    child: // While the panel moves its content leaves the accessibility
+                        // tree: one update at each end instead of every node's
+                        // geometry recomputed every frame (~10 ms a frame on
+                        // phones with any accessibility service on, e.g. a
+                        // password manager).
+                        ExcludeSemantics(
+                          excluding: p > 0.01 && p < kFluidHandoff,
+                          child: _CatchShield(
+                            absorb: () =>
+                                _dragController.isAnimating ||
+                                _dismissController.isAnimating ||
+                                _catchPointer != null,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                // 1. Minimized background. Faded through its color and
+                                // blur strength rather than an Opacity: a BackdropFilter
+                                // under an Opacity forces an extra offscreen pass.
+                                if (p < kFluidHandoff)
+                                  Positioned.fill(
+                                    key: const ValueKey('fluid_bg_minimized'),
+                                    child: () {
+                                      final Widget fill = ColoredBox(
+                                        color: minimizedBgColor.withValues(
+                                          alpha: minimizedBgColor.a * (1.0 - p),
+                                        ),
+                                      );
+                                      if (!isBlurActive) return fill;
+                                      return BackdropFilter(
+                                        filter: ImageFilter.blur(
+                                          sigmaX: 3.0 * (1.0 - p),
+                                          sigmaY: 3.0 * (1.0 - p),
+                                        ),
+                                        child: fill,
+                                      );
+                                    }(),
                                   ),
-                                  boxShadow: shadowT > 0
-                                      ? [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.4 * shadowT,
-                                            ),
-                                            blurRadius: 16 / scale,
-                                            spreadRadius: -6 / scale,
-                                            offset: Offset(0, 10 / scale),
-                                          ),
-                                        ]
-                                      : null,
+
+                                // 2. Expanded background, pinned to the screen. Laid out
+                                // taller than the screen so lifting it with the open-end
+                                // stretch never exposes a strip at the bottom.
+                                Positioned(
+                                  key: const ValueKey('fluid_bg_expanded'),
+                                  left: 0,
+                                  top: 0,
+                                  right: 0,
+                                  bottom: -geometry.stretchOpenMax,
+                                  child: Transform.translate(
+                                    offset: Offset(0, -lift),
+                                    child: _fluidLayer(
+                                      visible: p > 0.01,
+                                      tickers: p > 0.01,
+                                      child: Opacity(
+                                        opacity: p,
+                                        child: expandedBackground,
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                                child: ClipRRect(
-                                  // Radius is in the unscaled box, so divide
-                                  // by the scale to get the on-screen radius.
-                                  borderRadius: BorderRadius.circular(
-                                    FluidPlayerGeometry.morphArtRadius(p) /
-                                        scale,
+
+                                // 3. Mini bar content, riding the panel's top-left corner.
+                                Positioned(
+                                  key: const ValueKey('fluid_mini'),
+                                  left: 0,
+                                  top: 0,
+                                  width: geometry.miniWidth,
+                                  height: FluidPlayerGeometry.miniHeight,
+                                  child: Transform.translate(
+                                    offset: geometry.miniOrigin(
+                                      p,
+                                      stretch: stretch,
+                                    ),
+                                    child: _fluidLayer(
+                                      visible: p < 0.34,
+                                      tickers: p < 0.34,
+                                      child: Opacity(
+                                        opacity: (1.0 - p * 3.0).clamp(
+                                          0.0,
+                                          1.0,
+                                        ),
+                                        child: miniContent,
+                                      ),
+                                    ),
                                   ),
-                                  child: Stack(
-                                    fit: StackFit.expand,
-                                    children: [
-                                      morphImage!,
-                                      if (morphPlayingIcon != null && p < 0.25)
-                                        Positioned.fill(
-                                          child: Opacity(
-                                            opacity: (1.0 - p * 4.0).clamp(
-                                              0.0,
-                                              1.0,
-                                            ),
-                                            child: ColoredBox(
-                                              color: Colors.black.withValues(
-                                                alpha: 0.4,
+                                ),
+
+                                // 4. Expanded player, pinned to the screen. Kept mounted
+                                // while collapsed so expanding never builds it, decodes
+                                // its images or loads its icons mid-motion; its tickers
+                                // (squiggle, marquee) only run once it has settled open.
+                                Positioned.fill(
+                                  key: const ValueKey('fluid_expanded'),
+                                  child: Transform.translate(
+                                    offset: Offset(0, -contentLift),
+                                    // Tickers on as soon as it shows: Riverpod
+                                    // pauses a widget's subscriptions while its
+                                    // TickerMode is off, so holding them until
+                                    // p >= 0.99 kept the player on stale state
+                                    // (old seek position, old layout) through the
+                                    // whole open, then it snapped after landing.
+                                    child: _fluidLayer(
+                                      visible: p > 0.01,
+                                      tickers: p > 0.01,
+                                      child: expandedPlayer,
+                                    ),
+                                  ),
+                                ),
+
+                                // 5. Morphing album art (flying/scaling between layouts).
+                                if (morphImage != null && p < kFluidHandoff)
+                                  () {
+                                    final Rect art = geometry.morphArtRect(
+                                      p,
+                                      expandedArtRect,
+                                      stretch: stretch,
+                                    );
+                                    final double scale =
+                                        art.width / expandedArtRect.width;
+                                    // The real artwork's drop shadow, faded in over the
+                                    // last stretch so it doesn't pop in at the handoff.
+                                    // In the unscaled box, like the radius.
+                                    final double shadowT = ((p - 0.6) / 0.39)
+                                        .clamp(0.0, 1.0)
+                                        .toDouble();
+                                    return Positioned(
+                                      key: const ValueKey('fluid_morph_art'),
+                                      left: 0,
+                                      top: 0,
+                                      width: expandedArtRect.width,
+                                      height: expandedArtRect.height,
+                                      child: IgnorePointer(
+                                        child: Transform(
+                                          transform:
+                                              Matrix4.translationValues(
+                                                art.left,
+                                                art.top,
+                                                0,
+                                              )..scaleByDouble(
+                                                scale,
+                                                scale,
+                                                1.0,
+                                                1.0,
                                               ),
-                                              child: Center(
-                                                child: Transform.scale(
-                                                  scale: 1.0 / scale,
-                                                  child: morphPlayingIcon,
-                                                ),
+                                          child: DecoratedBox(
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(
+                                                FluidPlayerGeometry.morphArtRadius(
+                                                      p,
+                                                    ) /
+                                                    scale,
+                                              ),
+                                              boxShadow: shadowT > 0
+                                                  ? [
+                                                      BoxShadow(
+                                                        color: Colors.black
+                                                            .withValues(
+                                                              alpha:
+                                                                  0.4 * shadowT,
+                                                            ),
+                                                        blurRadius: 16 / scale,
+                                                        spreadRadius:
+                                                            -6 / scale,
+                                                        offset: Offset(
+                                                          0,
+                                                          10 / scale,
+                                                        ),
+                                                      ),
+                                                    ]
+                                                  : null,
+                                            ),
+                                            child: ClipRRect(
+                                              // Radius is in the unscaled box, so divide
+                                              // by the scale to get the on-screen radius.
+                                              borderRadius: BorderRadius.circular(
+                                                FluidPlayerGeometry.morphArtRadius(
+                                                      p,
+                                                    ) /
+                                                    scale,
+                                              ),
+                                              child: Stack(
+                                                fit: StackFit.expand,
+                                                children: [
+                                                  morphImage!,
+                                                  if (morphPlayingIcon !=
+                                                          null &&
+                                                      p < 0.25)
+                                                    Positioned.fill(
+                                                      child: Opacity(
+                                                        opacity: (1.0 - p * 4.0)
+                                                            .clamp(0.0, 1.0),
+                                                        child: ColoredBox(
+                                                          color: Colors.black
+                                                              .withValues(
+                                                                alpha:
+                                                                    SongPlaybackOverlay
+                                                                        .dimAlpha,
+                                                              ),
+                                                          child: Center(
+                                                            child: Transform.scale(
+                                                              scale:
+                                                                  1.0 / scale,
+                                                              child:
+                                                                  morphPlayingIcon,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                ],
                                               ),
                                             ),
                                           ),
                                         ),
-                                    ],
-                                  ),
-                                ),
-                              ),
+                                      ),
+                                    );
+                                  }(),
+                              ],
                             ),
                           ),
-                        );
-                      }(),
-                  ],
-                ),
-              ),
-            ],
-          );
-        },
+                        ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
+  }
+
+  // The catching pointer lifted. If it never dragged, settle from where it
+  // was caught (no bounce); a drag already settled in onPanEnd. Runs before
+  // the recognizers see the up event, hence the _isDragging check.
+  void _releaseCatch(int pointer) {
+    if (_catchPointer != pointer) return;
+    _catchPointer = null;
+    if (_isDragging) return;
+    _settle(_releaseTarget(0.0));
   }
 
   FluidPlayerGeometry _geometry(Size windowSize) => FluidPlayerGeometry(
@@ -686,4 +895,42 @@ class _FluidPanelClipper extends CustomClipper<RRect> {
 
   @override
   bool shouldReclip(_FluidPanelClipper oldClipper) => oldClipper.rrect != rrect;
+}
+
+// Swallows a touch (counts it as hit, but hides it from the panel's own
+// buttons and taps) while [absorb] says so - checked at hit-test time, which
+// is before the Listener above sees the pointer-down. Ancestors (the drag
+// GestureDetector) still get it.
+class _CatchShield extends SingleChildRenderObjectWidget {
+  const _CatchShield({required this.absorb, super.child});
+
+  final bool Function() absorb;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderCatchShield(absorb);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderCatchShield renderObject,
+  ) {
+    renderObject.absorb = absorb;
+  }
+}
+
+class _RenderCatchShield extends RenderProxyBox {
+  _RenderCatchShield(this.absorb);
+
+  bool Function() absorb;
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    if (absorb()) {
+      if (!size.contains(position)) return false;
+      result.add(BoxHitTestEntry(this, position));
+      return true;
+    }
+    return super.hitTest(result, position: position);
+  }
 }

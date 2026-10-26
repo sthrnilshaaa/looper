@@ -1,3 +1,4 @@
+import 'package:looper_player/core/motion/list_wave.dart';
 import 'package:looper_player/core/providers/collection_navigation.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -67,64 +68,66 @@ class AlbumsGridView extends ConsumerWidget {
                 (availableWidth - crossAxisSpacing * (crossAxisCount - 1)) /
                 crossAxisCount;
 
-            return GridView.builder(
-              padding: const EdgeInsets.only(
-                left: horizontalPadding,
-                right: horizontalPadding,
-                top: 24,
-                bottom: 200,
-              ),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                mainAxisSpacing: 24,
-                crossAxisSpacing: crossAxisSpacing,
-                mainAxisExtent: itemWidth + textBlockHeight,
-              ),
-              itemCount: albums.length,
-              itemBuilder: (context, index) {
-                final album = albums[index];
-                return InkWell(
-                  onTap: () async {
-                    await ref
-                        .read(appNavigationProvider.notifier)
-                        .showAlbum(album, unknownArtist: l10n.unknownArtist);
-                  },
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AspectRatio(
-                        aspectRatio: 1,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: OptimizedImage(
-                            imagePath: album.artPath,
-                            fit: BoxFit.cover,
+            return ListWave(
+              child: GridView.builder(
+                padding: const EdgeInsets.only(
+                  left: horizontalPadding,
+                  right: horizontalPadding,
+                  top: 24,
+                  bottom: 200,
+                ),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  mainAxisSpacing: 24,
+                  crossAxisSpacing: crossAxisSpacing,
+                  mainAxisExtent: itemWidth + textBlockHeight,
+                ),
+                itemCount: albums.length,
+                itemBuilder: waveItems((context, index) {
+                  final album = albums[index];
+                  return InkWell(
+                    onTap: () async {
+                      await ref
+                          .read(appNavigationProvider.notifier)
+                          .showAlbum(album, unknownArtist: l10n.unknownArtist);
+                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AspectRatio(
+                          aspectRatio: 1,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: OptimizedImage(
+                              imagePath: album.artPath,
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        album.name,
-                        style: AppFonts.jostStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                        const SizedBox(height: 12),
+                        Text(
+                          album.name,
+                          style: AppFonts.jostStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        album.artist ?? l10n.unknownArtist,
-                        style: AppFonts.jostStyle(
-                          color: Colors.white.withValues(alpha: 0.5),
-                          fontSize: 13,
+                        Text(
+                          album.artist ?? l10n.unknownArtist,
+                          style: AppFonts.jostStyle(
+                            color: Colors.white.withValues(alpha: 0.5),
+                            fontSize: 13,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                );
-              },
+                      ],
+                    ),
+                  );
+                }),
+              ),
             );
           },
         );
