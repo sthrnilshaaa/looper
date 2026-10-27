@@ -93,6 +93,8 @@
   "activeLyricsIntensityPreviewActive": "활성 줄",
   "activeLyricsUseAccent": "활성 줄 강조 색상",
   "activeLyricsUseAccentDesc": "순수한 강조 색상을 사용합니다. 끄면 흰색과 섞어 더 부드러운 색조가 됩니다",
+  "lyricsLineGrouping": "이어지는 줄 묶기",
+  "lyricsLineGroupingDesc": "한 호흡에 부르는 두 줄을 스크롤 없이 함께 표시합니다",
   "dynamicLyricsBg": "다이나믹 가사 BG",
   "dynamicLyricsBgDesc": "가사 화면에 앨범 아트 블러 적용",
   "dynamicTheming": "동적 테마",

@@ -93,6 +93,8 @@
   "activeLyricsIntensityPreviewActive": "アクティブ行",
   "activeLyricsUseAccent": "アクティブ行にアクセントカラー",
   "activeLyricsUseAccentDesc": "アクセントカラーをそのまま使います。オフにすると白と混ぜた柔らかい色合いになります",
+  "lyricsLineGrouping": "続けて歌う行をまとめる",
+  "lyricsLineGroupingDesc": "ひと息で歌われる2行を、スクロールせずに一緒に表示します",
   "dynamicLyricsBg": "ダイナミックリリックBG",
   "dynamicLyricsBgDesc": "歌詞画面にアルバムアートのぼかしを適用",
   "dynamicTheming": "動的なテーマ",

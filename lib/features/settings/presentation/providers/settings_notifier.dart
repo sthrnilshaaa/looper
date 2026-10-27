@@ -386,6 +386,7 @@ class Settings extends _$Settings {
       ..dynamicColorActiveLyrics = s.dynamicColorActiveLyrics
       ..activeLyricsIntensity = s.activeLyricsIntensity
       ..activeLyricsSoftColor = s.activeLyricsSoftColor
+      ..lyricsNoLineGrouping = s.lyricsNoLineGrouping
       ..ambientColorBackground = s.ambientColorBackground
       ..lyricsAlignment = s.lyricsAlignment
       ..dynamicAccentColor = s.dynamicAccentColor
@@ -728,6 +729,9 @@ class Settings extends _$Settings {
 
   Future<void> updateActiveLyricsUseAccent(bool enabled) =>
       _update((s) => s..activeLyricsSoftColor = !enabled);
+
+  Future<void> updateLyricsLineGrouping(bool enabled) =>
+      _update((s) => s..lyricsNoLineGrouping = !enabled);
 
   Future<void> updateLyricsAlignment(String alignment) =>
       _update((s) => s..lyricsAlignment = alignment);

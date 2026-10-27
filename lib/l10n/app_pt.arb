@@ -93,6 +93,8 @@
   "activeLyricsIntensityPreviewActive": "Linha ativa",
   "activeLyricsUseAccent": "Cor de destaque na linha ativa",
   "activeLyricsUseAccentDesc": "Usar a cor de destaque pura; desligado a mistura com branco para um tom mais suave",
+  "lyricsLineGrouping": "Agrupar linhas contínuas",
+  "lyricsLineGroupingDesc": "Mostra juntas duas linhas cantadas num só fôlego, sem rolar entre elas",
   "dynamicLyricsBg": "Letras Dinâmicas BG",
   "dynamicLyricsBgDesc": "Aplicar desfoque da capa do álbum na tela de letras",
   "dynamicTheming": "Tema Dinâmico",

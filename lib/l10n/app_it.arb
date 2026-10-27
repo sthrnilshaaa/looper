@@ -93,6 +93,8 @@
   "activeLyricsIntensityPreviewActive": "Riga attiva",
   "activeLyricsUseAccent": "Colore d'accento per la riga attiva",
   "activeLyricsUseAccentDesc": "Usa il colore d'accento puro; se disattivato viene mescolato con il bianco per una tinta più morbida",
+  "lyricsLineGrouping": "Raggruppa righe continue",
+  "lyricsLineGroupingDesc": "Mostra insieme due righe cantate in un solo respiro, senza scorrere tra loro",
   "dynamicLyricsBg": "Sfondo dinamico dei testi",
   "dynamicLyricsBgDesc": "Applica la sfocatura della copertina sullo schermo dei testi",
   "dynamicTheming": "Tema dinamico",

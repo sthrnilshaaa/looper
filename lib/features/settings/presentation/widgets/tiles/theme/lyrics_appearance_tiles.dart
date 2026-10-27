@@ -96,6 +96,27 @@ class ActiveLyricsUseAccentTile extends ConsumerWidget {
   }
 }
 
+/// Whether two lyric lines sung in one breath are shown together.
+class LyricsLineGroupingTile extends ConsumerWidget {
+  const LyricsLineGroupingTile({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final l10n = AppLocalizations.of(context)!;
+    return SwitchListTile(
+      secondary: const Icon(LucideIcons.listCollapse, color: Colors.white70),
+      title: Text(l10n.lyricsLineGrouping, style: _tileTitleStyle()),
+      subtitle: Text(l10n.lyricsLineGroupingDesc, style: _tileSubtitleStyle()),
+      activeThumbColor: Color(settings.accentColor),
+      value: !settings.lyricsNoLineGrouping,
+      onChanged: (value) {
+        ref.read(settingsProvider.notifier).updateLyricsLineGrouping(value);
+      },
+    );
+  }
+}
+
 /// Slider for how vibrant the active lyric line is drawn, with a preview of
 /// the current song's active color next to an inactive line.
 class ActiveLyricsIntensityTile extends ConsumerWidget {

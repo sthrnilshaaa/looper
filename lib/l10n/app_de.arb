@@ -93,6 +93,8 @@
   "activeLyricsIntensityPreviewActive": "Aktive Zeile",
   "activeLyricsUseAccent": "Akzentfarbe für aktive Zeile",
   "activeLyricsUseAccentDesc": "Reine Akzentfarbe verwenden; aus mischt sie mit Weiß zu einem sanfteren Ton",
+  "lyricsLineGrouping": "Fortlaufende Zeilen gruppieren",
+  "lyricsLineGroupingDesc": "Zwei in einem Atemzug gesungene Zeilen zusammen anzeigen, ohne dazwischen zu scrollen",
   "dynamicLyricsBg": "Dynamischer Liedtext BG",
   "dynamicLyricsBgDesc": "Albumcover-Unschärfe auf Songtext-Bildschirm anwenden",
   "dynamicTheming": "Dynamisches Theming",

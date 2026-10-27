@@ -93,6 +93,8 @@
   "activeLyricsIntensityPreviewActive": "Active line",
   "activeLyricsUseAccent": "Accent Color Active Line",
   "activeLyricsUseAccentDesc": "Use the pure accent color; off blends it with white for a softer tint",
+  "lyricsLineGrouping": "Group Continued Lines",
+  "lyricsLineGroupingDesc": "Show two lines sung in one breath together, without scrolling between them",
   "dynamicLyricsBg": "Dynamic Lyrics BG",
   "dynamicLyricsBgDesc": "Apply album-art blur to lyrics screen",
   "dynamicTheming": "Dynamic Theming",

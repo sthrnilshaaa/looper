@@ -120,6 +120,7 @@ class SettingsCategoryScreen extends ConsumerWidget {
               const ActiveLyricsIntensityTile(),
             ],
             const LyricsAlignmentTile(),
+            const LyricsLineGroupingTile(),
             const LyricsProviderTile(),
           ],
         ),

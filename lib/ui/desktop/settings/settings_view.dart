@@ -271,6 +271,19 @@ class SettingsView extends ConsumerWidget {
                       },
                       isLast: false,
                     ),
+                    _PremiumSwitchRow(
+                      icon: LucideIcons.listCollapse,
+                      title: l10n.lyricsLineGrouping,
+                      subtitle: l10n.lyricsLineGroupingDesc,
+                      value: !settings.lyricsNoLineGrouping,
+                      onChanged: (value) {
+                        AppHaptics.light();
+                        ref
+                            .read(settingsProvider.notifier)
+                            .updateLyricsLineGrouping(value);
+                      },
+                      isLast: false,
+                    ),
                     if (UiUtils.isDesktop) ...[
                       _PremiumSliderRow(
                         icon: LucideIcons.languages,

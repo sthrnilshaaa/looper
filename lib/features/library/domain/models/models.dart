@@ -284,6 +284,10 @@ class AppSettings {
   // blended with white instead of the pure accent. Stored inverted so the
   // toggle defaults to on, also for settings saved before it existed.
   bool activeLyricsSoftColor = false;
+  // "Group Continued Lines" off: two lyric lines sung in one breath are no
+  // longer shown as one (LyricLine.pairHeads). Stored inverted so grouping
+  // stays on by default, also for settings saved before it existed.
+  bool lyricsNoLineGrouping = false;
   bool ambientColorBackground = true;
   String lyricsAlignment = 'left'; // 'left', 'center', 'right'
   bool dynamicAccentColor = true;

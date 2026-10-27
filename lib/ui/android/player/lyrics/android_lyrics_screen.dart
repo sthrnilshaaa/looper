@@ -884,7 +884,18 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                                           curve: Curves.easeOutBack,
                                           child: AnimatedPlayPauseIcon(
                                             isPlaying: isPlaying,
-                                            color: Colors.white,
+                                            // Dark on the accent while paused,
+                                            // as on the player screen (the two
+                                            // share a hero).
+                                            color: isPlaying
+                                                ? Colors.white
+                                                : HSLColor.fromColor(
+                                                        Theme.of(
+                                                          context,
+                                                        ).colorScheme.primary,
+                                                      )
+                                                      .withLightness(0.15)
+                                                      .toColor(),
                                             size: AppIcons
                                                 .expandedPlayerPlayPauseIcon
                                                 .s,

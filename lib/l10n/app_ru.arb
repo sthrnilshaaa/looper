@@ -93,6 +93,8 @@
   "activeLyricsIntensityPreviewActive": "Активная строка",
   "activeLyricsUseAccent": "Акцентный цвет активной строки",
   "activeLyricsUseAccentDesc": "Использовать чистый акцентный цвет; если выключено, он смешивается с белым для мягкого оттенка",
+  "lyricsLineGrouping": "Группировать слитные строки",
+  "lyricsLineGroupingDesc": "Показывать вместе две строки, спетые на одном дыхании, без прокрутки между ними",
   "dynamicLyricsBg": "Динамические тексты песен BG",
   "dynamicLyricsBgDesc": "Применять размытие обложки к экрану с текстом песен",
   "dynamicTheming": "Динамическое оформление тем",

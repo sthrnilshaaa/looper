@@ -205,6 +205,12 @@ extension _SettingsSearch on _SettingsViewState {
         widget: const LyricsAlignmentTile(),
       ),
       SettingsSearchItem(
+        title: l10n.lyricsLineGrouping,
+        subtitle: l10n.lyricsLineGroupingDesc,
+        category: '${l10n.theme} · ${l10n.lyrics}',
+        widget: const LyricsLineGroupingTile(),
+      ),
+      SettingsSearchItem(
         title: l10n.progressBarStyle,
         // Also found by the old "Flat progress bar" name - its switch now
         // lives in this sheet.

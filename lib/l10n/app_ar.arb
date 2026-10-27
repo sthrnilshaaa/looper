@@ -93,6 +93,8 @@
   "activeLyricsIntensityPreviewActive": "سطر نشط",
   "activeLyricsUseAccent": "لون التمييز للسطر النشط",
   "activeLyricsUseAccentDesc": "استخدام لون التمييز الصافي؛ عند الإيقاف يُمزج مع الأبيض للحصول على درجة أنعم",
+  "lyricsLineGrouping": "تجميع الأسطر المتصلة",
+  "lyricsLineGroupingDesc": "عرض سطرين يُغنّيان في نفَس واحد معًا دون تمرير بينهما",
   "dynamicLyricsBg": "كلمات ديناميكية BG",
   "dynamicLyricsBgDesc": "تطبيق ضبابية غلاف الألبوم على شاشة كلمات الأغاني",
   "dynamicTheming": "السمات الديناميكية",

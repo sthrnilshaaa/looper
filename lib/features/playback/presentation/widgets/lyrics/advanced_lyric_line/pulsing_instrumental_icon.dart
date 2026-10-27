@@ -83,7 +83,18 @@ class _PulsingInstrumentalIconState
           ),
         );
       },
-      child: Text('♫', style: widget.style),
+      // Pops in when the break starts (it isn't shown before): scale only,
+      // so the line keeps its size and the list doesn't move.
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: Motion.reduced ? 1.0 : 0.0, end: 1.0),
+        duration: const Duration(milliseconds: 520),
+        curve: Curves.easeOutBack,
+        child: Text('♫', style: widget.style),
+        builder: (context, t, child) => Opacity(
+          opacity: t.clamp(0.0, 1.0),
+          child: Transform.scale(scale: 0.4 + 0.6 * t, child: child),
+        ),
+      ),
     );
   }
 }

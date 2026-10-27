@@ -93,6 +93,8 @@
   "activeLyricsIntensityPreviewActive": "सक्रिय लाइन",
   "activeLyricsUseAccent": "सक्रिय लाइन के लिए एक्सेंट रंग",
   "activeLyricsUseAccentDesc": "शुद्ध एक्सेंट रंग इस्तेमाल करें; बंद करने पर हल्के रंग के लिए सफ़ेद के साथ मिलाया जाता है",
+  "lyricsLineGrouping": "लगातार पंक्तियों को समूह करें",
+  "lyricsLineGroupingDesc": "एक साँस में गाई गई दो पंक्तियों को साथ दिखाएँ, बीच में स्क्रॉल किए बिना",
   "dynamicLyricsBg": "डायनामिक बोल बैकग्राउंड",
   "dynamicLyricsBgDesc": "बोल स्क्रीन पर एल्बम आर्ट ब्लर लागू करें",
   "dynamicTheming": "डायनामिक थीमिंग",

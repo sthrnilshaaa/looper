@@ -93,6 +93,8 @@
   "activeLyricsIntensityPreviewActive": "Línea activa",
   "activeLyricsUseAccent": "Color de acento en la línea activa",
   "activeLyricsUseAccentDesc": "Usar el color de acento puro; desactivado lo mezcla con blanco para un tono más suave",
+  "lyricsLineGrouping": "Agrupar líneas seguidas",
+  "lyricsLineGroupingDesc": "Muestra juntas dos líneas cantadas de un tirón, sin desplazarse entre ellas",
   "dynamicLyricsBg": "Fondo dinámico de letras",
   "dynamicLyricsBgDesc": "Aplicar desenfoque de portada al fondo de la pantalla de letras",
   "dynamicTheming": "Temas dinámicos",

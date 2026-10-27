@@ -79,9 +79,11 @@ class _AdvancedLyricRendererState extends ConsumerState<AdvancedLyricRenderer>
 
   /// The line the list rests on while the line at [index] is current: the
   /// line itself, or the one before it when the two are sung as one (see
-  /// [LyricLine.pairHeads]). Only word and letter styles pair lines.
+  /// [LyricLine.pairHeads]). Only word and letter styles pair lines, and
+  /// only while "Group Continued Lines" is on.
   int _anchorIndexOf(int index) {
     if (index < 0 || widget.mode == LyricsSyncMode.line) return index;
+    if (ref.read(settingsProvider).lyricsNoLineGrouping) return index;
     final heads = LyricLine.pairHeads(widget.lines);
     return index < heads.length ? heads[index] : index;
   }
@@ -565,6 +567,15 @@ class _AdvancedLyricRendererState extends ConsumerState<AdvancedLyricRenderer>
     });
 
     final selection = ref.watch(lyricsSelectionProvider);
+    // Rebuild (and re-anchor) when grouping is switched.
+    ref.listen<bool>(settingsProvider.select((s) => s.lyricsNoLineGrouping), (
+      _,
+      _,
+    ) {
+      final currentPos = ref.read(playbackProvider).position;
+      _updateActiveLine(currentPos, forceScroll: true);
+      setState(() {});
+    });
 
     return Listener(
       behavior: HitTestBehavior.translucent,
@@ -658,8 +669,7 @@ class _AdvancedLyricRendererState extends ConsumerState<AdvancedLyricRenderer>
               // Assign or retrieve key for this line
               final key = _lineKeys.putIfAbsent(index, () => GlobalKey());
 
-              return Padding(
-                key: key,
+              final Widget row = Padding(
                 padding: const EdgeInsets.symmetric(vertical: 7),
                 child: LyricsFollowOffset(
                   motion: _followMotion,
@@ -704,6 +714,28 @@ class _AdvancedLyricRendererState extends ConsumerState<AdvancedLyricRenderer>
                     },
                   ),
                 ),
+              );
+
+              // A music break ("♫") takes no room until it starts: upcoming
+              // breaks are collapsed and open up when they become current.
+              // The list rests on a line's top edge, so the opening only
+              // pushes the upcoming lines down - the current spot stays put.
+              if (!widget.synced ||
+                  !AdvancedLyricLine.isInstrumentalText(line.text)) {
+                return KeyedSubtree(key: key, child: row);
+              }
+              return AnimatedSize(
+                key: key,
+                duration: Duration(
+                  milliseconds: Motion.reducedOf(context) ? 0 : 380,
+                ),
+                curve: Curves.easeOutCubic,
+                alignment: Alignment.topCenter,
+                // The icon pops in while the row opens; don't cut its glow.
+                clipBehavior: Clip.none,
+                child: index > _currentLineIndex
+                    ? const SizedBox(width: double.infinity, height: 0)
+                    : row,
               );
             },
           ),

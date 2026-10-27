@@ -1,3 +1,5 @@
+import 'dart:ui' show lerpDouble;
+
 import 'package:flutter/material.dart';
 
 import 'package:looper_player/core/utils/motion.dart';
@@ -103,9 +105,32 @@ Widget artworkFlightShuttle(
   // (fixed-size image inside a decorated frame) didn't fill it: its dark
   // frame/shadow showed above the picture mid-flight, then snapped on
   // landing.
-  final Widget art = ClipRRect(
-    borderRadius: BorderRadius.circular(12),
-    child: bigSize.isEmpty
+  // Corners morph from one hero's radius to the other's. A fixed 12 landed
+  // as a rounded square on the classic mini bar's round thumbnail (radius
+  // 32 on 50 dp) and its corners snapped on the landing frame.
+  // animation.value is 1 at the pushed route's end in both directions.
+  final bool push = flightDirection == HeroFlightDirection.push;
+  final double pushedRadius = _clipRadius(
+    push ? toHeroContext : fromHeroContext,
+  );
+  final double belowRadius = _clipRadius(
+    push ? fromHeroContext : toHeroContext,
+  );
+  BorderRadius radiusAt(double t) =>
+      BorderRadius.circular(lerpDouble(belowRadius, pushedRadius, t)!);
+  Widget clip(Widget child) => pushedRadius == belowRadius
+      ? ClipRRect(
+          borderRadius: BorderRadius.circular(pushedRadius),
+          child: child,
+        )
+      : AnimatedBuilder(
+          animation: animation,
+          child: child,
+          builder: (context, child) =>
+              ClipRRect(borderRadius: radiusAt(animation.value), child: child),
+        );
+  final Widget art = clip(
+    bigSize.isEmpty
         ? big
         // Uniform scale, cropping any overflow: the flight rect isn't
         // always the artwork's shape near the small end, and filling it
@@ -127,14 +152,29 @@ Widget artworkFlightShuttle(
       Positioned.fill(
         child: FadeTransition(
           opacity: ReverseAnimation(animation),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: SongPlaybackOverlay(isPlaying: overlay.isPlaying),
-          ),
+          child: clip(SongPlaybackOverlay(isPlaying: overlay.isPlaying)),
         ),
       ),
     ],
   );
+}
+
+/// Corner radius of the first ClipRRect inside a hero (its artwork's
+/// on-screen rounding), or 12 - the player artwork's - when it has none.
+double _clipRadius(BuildContext heroContext) {
+  double? found;
+  void visit(Element element) {
+    if (found != null) return;
+    final Widget w = element.widget;
+    if (w is ClipRRect) {
+      found = w.borderRadius.resolve(TextDirection.ltr).topLeft.x;
+      return;
+    }
+    element.visitChildElements(visit);
+  }
+
+  if (heroContext is Element) heroContext.visitChildElements(visit);
+  return found ?? 12.0;
 }
 
 SongPlaybackOverlay? _findOverlay(BuildContext heroContext) {

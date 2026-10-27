@@ -51,17 +51,24 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
   late final AnimationController _restController;
   late double _restFrom;
   late double _restTo;
+  // Classic bar (Fluid Player off): finger travel of the current drag, and
+  // the bar's shown offset - the finger through a rubber band while held,
+  // then a bouncy spring back to rest on release.
   Offset _dragOffset = Offset.zero;
+  late final AnimationController _barX;
+  late final AnimationController _barY;
+  static const double _barStretchX = 120.0;
+  static const double _barStretchY = 60.0;
+  static final SpringDescription _barBounceSpring =
+      SpringDescription.withDampingRatio(
+        mass: 1.0,
+        stiffness: 420.0,
+        ratio: 0.5,
+      );
   bool _isDragging = false;
   bool _isPushing = false;
   // Pointer that caught the panel mid-flight, until it lifts.
   int? _catchPointer;
-  // Set for a throw's bounce: the expanded content (artwork, controls)
-  // holds still and only the background overshoots, so the artwork never
-  // looks like it slips off its spot and back. Finger stretch moves
-  // everything. Cleared once the bounce is over, or once a finger that
-  // caught it has brought the panel back inside 0..1.
-  bool _holdContent = false;
   // Drag-down dismiss (collapsed mini bar): 0..1 slide-out + fade, starting
   // from the sink [_dismissFrom] (px) the finger left it at.
   late final AnimationController _dismissController;
@@ -78,6 +85,8 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
       vsync: this,
       value: _expandProgress.value,
     )..addListener(_onExpandTick);
+    _barX = AnimationController.unbounded(vsync: this);
+    _barY = AnimationController.unbounded(vsync: this);
     _restFrom = _restTo = widget.restingBottom;
     _dismissController = AnimationController(
       vsync: this,
@@ -106,42 +115,32 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
     Curves.easeInOut.transform(_restController.value),
   )!;
 
-  // Settles the Fluid Player open/closed on a critically damped spring,
-  // starting from the finger's velocity (progress units/s) so letting go
-  // never jumps in speed. snapToEnd lands exactly on 0/1, so settled layers
-  // end at opacity 1.0 (no leftover compositing layer) and the p > 0.99
-  // handoffs always fire.
+  // Settles the Fluid Player open/closed on a spring started from the
+  // finger's velocity (progress units/s), so letting go never jumps in
+  // speed. snapToEnd lands exactly on 0/1, so settled layers end at opacity
+  // 1.0 (no leftover compositing layer) and the handoffs always fire.
   //
-  // A firm finger throw toward the target (allowBounce) uses the soft
-  // bounce spring: it carries a little past the end - shown as rubber-band
-  // stretch - and settles back once. Slow releases, releases from inside a
-  // stretch, taps and programmatic opens land dead.
+  // Every open and close bounces (taps, throws, back button): the whole
+  // sheet carries a little past the end - shown as rubber-band stretch - and
+  // settles back once. Opening lifts the full player, minimizing dips the
+  // mini bar under its rest. Releases from inside a stretch, a caught panel
+  // let go without a drag, and reduced motion land dead.
   void _settle(
     double target, {
     double velocity = 0.0,
-    bool allowBounce = false,
+    bool allowBounce = true,
   }) {
     final double r = _dragController.value;
     final double v = velocity.clamp(-8.0, 8.0).toDouble();
-    // Only when opening: there only the background overshoots (see
-    // _holdContent). A bounce on minimizing would sink the mini bar and its
-    // artwork past rest and back - the same "offset" look.
     final bool bounce =
-        allowBounce &&
-        target == 1.0 &&
-        r >= 0.0 &&
-        r <= 1.0 &&
-        !Motion.reduced &&
-        v.abs() >= kFluidBounceVelocity &&
-        (target - r) * v > 0;
-    if (bounce) {
-      _holdContent = true;
-    } else if (r <= 1.0) {
-      _holdContent = false;
-    }
+        allowBounce && r >= 0.0 && r <= 1.0 && r != target && !Motion.reduced;
     _dragController.animateWith(
       SpringSimulation(
-        bounce ? fluidPlayerBounceSpring : fluidPlayerSpring,
+        !bounce
+            ? fluidPlayerSpring
+            : target == 1.0
+            ? fluidPlayerOpenBounceSpring
+            : fluidPlayerCloseBounceSpring,
         r,
         target,
         v,
@@ -178,11 +177,6 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
   // Runs every animation frame / drag event. Only feeds the shared notifier -
   // nothing here may call setState, or the whole bar rebuilds per frame.
   void _onExpandTick() {
-    if (_holdContent &&
-        _dragController.value <= 1.0 &&
-        (_isDragging || !_dragController.isAnimating)) {
-      _holdContent = false;
-    }
     final double next = FluidPlayerGeometry.progressOf(_dragController.value);
     if (next == _expandProgress.value) return;
     dismissFocusWhenPlayerExpands(_expandProgress.value, next);
@@ -194,7 +188,29 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
     _dragController.dispose();
     _restController.dispose();
     _dismissController.dispose();
+    _barX.dispose();
+    _barY.dispose();
     super.dispose();
+  }
+
+  static double _band(double x, double d) =>
+      x < 0 ? -rubberBand(-x, d) : rubberBand(x, d);
+
+  static double _unband(double y, double d) =>
+      y < 0 ? -inverseRubberBand(-y, d) : inverseRubberBand(y, d);
+
+  // Classic bar released: springs back to rest with a visible wobble (or
+  // dead, under reduced motion), carrying the finger's shown velocity.
+  void _springBarBack(double vx, double vy) {
+    final SpringDescription spring = Motion.reduced
+        ? fluidPlayerSpring
+        : _barBounceSpring;
+    _barX.animateWith(
+      SpringSimulation(spring, _barX.value, 0.0, vx, snapToEnd: true),
+    );
+    _barY.animateWith(
+      SpringSimulation(spring, _barY.value, 0.0, vy, snapToEnd: true),
+    );
   }
 
   void _triggerHaptic() {
@@ -260,14 +276,19 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: GestureDetector(
           onPanStart: (details) {
-            setState(() {
-              _isDragging = true;
-            });
+            _isDragging = true;
+            // Catching the bar mid-bounce continues from where it is.
+            _barX.stop();
+            _barY.stop();
+            _dragOffset = Offset(
+              _unband(_barX.value, _barStretchX),
+              _unband(_barY.value, _barStretchY),
+            );
           },
           onPanUpdate: (details) {
-            setState(() {
-              _dragOffset += details.delta;
-            });
+            _dragOffset += details.delta;
+            _barX.value = _band(_dragOffset.dx, _barStretchX);
+            _barY.value = _band(_dragOffset.dy, _barStretchY);
           },
           onPanEnd: (details) {
             _isDragging = false;
@@ -289,9 +310,17 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
               }
             }
 
-            setState(() {
-              _dragOffset = Offset.zero;
-            });
+            final Offset v = details.velocity.pixelsPerSecond;
+            _springBarBack(
+              v.dx * rubberBandSlope(dx.abs(), _barStretchX),
+              v.dy * rubberBandSlope(dy.abs(), _barStretchY),
+            );
+            _dragOffset = Offset.zero;
+          },
+          onPanCancel: () {
+            _isDragging = false;
+            _dragOffset = Offset.zero;
+            _springBarBack(0.0, 0.0);
           },
           onTapUp: (details) {
             if (_isDragging) return;
@@ -307,21 +336,20 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
               _pushExpandedPlayer(context, settings);
             }
           },
-          child: TweenAnimationBuilder<Offset>(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutCubic,
-            tween: Tween(begin: Offset.zero, end: _dragOffset),
-            builder: (context, offset, child) {
-              final double tiltX = (offset.dx / 100).clamp(-0.2, 0.2);
-              final double tiltY = (offset.dy / 100).clamp(-0.1, 0.1);
+          child: AnimatedBuilder(
+            animation: Listenable.merge([_barX, _barY]),
+            builder: (context, child) {
+              final double ox = _barX.value;
+              final double oy = _barY.value;
+              if (ox == 0.0 && oy == 0.0) return child!;
+              final double tiltX = (ox / 190).clamp(-0.2, 0.2);
+              final double tiltY = (oy / 150).clamp(-0.1, 0.1);
 
-              final matrix = Matrix4.identity();
-              if (tiltX != 0 || tiltY != 0) {
-                matrix.setEntry(3, 2, 0.001); // perspective
-                matrix.rotateX(-tiltY);
-                matrix.rotateY(tiltX);
-                matrix.translate(offset.dx * 0.3, offset.dy * 0.3);
-              }
+              final matrix = Matrix4.identity()
+                ..setEntry(3, 2, 0.001) // perspective
+                ..rotateX(-tiltY)
+                ..rotateY(tiltX)
+                ..translateByDouble(ox, oy, 0.0, 1.0);
 
               return Transform(
                 transform: matrix,
@@ -513,9 +541,6 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
         onPanStart: (details) {
           _isDragging = true;
           _dragController.stop();
-          // A fresh drag from rest moves everything; a finger that caught a
-          // bounce keeps the content held until it is back inside 0..1.
-          if (_catchPointer == null) _holdContent = false;
         },
         onPanUpdate: (details) {
           // Linear in the unbounded position; past an end the overshoot is
@@ -534,16 +559,12 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
             _dismiss(geometry);
             return;
           }
-          _settle(
-            _releaseTarget(dy),
-            velocity: geometry.progressVelocity(dy),
-            allowBounce: true,
-          );
+          _settle(_releaseTarget(dy), velocity: geometry.progressVelocity(dy));
         },
         onPanCancel: () {
           if (!_isDragging) return;
           _isDragging = false;
-          _settle(_releaseTarget(0.0));
+          _settle(_releaseTarget(0.0), allowBounce: false);
         },
         child: AnimatedBuilder(
           animation: _dismissController,
@@ -572,7 +593,6 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
                   ? -lerpDouble(_dismissFrom, geometry.dismissTravel, dismissT)!
                   : geometry.stretchOf(r);
               final double lift = stretch > 0 ? stretch : 0.0;
-              final double contentLift = _holdContent ? 0.0 : lift;
               final Rect panel = geometry.panelRect(p, stretch: stretch);
               final RRect panelRRect = RRect.fromRectAndRadius(
                 panel,
@@ -711,7 +731,7 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
                                 Positioned.fill(
                                   key: const ValueKey('fluid_expanded'),
                                   child: Transform.translate(
-                                    offset: Offset(0, -contentLift),
+                                    offset: Offset(0, -lift),
                                     // Tickers on as soon as it shows: Riverpod
                                     // pauses a widget's subscriptions while its
                                     // TickerMode is off, so holding them until
@@ -855,7 +875,7 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
     if (_catchPointer != pointer) return;
     _catchPointer = null;
     if (_isDragging) return;
-    _settle(_releaseTarget(0.0));
+    _settle(_releaseTarget(0.0), allowBounce: false);
   }
 
   FluidPlayerGeometry _geometry(Size windowSize) => FluidPlayerGeometry(

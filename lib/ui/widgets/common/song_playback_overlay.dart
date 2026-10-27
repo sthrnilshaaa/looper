@@ -40,13 +40,14 @@ class SongPlaybackIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Play/pause cross-fades between the playing animation and the still
-    // dots instead of snapping.
-    final bool animating =
-        isPlaying && TickerMode.of(context) && !Motion.reducedOf(context);
+    // dots instead of snapping. Keyed on isPlaying only: the GIF also gives
+    // way to the dots while tickers are off (e.g. the mini bar under the
+    // classic player), and that swap must be instant - cross-fading it made
+    // the mini bar art flicker right as the closing player's artwork landed.
     return AnimatedSwitcher(
       duration: Duration(milliseconds: Motion.reducedOf(context) ? 0 : 250),
       child: KeyedSubtree(
-        key: ValueKey<bool>(animating),
+        key: ValueKey<bool>(isPlaying),
         child: _content(context),
       ),
     );

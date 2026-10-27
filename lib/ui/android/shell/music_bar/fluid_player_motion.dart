@@ -147,22 +147,29 @@ class FluidSectionMotion {
   double offsetY(double p) => slide ? (1.0 - _t(p)) * distance : 0.0;
 }
 
-/// Release speed (progress units/s, a firm flick) from which a throw toward
-/// an end bounces softly into the stretch before settling.
-const double kFluidBounceVelocity = 2.5;
-
-/// Soft underdamped spring for firm throws: overshoots the end once, about a
-/// third as far as the first version (ratio 0.72). The overshoot renders
-/// through [rubberBand], so it can never pass the end's stretch max.
-final SpringDescription fluidPlayerBounceSpring =
+/// Underdamped spring for every open: the whole sheet (background, artwork
+/// and controls together) carries a little past the top and settles back
+/// once. A plain tap overshoots ~10 % of the travel, which the rubber band
+/// shows as ~25 dp; a hard flick goes further but never past the stretch max.
+final SpringDescription fluidPlayerOpenBounceSpring =
     SpringDescription.withDampingRatio(
       mass: 1.0,
       stiffness: 380.0,
-      ratio: 0.82,
+      ratio: 0.62,
     );
 
-/// Release/programmatic settle spring: critically damped (no bounce), and
-/// started with the finger's velocity so letting go never jumps in speed.
+/// Firmer bounce for minimizing: the mini bar dips ~15 dp under its resting
+/// spot and comes back, so it lands like the sheet it was.
+final SpringDescription fluidPlayerCloseBounceSpring =
+    SpringDescription.withDampingRatio(
+      mass: 1.0,
+      stiffness: 380.0,
+      ratio: 0.72,
+    );
+
+/// Critically damped settle (no bounce): releases from inside a stretch,
+/// catches let go without a drag, and reduced motion. Started with the
+/// finger's velocity so letting go never jumps in speed.
 final SpringDescription fluidPlayerSpring = SpringDescription.withDampingRatio(
   mass: 1.0,
   stiffness: 380.0,

@@ -93,6 +93,8 @@
   "activeLyricsIntensityPreviewActive": "Ligne active",
   "activeLyricsUseAccent": "Couleur d'accent pour la ligne active",
   "activeLyricsUseAccentDesc": "Utiliser la couleur d'accent pure ; désactivé, elle est mélangée au blanc pour une teinte plus douce",
+  "lyricsLineGrouping": "Grouper les lignes enchaînées",
+  "lyricsLineGroupingDesc": "Affiche ensemble deux lignes chantées d’un seul souffle, sans défiler entre elles",
   "dynamicLyricsBg": "Fond de paroles dynamique",
   "dynamicLyricsBgDesc": "Appliquer le flou de la pochette à l'écran des paroles",
   "dynamicTheming": "Thème dynamique",

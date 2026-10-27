@@ -237,10 +237,14 @@ class _GestureArtworkWithFeedbackState
     final artworkSwitcher = Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.04),
-          width: 0.8,
-        ),
+        // No hairline in Fluid mode: the morphing art has none, so it showed
+        // up as an outline popping in at the handoff.
+        border: enableSlide
+            ? null
+            : Border.all(
+                color: Colors.white.withValues(alpha: 0.04),
+                width: 0.8,
+              ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.4),

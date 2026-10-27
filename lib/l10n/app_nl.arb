@@ -93,6 +93,8 @@
   "activeLyricsIntensityPreviewActive": "Actieve regel",
   "activeLyricsUseAccent": "Accentkleur actieve regel",
   "activeLyricsUseAccentDesc": "Gebruik de pure accentkleur; uit mengt die met wit voor een zachtere tint",
+  "lyricsLineGrouping": "Doorlopende regels groeperen",
+  "lyricsLineGroupingDesc": "Toon twee in één adem gezongen regels samen, zonder ertussen te scrollen",
   "dynamicLyricsBg": "Dynamische songteksten BG",
   "dynamicLyricsBgDesc": "Albumhoes-vervaging toepassen op songtekscherm",
   "dynamicTheming": "Dynamisch thema",
