@@ -8,9 +8,51 @@ extension _HomeTabSections on _AndroidHomeTabState {
     required int itemCount,
     required Widget Function(BuildContext, int) itemBuilder,
     double listHeight = 170,
+    // App start: the section's data isn't in yet, so it shows card bones
+    // (circles for artists) and cross-fades to the cards when it arrives.
+    bool loading = false,
+    bool circleSkeleton = false,
   }) {
-    if (itemCount == 0) return const SizedBox.shrink();
+    if (!loading && itemCount == 0) return const SizedBox.shrink();
     return SliverToBoxAdapter(
+      // Keyed so the skeleton-to-cards fade stays with its own section when
+      // another section appears above it during loading.
+      key: ValueKey('home-section-$title'),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 280),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        layoutBuilder: (current, previous) => Stack(
+          alignment: Alignment.topCenter,
+          children: [...previous, ?current],
+        ),
+        child: loading
+            ? HomeCardRowSkeleton(
+                key: const ValueKey('skeleton'),
+                circle: circleSkeleton,
+              )
+            : _horizontalSectionBody(
+                title: title,
+                actionText: actionText,
+                onActionTap: onActionTap,
+                itemCount: itemCount,
+                itemBuilder: itemBuilder,
+                listHeight: listHeight,
+              ),
+      ),
+    );
+  }
+
+  Widget _horizontalSectionBody({
+    required String title,
+    required String actionText,
+    required VoidCallback onActionTap,
+    required int itemCount,
+    required Widget Function(BuildContext, int) itemBuilder,
+    required double listHeight,
+  }) {
+    return KeyedSubtree(
+      key: const ValueKey('content'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

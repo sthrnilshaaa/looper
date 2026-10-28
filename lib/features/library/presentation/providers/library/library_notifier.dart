@@ -30,6 +30,13 @@ class Library extends _$Library {
   StreamSubscription<List<Album>>? _albumsSubscription;
   StreamSubscription<List<Playlist>>? _playlistsSubscription;
   bool _isFetchingArtistImages = false;
+
+  // Bumped whenever the songs load is restarted or paused, so an older
+  // part-by-part load (see _loadSongsInParts) stops at its next step.
+  int _songsLoadGen = 0;
+
+  // Completes the first time the whole song list is in state.
+  final Completer<void> _songsReady = Completer<void>();
   bool _isScanRunning = false;
   DateTime? _lastScanAt;
   static const _lastScanAtKey = 'last_library_scan_at';
@@ -44,6 +51,11 @@ class Library extends _$Library {
   @override
   LibraryState build() {
     ref.onDispose(_pauseWatches);
+    listenSelf((_, next) {
+      if (next.isInitialized && !_songsReady.isCompleted) {
+        _songsReady.complete();
+      }
+    });
 
     // Automatically clean up database and refresh songs whenever active library folders change!
     ref.listen<List<String>>(settingsProvider.select((s) => s.libraryFolders), (
@@ -87,6 +99,10 @@ class Library extends _$Library {
 
     _loadLibrary();
 
+    // Both jobs below read and write the database, so they wait until the
+    // song list is on screen instead of slowing its load down.
+    await _songsReady.future;
+
     // Splits combined "A / B" artist entries left by older versions.
     unawaited(_syncArtists());
 
@@ -118,6 +134,7 @@ class Library extends _$Library {
   /// _loadLibrary() to resubscribe) once it's done, so nothing is missed -
   /// this only removes redundant, immediately-superseded intermediate ones.
   void _pauseWatches() {
+    _songsLoadGen++;
     _songsSubscription?.cancel();
     _songsDebounce?.cancel();
     _artistsSubscription?.cancel();
@@ -1007,27 +1024,126 @@ class Library extends _$Library {
   void _watchSongs() {
     _songsSubscription?.cancel();
     _songsDebounce?.cancel();
+    final int gen = ++_songsLoadGen;
+    // Cold start: load the list in growing parts so the tabs fill in as it
+    // arrives. "Full plays" can only be sorted once every song is loaded, so
+    // it keeps the one-query load.
+    if (!state.isInitialized &&
+        state.sortStrategy != SongSortStrategy.fullPlays) {
+      _subscribeSongs(fireImmediately: false);
+      unawaited(_loadSongsInParts(gen));
+      return;
+    }
+    _subscribeSongs(fireImmediately: true);
+  }
+
+  /// The whole song list, waiting for the cold-start load if it is still
+  /// running. For actions that need every song (play all, shuffle, a queue
+  /// started from a half-loaded list).
+  Future<List<Song>> loadedSongs() async {
+    if (!state.isInitialized) await _songsReady.future;
+    return state.songs;
+  }
+
+  // First part sized to fill a screen, then doubling up to this cap.
+  static const int _firstSongsPart = 30;
+  static const int _maxSongsPart = 1000;
+
+  Future<void> _loadSongsInParts(int gen) async {
+    // A write during the load makes the watch emit the full, newer list; it
+    // is applied at once (not initialized yet) and this load then stops.
+    bool stale() => gen != _songsLoadGen || state.isInitialized;
+    try {
+      final Isar isar = DbService.isar;
+      final int total = await isar.songs.count();
+      if (stale()) return;
+      if (total == 0) {
+        _applySongs(const []);
+        return;
+      }
+
+      // Home's two song rows come from small queries of their own. The tie
+      // order matches homeQuickPicks / homeRecentlyAdded, so nothing jumps
+      // when the full list replaces them.
+      final quickPicks = await isar.songs
+          .where()
+          .sortByPlayCountDesc()
+          .thenByDateAddedDesc()
+          .thenByPath()
+          .limit(18)
+          .findAll();
+      final recentlyAdded = await isar.songs
+          .where()
+          .sortByDateAddedDesc()
+          .thenByPath()
+          .limit(10)
+          .findAll();
+      if (stale()) return;
+      state = state.copyWith(
+        previewReady: true,
+        previewQuickPicks: quickPicks,
+        previewRecentlyAdded: recentlyAdded,
+        totalSongCount: total,
+      );
+
+      final List<Song> loaded = [];
+      int part = _firstSongsPart;
+      while (loaded.length < total) {
+        final List<Song> next = await _buildSongsQuery()
+            .offset(loaded.length)
+            .limit(part)
+            .findAll();
+        if (stale()) return;
+        if (next.isEmpty) break;
+        loaded.addAll(next);
+        if (loaded.length < total) {
+          state = state.copyWith(loadingSongs: List.unmodifiable(loaded));
+        }
+        part = (part * 2).clamp(_firstSongsPart, _maxSongsPart);
+      }
+
+      // Parts come from separate queries; if the rows shifted between them
+      // (a duplicate or a gap), load the list once more in one go.
+      final bool consistent =
+          loaded.length == total &&
+          loaded.map((s) => s.id).toSet().length == loaded.length;
+      if (!consistent) {
+        final List<Song> all = await _buildSongsQuery().findAll();
+        if (stale()) return;
+        _applySongs(all);
+        return;
+      }
+      _applySongs(loaded);
+    } catch (e, st) {
+      LoggerHelper.write('Library._loadSongsInParts failed', e, st);
+      if (stale()) return;
+      _songsSubscription?.cancel();
+      _subscribeSongs(fireImmediately: true);
+    }
+  }
+
+  void _subscribeSongs({required bool fireImmediately}) {
     // The first result of each subscription (launch, a sort change) applies
     // at once; only the later, write-driven ones wait.
     bool first = true;
-    _songsSubscription = _buildSongsQuery().watch(fireImmediately: true).listen(
-      (songs) {
-        if (first || !state.isInitialized) {
-          first = false;
+    _songsSubscription = _buildSongsQuery()
+        .watch(fireImmediately: fireImmediately)
+        .listen((songs) {
+          if (first || !state.isInitialized) {
+            first = false;
+            _songsDebounce?.cancel();
+            _pendingSongs = null;
+            _applySongs(songs);
+            return;
+          }
+          _pendingSongs = songs;
           _songsDebounce?.cancel();
-          _pendingSongs = null;
-          _applySongs(songs);
-          return;
-        }
-        _pendingSongs = songs;
-        _songsDebounce?.cancel();
-        _songsDebounce = Timer(_songsSettle, () {
-          final List<Song>? pending = _pendingSongs;
-          _pendingSongs = null;
-          if (pending != null) _applySongs(pending);
+          _songsDebounce = Timer(_songsSettle, () {
+            final List<Song>? pending = _pendingSongs;
+            _pendingSongs = null;
+            if (pending != null) _applySongs(pending);
+          });
         });
-      },
-    );
   }
 
   void _applySongs(List<Song> songs) {
@@ -1119,8 +1235,17 @@ Stream<List<Song>> topSongs(Ref ref) {
 @Riverpod(keepAlive: true)
 List<Song> homeQuickPicks(Ref ref) {
   final songs = ref.watch(libraryProvider.select((s) => s.songs));
+  // Ties go newest first, then by path - the same order as the cold-start
+  // preview query (see Library._loadSongsInParts), so the row doesn't jump
+  // when the full list replaces it.
   final sorted = List<Song>.from(songs)
-    ..sort((a, b) => b.playCount.compareTo(a.playCount));
+    ..sort((a, b) {
+      final byPlays = b.playCount.compareTo(a.playCount);
+      if (byPlays != 0) return byPlays;
+      final byDate = b.dateAdded.compareTo(a.dateAdded);
+      if (byDate != 0) return byDate;
+      return a.path.compareTo(b.path);
+    });
   return sorted.take(18).toList();
 }
 
@@ -1130,8 +1255,11 @@ List<Song> homeQuickPicks(Ref ref) {
 @Riverpod(keepAlive: true)
 List<Song> homeRecentlyAdded(Ref ref) {
   final songs = ref.watch(libraryProvider.select((s) => s.songs));
-  return List<Song>.from(songs)
-    ..sort((a, b) => b.dateAdded.compareTo(a.dateAdded));
+  // Ties by path, matching the cold-start preview query.
+  return List<Song>.from(songs)..sort((a, b) {
+    final byDate = b.dateAdded.compareTo(a.dateAdded);
+    return byDate != 0 ? byDate : a.path.compareTo(b.path);
+  });
 }
 
 /// Every song grouped by its raw genre value (null for songs missing one).

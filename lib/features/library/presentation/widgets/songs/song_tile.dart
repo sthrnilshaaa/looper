@@ -40,6 +40,10 @@ class SongTile extends ConsumerWidget {
   final bool highlightTitle;
   final VoidCallback? onPlay;
 
+  /// Supplies the queue a tap plays when [songs] is only part of it - a list
+  /// still loading at app start. Null plays [songs].
+  final Future<List<Song>> Function()? resolveQueue;
+
   const SongTile({
     required this.song,
     required this.songs,
@@ -55,6 +59,7 @@ class SongTile extends ConsumerWidget {
     this.reorderIndex,
     this.highlightTitle = false,
     this.onPlay,
+    this.resolveQueue,
     super.key,
   });
 
@@ -125,6 +130,23 @@ class SongTile extends ConsumerWidget {
             return;
           }
           onPlay?.call();
+          final resolve = resolveQueue;
+          if (resolve != null) {
+            final notifier = ref.read(playbackProvider.notifier);
+            resolve().then((queue) {
+              final at = queue.indexWhere((s) => s.path == song.path);
+              if (at == -1) {
+                notifier.play(song, sourcePlaylistId: playlist?.id);
+              } else {
+                notifier.setPlaylist(
+                  queue,
+                  initialIndex: at,
+                  sourcePlaylistId: playlist?.id,
+                );
+              }
+            });
+            return;
+          }
           final index =
               collectionIndex ?? songs.indexWhere((s) => s.path == song.path);
           if (index != -1) {

@@ -142,18 +142,6 @@ class _CardRow extends StatelessWidget {
 class SongsSkeleton extends StatelessWidget {
   const SongsSkeleton({super.key});
 
-  // Title/subtitle widths vary per row so the list doesn't look stamped.
-  static const List<(double, double)> _widths = [
-    (190, 120),
-    (150, 95),
-    (220, 140),
-    (170, 80),
-    (205, 125),
-    (135, 105),
-    (180, 90),
-    (160, 130),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -174,37 +162,65 @@ class SongsSkeleton extends StatelessWidget {
                 ],
               ),
             ),
-            for (var i = 0; i < 14; i++)
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: Row(
-                  children: [
-                    const Bone.square(size: 52, uniRadius: 4),
-                    const SizedBox(width: 16),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Bone.text(
-                          fontSize: 15,
-                          width: _widths[i % _widths.length].$1,
-                        ),
-                        const SizedBox(height: 6),
-                        Bone.text(
-                          fontSize: 12,
-                          width: _widths[i % _widths.length].$2,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+            for (var i = 0; i < 14; i++) SongRowSkeleton(index: i),
           ],
         ),
       ),
     );
+  }
+}
+
+/// One song row's bones (artwork, title, artist). Wrap in [AppSkeleton].
+/// [index] varies the line widths so a column of them doesn't look stamped.
+class SongRowSkeleton extends StatelessWidget {
+  const SongRowSkeleton({super.key, this.index = 0});
+
+  final int index;
+
+  static const List<(double, double)> _widths = [
+    (190, 120),
+    (150, 95),
+    (220, 140),
+    (170, 80),
+    (205, 125),
+    (135, 105),
+    (180, 90),
+    (160, 130),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final (title, subtitle) = _widths[index % _widths.length];
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          const Bone.square(size: 52, uniRadius: 4),
+          const SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Bone.text(fontSize: 15, width: title),
+              const SizedBox(height: 6),
+              Bone.text(fontSize: 12, width: subtitle),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One Home card row (artists, albums, genres) whose data is still
+/// loading: its header and a row of card bones, in its own [AppSkeleton].
+class HomeCardRowSkeleton extends StatelessWidget {
+  const HomeCardRowSkeleton({super.key, required this.circle});
+
+  final bool circle;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppSkeleton(child: _CardRow(circle: circle));
   }
 }
 

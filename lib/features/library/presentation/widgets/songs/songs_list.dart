@@ -20,6 +20,8 @@ import 'package:looper_player/core/services/storage/media_store_write_service.da
 
 import 'package:looper_player/l10n/app_localizations.dart';
 import 'package:looper_player/ui/android/widgets/enrichment_indicator.dart';
+import 'package:looper_player/ui/android/widgets/library_skeletons.dart';
+import 'package:looper_player/ui/widgets/common/app_skeleton.dart';
 import 'package:looper_player/ui/android/widgets/premium_section.dart';
 import 'package:looper_player/features/playlists/data/services/playlist_service.dart';
 import 'package:looper_player/features/playlists/presentation/screens/playlist_view.dart'
@@ -50,6 +52,13 @@ class SongsList extends ConsumerStatefulWidget {
   final ScrollController? controller;
   final bool showEnrichmentIndicator;
 
+  /// The library's songs are still loading at app start and [songs] is the
+  /// part loaded so far: skeleton rows follow it (scrolling ends there),
+  /// the header shows [totalCount], taps queue the whole list once it is in,
+  /// and selection waits.
+  final bool loading;
+  final int? totalCount;
+
   const SongsList({
     super.key,
     required this.songs,
@@ -59,6 +68,8 @@ class SongsList extends ConsumerStatefulWidget {
     this.playlist,
     this.controller,
     this.showEnrichmentIndicator = false,
+    this.loading = false,
+    this.totalCount,
   });
 
   @override
@@ -85,6 +96,24 @@ class _SongsListState extends ConsumerState<SongsList> {
   }
 
   bool get _isSelecting => _selectedPaths.isNotEmpty;
+
+  /// Skeleton rows after the loaded part while [SongsList.loading].
+  static const int _skeletonRows = 6;
+
+  int get _rowCount =>
+      widget.songs.length + (widget.loading ? _skeletonRows : 0);
+
+  // Rows from this index on were skeletons until the last part arrived and
+  // fade in when they are built.
+  int _revealFrom = 1 << 30;
+
+  @override
+  void didUpdateWidget(SongsList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.loading && widget.songs.length > oldWidget.songs.length) {
+      _revealFrom = oldWidget.songs.length;
+    }
+  }
 
   List<Song> get _selectedSongs =>
       widget.songs.where((s) => _selectedPaths.contains(s.path)).toList();
@@ -243,7 +272,7 @@ class _SongsListState extends ConsumerState<SongsList> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            '${widget.songs.length} ${l10n.songs}',
+            '${widget.loading ? (widget.totalCount ?? widget.songs.length) : widget.songs.length} ${l10n.songs}',
             style: AppFonts.jostStyle(color: Colors.grey, fontSize: 13),
           ),
           if (widget.showEnrichmentIndicator)
@@ -283,7 +312,7 @@ class _SongsListState extends ConsumerState<SongsList> {
       // draggable thumb; desktop keeps its own scrollbar.
       return FastScroller(
         controller: _scrollController,
-        itemCount: widget.songs.length,
+        itemCount: _rowCount,
         labelBuilder: _scrollLabelBuilder(),
         padding: const EdgeInsets.fromLTRB(0, 8, 0, 180),
         child: _buildSingleColumnListView(l10n, _scrollController),
@@ -329,7 +358,7 @@ class _SongsListState extends ConsumerState<SongsList> {
           widget.physics ??
           const AlwaysScrollableScrollPhysics(parent: LooperScrollPhysics()),
       padding: const EdgeInsets.fromLTRB(0, 8, 0, 180),
-      itemCount: widget.songs.length,
+      itemCount: _rowCount,
       // Every row is the same fixed-height SongTile, so give the
       // sliver one real instance to measure once instead of
       // re-measuring each row as it scrolls into view - this is
@@ -354,8 +383,11 @@ class _SongsListState extends ConsumerState<SongsList> {
   );
 
   Widget _buildRow(int index, AppLocalizations l10n) {
+    if (index >= widget.songs.length) {
+      return AppSkeleton(child: SongRowSkeleton(index: index));
+    }
     final song = widget.songs[index];
-    return WaveItem(
+    final tile = WaveItem(
       key: ValueKey(song.path),
       child: SongTile(
         showAlbum: true,
@@ -367,8 +399,16 @@ class _SongsListState extends ConsumerState<SongsList> {
         selectionMode: _isSelecting,
         selected: _selectedPaths.contains(song.path),
         onToggleSelect: () => _toggleSelected(song),
-        onEnterSelection: () => _enterSelection(song),
+        onEnterSelection: widget.loading ? null : () => _enterSelection(song),
+        resolveQueue: widget.loading
+            ? ref.read(libraryProvider.notifier).loadedSongs
+            : null,
       ),
+    );
+    return _RowReveal(
+      key: ValueKey(song.path),
+      animate: widget.loading && index >= _revealFrom,
+      child: tile,
     );
   }
 
@@ -436,6 +476,50 @@ class _SongsListState extends ConsumerState<SongsList> {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Fades a row in when it replaces a loading skeleton row; otherwise it is
+/// just [child]. Decided once, when the row is first built.
+class _RowReveal extends StatefulWidget {
+  const _RowReveal({super.key, required this.animate, required this.child});
+
+  final bool animate;
+  final Widget child;
+
+  @override
+  State<_RowReveal> createState() => _RowRevealState();
+}
+
+class _RowRevealState extends State<_RowReveal>
+    with SingleTickerProviderStateMixin {
+  AnimationController? _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.animate) {
+      _controller = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 260),
+      )..forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = _controller;
+    if (controller == null) return widget.child;
+    return FadeTransition(
+      opacity: CurvedAnimation(parent: controller, curve: Curves.easeOut),
+      child: widget.child,
     );
   }
 }

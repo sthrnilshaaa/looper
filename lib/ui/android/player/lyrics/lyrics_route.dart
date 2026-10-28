@@ -159,6 +159,11 @@ Widget artworkFlightShuttle(
   );
 }
 
+// The walks below run inside Hero shuttle builders, i.e. during a build.
+// They use visitChildren, not visitChildElements, whose debug-only check
+// rejects any walk during a build. That's safe here: the heroes sit on the two
+// routes already on screen, which aren't the ones being rebuilt.
+
 /// Corner radius of the first ClipRRect inside a hero (its artwork's
 /// on-screen rounding), or 12 - the player artwork's - when it has none.
 double _clipRadius(BuildContext heroContext) {
@@ -170,10 +175,10 @@ double _clipRadius(BuildContext heroContext) {
       found = w.borderRadius.resolve(TextDirection.ltr).topLeft.x;
       return;
     }
-    element.visitChildElements(visit);
+    element.visitChildren(visit);
   }
 
-  if (heroContext is Element) heroContext.visitChildElements(visit);
+  if (heroContext is Element) heroContext.visitChildren(visit);
   return found ?? 12.0;
 }
 
@@ -186,10 +191,10 @@ SongPlaybackOverlay? _findOverlay(BuildContext heroContext) {
       found = w;
       return;
     }
-    element.visitChildElements(visit);
+    element.visitChildren(visit);
   }
 
-  if (heroContext is Element) heroContext.visitChildElements(visit);
+  if (heroContext is Element) heroContext.visitChildren(visit);
   return found;
 }
 
@@ -211,10 +216,10 @@ TextStyle heroTextStyle(BuildContext heroContext, TextStyle fallback) {
       found = w.style;
       return;
     }
-    element.visitChildElements(visit);
+    element.visitChildren(visit);
   }
 
-  if (heroContext is Element) heroContext.visitChildElements(visit);
+  if (heroContext is Element) heroContext.visitChildren(visit);
   return found ?? fallback;
 }
 
