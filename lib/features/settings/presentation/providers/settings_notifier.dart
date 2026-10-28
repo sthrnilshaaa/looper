@@ -20,7 +20,10 @@ class Settings extends _$Settings {
 
   @override
   AppSettings build() {
-    listenSelf((_, next) => AppHaptics.enabled = !next.disableHaptics);
+    listenSelf((_, next) {
+      AppHaptics.enabled = !next.disableHaptics;
+      AppHaptics.strength = next.hapticStrength;
+    });
     initialization = _loadSettings();
     return AppSettings();
   }
@@ -144,6 +147,12 @@ class Settings extends _$Settings {
         settings.stackSansDefaultMigrated = true;
         needsSave = true;
       }
+      if (!settings.activeLyricsIntensityDefaultMigrated) {
+        final double v = settings.activeLyricsIntensity;
+        if (v.isNaN || v == 0.0) settings.activeLyricsIntensity = 0.35;
+        settings.activeLyricsIntensityDefaultMigrated = true;
+        needsSave = true;
+      }
       if (!settings.lyricsProviderWordSyncMigrated) {
         if (settings.lyricsProvider == 'LRCLIB') {
           settings.lyricsProvider = 'lrc.red';
@@ -189,6 +198,7 @@ class Settings extends _$Settings {
         ..lyricsProviderWordSyncMigrated = true
         ..lyricsOffsetEarlierMigrated = true
         ..stackSansDefaultMigrated = true
+        ..activeLyricsIntensityDefaultMigrated = true
         ..enableDynamicTheming = !Platform.isAndroid
         ..bgBrightness = 0.5
         ..bgOpacity = 0.3
@@ -336,6 +346,7 @@ class Settings extends _$Settings {
       ..showAlbumNextToArtist = s.showAlbumNextToArtist
       ..showAlbumInQuickPicks = s.showAlbumInQuickPicks
       ..disableHaptics = s.disableHaptics
+      ..hapticStrength = s.hapticStrength
       ..animateBackgroundGradient = s.animateBackgroundGradient
       ..settingsV2 = s.settingsV2
       ..settingsV3 = s.settingsV3
@@ -375,6 +386,7 @@ class Settings extends _$Settings {
       ..dynamicColorActiveLyrics = s.dynamicColorActiveLyrics
       ..activeLyricsIntensity = s.activeLyricsIntensity
       ..activeLyricsSoftColor = s.activeLyricsSoftColor
+      ..lyricsNoLineGrouping = s.lyricsNoLineGrouping
       ..ambientColorBackground = s.ambientColorBackground
       ..lyricsAlignment = s.lyricsAlignment
       ..dynamicAccentColor = s.dynamicAccentColor
@@ -424,6 +436,8 @@ class Settings extends _$Settings {
       ..lyricsOffsetEarlierMigrated = s.lyricsOffsetEarlierMigrated
       ..lyricsOffsetPerSongMigrated = s.lyricsOffsetPerSongMigrated
       ..stackSansDefaultMigrated = s.stackSansDefaultMigrated
+      ..activeLyricsIntensityDefaultMigrated =
+          s.activeLyricsIntensityDefaultMigrated
       ..equalizerGlobalMode = s.equalizerGlobalMode
       ..firstTimeEqualizer = s.firstTimeEqualizer
       ..lyricsGestureTutorialSeen = s.lyricsGestureTutorialSeen
@@ -487,6 +501,10 @@ class Settings extends _$Settings {
 
   Future<void> updateHapticsEnabled(bool value) =>
       _update((s) => s..disableHaptics = !value);
+
+  /// 0 = Low, 1 = Medium, 2 = High.
+  Future<void> updateHapticStrength(int value) =>
+      _update((s) => s..hapticStrength = value.clamp(0, 2));
 
   Future<void> updateEnablePlayerGradient(bool value) => _update((s) {
     s.enablePlayerGradient = value;
@@ -686,8 +704,19 @@ class Settings extends _$Settings {
       ..lastPositionMs = positionMs ?? 0,
   );
 
-  Future<void> updateLastPosition(int positionMs) =>
-      _update((s) => s..lastPositionMs = positionMs);
+  /// Saves the resume position quietly. It runs every few seconds while
+  /// playing, and nothing on screen shows it, so it updates the live object
+  /// and the database without a state change - going through [_update]
+  /// cloned the whole settings object (queue list included) and rebuilt
+  /// every widget watching settings each time.
+  Future<void> updateLastPosition(int positionMs) async {
+    if (state.lastPositionMs == positionMs) return;
+    state.lastPositionMs = positionMs;
+    final AppSettings current = state;
+    await DbService.isar.writeTxn(() async {
+      await DbService.isar.appSettings.put(current);
+    });
+  }
 
   Future<void> updateVolume(double volume) =>
       _update((s) => s..volume = volume);
@@ -700,6 +729,9 @@ class Settings extends _$Settings {
 
   Future<void> updateActiveLyricsUseAccent(bool enabled) =>
       _update((s) => s..activeLyricsSoftColor = !enabled);
+
+  Future<void> updateLyricsLineGrouping(bool enabled) =>
+      _update((s) => s..lyricsNoLineGrouping = !enabled);
 
   Future<void> updateLyricsAlignment(String alignment) =>
       _update((s) => s..lyricsAlignment = alignment);

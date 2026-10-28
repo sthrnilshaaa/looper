@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:looper_player/features/library/domain/models/models.dart';
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
@@ -37,12 +38,17 @@ class AppTheme extends _$AppTheme {
 
     // Watch current song and update theme if dynamic theming or dynamic
     // accent color is enabled
-    ref.listen(playbackProvider, (previous, next) {
+    // Only the artwork matters here; listening to the whole playback state
+    // ran this on every position tick.
+    ref.listen(playbackProvider.select((s) => s.currentSong?.artPath), (
+      previous,
+      next,
+    ) {
       final currentSettings = ref.read(settingsProvider);
       if ((currentSettings.enableDynamicTheming ||
               currentSettings.dynamicAccentColor) &&
-          next.currentSong?.artPath != previous?.currentSong?.artPath) {
-        updateFromImage(next.currentSong?.artPath);
+          next != previous) {
+        updateFromImage(next);
       }
     });
 
@@ -95,10 +101,20 @@ class AppTheme extends _$AppTheme {
     }
   }
 
+  int _imageToken = 0;
+
+  /// Applied in one rebuild once the song-change motion (artwork slide,
+  /// ~320 ms) is over, so re-theming the whole app never lands on top of an
+  /// animation. Only the latest of several quick skips is applied.
+  static const Duration _applyAfter = Duration(milliseconds: 450);
+
   Future<void> updateFromImage(String? imagePath) async {
     if (imagePath == null) {
       return;
     }
+    final int token = ++_imageToken;
+    await Future<void>.delayed(_applyAfter);
+    if (token != _imageToken) return;
 
     try {
       _isUpdating = true;
@@ -111,6 +127,10 @@ class AppTheme extends _$AppTheme {
       final ArtworkColors? colors = await ArtworkColors.fromProvider(
         FileImage(file),
       );
+      if (token != _imageToken) {
+        _isUpdating = false;
+        return;
+      }
 
       if (colors != null) {
         // Colors that are really in the artwork. Only lift them as far as

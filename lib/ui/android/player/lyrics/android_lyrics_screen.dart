@@ -1,3 +1,5 @@
+import 'package:looper_player/ui/widgets/common/player_scale.dart';
+import 'package:looper_player/ui/android/player/lyrics/lyrics_route.dart';
 import 'dart:io';
 import 'dart:async';
 import 'dart:ui';
@@ -236,17 +238,6 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
     });
   }
 
-  TextStyle _getHeroStyle(Hero hero, TextStyle fallback) {
-    final child = hero.child;
-    if (child is ScrollingText) {
-      return child.style;
-    }
-    if (child is Text) {
-      return child.style ?? fallback;
-    }
-    return fallback;
-  }
-
   Widget _buildHeroTextShuttle(
     BuildContext flightContext,
     Animation<double> animation,
@@ -293,8 +284,27 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
             fontWeight: FontWeight.bold,
           );
 
-    final fromStyle = _getHeroStyle(fromHero, fallbackFrom);
-    final toStyle = _getHeroStyle(toHero, fallbackTo);
+    // Each end's style as drawn, including the player's low-density scale,
+    // so the flight starts and lands exactly on the real text.
+    TextStyle scaled(TextStyle style, BuildContext heroContext) {
+      final double k = PlayerScale.of(heroContext);
+      if (k == 1.0) return style;
+      return style.copyWith(
+        fontSize: (style.fontSize ?? 14) * k,
+        letterSpacing: style.letterSpacing == null
+            ? null
+            : style.letterSpacing! * k,
+      );
+    }
+
+    final fromStyle = scaled(
+      heroTextStyle(fromHeroContext, fallbackFrom),
+      fromHeroContext,
+    );
+    final toStyle = scaled(
+      heroTextStyle(toHeroContext, fallbackTo),
+      toHeroContext,
+    );
 
     return AnimatedBuilder(
       animation: animation,
@@ -303,16 +313,24 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
             ? animation.value
             : 1.0 - animation.value;
 
+        // Natural size, clipped at the flight's edge like the ScrollingText
+        // at both ends. (A scale-down FittedBox shrank long "Artist • Album"
+        // labels mid-flight, then they snapped back to full size on landing
+        // - the flicker.)
         return Material(
           type: MaterialType.transparency,
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              text,
-              style: TextStyle.lerp(fromStyle, toStyle, lerpValue),
-              maxLines: 1,
-              overflow: TextOverflow.visible,
+          child: ClipRect(
+            child: OverflowBox(
+              alignment: Alignment.centerLeft,
+              minWidth: 0,
+              maxWidth: double.infinity,
+              child: Text(
+                text,
+                style: TextStyle.lerp(fromStyle, toStyle, lerpValue),
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.clip,
+              ),
             ),
           ),
         );
@@ -333,13 +351,14 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
       _navBarInset = bottomInset;
       _insetOrientation = orientation;
     }
-    ref.listen<PlaybackState>(playbackProvider, (previous, next) {
-      if (next.isPlaying != previous?.isPlaying) {
-        if (next.isPlaying) {
-          _enableWakelock();
-        } else {
-          _disableWakelock();
-        }
+    ref.listen<bool>(playbackProvider.select((s) => s.isPlaying), (
+      previous,
+      isPlaying,
+    ) {
+      if (isPlaying) {
+        _enableWakelock();
+      } else {
+        _disableWakelock();
       }
     });
 
@@ -390,6 +409,7 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                 children: [
                   Hero(
                     tag: 'album_art',
+                    flightShuttleBuilder: artworkFlightShuttle,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: OptimizedImage(
@@ -519,7 +539,10 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                 valueListenable: _exiting,
                 builder: (context, exiting, child) =>
                     TickerMode(enabled: !exiting, child: child!),
-                child: const RepaintBoundary(child: LyricsView()),
+                // Arrives after the shared elements land, leaves first.
+                child: const LyricsEntrance(
+                  child: RepaintBoundary(child: LyricsView()),
+                ),
               ),
             ),
           ],
@@ -544,7 +567,8 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
         settings.blurredArtworkForLyrics &&
         song.artPath != null;
 
-    const transitionDuration = Duration(milliseconds: 1000);
+    // Plain fill -> real background: a short fade in.
+    const transitionDuration = Duration(milliseconds: 700);
 
     return PopScope(
       // System back goes through [_close] too while the navigation bar is
@@ -591,6 +615,8 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                             key: const ValueKey('ambient_bg'),
                             artwork: FileImage(File(song.artPath!)),
                             darkness: lyricsDarkness,
+                            // Still unless Animated Gradient is on.
+                            animate: settings.animatePlayerGradient,
                           )
                         : showDynamicBg
                         ? Consumer(
@@ -643,13 +669,14 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                                   ),
                                 )
                               : (settings.enablePlayerGradient
-                                    // Same flowing gradient as the player, always
-                                    // animated here regardless of the player's
-                                    // Animated Gradient toggle, with lyricsDarkness
-                                    // as its darkness layer.
+                                    // Same gradient as the player, with
+                                    // lyricsDarkness as its darkness layer.
+                                    // Moves only when Animated Gradient is
+                                    // on (it used to always animate here).
                                     ? AnimatedPlayerGradient(
                                         key: const ValueKey('gradient_bg'),
                                         darkness: lyricsDarkness,
+                                        animate: settings.animatePlayerGradient,
                                       )
                                     : Container(
                                         key: const ValueKey('static_bg'),
@@ -857,7 +884,18 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                                           curve: Curves.easeOutBack,
                                           child: AnimatedPlayPauseIcon(
                                             isPlaying: isPlaying,
-                                            color: Colors.white,
+                                            // Dark on the accent while paused,
+                                            // as on the player screen (the two
+                                            // share a hero).
+                                            color: isPlaying
+                                                ? Colors.white
+                                                : HSLColor.fromColor(
+                                                        Theme.of(
+                                                          context,
+                                                        ).colorScheme.primary,
+                                                      )
+                                                      .withLightness(0.15)
+                                                      .toColor(),
                                             size: AppIcons
                                                 .expandedPlayerPlayPauseIcon
                                                 .s,

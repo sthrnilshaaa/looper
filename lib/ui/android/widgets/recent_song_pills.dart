@@ -1,3 +1,4 @@
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/core/services/haptics/app_haptics.dart';
@@ -47,7 +48,7 @@ class RecentSongPills extends ConsumerWidget {
       height: hasTwoRows ? 100 : 50,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
+        physics: const LooperScrollPhysics(),
         padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

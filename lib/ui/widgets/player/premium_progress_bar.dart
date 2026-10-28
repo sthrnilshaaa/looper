@@ -79,13 +79,16 @@ class _ExpressiveSliderState extends ConsumerState<ExpressiveSlider> {
             duration: const Duration(milliseconds: 300),
             transitionBuilder: (Widget child, Animation<double> animation) {
               final isIn = (child as Text).data == char;
+              // Digits roll through a clip: no fade, because a fading digit
+              // is a GPU save-layer, and the clock changed every second -
+              // most of the player screen's per-frame layers came from here.
               return ClipRect(
                 child: SlideTransition(
                   position: Tween<Offset>(
-                    begin: Offset(0.0, isIn ? 0.5 : -0.5),
+                    begin: Offset(0.0, isIn ? 1.0 : -1.0),
                     end: Offset.zero,
                   ).animate(animation),
-                  child: FadeTransition(opacity: animation, child: child),
+                  child: child,
                 ),
               );
             },

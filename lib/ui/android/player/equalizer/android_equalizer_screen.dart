@@ -1,3 +1,5 @@
+import 'package:looper_player/core/motion/app_routes.dart';
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
@@ -140,7 +142,7 @@ class AndroidEqualizerScreen extends ConsumerWidget {
           height: 40,
           child: ListView(
             scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
+            physics: const LooperScrollPhysics(),
             children: [
               ..._presets.keys.map((name) {
                 final presetGains = _presets[name]!;
@@ -295,7 +297,7 @@ class AndroidEqualizerScreen extends ConsumerWidget {
               ),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
+                physics: const LooperScrollPhysics(),
                 child: SizedBox(
                   width:
                       18 *
@@ -1050,7 +1052,7 @@ class AndroidEqualizerScreen extends ConsumerWidget {
             TextButton.icon(
               onPressed: () async {
                 AppHaptics.warning();
-                final confirm = await showDialog<bool>(
+                final confirm = await showTaskDialog<bool>(
                   context: context,
                   builder: (context) => AlertDialog(
                     backgroundColor: isPureBlack
@@ -1266,7 +1268,7 @@ class AndroidEqualizerScreen extends ConsumerWidget {
                           Expanded(
                             flex: 3,
                             child: SingleChildScrollView(
-                              physics: const BouncingScrollPhysics(),
+                              physics: const LooperScrollPhysics(),
                               padding: const EdgeInsets.fromLTRB(
                                 20,
                                 16,
@@ -1286,7 +1288,7 @@ class AndroidEqualizerScreen extends ConsumerWidget {
                           Expanded(
                             flex: 2,
                             child: SingleChildScrollView(
-                              physics: const BouncingScrollPhysics(),
+                              physics: const LooperScrollPhysics(),
                               padding: const EdgeInsets.fromLTRB(
                                 12,
                                 16,
@@ -1302,7 +1304,7 @@ class AndroidEqualizerScreen extends ConsumerWidget {
                         ],
                       )
                     : SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
+                        physics: const LooperScrollPhysics(),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20,
                           vertical: 16,

@@ -1,3 +1,5 @@
+import 'package:looper_player/core/motion/app_routes.dart';
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'package:looper_player/features/playback/data/lyrics_fetcher.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -273,7 +275,7 @@ class _LyricsEditorBottomSheetState
 
   Future<void> _showInstructions() async {
     final l10n = AppLocalizations.of(context)!;
-    await showDialog<void>(
+    await showTaskDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.grey[900],
@@ -368,11 +370,12 @@ class _LyricsEditorBottomSheetState
     // current position" buttons (which just read the field when pressed) -
     // neither needs this whole sheet (text field, line-picker list, sync
     // UI) to rebuild on every position tick while a song plays.
-    ref.listen<PlaybackState>(playbackProvider, (previous, next) {
-      if (next.position != previous?.position) {
-        _currentPosition = next.position;
-        _updateCurrentTimeField();
-      }
+    ref.listen<Duration>(playbackProvider.select((s) => s.position), (
+      previous,
+      position,
+    ) {
+      _currentPosition = position;
+      _updateCurrentTimeField();
     });
 
     final accentColor = Theme.of(context).colorScheme.primary;
@@ -445,7 +448,7 @@ class _LyricsEditorBottomSheetState
           const SizedBox(height: 12),
           Expanded(
             child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: const LooperScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

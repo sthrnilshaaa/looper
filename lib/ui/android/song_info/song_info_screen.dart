@@ -1,3 +1,4 @@
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'dart:io';
 import 'dart:ui';
 import 'dart:math' as math;
@@ -119,7 +120,7 @@ class _SongInfoScreenState extends ConsumerState<SongInfoScreen> {
                         maxWidth: isLandscape ? 700 : double.infinity,
                       ),
                       child: SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
+                        physics: const LooperScrollPhysics(),
                         padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,

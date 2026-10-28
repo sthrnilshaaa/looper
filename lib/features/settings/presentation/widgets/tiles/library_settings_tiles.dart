@@ -1,3 +1,4 @@
+import 'package:looper_player/core/motion/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -203,7 +204,7 @@ class ClearLyricsCacheTile extends ConsumerWidget {
       subtitle: Text(l10n.clearLyricsCacheDesc, style: _tileSubtitleStyle()),
       onTap: () async {
         AppHaptics.medium();
-        final confirmed = await showDialog<bool>(
+        final confirmed = await showTaskDialog<bool>(
           context: context,
           builder: (dialogContext) => AlertDialog(
             title: Text(l10n.clearLyricsCache),

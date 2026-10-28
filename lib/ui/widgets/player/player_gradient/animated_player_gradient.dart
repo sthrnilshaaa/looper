@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:looper_player/core/utils/artwork_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mpv_audio_kit/mpv_audio_kit.dart';
@@ -49,11 +50,17 @@ class AnimatedPlayerGradient extends ConsumerStatefulWidget {
   /// to the new artwork's colors without restarting the motion.
   final ImageProvider? artwork;
 
+  /// False draws the gradient as a still frame: no ticker, no FFT
+  /// subscription, no per-frame repaint. Callers pass the user's Animated
+  /// Gradient setting, so nothing animates unless they turned it on.
+  final bool animate;
+
   const AnimatedPlayerGradient({
     required this.darkness,
     this.followExpandProgress = false,
     this.pauseUnderPlayer = false,
     this.artwork,
+    this.animate = true,
     super.key,
   });
 
@@ -97,7 +104,11 @@ class _AnimatedPlayerGradientState extends ConsumerState<AnimatedPlayerGradient>
   bool _reduceMotion = false;
 
   bool get _active =>
-      _tickerModeOn && _resumed && _expandAllows && !_reduceMotion;
+      widget.animate &&
+      _tickerModeOn &&
+      _resumed &&
+      _expandAllows &&
+      !_reduceMotion;
 
   @override
   void initState() {
@@ -144,6 +155,7 @@ class _AnimatedPlayerGradientState extends ConsumerState<AnimatedPlayerGradient>
   void didUpdateWidget(covariant AnimatedPlayerGradient oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.artwork != widget.artwork) _loadArtwork();
+    if (oldWidget.animate != widget.animate) _sync();
   }
 
   /// Extracts the artwork's colors (same extractor and 128px downsample as
@@ -263,10 +275,14 @@ class _AnimatedPlayerGradientState extends ConsumerState<AnimatedPlayerGradient>
     return Stack(
       fit: StackFit.expand,
       children: [
+        // Drawn at quarter resolution into a cached image and stretched:
+        // the blobs are soft gradients, so it looks the same, but the GPU
+        // fills 1/16 of the pixels. Flutter re-renders the whole scene each
+        // frame of a transition, and five ~1000 px blobs at full resolution
+        // were a large share of the player/lyrics transition cost.
         RepaintBoundary(
-          child: CustomPaint(
+          child: _LowResPaint(
             painter: _BlobPainter(motion: _motion, repaint: _repaint),
-            size: Size.infinite,
           ),
         ),
         const RepaintBoundary(child: _GrainLayer()),
@@ -283,4 +299,96 @@ class _GradientMotion {
   final GradientAudioEnergy energy = GradientAudioEnergy();
   double phase = 0;
   late _BlobPalette palette;
+}
+
+/// Paints [painter] into an image at 1/[_factor] resolution whenever it asks
+/// to repaint (or the size changes), and draws that image stretched with
+/// bilinear filtering. Only for content with no hard edges.
+class _LowResPaint extends LeafRenderObjectWidget {
+  const _LowResPaint({required this.painter});
+
+  final CustomPainter painter;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderLowResPaint(painter);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderLowResPaint render) {
+    render.painter = painter;
+  }
+}
+
+class _RenderLowResPaint extends RenderBox {
+  _RenderLowResPaint(this._painter);
+
+  static const double _factor = 4;
+
+  CustomPainter _painter;
+  ui.Image? _image;
+  Size? _imageFor;
+  bool _dirty = true;
+
+  set painter(CustomPainter value) {
+    if (identical(value, _painter)) return;
+    if (attached) _painter.removeListener(_onRepaint);
+    _painter = value;
+    if (attached) _painter.addListener(_onRepaint);
+    _onRepaint();
+  }
+
+  void _onRepaint() {
+    _dirty = true;
+    markNeedsPaint();
+  }
+
+  @override
+  void attach(PipelineOwner owner) {
+    super.attach(owner);
+    _painter.addListener(_onRepaint);
+  }
+
+  @override
+  void detach() {
+    _painter.removeListener(_onRepaint);
+    _image?.dispose();
+    _image = null;
+    _dirty = true;
+    super.detach();
+  }
+
+  @override
+  bool get sizedByParent => true;
+
+  @override
+  Size computeDryLayout(BoxConstraints constraints) => constraints.biggest;
+
+  @override
+  bool get isRepaintBoundary => false;
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    if (size.isEmpty) return;
+    if (_dirty || _image == null || _imageFor != size) {
+      final int w = (size.width / _factor).ceil().clamp(1, 4096);
+      final int h = (size.height / _factor).ceil().clamp(1, 4096);
+      final ui.PictureRecorder recorder = ui.PictureRecorder();
+      final Canvas canvas = Canvas(recorder)
+        ..scale(w / size.width, h / size.height);
+      _painter.paint(canvas, size);
+      final ui.Picture picture = recorder.endRecording();
+      _image?.dispose();
+      _image = picture.toImageSync(w, h);
+      picture.dispose();
+      _imageFor = size;
+      _dirty = false;
+    }
+    final ui.Image image = _image!;
+    context.canvas.drawImageRect(
+      image,
+      Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+      offset & size,
+      Paint()..filterQuality = FilterQuality.medium,
+    );
+  }
 }

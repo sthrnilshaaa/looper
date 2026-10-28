@@ -1,3 +1,5 @@
+import 'package:looper_player/core/motion/pause_when_offscreen.dart';
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:looper_player/core/utils/motion.dart';
@@ -273,7 +275,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                                 horizontal: 16.0,
                                 vertical: 12.0,
                               ),
-                              physics: const BouncingScrollPhysics(),
+                              physics: const LooperScrollPhysics(),
                               children: [
                                 // 1. Theme & Appearance
                                 _buildCategoryGroup(

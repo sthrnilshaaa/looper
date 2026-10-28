@@ -1,3 +1,4 @@
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'package:looper_player/core/providers/collection_navigation.dart';
 import 'dart:math' as math;
 
@@ -79,11 +80,33 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab> {
     // every darkness slider drag, or the ~20s listen-time checkpoint during
     // any playback - even while a different tab was on screen. Select just
     // the fields this tab actually renders.
-    final (songs, rawArtists, rawAlbums, isInitialized, isScanning) = ref.watch(
+    final (
+      songs,
+      rawArtists,
+      rawAlbums,
+      isInitialized,
+      isScanning,
+      previewReady,
+      previewQuickPicks,
+      previewRecentlyAdded,
+    ) = ref.watch(
       libraryProvider.select(
-        (s) => (s.songs, s.artists, s.albums, s.isInitialized, s.isScanning),
+        (s) => (
+          s.songs,
+          s.artists,
+          s.albums,
+          s.isInitialized,
+          s.isScanning,
+          s.previewReady,
+          s.previewQuickPicks,
+          s.previewRecentlyAdded,
+        ),
       ),
     );
+    // App start, saved library still loading: Quick Picks and Recently
+    // Added come from small queries of their own, and every other section
+    // shows a skeleton until its data is in.
+    final bool loadingInParts = !isInitialized && previewReady;
     final l10n = AppLocalizations.of(context)!;
     final (
       albumSortOptionIndex,
@@ -208,7 +231,7 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab> {
 
     // Reopening the app: the saved library is still loading from the
     // database - show the layout it's about to fill.
-    if (!isInitialized) {
+    if (!isInitialized && !previewReady) {
       return const LoadStateSwitcher(state: 'loading', child: HomeSkeleton());
     }
 
@@ -221,7 +244,7 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab> {
       );
     }
 
-    if (songs.isEmpty) {
+    if (songs.isEmpty && !loadingInParts) {
       return LoadStateSwitcher(
         state: 'empty',
         child: SafeArea(child: EmptyLibraryView(title: l10n.noSongsFound)),
@@ -232,8 +255,12 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab> {
     // Added (newest first) are computed in memoized providers instead of
     // inline here - same sort, same output, just not redone on every
     // rebuild of this screen. See their doc comments in library_notifier.dart.
-    final allQuickPicks = ref.watch(homeQuickPicksProvider);
-    final dateAddedSongs = ref.watch(homeRecentlyAddedProvider);
+    final fullQuickPicks = ref.watch(homeQuickPicksProvider);
+    final fullDateAddedSongs = ref.watch(homeRecentlyAddedProvider);
+    final allQuickPicks = loadingInParts ? previewQuickPicks : fullQuickPicks;
+    final dateAddedSongs = loadingInParts
+        ? previewRecentlyAdded
+        : fullDateAddedSongs;
 
     final useBlur = enableDynamicTheming && !disableBlur;
 
@@ -244,11 +271,7 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab> {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Centered independently of the Stack below so it stays put
-              // regardless of how wide the avatar or the icon buttons are.
-              const Center(child: EnrichmentIndicator()),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // Square avatars sit centered in a 40dp slot as before; a
                   // wide logo keeps the 38dp height and grows to the right
@@ -259,6 +282,20 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab> {
                       constraints: const BoxConstraints(minWidth: 40),
                       child: const Center(
                         child: SelectedAvatar(size: 38, maxWidth: 130),
+                      ),
+                    ),
+                  ),
+                  // The enriching pill takes only the space between the
+                  // avatar and the buttons (shrinking to fit instead of
+                  // sliding under them on narrow screens / long languages).
+                  const Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: EnrichmentIndicator(),
+                        ),
                       ),
                     ),
                   ),
@@ -651,6 +688,16 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab> {
                   song: song,
                   l10n: l10n,
                   songs: dateAddedSongs,
+                  // Only the first rows are loaded yet; a tap queues the
+                  // whole Recently Added list once it is in.
+                  resolveQueue: loadingInParts
+                      ? () async {
+                          await ref
+                              .read(libraryProvider.notifier)
+                              .loadedSongs();
+                          return ref.read(homeRecentlyAddedProvider);
+                        }
+                      : null,
                 );
               },
               childCount: dateAddedSongs.length > 10
@@ -686,7 +733,7 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab> {
           );
         }
       } else if (section == 'artists') {
-        if (showHomeArtists && artists.isNotEmpty) {
+        if (showHomeArtists && (artists.isNotEmpty || loadingInParts)) {
           orderedSlivers.add(
             _buildHorizontalSection(
               title: l10n.artists,
@@ -698,6 +745,8 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab> {
                     .setItem(NavItem.artists);
               },
               itemCount: artists.length,
+              loading: loadingInParts && artists.isEmpty,
+              circleSkeleton: true,
               itemBuilder: (context, index) {
                 return _buildArtistItem(artists[index], l10n);
               },
@@ -705,7 +754,7 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab> {
           );
         }
       } else if (section == 'albums') {
-        if (showHomeAlbums && albums.isNotEmpty) {
+        if (showHomeAlbums && (albums.isNotEmpty || loadingInParts)) {
           orderedSlivers.add(
             _buildHorizontalSection(
               title: l10n.albums,
@@ -717,6 +766,7 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab> {
                     .setItem(NavItem.albums);
               },
               itemCount: albums.length,
+              loading: loadingInParts && albums.isEmpty,
               itemBuilder: (context, index) {
                 return _buildAlbumItem(albums[index], l10n);
               },
@@ -724,7 +774,8 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab> {
           );
         }
       } else if (section == 'genres') {
-        if (showHomeGenres && genres.isNotEmpty) {
+        // Genres are counted over every song, so they wait for all of them.
+        if (showHomeGenres && (genres.isNotEmpty || loadingInParts)) {
           orderedSlivers.add(
             _buildHorizontalSection(
               title: l10n.genres,
@@ -737,6 +788,7 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab> {
               },
               itemCount: genres.length,
               listHeight: _HomeTabSections.genreRowHeight,
+              loading: loadingInParts,
               itemBuilder: (context, index) {
                 final genre = genres[index];
                 return _buildGenreItem(genre, genresMap[genre]!);
@@ -826,7 +878,7 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab> {
               .refreshLibrary(showVisualIndicator: true),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
+              parent: LooperScrollPhysics(),
             ),
             slivers: orderedSlivers,
           ),

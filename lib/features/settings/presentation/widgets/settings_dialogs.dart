@@ -1,3 +1,5 @@
+import 'package:looper_player/core/motion/app_routes.dart';
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_hsvcolor_picker/flutter_hsvcolor_picker.dart';
@@ -189,7 +191,7 @@ void showReorderBottomSheet(
                 Flexible(
                   child: ReorderableListView.builder(
                     shrinkWrap: true,
-                    physics: const BouncingScrollPhysics(),
+                    physics: const LooperScrollPhysics(),
                     buildDefaultDragHandles: false,
                     itemCount: currentOrder.length,
                     onReorder: (oldIndex, newIndex) {
@@ -311,7 +313,7 @@ void showReorderBottomSheet(
 }
 
 void showClearDialog(BuildContext context, AppLocalizations l10n) {
-  showDialog(
+  showTaskDialog(
     context: context,
     builder: (context) => AlertDialog(
       backgroundColor: const Color(0xFF1A1A1A),

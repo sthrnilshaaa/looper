@@ -108,6 +108,13 @@ class AdvancedLyricLine extends ConsumerWidget {
     this.distance = 1,
   });
 
+  /// Whether a line is a music break, shown as "♫" instead of its text.
+  static bool isInstrumentalText(String text) =>
+      text.isEmpty ||
+      text.toLowerCase().contains('instrumental') ||
+      text.toLowerCase().contains('[music]') ||
+      text.trim() == '♪';
+
   /// Word/char styles only apply to lines with real word timing; anything
   /// else is shown line by line, whatever style is picked.
   bool get usesWordTiming => mode != LyricsSyncMode.line && line.hasWordTiming;
@@ -149,7 +156,8 @@ class AdvancedLyricLine extends ConsumerWidget {
     // Calculate dynamic opacity based on distance from active line for a smoother transition
     double lineOpacity = 1.0;
     if (isSelected) {
-      lineOpacity = 1.0; // selected lines should read clearly regardless of playback position
+      lineOpacity =
+          1.0; // selected lines should read clearly regardless of playback position
     } else if (selectionActive) {
       lineOpacity =
           0.18; // dim everything else while the user is picking lines to share
@@ -304,11 +312,7 @@ class AdvancedLyricLine extends ConsumerWidget {
     bool isPlaying,
   ) {
     final String text = line.text;
-    final bool isInstrumental =
-        text.isEmpty ||
-        text.toLowerCase().contains('instrumental') ||
-        text.toLowerCase().contains('[music]') ||
-        text.trim() == '♪';
+    final bool isInstrumental = isInstrumentalText(text);
 
     // If there is a search match, always highlight it
     final bool isSearchMatch =

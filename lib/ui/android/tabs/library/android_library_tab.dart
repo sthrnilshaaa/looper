@@ -1,3 +1,4 @@
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'package:looper_player/ui/android/widgets/recent_song_pills.dart';
 import 'package:flutter/material.dart';
 import 'package:looper_player/ui/widgets/common/song_artwork.dart';
@@ -105,7 +106,7 @@ class AndroidLibraryTab extends ConsumerWidget {
                   .refreshLibrary(showVisualIndicator: true),
               child: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(
-                  parent: BouncingScrollPhysics(),
+                  parent: LooperScrollPhysics(),
                 ),
                 slivers: [
                   // Recent Played Pill

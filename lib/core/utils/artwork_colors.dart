@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:isolate';
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -114,7 +115,7 @@ Color readableOnDark(Color color, {double minTone = 58}) {
 /// between chroma 4 and 10 avoids a visible jump between songs. Everything
 /// more colorful than that keeps its tone.
 Color lyricsActiveColor(Color color, {double intensity = 0}) {
-  final double t = intensity.isNaN ? 0 : intensity.clamp(0.0, 1.0);
+  final double t = intensity.isNaN ? 0.35 : intensity.clamp(0.0, 1.0);
   Hct hct = Hct.fromInt(readableOnDark(color).toARGB32());
   if (t > 0 && hct.chroma >= 4) {
     // Hct.from clamps to the most chroma this hue/tone can show on screen;
@@ -141,7 +142,7 @@ Color lyricsActiveColor(Color color, {double intensity = 0}) {
 /// [intensity] (0..1, the user's slider) brings back more of the color:
 /// 0 is a light tint (tone 90), 1 stops at tone 70.
 Color lyricsSoftActiveColor(Color color, {double intensity = 0}) {
-  final double t = intensity.isNaN ? 0 : intensity.clamp(0.0, 1.0);
+  final double t = intensity.isNaN ? 0.35 : intensity.clamp(0.0, 1.0);
   final Hct hct = Hct.fromInt(readableOnDark(color).toARGB32());
   final double tone = 90 - 20 * t;
   if (hct.tone >= tone) return color;
@@ -172,12 +173,15 @@ Future<List<int>?> _extract(Uint8List rgba) async {
 
   // Share of the image per hue, spread over a 30 degree neighbourhood (the
   // same "excited proportion" Score uses), so a hue made of several close
-  // clusters counts as one prominent color.
+  // clusters counts as one prominent color. Only clusters with real color
+  // count: near-grey/near-black areas have a hue too, and letting them in
+  // made e.g. a small red title "own" all the dark brown around it.
   final List<double> hueShare = List.filled(360, 0);
   final Map<int, Hct> hcts = {};
   for (final MapEntry<int, int> e in population.entries) {
     final Hct hct = Hct.fromInt(e.key);
     hcts[e.key] = hct;
+    if (hct.chroma < 10 || hct.tone < 8) continue;
     final double share = e.value / total;
     final int hue = hct.hue.floor();
     for (int d = -14; d < 16; d++) {
@@ -207,18 +211,44 @@ Future<List<int>?> _extract(Uint8List rgba) async {
     return [light, Hct.from(d.hue, d.chroma, 50).toInt(), dominant, light];
   }
 
-  // Pick distinct hues, best first. Prefer a clearly different hue for the
-  // second color, relaxing the gap before giving up.
+  // Pick distinct colors, best first: clearly different hues first
+  // (relaxing the gap), and only then fill the remaining slots with colors
+  // that share a neighbouring hue but are much darker or lighter. A dark
+  // olive-green wall and a bright gold sit close on the hue wheel yet read
+  // as different colors - hue alone threw the wall away as a duplicate of
+  // the gold - but such shades must never displace a real second hue.
   final List<Hct> chosen = [ranked.first.$2];
-  for (final double gap in [40.0, 25.0, 15.0]) {
+  void fill(bool Function(Hct a, Hct b) distinct) {
     for (final (_, Hct hct, _) in ranked) {
-      if (chosen.length >= 4) break;
-      final bool distinct = chosen.every(
-        (c) => MathUtils.differenceDegrees(c.hue, hct.hue) >= gap,
-      );
-      if (distinct) chosen.add(hct);
+      if (chosen.length >= 4) return;
+      if (chosen.every((c) => distinct(c, hct))) chosen.add(hct);
     }
-    if (chosen.length >= 2) break;
+  }
+
+  double hueGap(Hct a, Hct b) => MathUtils.differenceDegrees(a.hue, b.hue);
+  fill((a, b) => hueGap(a, b) >= 40);
+  if (chosen.length < 2) fill((a, b) => hueGap(a, b) >= 25);
+  fill(
+    (a, b) =>
+        hueGap(a, b) >= 25 ||
+        (hueGap(a, b) >= 8 && (a.tone - b.tone).abs() >= 22),
+  );
+  if (chosen.length < 2) fill((a, b) => hueGap(a, b) >= 15);
+
+  // Order the extra colors (3rd, 4th) by how different they are from the
+  // first two, so the 3rd slot - the one the ambient background uses -
+  // holds the most distinct remaining color (a dark green wall) rather than
+  // a near-twin of the 2nd (an orange next to a gold).
+  if (chosen.length > 3) {
+    double distanceTo(Hct a, Hct b) =>
+        hueGap(a, b) + (a.tone - b.tone).abs() * 1.5;
+    double separation(Hct h) =>
+        [chosen[0], chosen[1]].map((c) => distanceTo(c, h)).reduce(math.min);
+    final List<Hct> extra = chosen.sublist(2)
+      ..sort((a, b) => separation(b).compareTo(separation(a)));
+    chosen
+      ..removeRange(2, chosen.length)
+      ..addAll(extra);
   }
 
   final Hct primary = chosen.first;

@@ -235,7 +235,7 @@ class SettingsView extends ConsumerWidget {
                         subtitle: l10n.activeLyricsIntensityDesc,
                         value:
                             (settings.activeLyricsIntensity.isNaN
-                                ? 0.0
+                                ? 0.35
                                 : settings.activeLyricsIntensity) *
                             100,
                         min: 0,
@@ -268,6 +268,19 @@ class SettingsView extends ConsumerWidget {
                               .read(settingsProvider.notifier)
                               .updateLyricsAlignment(align);
                         }
+                      },
+                      isLast: false,
+                    ),
+                    _PremiumSwitchRow(
+                      icon: LucideIcons.listCollapse,
+                      title: l10n.lyricsLineGrouping,
+                      subtitle: l10n.lyricsLineGroupingDesc,
+                      value: !settings.lyricsNoLineGrouping,
+                      onChanged: (value) {
+                        AppHaptics.light();
+                        ref
+                            .read(settingsProvider.notifier)
+                            .updateLyricsLineGrouping(value);
                       },
                       isLast: false,
                     ),

@@ -94,9 +94,22 @@ class _AndroidSongsTabState extends ConsumerState<AndroidSongsTab> {
     // this tab never renders - watching the whole object rebuilt this tab on
     // any of those (e.g. a playlist renamed elsewhere) even when the songs
     // list itself hadn't changed. Select just the fields actually used.
-    final (isInitialized, isScanning, songs) = ref.watch(
-      libraryProvider.select((s) => (s.isInitialized, s.isScanning, s.songs)),
-    );
+    final (isInitialized, isScanning, fullSongs, loadingSongs, totalCount) = ref
+        .watch(
+          libraryProvider.select(
+            (s) => (
+              s.isInitialized,
+              s.isScanning,
+              s.songs,
+              s.loadingSongs,
+              s.totalSongCount,
+            ),
+          ),
+        );
+    // While the saved library loads at app start, show the part that is in
+    // so far; rows below it stay skeletons until their part arrives.
+    final bool loadingInParts = !isInitialized && loadingSongs.isNotEmpty;
+    final songs = loadingInParts ? loadingSongs : fullSongs;
     final settings = ref.watch(settingsProvider);
     // Only the presence of a current song matters here (to make room for the
     // mini player), so select a bool instead of the Song object - otherwise
@@ -109,7 +122,7 @@ class _AndroidSongsTabState extends ConsumerState<AndroidSongsTab> {
     // Reopening the app: the saved library is still loading from the
     // database. The first scan of an empty library keeps the animated view
     // with its progress messages.
-    if (!isInitialized) {
+    if (!isInitialized && !loadingInParts) {
       return const LoadStateSwitcher(state: 'loading', child: SongsSkeleton());
     }
     if (isScanning && songs.isEmpty) {
@@ -217,6 +230,8 @@ class _AndroidSongsTabState extends ConsumerState<AndroidSongsTab> {
                             songs: songs,
                             controller: _scrollController,
                             showEnrichmentIndicator: true,
+                            loading: loadingInParts,
+                            totalCount: totalCount,
                           ),
                         ),
                       ],
@@ -253,14 +268,21 @@ class _AndroidSongsTabState extends ConsumerState<AndroidSongsTab> {
                             onTap: () {
                               AppHaptics.medium();
                               if (songs.isNotEmpty) {
-                                final randomSongList = List<Song>.from(songs)
-                                  ..shuffle();
+                                // Shuffles the whole library, waiting for
+                                // it if it is still loading.
+                                final playback = ref.read(
+                                  playbackProvider.notifier,
+                                );
                                 ref
-                                    .read(playbackProvider.notifier)
-                                    .setPlaylist(
-                                      randomSongList,
-                                      initialIndex: 0,
-                                    );
+                                    .read(libraryProvider.notifier)
+                                    .loadedSongs()
+                                    .then((all) {
+                                      if (all.isEmpty) return;
+                                      playback.setPlaylist(
+                                        List<Song>.from(all)..shuffle(),
+                                        initialIndex: 0,
+                                      );
+                                    });
                               }
                             },
                             child: SvgPicture.asset(

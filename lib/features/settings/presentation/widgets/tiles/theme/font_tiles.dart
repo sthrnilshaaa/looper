@@ -200,7 +200,7 @@ class _FontWeightTile extends StatelessWidget {
             height: 42,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
+              physics: const LooperScrollPhysics(),
               itemCount: weights.length,
               itemBuilder: (context, index) {
                 final w = weights[index];

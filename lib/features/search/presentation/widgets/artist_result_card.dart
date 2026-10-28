@@ -27,8 +27,13 @@ class _ArtistResultCard extends ConsumerWidget {
             CircleAvatar(
               radius: 40,
               backgroundColor: Colors.grey.withValues(alpha: 0.1),
+              // Decoded at the avatar's size, not the file's full resolution.
               backgroundImage: artist.artPath != null
-                  ? FileImage(File(artist.artPath!))
+                  ? ResizeImage(
+                      FileImage(File(artist.artPath!)),
+                      width: (80 * MediaQuery.devicePixelRatioOf(context))
+                          .round(),
+                    )
                   : null,
               child: artist.artPath == null
                   ? const Icon(LucideIcons.user)

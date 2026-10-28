@@ -1,3 +1,5 @@
+import 'package:looper_player/ui/widgets/common/first_scan_stage.dart';
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'package:looper_player/core/utils/desktop_paths.dart';
 import 'dart:io';
 import 'package:looper_player/core/utils/ui_utils.dart';
@@ -185,7 +187,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: const LooperScrollPhysics(),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 28.0,

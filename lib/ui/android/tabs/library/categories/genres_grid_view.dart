@@ -1,3 +1,4 @@
+import 'package:looper_player/core/motion/list_wave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/features/library/domain/models/models.dart';
@@ -49,19 +50,26 @@ class GenresGridView extends ConsumerWidget {
         break;
     }
 
-    return GridView.builder(
-      padding: const EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 200),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 220,
-        mainAxisSpacing: 20,
-        crossAxisSpacing: 20,
-        childAspectRatio: 1.35,
+    return ListWave(
+      child: GridView.builder(
+        padding: const EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: 200,
+        ),
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 220,
+          mainAxisSpacing: 20,
+          crossAxisSpacing: 20,
+          childAspectRatio: 1.35,
+        ),
+        itemCount: genres.length,
+        itemBuilder: waveItems((context, index) {
+          final genre = genres[index];
+          return GenreCard(genre: genre, songs: genresMap[genre]!);
+        }),
       ),
-      itemCount: genres.length,
-      itemBuilder: (context, index) {
-        final genre = genres[index];
-        return GenreCard(genre: genre, songs: genresMap[genre]!);
-      },
     );
   }
 }

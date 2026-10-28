@@ -1,3 +1,6 @@
+import 'package:looper_player/core/motion/list_wave.dart';
+import 'package:looper_player/core/motion/app_routes.dart';
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
 
 import 'dart:io';
@@ -17,6 +20,8 @@ import 'package:looper_player/core/services/storage/media_store_write_service.da
 
 import 'package:looper_player/l10n/app_localizations.dart';
 import 'package:looper_player/ui/android/widgets/enrichment_indicator.dart';
+import 'package:looper_player/ui/android/widgets/library_skeletons.dart';
+import 'package:looper_player/ui/widgets/common/app_skeleton.dart';
 import 'package:looper_player/ui/android/widgets/premium_section.dart';
 import 'package:looper_player/features/playlists/data/services/playlist_service.dart';
 import 'package:looper_player/features/playlists/presentation/screens/playlist_view.dart'
@@ -47,6 +52,13 @@ class SongsList extends ConsumerStatefulWidget {
   final ScrollController? controller;
   final bool showEnrichmentIndicator;
 
+  /// The library's songs are still loading at app start and [songs] is the
+  /// part loaded so far: skeleton rows follow it (scrolling ends there),
+  /// the header shows [totalCount], taps queue the whole list once it is in,
+  /// and selection waits.
+  final bool loading;
+  final int? totalCount;
+
   const SongsList({
     super.key,
     required this.songs,
@@ -56,6 +68,8 @@ class SongsList extends ConsumerStatefulWidget {
     this.playlist,
     this.controller,
     this.showEnrichmentIndicator = false,
+    this.loading = false,
+    this.totalCount,
   });
 
   @override
@@ -82,6 +96,24 @@ class _SongsListState extends ConsumerState<SongsList> {
   }
 
   bool get _isSelecting => _selectedPaths.isNotEmpty;
+
+  /// Skeleton rows after the loaded part while [SongsList.loading].
+  static const int _skeletonRows = 6;
+
+  int get _rowCount =>
+      widget.songs.length + (widget.loading ? _skeletonRows : 0);
+
+  // Rows from this index on were skeletons until the last part arrived and
+  // fade in when they are built.
+  int _revealFrom = 1 << 30;
+
+  @override
+  void didUpdateWidget(SongsList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.loading && widget.songs.length > oldWidget.songs.length) {
+      _revealFrom = oldWidget.songs.length;
+    }
+  }
 
   List<Song> get _selectedSongs =>
       widget.songs.where((s) => _selectedPaths.contains(s.path)).toList();
@@ -137,7 +169,7 @@ class _SongsListState extends ConsumerState<SongsList> {
 
   Future<void> _bulkDelete(AppLocalizations l10n) async {
     final selected = _selectedSongs;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showTaskDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(l10n.deleteSong),
@@ -240,10 +272,21 @@ class _SongsListState extends ConsumerState<SongsList> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            '${widget.songs.length} ${l10n.songs}',
+            '${widget.loading ? (widget.totalCount ?? widget.songs.length) : widget.songs.length} ${l10n.songs}',
             style: AppFonts.jostStyle(color: Colors.grey, fontSize: 13),
           ),
-          if (widget.showEnrichmentIndicator) const EnrichmentIndicator(),
+          if (widget.showEnrichmentIndicator)
+            const Expanded(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: EnrichmentIndicator(),
+                  ),
+                ),
+              ),
+            ),
           Row(
             children: [
               IconButton(
@@ -269,7 +312,7 @@ class _SongsListState extends ConsumerState<SongsList> {
       // draggable thumb; desktop keeps its own scrollbar.
       return FastScroller(
         controller: _scrollController,
-        itemCount: widget.songs.length,
+        itemCount: _rowCount,
         labelBuilder: _scrollLabelBuilder(),
         padding: const EdgeInsets.fromLTRB(0, 8, 0, 180),
         child: _buildSingleColumnListView(l10n, _scrollController),
@@ -313,9 +356,9 @@ class _SongsListState extends ConsumerState<SongsList> {
       shrinkWrap: false,
       physics:
           widget.physics ??
-          const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+          const AlwaysScrollableScrollPhysics(parent: LooperScrollPhysics()),
       padding: const EdgeInsets.fromLTRB(0, 8, 0, 180),
-      itemCount: widget.songs.length,
+      itemCount: _rowCount,
       // Every row is the same fixed-height SongTile, so give the
       // sliver one real instance to measure once instead of
       // re-measuring each row as it scrolls into view - this is
@@ -340,19 +383,32 @@ class _SongsListState extends ConsumerState<SongsList> {
   );
 
   Widget _buildRow(int index, AppLocalizations l10n) {
+    if (index >= widget.songs.length) {
+      return AppSkeleton(child: SongRowSkeleton(index: index));
+    }
     final song = widget.songs[index];
-    return SongTile(
-      showAlbum: true,
+    final tile = WaveItem(
       key: ValueKey(song.path),
-      song: song,
-      l10n: l10n,
-      songs: widget.songs,
-      searchQuery: widget.searchQuery,
-      playlist: widget.playlist,
-      selectionMode: _isSelecting,
-      selected: _selectedPaths.contains(song.path),
-      onToggleSelect: () => _toggleSelected(song),
-      onEnterSelection: () => _enterSelection(song),
+      child: SongTile(
+        showAlbum: true,
+        song: song,
+        l10n: l10n,
+        songs: widget.songs,
+        searchQuery: widget.searchQuery,
+        playlist: widget.playlist,
+        selectionMode: _isSelecting,
+        selected: _selectedPaths.contains(song.path),
+        onToggleSelect: () => _toggleSelected(song),
+        onEnterSelection: widget.loading ? null : () => _enterSelection(song),
+        resolveQueue: widget.loading
+            ? ref.read(libraryProvider.notifier).loadedSongs
+            : null,
+      ),
+    );
+    return _RowReveal(
+      key: ValueKey(song.path),
+      animate: widget.loading && index >= _revealFrom,
+      child: tile,
     );
   }
 
@@ -363,7 +419,7 @@ class _SongsListState extends ConsumerState<SongsList> {
       controller: widget.controller,
       physics:
           widget.physics ??
-          const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+          const AlwaysScrollableScrollPhysics(parent: LooperScrollPhysics()),
       padding: const EdgeInsets.fromLTRB(0, 8, 0, 180),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
@@ -378,45 +434,92 @@ class _SongsListState extends ConsumerState<SongsList> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Column(
-      children: [
-        _buildHeader(context, l10n),
-        if (widget.shrinkWrap)
-          ListView.builder(
-            controller: widget.controller,
-            shrinkWrap: true,
-            physics: widget.physics ?? const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(0, 8, 0, 180),
-            itemCount: widget.songs.length,
-            // Every row is the same fixed-height SongTile, so give the
-            // sliver one real instance to measure once instead of
-            // re-measuring each row as it scrolls into view.
-            prototypeItem: _buildPrototypeRow(l10n),
-            itemBuilder: (context, index) => _buildRow(index, l10n),
-          )
-        else
-          Expanded(
-            child: AppRefreshIndicator(
-              onRefresh: () => ref
-                  .read(libraryProvider.notifier)
-                  .refreshLibrary(showVisualIndicator: false),
-              child: UiUtils.isDesktop
-                  ? LayoutBuilder(
-                      builder: (context, constraints) =>
-                          songColumnsFor(
-                                constraints.maxWidth,
-                                desktop: true,
-                                searching:
-                                    widget.searchQuery?.isNotEmpty ?? false,
-                              ) ==
-                              2
-                          ? _buildTwoColumnGrid(l10n)
-                          : _buildSingleColumnList(l10n),
-                    )
-                  : _buildSingleColumnList(l10n),
+    // Rows arrive as one wave when the list first appears on screen.
+    return ListWave(
+      child: Column(
+        children: [
+          _buildHeader(context, l10n),
+          if (widget.shrinkWrap)
+            ListView.builder(
+              controller: widget.controller,
+              shrinkWrap: true,
+              physics: widget.physics ?? const LooperScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(0, 8, 0, 180),
+              itemCount: widget.songs.length,
+              // Every row is the same fixed-height SongTile, so give the
+              // sliver one real instance to measure once instead of
+              // re-measuring each row as it scrolls into view.
+              prototypeItem: _buildPrototypeRow(l10n),
+              itemBuilder: (context, index) => _buildRow(index, l10n),
+            )
+          else
+            Expanded(
+              child: AppRefreshIndicator(
+                onRefresh: () => ref
+                    .read(libraryProvider.notifier)
+                    .refreshLibrary(showVisualIndicator: false),
+                child: UiUtils.isDesktop
+                    ? LayoutBuilder(
+                        builder: (context, constraints) =>
+                            songColumnsFor(
+                                  constraints.maxWidth,
+                                  desktop: true,
+                                  searching:
+                                      widget.searchQuery?.isNotEmpty ?? false,
+                                ) ==
+                                2
+                            ? _buildTwoColumnGrid(l10n)
+                            : _buildSingleColumnList(l10n),
+                      )
+                    : _buildSingleColumnList(l10n),
+              ),
             ),
-          ),
-      ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Fades a row in when it replaces a loading skeleton row; otherwise it is
+/// just [child]. Decided once, when the row is first built.
+class _RowReveal extends StatefulWidget {
+  const _RowReveal({super.key, required this.animate, required this.child});
+
+  final bool animate;
+  final Widget child;
+
+  @override
+  State<_RowReveal> createState() => _RowRevealState();
+}
+
+class _RowRevealState extends State<_RowReveal>
+    with SingleTickerProviderStateMixin {
+  AnimationController? _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.animate) {
+      _controller = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 260),
+      )..forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = _controller;
+    if (controller == null) return widget.child;
+    return FadeTransition(
+      opacity: CurvedAnimation(parent: controller, curve: Curves.easeOut),
+      child: widget.child,
     );
   }
 }

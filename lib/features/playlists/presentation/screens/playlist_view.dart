@@ -1,3 +1,5 @@
+import 'package:looper_player/core/motion/list_wave.dart';
+import 'package:looper_player/core/motion/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:looper_player/core/utils/ui_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -136,17 +138,20 @@ class PlaylistView extends ConsumerWidget {
                 ],
               ),
             )
-          : GridView.builder(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 180),
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 200,
-                childAspectRatio: 0.85,
-                crossAxisSpacing: 20,
-                mainAxisSpacing: 20,
+          : ListWave(
+              child: GridView.builder(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 180),
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 200,
+                  childAspectRatio: 0.85,
+                  crossAxisSpacing: 20,
+                  mainAxisSpacing: 20,
+                ),
+                itemCount: playlists.length,
+                itemBuilder: waveItems(
+                  (context, index) => PlaylistCard(playlist: playlists[index]),
+                ),
               ),
-              itemCount: playlists.length,
-              itemBuilder: (context, index) =>
-                  PlaylistCard(playlist: playlists[index]),
             ),
       floatingActionButton: AnimatedPadding(
         duration: const Duration(milliseconds: 250),
@@ -163,7 +168,7 @@ class PlaylistView extends ConsumerWidget {
   void _showCreateDialog(BuildContext context, WidgetRef ref) {
     final controller = TextEditingController();
     final l10n = AppLocalizations.of(context)!;
-    showDialog(
+    showTaskDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(l10n.newPlaylist),

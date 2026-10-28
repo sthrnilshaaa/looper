@@ -1,3 +1,5 @@
+import 'package:looper_player/core/services/memory_manager.dart';
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart' show GestureBinding;
@@ -56,6 +58,7 @@ void main(List<String> args) async {
   // (the Fluid Player, sheets) step instead of glide. Resampling aligns them
   // to the frame clock.
   if (Platform.isAndroid) {
+    MemoryManager.install();
     GestureBinding.instance.resamplingEnabled = true;
   }
   AppHaptics.init();
@@ -284,6 +287,7 @@ class MyApp extends ConsumerWidget {
         debugShowCheckedModeBanner: false,
         title: 'Looper Player',
         color: Colors.transparent,
+        scrollBehavior: const LooperScrollBehavior(),
         theme: ThemeData(
           useMaterial3: true,
           colorScheme: colorScheme,
@@ -311,8 +315,12 @@ class MyApp extends ConsumerWidget {
             ),
           ),
         ),
-        themeAnimationDuration: const Duration(milliseconds: 1000),
-        themeAnimationCurve: Curves.easeInOut,
+        // No app-wide theme animation: with the accent following the
+        // artwork, every song change re-themed the app, and a 1 s theme lerp
+        // rebuilt the entire tree on every frame of it (~25 ms frames, ~40
+        // fps for a second on a 120 Hz phone). The new accent now lands in a
+        // single rebuild, after the song-change motion (ThemeNotifier).
+        themeAnimationDuration: Duration.zero,
         locale: language.isEmpty || language == 'system'
             ? null
             : Locale(language),

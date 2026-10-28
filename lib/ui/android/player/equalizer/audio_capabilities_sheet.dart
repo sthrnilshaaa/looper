@@ -59,7 +59,7 @@ void _showAudioCapabilitiesSheet(BuildContext context, WidgetRef ref) {
                 else
                   Flexible(
                     child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
+                      physics: const LooperScrollPhysics(),
                       child: Column(
                         children: capabilities.entries.map((entry) {
                           return Padding(

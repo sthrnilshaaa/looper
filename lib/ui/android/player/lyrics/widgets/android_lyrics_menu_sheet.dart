@@ -1,3 +1,4 @@
+import 'package:looper_player/core/motion/app_routes.dart';
 import 'dart:io';
 
 import 'package:looper_player/core/utils/song_metadata.dart';
@@ -40,7 +41,7 @@ void showLyricsMenuBottomSheet(BuildContext context, WidgetRef ref, Song song) {
 /// The same menu for mouse-and-window platforms: a centred dialog instead
 /// of a bottom sheet, without the touch-only entries.
 void showLyricsMenuDialog(BuildContext context, WidgetRef ref, Song song) {
-  showDialog<void>(
+  showTaskDialog<void>(
     context: context,
     useRootNavigator: true,
     builder: (context) => Dialog(
