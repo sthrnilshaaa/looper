@@ -4,7 +4,7 @@ description: "Looper Player - A powerful music player."
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 2.7.4+43
+version: 2.7.5+44
 
 environment:
   sdk: ^3.11.0
