@@ -9,11 +9,11 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/github/v/release/SthrNilshaaa/looper?style=flat-square&color=000000" />
-  <img src="https://img.shields.io/github/downloads/SthrNilshaaa/looper/total?style=flat-square&color=000000" />
-  <img src="https://img.shields.io/github/stars/SthrNilshaaa/looper?style=flat-square&color=000000" />
-  <img src="https://img.shields.io/badge/platform-Android%20%7C%20Linux%20%7C%20Windows-blueviolet?style=flat-square" />
-  <img src="https://img.shields.io/badge/license-GPL--3.0-green?style=flat-square" />
+  <img height="20" src="https://img.shields.io/github/v/release/SthrNilshaaa/looper?style=flat-square&color=000000" />
+  <img height="20" src="https://img.shields.io/github/downloads/SthrNilshaaa/looper/total?style=flat-square&label=Downloads&color=blue&labelColor=000000&logo=github" />
+  <img height="20" src="https://img.shields.io/github/stars/SthrNilshaaa/looper?style=flat-square&color=000000" />
+  <img height="20" src="https://img.shields.io/badge/platform-Android%20%7C%20Linux%20%7C%20Windows-blueviolet?style=flat-square" />
+  <img height="20" src="https://img.shields.io/badge/license-GPL--3.0-green?style=flat-square" />
 </p>
 
 <p align="center">
