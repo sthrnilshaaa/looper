@@ -17,6 +17,11 @@
 </p>
 
 <p align="center">
+  <a href="https://trendshift.io/repositories/39819" target="_blank"><img src="https://trendshift.io/api/badge/trendshift/repositories/39819/daily?language=Dart" alt="sthrnilshaaa/looper | Trendshift daily" height="55" /></a>
+  <a href="https://trendshift.io/repositories/39819" target="_blank"><img src="https://trendshift.io/api/badge/trendshift/repositories/39819/weekly?language=Dart" alt="sthrnilshaaa/looper | Trendshift weekly" height="55" /></a>
+</p>
+
+<p align="center">
   <a href="https://play.google.com/store/apps/details?id=com.looper.player">
     <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="70">
   </a>
