@@ -100,6 +100,8 @@ class SettingsCategoryScreen extends ConsumerWidget {
         (
           title: l10n.themeGroupFonts,
           tiles: [
+            // Desktop has its own UI scale row in its settings view.
+            if (!UiUtils.isDesktop) const UiScaleTile(),
             const UseNewFontTile(),
             sub(settings.useNewFont, const [
               FontFamilySelectionTile(),

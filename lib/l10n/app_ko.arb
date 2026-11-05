@@ -1009,6 +1009,7 @@
   "updateUpToDate": "최신 버전을 사용 중입니다.",
   "updateCheckFailed": "업데이트를 확인할 수 없습니다.",
   "uiScale": "UI 배율",
+  "uiScaleDesc": "앱의 모든 요소를 작게 또는 크게 표시",
   "lyricsSize": "가사 크기",
   "lyricsSizeDesc": "가사 화면의 글자 크기",
   "lyricsSizeSmaller": "가사 작게",

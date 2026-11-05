@@ -1009,6 +1009,7 @@
   "updateUpToDate": "当前已是最新版本。",
   "updateCheckFailed": "无法检查更新。",
   "uiScale": "界面缩放",
+  "uiScaleDesc": "将应用中的所有内容缩小或放大",
   "lyricsSize": "歌词大小",
   "lyricsSizeDesc": "歌词页面的文字大小",
   "lyricsSizeSmaller": "缩小歌词",

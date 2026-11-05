@@ -316,6 +316,13 @@ extension _SettingsSearch on _SettingsViewState {
           category: '${l10n.appearance} · ${l10n.themeGroupBlurBackgrounds}',
           widget: const AnimateBackgroundGradientTile(),
         ),
+      if (!UiUtils.isDesktop)
+        SettingsSearchItem(
+          title: l10n.uiScale,
+          subtitle: l10n.uiScaleDesc,
+          category: '${l10n.appearance} · ${l10n.themeGroupFonts}',
+          widget: const UiScaleTile(),
+        ),
       SettingsSearchItem(
         title: l10n.useCustomFont,
         subtitle: l10n.useCustomFontDesc,

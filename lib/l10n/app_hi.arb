@@ -1009,6 +1009,7 @@
   "updateUpToDate": "आपके पास सबसे नया वर्शन है।",
   "updateCheckFailed": "अपडेट की जाँच नहीं हो सकी।",
   "uiScale": "इंटरफ़ेस का आकार",
+  "uiScaleDesc": "ऐप में सब कुछ छोटा या बड़ा करें",
   "lyricsSize": "लिरिक्स का आकार",
   "lyricsSizeDesc": "लिरिक्स स्क्रीन पर टेक्स्ट का आकार",
   "lyricsSizeSmaller": "लिरिक्स छोटे करें",

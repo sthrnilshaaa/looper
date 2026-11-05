@@ -1009,6 +1009,7 @@
   "updateUpToDate": "Tienes la última versión.",
   "updateCheckFailed": "No se pudo buscar actualizaciones.",
   "uiScale": "Escala de la interfaz",
+  "uiScaleDesc": "Haz que todo en la app sea más pequeño o más grande",
   "lyricsSize": "Tamaño de la letra",
   "lyricsSizeDesc": "Tamaño del texto en la pantalla de letras",
   "lyricsSizeSmaller": "Letra más pequeña",

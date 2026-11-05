@@ -405,8 +405,9 @@ class AppSettings {
   /// to share, pinch to resize, swipe down to close).
   bool lyricsGestureTutorialSeen = false;
 
-  /// Desktop only: whole-UI scale, one of UiScaleSteps.steps. Rows saved
-  /// before this field existed come back as NaN - read it through
+  /// Whole-UI scale on every platform, one of UiScaleSteps.steps. The name
+  /// predates Android support; renaming it would drop saved values. Rows
+  /// saved before this field existed come back as NaN - read it through
   /// UiScaleSteps.normalize.
   double desktopUiScale = 1.0;
 

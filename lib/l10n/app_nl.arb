@@ -1009,6 +1009,7 @@
   "updateUpToDate": "Je hebt de nieuwste versie.",
   "updateCheckFailed": "Controleren op updates is mislukt.",
   "uiScale": "Interfaceschaal",
+  "uiScaleDesc": "Maak alles in de app kleiner of groter",
   "lyricsSize": "Grootte songtekst",
   "lyricsSizeDesc": "Tekstgrootte op het songtekstscherm",
   "lyricsSizeSmaller": "Kleinere songtekst",

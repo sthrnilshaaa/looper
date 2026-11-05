@@ -1379,6 +1379,7 @@
   "updateUpToDate": "You're on the latest version.",
   "updateCheckFailed": "Couldn't check for updates.",
   "uiScale": "UI scale",
+  "uiScaleDesc": "Make everything in the app smaller or larger",
   "lyricsSize": "Lyrics size",
   "lyricsSizeDesc": "Text size on the lyrics screen",
   "lyricsSizeSmaller": "Smaller lyrics",

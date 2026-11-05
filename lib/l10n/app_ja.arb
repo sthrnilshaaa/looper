@@ -1009,6 +1009,7 @@
   "updateUpToDate": "最新バージョンです。",
   "updateCheckFailed": "アップデートを確認できませんでした。",
   "uiScale": "UIの拡大率",
+  "uiScaleDesc": "アプリ全体を小さく、または大きく表示します",
   "lyricsSize": "歌詞のサイズ",
   "lyricsSizeDesc": "歌詞画面の文字サイズ",
   "lyricsSizeSmaller": "歌詞を小さく",

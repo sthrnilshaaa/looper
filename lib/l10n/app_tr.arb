@@ -1009,6 +1009,7 @@
   "updateUpToDate": "En son sürümü kullanıyorsunuz.",
   "updateCheckFailed": "Güncellemeler denetlenemedi.",
   "uiScale": "Arayüz ölçeği",
+  "uiScaleDesc": "Uygulamadaki her şeyi küçült veya büyüt",
   "lyricsSize": "Şarkı sözü boyutu",
   "lyricsSizeDesc": "Şarkı sözleri ekranındaki metin boyutu",
   "lyricsSizeSmaller": "Sözleri küçült",

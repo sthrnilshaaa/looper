@@ -1,3 +1,4 @@
+import 'package:looper_player/core/utils/ui_scale_steps.dart';
 import 'package:looper_player/ui/android/player/lyrics/lyrics_route.dart';
 import 'package:looper_player/core/providers/collection_navigation.dart';
 import 'package:looper_player/ui/widgets/common/song_artist_picker.dart';
@@ -226,7 +227,10 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
     // drawn enlarged (scale 1 at the default density; see
     // PlayerPortraitMetrics), and the column is capped on wide windows.
     final PlayerPortraitMetrics? portrait = landscape == null
-        ? PlayerPortraitMetrics.of(screenSize)
+        ? PlayerPortraitMetrics.of(
+            screenSize,
+            uiScale: UiScaleSteps.normalize(settings.desktopUiScale),
+          )
         : null;
     final double k = portrait?.scale ?? 1.0;
     Widget scaled(Widget child) => PlayerScaled(scale: k, child: child);

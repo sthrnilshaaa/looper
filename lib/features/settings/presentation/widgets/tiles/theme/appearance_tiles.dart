@@ -270,3 +270,40 @@ class CustomAccentColorTile extends ConsumerWidget {
     );
   }
 }
+
+/// Whole-app scale (UiScaleSteps). Saved only when the drag ends: applying
+/// it live would resize the slider under the finger.
+class UiScaleTile extends ConsumerStatefulWidget {
+  const UiScaleTile({super.key});
+
+  @override
+  ConsumerState<UiScaleTile> createState() => _UiScaleTileState();
+}
+
+class _UiScaleTileState extends ConsumerState<UiScaleTile> {
+  double? _dragging;
+
+  @override
+  Widget build(BuildContext context) {
+    final saved = UiScaleSteps.normalize(
+      ref.watch(settingsProvider.select((s) => s.desktopUiScale)),
+    );
+    final steps = UiScaleSteps.steps;
+    final l10n = AppLocalizations.of(context)!;
+    return SettingsSliderTile(
+      icon: LucideIcons.scaling,
+      title: l10n.uiScale,
+      subtitle: l10n.uiScaleDesc,
+      value: (_dragging ?? saved) * 100,
+      min: steps.first * 100,
+      max: steps.last * 100,
+      divisions: steps.length - 1,
+      suffix: '%',
+      onChanged: (v) => setState(() => _dragging = v / 100),
+      onChangeEnd: (v) {
+        setState(() => _dragging = null);
+        ref.read(settingsProvider.notifier).updateDesktopUiScale(v / 100);
+      },
+    );
+  }
+}
