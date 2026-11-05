@@ -216,6 +216,8 @@
   "rename": "إعادة تسمية",
   "renameFile": "إعادة تسمية الملف",
   "renamePlaylist": "إعادة تسمية قائمة التشغيل",
+  "changePlaylistCover": "تغيير الغلاف",
+  "removePlaylistCover": "إزالة الغلاف",
   "renameSong": "إعادة تسمية الأغنية",
   "reorderDashboardSections": "إعادة ترتيب أقسام لوحة المعلومات",
   "reorderDashboardSectionsDesc": "قم بالسحب والإفلات لتعيين الترتيب المفضل للوحة المعلومات",

@@ -247,6 +247,7 @@ class _MiniTitle extends StatelessWidget {
     final cover = playlist != null
         ? PlaylistArtwork(
             songPaths: playlist.songPaths,
+            coverPath: playlist.coverPath,
             size: size,
             borderRadius: radius,
           )

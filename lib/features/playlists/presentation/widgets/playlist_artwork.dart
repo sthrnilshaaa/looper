@@ -30,12 +30,15 @@ Stream<List<String?>> playlistArtwork(Ref ref, List<String> songPaths) {
 
 class PlaylistArtwork extends ConsumerWidget {
   final List<String> songPaths;
+  // The user's own picture; replaces the song covers when set.
+  final String? coverPath;
   final double? size;
   final BorderRadius borderRadius;
 
   const PlaylistArtwork({
     super.key,
     required this.songPaths,
+    this.coverPath,
     this.size,
     this.borderRadius = const BorderRadius.all(Radius.circular(12)),
   });
@@ -58,6 +61,13 @@ class PlaylistArtwork extends ConsumerWidget {
               alpha: dynamicTheming ? 0.8 : 0.3,
             ),
             child: switch (songPaths.length) {
+              _ when coverPath != null => LayoutBuilder(
+                builder: (context, constraints) => OptimizedImage(
+                  imagePath: coverPath,
+                  width: constraints.maxWidth,
+                  height: constraints.maxWidth,
+                ),
+              ),
               0 => const Center(child: Icon(LucideIcons.listMusic, size: 48)),
               // Fewer than four songs can't fill the grid: show one cover,
               // the first song that has artwork.

@@ -216,6 +216,8 @@
   "rename": "Yeniden adlandır",
   "renameFile": "Dosyayı Yeniden Adlandır",
   "renamePlaylist": "Çalma Listesini Yeniden Adlandır",
+  "changePlaylistCover": "Kapağı Değiştir",
+  "removePlaylistCover": "Kapağı Kaldır",
   "renameSong": "Şarkıyı Yeniden Adlandır",
   "reorderDashboardSections": "Kontrol Paneli Bölümlerini Yeniden Sıralama",
   "reorderDashboardSectionsDesc": "Tercih edilen kontrol paneli sırasını ayarlamak için sürükleyip bırakın",

@@ -216,6 +216,8 @@
   "rename": "Rinomina",
   "renameFile": "Rinomina File",
   "renamePlaylist": "Rinomina Playlist",
+  "changePlaylistCover": "Cambia copertina",
+  "removePlaylistCover": "Rimuovi copertina",
   "renameSong": "Rinomina brano",
   "reorderDashboardSections": "Riordina sezioni pannello principale",
   "reorderDashboardSectionsDesc": "Trascina e rilascia per impostare l'ordine preferito del pannello principale",

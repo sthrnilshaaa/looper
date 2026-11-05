@@ -216,6 +216,8 @@
   "rename": "नाम बदलें",
   "renameFile": "फ़ाइल का नाम बदलें",
   "renamePlaylist": "प्लेलिस्ट का नाम बदलें",
+  "changePlaylistCover": "कवर बदलें",
+  "removePlaylistCover": "कवर हटाएँ",
   "renameSong": "गाने का नाम बदलें",
   "reorderDashboardSections": "डैशबोर्ड अनुभागों को पुनर्व्यवस्थित करें",
   "reorderDashboardSectionsDesc": "पसंदीदा डैशबोर्ड क्रम सेट करने के लिए खींचें और छोड़ें",

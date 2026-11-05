@@ -77,6 +77,7 @@ extension _DesktopCollection on CollectionDetailView {
                         if (reactivePlaylist != null)
                           PlaylistArtwork(
                             songPaths: reactivePlaylist.songPaths,
+                            coverPath: reactivePlaylist.coverPath,
                             size: 140,
                             borderRadius: BorderRadius.circular(6),
                           )

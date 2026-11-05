@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:isar_community/isar.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:looper_player/core/services/storage/db_service.dart';
 
 class PlaylistService {
@@ -89,5 +93,48 @@ class PlaylistService {
       playlist.dateModified = DateTime.now();
       await DbService.isar.playlists.put(playlist);
     });
+  }
+
+  /// Sets [playlist]'s cover to a copy of [sourcePath] (the picker's copy
+  /// can be cleaned up by the system), or back to song covers when null.
+  /// A fresh file name each time so image caches never show the old one.
+  static Future<bool> setCover(Playlist playlist, String? sourcePath) async {
+    String? newPath;
+    if (sourcePath != null) {
+      try {
+        final dir = Directory(
+          p.join(
+            (await getApplicationSupportDirectory()).path,
+            'playlist_covers',
+          ),
+        );
+        await dir.create(recursive: true);
+        final ext = p.extension(sourcePath).isEmpty
+            ? '.jpg'
+            : p.extension(sourcePath);
+        newPath = p.join(
+          dir.path,
+          '${playlist.id}_${DateTime.now().millisecondsSinceEpoch}$ext',
+        );
+        await File(sourcePath).copy(newPath);
+      } catch (_) {
+        return false;
+      }
+    }
+    final old = playlist.coverPath;
+    await DbService.isar.writeTxn(() async {
+      playlist.coverPath = newPath;
+      playlist.dateModified = DateTime.now();
+      await DbService.isar.playlists.put(playlist);
+    });
+    await deleteCoverFile(old);
+    return true;
+  }
+
+  static Future<void> deleteCoverFile(String? path) async {
+    if (path == null) return;
+    try {
+      await File(path).delete();
+    } catch (_) {}
   }
 }

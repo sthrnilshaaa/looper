@@ -229,6 +229,8 @@
   "rename": "Rename",
   "renameFile": "Rename File",
   "renamePlaylist": "Rename Playlist",
+  "changePlaylistCover": "Change Cover",
+  "removePlaylistCover": "Remove Cover",
   "renameSong": "Rename Song",
   "reorderDashboardSections": "Reorder Dashboard Sections",
   "reorderDashboardSectionsDesc": "Drag and drop to set preferred dashboard order",

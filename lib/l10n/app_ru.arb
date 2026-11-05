@@ -216,6 +216,8 @@
   "rename": "Переименовать",
   "renameFile": "Переименовать файл",
   "renamePlaylist": "Переименовать плейлист",
+  "changePlaylistCover": "Изменить обложку",
+  "removePlaylistCover": "Удалить обложку",
   "renameSong": "Переименовать песню",
   "reorderDashboardSections": "Изменение порядка разделов информационной панели",
   "reorderDashboardSectionsDesc": "Перетащите, чтобы установить предпочтительный порядок панели мониторинга.",

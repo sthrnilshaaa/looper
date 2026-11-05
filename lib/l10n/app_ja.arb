@@ -216,6 +216,8 @@
   "rename": "名前を変更",
   "renameFile": "ファイルを名前変更",
   "renamePlaylist": "プレイリスト名を変更",
+  "changePlaylistCover": "カバーを変更",
+  "removePlaylistCover": "カバーを削除",
   "renameSong": "曲の名前を変更する",
   "reorderDashboardSections": "ダッシュボードセクションの並べ替え",
   "reorderDashboardSectionsDesc": "ドラッグ アンド ドロップでダッシュボードの優先順序を設定します",

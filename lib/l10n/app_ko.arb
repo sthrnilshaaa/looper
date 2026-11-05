@@ -216,6 +216,8 @@
   "rename": "이름 바꾸기",
   "renameFile": "파일 이름 변경",
   "renamePlaylist": "재생목록 이름 변경",
+  "changePlaylistCover": "커버 변경",
+  "removePlaylistCover": "커버 삭제",
   "renameSong": "노래 이름 바꾸기",
   "reorderDashboardSections": "대시보드 섹션 재정렬",
   "reorderDashboardSectionsDesc": "드래그 앤 드롭하여 기본 대시보드 순서 설정",

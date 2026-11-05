@@ -216,6 +216,8 @@
   "rename": "重命名",
   "renameFile": "重命名文件",
   "renamePlaylist": "重命名播放列表",
+  "changePlaylistCover": "更换封面",
+  "removePlaylistCover": "移除封面",
   "renameSong": "重命名歌曲",
   "reorderDashboardSections": "重新排序仪表板部分",
   "reorderDashboardSectionsDesc": "拖放以设置首选仪表板顺序",

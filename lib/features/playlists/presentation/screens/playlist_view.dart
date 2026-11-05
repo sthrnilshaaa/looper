@@ -231,7 +231,12 @@ class PlaylistCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: PlaylistArtwork(songPaths: playlist.songPaths)),
+          Expanded(
+            child: PlaylistArtwork(
+              songPaths: playlist.songPaths,
+              coverPath: playlist.coverPath,
+            ),
+          ),
           const SizedBox(height: 8),
           Text(
             playlist.name,

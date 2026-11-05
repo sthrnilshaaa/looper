@@ -47,6 +47,7 @@ extension _CollectionHeader on CollectionDetailView {
     if (playlist != null) {
       return PlaylistArtwork(
         songPaths: playlist.songPaths,
+        coverPath: playlist.coverPath,
         size: size,
         borderRadius: BorderRadius.circular(16),
       );

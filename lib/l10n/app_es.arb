@@ -216,6 +216,8 @@
   "rename": "Renombrar",
   "renameFile": "Renombrar archivo",
   "renamePlaylist": "Renombrar lista de reproducción",
+  "changePlaylistCover": "Cambiar portada",
+  "removePlaylistCover": "Quitar portada",
   "renameSong": "Renombrar canción",
   "reorderDashboardSections": "Reordenar secciones del panel",
   "reorderDashboardSectionsDesc": "Arrastra y suelta para establecer el orden preferido",

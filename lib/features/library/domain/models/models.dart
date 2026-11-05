@@ -137,6 +137,8 @@ class Playlist {
   late DateTime dateCreated;
   late DateTime dateModified;
   DateTime? lastPlayed;
+  // A picture the user picked, copied into the app. Null = song covers.
+  String? coverPath;
 }
 
 @collection
@@ -226,7 +228,7 @@ class AppSettings {
   // = AppAccent.defaultVibrancy.
   double? accentVibrancy;
   // Shows the current lyric line under the cover on the portrait player.
-  bool playerLyricLine = false;
+  bool playerLyricLine = true;
   // How that line changes: 'cube', 'roll', 'flip' or 'blur' ('' = cube).
   String playerLyricLineTransition = 'cube';
   // Shows "Artist • Album" instead of just the artist under song titles

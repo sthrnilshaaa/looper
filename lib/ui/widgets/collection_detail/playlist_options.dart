@@ -18,6 +18,35 @@ extension _CollectionPlaylistOptions on CollectionDetailView {
         final useBlur = settings.enableDynamicTheming && !settings.disableBlur;
         final isPureBlack = settings.darkTheme;
 
+        // (icon, color, label, action) - the sheet closes before the action.
+        final rows = <(IconData, Color, String, VoidCallback)>[
+          (
+            LucideIcons.edit2,
+            Colors.greenAccent,
+            l10n.renamePlaylist,
+            () => _showRenameDialog(context, ref, playlist),
+          ),
+          (
+            LucideIcons.image,
+            Colors.lightBlueAccent,
+            l10n.changePlaylistCover,
+            () => _pickPlaylistCover(playlist),
+          ),
+          if (playlist.coverPath != null)
+            (
+              LucideIcons.imageOff,
+              Colors.orangeAccent,
+              l10n.removePlaylistCover,
+              () => PlaylistService.setCover(playlist, null),
+            ),
+          (
+            LucideIcons.trash2,
+            Colors.redAccent,
+            l10n.deletePlaylist,
+            () => _showDeleteDialog(context, ref, playlist),
+          ),
+        ];
+
         final sheetBg = isPureBlack
             ? Colors.black
             : (useBlur
@@ -85,93 +114,55 @@ extension _CollectionPlaylistOptions on CollectionDetailView {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      InkWell(
-                        onTap: () {
-                          Navigator.pop(context);
-                          _showRenameDialog(context, ref, playlist);
-                        },
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(20),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 18,
+                      for (final (i, row) in rows.indexed) ...[
+                        if (i > 0)
+                          Divider(
+                            height: 1,
+                            thickness: 0.8,
+                            color: Colors.white.withValues(alpha: 0.04),
+                            indent: 20,
+                            endIndent: 20,
                           ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                LucideIcons.edit2,
-                                size: 22,
-                                color: Colors.greenAccent,
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Text(
-                                  l10n.renamePlaylist,
-                                  style: AppFonts.jostStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 16,
+                        InkWell(
+                          onTap: () {
+                            Navigator.pop(context);
+                            row.$4();
+                          },
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(i == 0 ? 20 : 0),
+                            bottom: Radius.circular(
+                              i == rows.length - 1 ? 20 : 0,
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 18,
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(row.$1, size: 22, color: row.$2),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Text(
+                                    row.$3,
+                                    style: AppFonts.jostStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 16,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              Icon(
-                                LucideIcons.chevronRight,
-                                color: Colors.white.withValues(alpha: 0.9),
-                                size: 18,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Divider(
-                        height: 1,
-                        thickness: 0.8,
-                        color: Colors.white.withValues(alpha: 0.04),
-                        indent: 20,
-                        endIndent: 20,
-                      ),
-                      InkWell(
-                        onTap: () {
-                          Navigator.pop(context);
-                          _showDeleteDialog(context, ref, playlist);
-                        },
-                        borderRadius: const BorderRadius.vertical(
-                          bottom: Radius.circular(20),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 18,
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                LucideIcons.trash2,
-                                size: 22,
-                                color: Colors.redAccent,
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Text(
-                                  l10n.deletePlaylist,
-                                  style: AppFonts.jostStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 16,
-                                  ),
+                                Icon(
+                                  LucideIcons.chevronRight,
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  size: 18,
                                 ),
-                              ),
-                              Icon(
-                                LucideIcons.chevronRight,
-                                color: Colors.white.withValues(alpha: 0.9),
-                                size: 18,
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),
@@ -198,6 +189,14 @@ extension _CollectionPlaylistOptions on CollectionDetailView {
         return sheetContent;
       },
     );
+  }
+
+  Future<void> _pickPlaylistCover(Playlist playlist) async {
+    try {
+      final result = await FilePicker.pickFile(type: FileType.image);
+      final path = result?.path;
+      if (path != null) await PlaylistService.setCover(playlist, path);
+    } catch (_) {}
   }
 
   void _showEditAlbumSheet(BuildContext context, WidgetRef ref, Album album) {
@@ -287,6 +286,7 @@ extension _CollectionPlaylistOptions on CollectionDetailView {
                 await DbService.isar.writeTxn(
                   () => DbService.isar.playlists.delete(playlist.id),
                 );
+                await PlaylistService.deleteCoverFile(playlist.coverPath);
                 Navigator.pop(context); // Close dialog
                 ref
                     .read(appNavigationProvider.notifier)

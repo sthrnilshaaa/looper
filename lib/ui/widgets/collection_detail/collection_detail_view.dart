@@ -2,6 +2,7 @@ import 'package:looper_player/core/motion/list_wave.dart';
 import 'package:looper_player/core/motion/scroll_stage.dart';
 import 'package:looper_player/core/motion/app_routes.dart';
 import 'package:looper_player/core/motion/looper_scroll_physics.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui';

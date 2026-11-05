@@ -216,6 +216,8 @@
   "rename": "Hernoemen",
   "renameFile": "Bestand hernoemen",
   "renamePlaylist": "Afspeellijst hernoemen",
+  "changePlaylistCover": "Cover wijzigen",
+  "removePlaylistCover": "Cover verwijderen",
   "renameSong": "Hernoem het nummer",
   "reorderDashboardSections": "Dashboardsecties opnieuw ordenen",
   "reorderDashboardSectionsDesc": "Slepen en neerzetten om de gewenste dashboardvolgorde in te stellen",

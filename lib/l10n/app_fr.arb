@@ -216,6 +216,8 @@
   "rename": "Renommer",
   "renameFile": "Renommer le fichier",
   "renamePlaylist": "Renommer la playlist",
+  "changePlaylistCover": "Changer la couverture",
+  "removePlaylistCover": "Supprimer la couverture",
   "renameSong": "Renommer la chanson",
   "reorderDashboardSections": "Réorganiser les sections du tableau de bord",
   "reorderDashboardSectionsDesc": "Glisser-déposer pour définir l'ordre préféré",

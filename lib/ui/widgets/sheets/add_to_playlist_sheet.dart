@@ -184,6 +184,7 @@ class _AddToPlaylistSheet extends ConsumerWidget {
                         children: [
                           PlaylistArtwork(
                             songPaths: playlist.songPaths,
+                            coverPath: playlist.coverPath,
                             size: 52,
                             borderRadius: BorderRadius.circular(10),
                           ),
