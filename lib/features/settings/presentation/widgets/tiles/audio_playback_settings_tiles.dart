@@ -98,15 +98,22 @@ class ResumeOnStartTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
-    return SwitchListTile(
-      secondary: const Icon(LucideIcons.power, color: Colors.white70),
-      title: Text(l10n.resumeOnStartTitle, style: _tileTitleStyle()),
-      subtitle: Text(l10n.resumeOnStartDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: settings.accent,
-      value: settings.resumeOnStart,
-      onChanged: (value) {
-        ref.read(settingsProvider.notifier).updateResumeOnStart(value);
-      },
+    // Nothing to resume unless the queue is remembered.
+    final enabled = settings.persistQueue;
+    return Opacity(
+      opacity: enabled ? 1.0 : 0.4,
+      child: SwitchListTile(
+        secondary: const Icon(LucideIcons.power, color: Colors.white70),
+        title: Text(l10n.resumeOnStartTitle, style: _tileTitleStyle()),
+        subtitle: Text(l10n.resumeOnStartDesc, style: _tileSubtitleStyle()),
+        activeThumbColor: settings.accent,
+        value: settings.resumeOnStart,
+        onChanged: enabled
+            ? (value) {
+                ref.read(settingsProvider.notifier).updateResumeOnStart(value);
+              }
+            : null,
+      ),
     );
   }
 }

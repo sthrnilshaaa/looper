@@ -607,18 +607,25 @@ class SettingsView extends ConsumerWidget {
                           },
                           isLast: false,
                         ),
-                        _PremiumSwitchRow(
-                          icon: LucideIcons.power,
-                          title: l10n.resumeOnStartTitle,
-                          subtitle: l10n.resumeOnStartDesc,
-                          value: settings.resumeOnStart,
-                          onChanged: (value) {
-                            AppHaptics.light();
-                            ref
-                                .read(settingsProvider.notifier)
-                                .updateResumeOnStart(value);
-                          },
-                          isLast: true,
+                        // Nothing to resume unless the queue is remembered.
+                        Opacity(
+                          opacity: settings.persistQueue ? 1.0 : 0.4,
+                          child: IgnorePointer(
+                            ignoring: !settings.persistQueue,
+                            child: _PremiumSwitchRow(
+                              icon: LucideIcons.power,
+                              title: l10n.resumeOnStartTitle,
+                              subtitle: l10n.resumeOnStartDesc,
+                              value: settings.resumeOnStart,
+                              onChanged: (value) {
+                                AppHaptics.light();
+                                ref
+                                    .read(settingsProvider.notifier)
+                                    .updateResumeOnStart(value);
+                              },
+                              isLast: true,
+                            ),
+                          ),
                         ),
                       ],
                     ],

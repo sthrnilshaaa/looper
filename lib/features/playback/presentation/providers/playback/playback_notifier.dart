@@ -63,6 +63,7 @@ class Playback extends _$Playback {
   bool _pendingCompletion = false;
   bool _completedResetSinceLoad = true;
   bool _pausedForRouteChange = false;
+  DateTime _routeChangePausedAt = DateTime.fromMillisecondsSinceEpoch(0);
   // When mpv_audio_kit last paused us on the OS's behalf (see
   // _onRemotePause) - lets onBecomingNoisy tell that the pause it raced
   // was the route change, whichever of the two arrived first.
@@ -2203,10 +2204,17 @@ class Playback extends _$Playback {
       _onRemotePause();
     }
     _pausedForRouteChange = true;
+    _routeChangePausedAt = DateTime.now();
   }
 
   Future<void> resumeOnBluetoothConnect() async {
     if (state.isPlaying || !_pausedForRouteChange) return;
+    // A reconnect long after the disconnect shouldn't start music by surprise.
+    if (DateTime.now().difference(_routeChangePausedAt) >
+        const Duration(minutes: 30)) {
+      _pausedForRouteChange = false;
+      return;
+    }
     if (!ref.read(settingsProvider).resumeOnBluetoothConnect) return;
 
     _silenceTimer?.cancel();
