@@ -133,7 +133,7 @@ extension _WelcomeStates on _WelcomeScreenState {
                     Icon(
                       LucideIcons.shieldCheck,
                       size: 16.s,
-                      color: Color(settings.accentColor),
+                      color: settings.accent,
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -156,7 +156,7 @@ extension _WelcomeStates on _WelcomeScreenState {
                   isGranted: _notificationGranted,
                   onGrant: _requestNotificationPermission,
                   colorScheme: colorScheme,
-                  accentColor: Color(settings.accentColor),
+                  accentColor: settings.accent,
                   l10n: l10n,
                 ),
                 const Padding(
@@ -171,7 +171,7 @@ extension _WelcomeStates on _WelcomeScreenState {
                   isGranted: _audioGranted,
                   onGrant: _requestAudioPermission,
                   colorScheme: colorScheme,
-                  accentColor: Color(settings.accentColor),
+                  accentColor: settings.accent,
                   l10n: l10n,
                 ),
 
@@ -195,7 +195,7 @@ extension _WelcomeStates on _WelcomeScreenState {
                               isGranted: _allFilesGranted,
                               onGrant: _requestAllFilesPermission,
                               colorScheme: colorScheme,
-                              accentColor: Color(settings.accentColor),
+                              accentColor: settings.accent,
                               l10n: l10n,
                             ),
                           ],
@@ -221,10 +221,7 @@ extension _WelcomeStates on _WelcomeScreenState {
               label: l10n.goStart,
               icon: LucideIcons.playCircle,
               gradientColors: _permissionGranted
-                  ? [
-                      Color(settings.accentColor),
-                      Color(settings.accentColor).withValues(alpha: 0.75),
-                    ]
+                  ? [settings.accent, settings.accent.withValues(alpha: 0.75)]
                   : [
                       Colors.grey.withValues(alpha: 0.3),
                       Colors.grey.withValues(alpha: 0.2),
@@ -241,10 +238,10 @@ extension _WelcomeStates on _WelcomeScreenState {
                   horizontal: 16,
                 ),
                 decoration: BoxDecoration(
-                  color: Color(settings.accentColor).withValues(alpha: 0.08),
+                  color: settings.accent.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Color(settings.accentColor).withValues(alpha: 0.15),
+                    color: settings.accent.withValues(alpha: 0.15),
                   ),
                 ),
                 child: Row(
@@ -252,7 +249,7 @@ extension _WelcomeStates on _WelcomeScreenState {
                   children: [
                     Icon(
                       LucideIcons.checkCircle2,
-                      color: Color(settings.accentColor),
+                      color: settings.accent,
                       size: 18.s,
                     ),
                     const SizedBox(width: 10),
@@ -261,7 +258,7 @@ extension _WelcomeStates on _WelcomeScreenState {
                       style: TextStyle(
                         fontSize: 12.ts,
                         fontWeight: FontWeight.bold,
-                        color: Color(settings.accentColor),
+                        color: settings.accent,
                         letterSpacing: 0.5,
                       ),
                     ),

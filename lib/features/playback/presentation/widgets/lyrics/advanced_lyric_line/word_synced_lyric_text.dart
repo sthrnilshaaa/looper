@@ -41,6 +41,9 @@ class WordSyncedLyricText extends StatefulWidget {
   /// swap to plain text at 0 without a visible jump.
   final double emphasis;
 
+  /// False keeps it to the main line (background vocals left out).
+  final bool showBackground;
+
   const WordSyncedLyricText({
     super.key,
     required this.line,
@@ -54,6 +57,7 @@ class WordSyncedLyricText extends StatefulWidget {
     this.wipe = true,
     this.active = true,
     this.emphasis = 1.0,
+    this.showBackground = true,
   });
 
   /// Blend from [dim] (the inactive look) to [lit] at [t]. A plain
@@ -169,7 +173,7 @@ class _WordSyncedLyricTextState extends State<WordSyncedLyricText>
       wipe: widget.wipe,
       emphasis: emphasis,
     );
-    if (line.backgroundText.isEmpty) return main;
+    if (line.backgroundText.isEmpty || !widget.showBackground) return main;
     final backgroundStyle = widget.style.copyWith(
       fontSize: baseSize * 0.62,
       height: 1.2,

@@ -35,9 +35,7 @@ class ApkUpdateSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final update = ref.watch(apkUpdateProvider);
-    final accentColor = Color(
-      ref.watch(settingsProvider.select((s) => s.accentColor)),
-    );
+    final accentColor = ref.watch(settingsProvider.select((s) => s.accent));
     final release = update.release;
     final asset = update.asset;
 

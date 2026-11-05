@@ -217,7 +217,7 @@ class _SongOptionsSheetContent extends ConsumerWidget {
         settings.alwaysBlurSheets ||
         (!settings.disableBlur && settings.enableDynamicTheming);
     final isPureBlack = settings.darkTheme;
-    final accentColor = Color(settings.accentColor);
+    final accentColor = settings.accent;
 
     final sheetBg = isPureBlack
         ? Colors.black

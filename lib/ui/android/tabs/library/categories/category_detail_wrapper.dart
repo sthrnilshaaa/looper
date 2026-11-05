@@ -220,7 +220,7 @@ class CategoryDetailWrapper extends ConsumerWidget {
       currentVal = settings.genreSortOptionIndex;
     }
     final isSelected = currentVal == valueIndex;
-    final accentColor = Color(settings.accentColor);
+    final accentColor = settings.accent;
 
     return InkWell(
       onTap: () {

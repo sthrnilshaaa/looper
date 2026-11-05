@@ -103,7 +103,7 @@ class _EditArtistSheetState extends ConsumerState<EditArtistSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final accentColor = Color(ref.watch(settingsProvider).accentColor);
+    final accentColor = ref.watch(settingsProvider).accent;
 
     return EditSheetScaffold(
       icon: LucideIcons.mic2,

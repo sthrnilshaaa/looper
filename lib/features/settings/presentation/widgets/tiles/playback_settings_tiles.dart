@@ -142,7 +142,7 @@ class FluidPlayerTile extends ConsumerWidget {
       secondary: const Icon(LucideIcons.move, color: Colors.white70),
       title: Text(l10n.fluidPlayer, style: _tileTitleStyle()),
       subtitle: Text(l10n.fluidPlayerDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.enableSlideGesture,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateEnableSlideGesture(value);
@@ -159,7 +159,7 @@ class HapticFeedbackTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     final on = !settings.disableHaptics;
-    final Color accent = Color(settings.accentColor);
+    final Color accent = settings.accent;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -285,7 +285,7 @@ class StopServiceTile extends ConsumerWidget {
         l10n.stopServiceOnAppDismissalDesc,
         style: _tileSubtitleStyle(),
       ),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.stopOnTaskRemoved,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateStopOnTaskRemoved(value);
@@ -305,7 +305,7 @@ class InternetModeTile extends ConsumerWidget {
       secondary: const Icon(LucideIcons.globe, color: Colors.white70),
       title: Text(l10n.internetMode, style: _tileTitleStyle()),
       subtitle: Text(l10n.enableNetworkLyricsArt, style: _tileSubtitleStyle()),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.enableInternet,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateEnableInternet(value);
@@ -328,7 +328,7 @@ class DownloadMissingArtworkTile extends ConsumerWidget {
         l10n.downloadMissingArtworkDesc,
         style: _tileSubtitleStyle(),
       ),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.downloadArtwork,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateDownloadArtwork(value);

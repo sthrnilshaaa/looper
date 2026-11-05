@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
+import 'package:looper_player/core/theme/theme_provider.dart';
+import 'package:looper_player/core/utils/artwork_colors.dart' show boostChroma;
 import 'package:looper_player/features/playback/presentation/widgets/lyrics/advanced_lyric_line/advanced_lyric_line.dart'
-    show activeLyricsColor;
+    show activeLyricsColor, AdvancedLyricLine, inactiveLyricsOpacity;
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
 import '../../settings_widgets.dart';
@@ -17,7 +19,7 @@ import 'package:looper_player/features/settings/domain/artwork_visualizer_style.
 import 'package:looper_player/core/services/haptics/app_haptics.dart';
 export 'darkness_sliders.dart';
 export 'package:looper_player/features/playback/presentation/widgets/lyrics/advanced_lyric_line/advanced_lyric_line.dart'
-    show activeLyricsIsWhite;
+    show activeLyricsIsWhite, AdvancedLyricLine, inactiveLyricsOpacity;
 part 'appearance_tiles.dart';
 part 'lyrics_appearance_tiles.dart';
 part 'player_appearance_tiles.dart';

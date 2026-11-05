@@ -11,7 +11,7 @@ class UseNewFontTile extends ConsumerWidget {
       secondary: const Icon(LucideIcons.type, color: Colors.white70),
       title: Text(l10n.useCustomFont, style: _tileTitleStyle()),
       subtitle: Text(l10n.useCustomFontDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.useNewFont,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateUseNewFont(value);
@@ -49,7 +49,7 @@ class FontWeightSelectionTile extends ConsumerWidget {
       weights: const [100, 200, 300, 400, 500, 600, 700, 800, 900],
       baseWeight: 400,
       delta: settings.customFontWeightDelta,
-      accentColor: Color(settings.accentColor),
+      accentColor: settings.accent,
       onDelta: (value) => ref
           .read(settingsProvider.notifier)
           .updateCustomFontWeightDelta(value),
@@ -68,7 +68,7 @@ class UseNewFontLyricsTile extends ConsumerWidget {
       secondary: const Icon(LucideIcons.type, color: Colors.white70),
       title: Text(l10n.useCustomFontLyrics, style: _tileTitleStyle()),
       subtitle: Text(l10n.useCustomFontLyricsDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.useNewFontLyrics,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateUseNewFontLyrics(value);
@@ -109,7 +109,7 @@ class LyricsFontWeightSelectionTile extends ConsumerWidget {
       weights: const [400, 500, 600, 700, 800, 900],
       baseWeight: 700,
       delta: settings.activeLyricsFontWeightDelta,
-      accentColor: Color(settings.accentColor),
+      accentColor: settings.accent,
       onDelta: (value) => ref
           .read(settingsProvider.notifier)
           .updateActiveLyricsFontWeightDelta(value),

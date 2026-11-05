@@ -60,6 +60,20 @@ Color activeLyricsColor(AppSettings settings, {required Color accent}) {
         );
 }
 
+/// The opacity of the inactive lyric line next to the current one, from the
+/// "Inactive Line Opacity" slider.
+double inactiveLyricsOpacity(AppSettings settings) {
+  final v = settings.inactiveLyricsOpacity;
+  return v == null || v.isNaN
+      ? AdvancedLyricLine.defaultInactiveOpacity
+      : v
+            .clamp(
+              AdvancedLyricLine.minInactiveOpacity,
+              AdvancedLyricLine.maxInactiveOpacity,
+            )
+            .toDouble();
+}
+
 class AdvancedLyricLine extends ConsumerWidget {
   final LyricLine line;
   final LyricsSyncMode mode;
@@ -76,11 +90,26 @@ class AdvancedLyricLine extends ConsumerWidget {
   /// below the line being sung.
   final int distance;
 
+  static const double defaultInactiveOpacity = 0.35,
+      minInactiveOpacity = 0.1,
+      maxInactiveOpacity = 1.0;
+
   /// What an inactive line's text opacity is [distance] lines from the
-  /// current one: the old uniform 0.35 next to it, down to a floor that
-  /// still reads.
-  static double inactiveOpacity(int distance) =>
-      (0.35 - (distance - 1).clamp(0, 5) * 0.05).clamp(0.12, 0.35);
+  /// current one: [near] next to it, fading down the lines to about a third
+  /// of that. Above the default the fade shrinks, so [near] = 1 is solid.
+  static double inactiveOpacity(
+    int distance, [
+    double near = defaultInactiveOpacity,
+  ]) {
+    final fade =
+        (0.35 - (distance - 1).clamp(0, 5) * 0.05).clamp(0.12, 0.35) / 0.35;
+    final solid =
+        ((near - defaultInactiveOpacity) / (1 - defaultInactiveOpacity)).clamp(
+          0.0,
+          1.0,
+        );
+    return near * fade + (1 - fade) * solid;
+  }
 
   /// False for lyrics without timestamps: every line reads as plain text,
   /// none of them current, sung or tappable to seek.
@@ -153,6 +182,9 @@ class AdvancedLyricLine extends ConsumerWidget {
         ? false
         : (ref.read(playbackProvider).position > line.endTime);
 
+    final settings = ref.watch(settingsProvider);
+    final inactiveNear = inactiveLyricsOpacity(settings);
+
     // Calculate dynamic opacity based on distance from active line for a smoother transition
     double lineOpacity = 1.0;
     if (isSelected) {
@@ -164,10 +196,9 @@ class AdvancedLyricLine extends ConsumerWidget {
     } else if (!synced) {
       lineOpacity = 0.8; // text to read: no current line to stand out from
     } else if (!lit) {
-      lineOpacity = inactiveOpacity(distance);
+      lineOpacity = inactiveOpacity(distance, inactiveNear);
     }
 
-    final settings = ref.watch(settingsProvider);
     // Duet partner lines sit on the opposite side (centered stays centered).
     final alignmentString = switch ((
       line.isOppositeSide,
@@ -229,6 +260,7 @@ class AdvancedLyricLine extends ConsumerWidget {
         iconAlignment,
         currentPosition,
         isPlaying,
+        inactiveNear,
       ),
       textAlign,
     );
@@ -310,6 +342,7 @@ class AdvancedLyricLine extends ConsumerWidget {
     Alignment iconAlignment,
     Duration position,
     bool isPlaying,
+    double inactiveNear,
   ) {
     final String text = line.text;
     final bool isInstrumental = isInstrumentalText(text);
@@ -350,7 +383,7 @@ class AdvancedLyricLine extends ConsumerWidget {
                 // Upcoming words wear the plain inactive-line color (and a
                 // settling line ends on exactly that color).
                 unsungColor: lit
-                    ? Colors.white.withValues(alpha: 0.35)
+                    ? Colors.white.withValues(alpha: inactiveNear)
                     : (baseStyle.color ?? Colors.white.withValues(alpha: 0.85)),
                 textAlign: textAlign,
                 fontScale: fontScale,

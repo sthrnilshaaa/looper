@@ -37,7 +37,7 @@ class _LyricsServicesSheet extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final settings = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
-    final accent = Color(settings.accentColor);
+    final accent = settings.accent;
     final order = LyricsFetcher.providerOrder(settings);
     final enabled = LyricsFetcher.enabledProviders(settings).toSet();
 

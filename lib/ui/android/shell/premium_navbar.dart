@@ -27,7 +27,7 @@ class PremiumNavbar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
-    final accentColor = Color(settings.accentColor);
+    final accentColor = settings.accent;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final useBlur = settings.enableDynamicTheming;
     final l10n = AppLocalizations.of(context)!;

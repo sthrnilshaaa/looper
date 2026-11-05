@@ -104,7 +104,7 @@ class AndroidEqualizerScreen extends ConsumerWidget {
     final song = ref.watch(playbackProvider.select((s) => s.currentSong));
     final isGraphMode = ref.watch(equalizerViewModeProvider);
 
-    final accentColor = Color(settings.accentColor);
+    final accentColor = settings.accent;
     final isPureBlack = settings.darkTheme;
     final useBlur = settings.enableDynamicTheming && !settings.disableBlur;
     // Same check PlayerLandscapeMetrics uses for "landscape phone, not

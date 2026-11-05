@@ -14,7 +14,7 @@ class AmbientLyricsBgTile extends ConsumerWidget {
         l10n.ambientColorBackgroundDesc,
         style: _tileSubtitleStyle(),
       ),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.ambientColorBackground,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateAmbientColorBackground(value);
@@ -37,7 +37,7 @@ class BlurredArtworkLyricsTile extends ConsumerWidget {
         l10n.blurredArtworkForLyricsDesc,
         style: _tileSubtitleStyle(),
       ),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.blurredArtworkForLyrics,
       onChanged: (value) {
         ref
@@ -62,7 +62,7 @@ class DynamicColorActiveLyricsTile extends ConsumerWidget {
         l10n.dynamicColorActiveLyricsDesc,
         style: _tileSubtitleStyle(),
       ),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.dynamicColorActiveLyrics,
       onChanged: (value) {
         ref
@@ -87,7 +87,7 @@ class ActiveLyricsUseAccentTile extends ConsumerWidget {
         l10n.activeLyricsUseAccentDesc,
         style: _tileSubtitleStyle(),
       ),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: !settings.activeLyricsSoftColor,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateActiveLyricsUseAccent(value);
@@ -108,11 +108,36 @@ class LyricsLineGroupingTile extends ConsumerWidget {
       secondary: const Icon(LucideIcons.listCollapse, color: Colors.white70),
       title: Text(l10n.lyricsLineGrouping, style: _tileTitleStyle()),
       subtitle: Text(l10n.lyricsLineGroupingDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: !settings.lyricsNoLineGrouping,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateLyricsLineGrouping(value);
       },
+    );
+  }
+}
+
+/// Slider for how see-through the lyric lines around the playing one are,
+/// from solid to faint.
+class InactiveLyricsOpacityTile extends ConsumerWidget {
+  const InactiveLyricsOpacityTile({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final l10n = AppLocalizations.of(context)!;
+    return SettingsSliderTile(
+      icon: LucideIcons.contrast,
+      title: l10n.inactiveLyricsOpacity,
+      subtitle: l10n.inactiveLyricsOpacityDesc,
+      value: inactiveLyricsOpacity(settings) * 100,
+      min: AdvancedLyricLine.minInactiveOpacity * 100,
+      max: AdvancedLyricLine.maxInactiveOpacity * 100,
+      divisions: 90,
+      suffix: '%',
+      onChanged: (val) => ref
+          .read(settingsProvider.notifier)
+          .updateInactiveLyricsOpacity(val / 100.0),
     );
   }
 }
@@ -175,7 +200,9 @@ class ActiveLyricsIntensityTile extends ConsumerWidget {
               Text(
                 l10n.activeLyricsIntensityPreviewInactive,
                 style: previewStyle.copyWith(
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: Colors.white.withValues(
+                    alpha: inactiveLyricsOpacity(settings),
+                  ),
                 ),
               ),
               const SizedBox(height: 6),
@@ -258,7 +285,7 @@ class LyricsAlignmentTile extends ConsumerWidget {
               alignment: 'left',
               icon: LucideIcons.alignLeft,
               currentAlignment: settings.lyricsAlignment,
-              accentColor: Color(settings.accentColor),
+              accentColor: settings.accent,
             ),
             _buildAlignmentButton(
               context: context,
@@ -266,7 +293,7 @@ class LyricsAlignmentTile extends ConsumerWidget {
               alignment: 'center',
               icon: LucideIcons.alignCenter,
               currentAlignment: settings.lyricsAlignment,
-              accentColor: Color(settings.accentColor),
+              accentColor: settings.accent,
             ),
             _buildAlignmentButton(
               context: context,
@@ -274,7 +301,7 @@ class LyricsAlignmentTile extends ConsumerWidget {
               alignment: 'right',
               icon: LucideIcons.alignRight,
               currentAlignment: settings.lyricsAlignment,
-              accentColor: Color(settings.accentColor),
+              accentColor: settings.accent,
             ),
           ],
         ),

@@ -146,7 +146,7 @@ extension _CollectionSortSheet on CollectionDetailView {
   ) {
     final settings = ref.watch(settingsProvider);
     final isSelected = settings.collectionSortOptionIndex == value.index;
-    final accentColor = Color(settings.accentColor);
+    final accentColor = settings.accent;
 
     return InkWell(
       onTap: () {

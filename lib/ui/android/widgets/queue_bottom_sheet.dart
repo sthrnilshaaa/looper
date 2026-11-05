@@ -34,7 +34,7 @@ class _QueueBottomSheetState extends ConsumerState<QueueBottomSheet> {
       playbackProvider.select((s) => s.currentSong?.path),
     );
     final settings = ref.watch(settingsProvider);
-    final accentColor = Color(settings.accentColor);
+    final accentColor = settings.accent;
     final l10n = AppLocalizations.of(context)!;
 
     // Rotate the queue list so that the initial song is at the top,

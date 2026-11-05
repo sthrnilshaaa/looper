@@ -17,7 +17,7 @@ class FadePlayPauseStopTile extends ConsumerWidget {
       secondary: const Icon(LucideIcons.music, color: Colors.white70),
       title: Text(l10n.fadePlayPauseStop, style: _tileTitleStyle()),
       subtitle: Text(l10n.fadePlayPauseStopDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.fadePlayPauseStop,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateFadePlayPauseStop(value);
@@ -62,7 +62,7 @@ class ManageAudioFocusTile extends ConsumerWidget {
       secondary: const Icon(LucideIcons.phoneCall, color: Colors.white70),
       title: Text(l10n.manageAudioFocusTitle, style: _tileTitleStyle()),
       subtitle: Text(l10n.manageAudioFocusDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.audioFocus,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateAudioFocus(value);
@@ -82,7 +82,7 @@ class ResumeAfterCallTile extends ConsumerWidget {
       secondary: const Icon(LucideIcons.phoneCall, color: Colors.white70),
       title: Text(l10n.resumeAfterCallTitle, style: _tileTitleStyle()),
       subtitle: Text(l10n.resumeAfterCallDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.resumeAfterCall,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateResumeAfterCall(value);
@@ -102,7 +102,7 @@ class ResumeOnStartTile extends ConsumerWidget {
       secondary: const Icon(LucideIcons.power, color: Colors.white70),
       title: Text(l10n.resumeOnStartTitle, style: _tileTitleStyle()),
       subtitle: Text(l10n.resumeOnStartDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.resumeOnStart,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateResumeOnStart(value);
@@ -122,7 +122,7 @@ class PersistQueueTile extends ConsumerWidget {
       secondary: const Icon(LucideIcons.save, color: Colors.white70),
       title: Text(l10n.persistQueueTitle, style: _tileTitleStyle()),
       subtitle: Text(l10n.persistQueueDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.persistQueue,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updatePersistQueue(value);
@@ -142,7 +142,7 @@ class KeepSongProgressTile extends ConsumerWidget {
       secondary: const Icon(LucideIcons.history, color: Colors.white70),
       title: Text(l10n.keepSongProgressTitle, style: _tileTitleStyle()),
       subtitle: Text(l10n.keepSongProgressDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.keepSongProgress,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateKeepSongProgress(value);
@@ -170,7 +170,7 @@ class ShuffleTile extends ConsumerWidget {
                 : l10n.shuffleDisabledDesc,
             style: _tileSubtitleStyle(),
           ),
-          activeThumbColor: Color(settings.accentColor),
+          activeThumbColor: settings.accent,
           value: settings.shuffle,
           onChanged: (value) {
             ref.read(settingsProvider.notifier).updateShuffle(value);
@@ -206,7 +206,7 @@ class ResumeOnBluetoothConnectTile extends ConsumerWidget {
         l10n.resumeOnBluetoothConnectDesc,
         style: _tileSubtitleStyle(),
       ),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.resumeOnBluetoothConnect,
       onChanged: (value) {
         ref

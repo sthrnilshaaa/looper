@@ -12,7 +12,39 @@ import '../../domain/artwork_visualizer_style.dart';
 import '../../domain/quality_badge_style.dart';
 import '../../domain/progress_bar_style.dart';
 
+import 'package:flutter/painting.dart' show Color;
+import 'package:looper_player/core/utils/artwork_colors.dart' show boostChroma;
+import 'package:looper_player/core/utils/ui_utils.dart' show UiUtils;
+
 part 'settings_notifier.g.dart';
+
+/// The app accent as drawn: the saved colour made more vibrant by the
+/// "Accent Vibrancy" slider. Use [accent] wherever the accent is painted.
+extension AppAccent on AppSettings {
+  static const double defaultVibrancy = 0.05;
+
+  /// 0..1. Desktop has no slider, so it draws the saved colour as is.
+  double get accentVibrancyValue {
+    if (UiUtils.isDesktop) return 0;
+    final v = accentVibrancy;
+    return v == null || v.isNaN ? defaultVibrancy : v.clamp(0.0, 1.0);
+  }
+
+  Color get accent => vibrantAccent(Color(accentColor));
+
+  /// [base] boosted by this vibrancy (theme colours from the artwork).
+  Color vibrantAccent(Color base) {
+    final t = accentVibrancyValue;
+    final key = (base.toARGB32(), t);
+    if (key == _lastKey) return _last!;
+    _lastKey = key;
+    return _last = boostChroma(base, t);
+  }
+}
+
+// One-entry memo: the same accent is asked for by every tile in a build.
+(int, double)? _lastKey;
+Color? _last;
 
 @Riverpod(keepAlive: true)
 class Settings extends _$Settings {
@@ -343,6 +375,9 @@ class Settings extends _$Settings {
       ..enablePlayerGradient = s.enablePlayerGradient
       ..animatePlayerGradient = s.animatePlayerGradient
       ..segmentedUtilityButtons = s.segmentedUtilityButtons
+      ..playerLyricLine = s.playerLyricLine
+      ..accentVibrancy = s.accentVibrancy
+      ..playerLyricLineTransition = s.playerLyricLineTransition
       ..showAlbumNextToArtist = s.showAlbumNextToArtist
       ..showAlbumInQuickPicks = s.showAlbumInQuickPicks
       ..disableHaptics = s.disableHaptics
@@ -385,6 +420,7 @@ class Settings extends _$Settings {
       ..permanentAudioFocusChange = s.permanentAudioFocusChange
       ..dynamicColorActiveLyrics = s.dynamicColorActiveLyrics
       ..activeLyricsIntensity = s.activeLyricsIntensity
+      ..inactiveLyricsOpacity = s.inactiveLyricsOpacity
       ..activeLyricsSoftColor = s.activeLyricsSoftColor
       ..lyricsNoLineGrouping = s.lyricsNoLineGrouping
       ..ambientColorBackground = s.ambientColorBackground
@@ -492,6 +528,15 @@ class Settings extends _$Settings {
 
   Future<void> updateSegmentedUtilityButtons(bool value) =>
       _update((s) => s..segmentedUtilityButtons = value);
+
+  Future<void> updateAccentVibrancy(double value) =>
+      _update((s) => s..accentVibrancy = value);
+
+  Future<void> updatePlayerLyricLine(bool value) =>
+      _update((s) => s..playerLyricLine = value);
+
+  Future<void> updatePlayerLyricLineTransition(String value) =>
+      _update((s) => s..playerLyricLineTransition = value);
 
   Future<void> updateShowAlbumNextToArtist(bool value) =>
       _update((s) => s..showAlbumNextToArtist = value);
@@ -726,6 +771,9 @@ class Settings extends _$Settings {
 
   Future<void> updateActiveLyricsIntensity(double value) =>
       _update((s) => s..activeLyricsIntensity = value);
+
+  Future<void> updateInactiveLyricsOpacity(double value) =>
+      _update((s) => s..inactiveLyricsOpacity = value);
 
   Future<void> updateActiveLyricsUseAccent(bool enabled) =>
       _update((s) => s..activeLyricsSoftColor = !enabled);

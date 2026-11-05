@@ -49,7 +49,7 @@ class _PremiumLoadingViewState extends ConsumerState<PremiumLoadingView> {
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
-    final accentColor = Color(settings.accentColor);
+    final accentColor = settings.accent;
     final l10n = AppLocalizations.of(context)!;
     final loadingMessages = _getLoadingMessages(l10n);
 

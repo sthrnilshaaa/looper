@@ -246,7 +246,7 @@ void showReorderBottomSheet(
                             ),
                             child: Icon(
                               icon,
-                              color: Color(currentSettings.accentColor),
+                              color: currentSettings.accent,
                               size: 20,
                             ),
                           ),
@@ -284,7 +284,7 @@ void showReorderBottomSheet(
                   height: 48,
                   child: TextButton(
                     style: TextButton.styleFrom(
-                      backgroundColor: Color(currentSettings.accentColor),
+                      backgroundColor: currentSettings.accent,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),

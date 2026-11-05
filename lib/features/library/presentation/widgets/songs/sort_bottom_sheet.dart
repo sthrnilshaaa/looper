@@ -16,7 +16,7 @@ void _showSortBottomSheet(
         builder: (context, ref, child) {
           final state = ref.watch(libraryProvider);
           final settings = ref.watch(settingsProvider);
-          final accentColor = Color(settings.accentColor);
+          final accentColor = settings.accent;
 
           return AppBottomSheetContainer(
             padding: const EdgeInsets.symmetric(horizontal: 12),

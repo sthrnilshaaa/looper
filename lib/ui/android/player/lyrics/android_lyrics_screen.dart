@@ -33,6 +33,7 @@ import 'package:looper_player/ui/widgets/player/player_gradient/animated_player_
 import 'package:looper_player/core/utils/l10n.dart';
 import 'package:looper_player/core/services/system_navigation_bar.dart';
 import 'package:looper_player/core/services/haptics/app_haptics.dart';
+import 'package:looper_player/ui/android/player/expanded/player_lyric_line.dart';
 
 class AndroidLyricsScreen extends ConsumerStatefulWidget {
   const AndroidLyricsScreen({super.key});
@@ -535,14 +536,25 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
             // Lyrics Content. Frozen while closing so the word-sync tickers
             // and auto-scroll don't repaint the fading layer every frame.
             Expanded(
-              child: ValueListenableBuilder<bool>(
-                valueListenable: _exiting,
-                builder: (context, exiting, child) =>
-                    TickerMode(enabled: !exiting, child: child!),
-                // Arrives after the shared elements land, leaves first.
-                child: const LyricsEntrance(
-                  child: RepaintBoundary(child: LyricsView()),
-                ),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: ValueListenableBuilder<bool>(
+                      valueListenable: _exiting,
+                      builder: (context, exiting, child) =>
+                          TickerMode(enabled: !exiting, child: child!),
+                      // Arrives after the shared elements land, leaves first.
+                      child: const LyricsEntrance(
+                        child: RepaintBoundary(child: LyricsView()),
+                      ),
+                    ),
+                  ),
+                  // Where the player's lyric line flies to.
+                  if (settings.playerLyricLine)
+                    Positioned.fill(
+                      child: PlayerLyricLineLanding(horizontalPadding: 24.s),
+                    ),
+                ],
               ),
             ),
           ],

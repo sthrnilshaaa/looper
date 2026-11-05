@@ -59,8 +59,8 @@ class AppTheme extends _$AppTheme {
 
     return ThemeState(
       colorScheme: ColorScheme.fromSeed(
-        seedColor: Color(_settings.accentColor),
-        primary: Color(_settings.accentColor),
+        seedColor: _settings.accent,
+        primary: _settings.accent,
         surface: _settings.darkTheme ? Colors.black : const Color(0xFF11110E),
         surfaceContainer: _settings.darkTheme
             ? const Color(0xFF0A0A0A)
@@ -76,6 +76,18 @@ class AppTheme extends _$AppTheme {
 
     final oldSettings = _settings;
     _settings = newSettings;
+
+    // The vibrancy slider redraws the current colours in place.
+    if (oldSettings.accentVibrancyValue != newSettings.accentVibrancyValue) {
+      final fromArtwork =
+          newSettings.enableDynamicTheming || newSettings.dynamicAccentColor;
+      if (fromArtwork && _artworkColors != null) {
+        _applyArtworkColors();
+      } else {
+        _resetTheme();
+      }
+      return;
+    }
 
     // Handle theme reset logic
     if (!newSettings.enableDynamicTheming) {
@@ -139,25 +151,8 @@ class AppTheme extends _$AppTheme {
         final Color vibrantColor = readableOnDark(colors.primary);
         final Color tertiaryColor = readableOnDark(colors.secondary);
 
-        // Update the state
-        final surfaceColor = _settings.darkTheme
-            ? Colors.black
-            : const Color(0xFF11110E);
-        final containerColor = _settings.darkTheme
-            ? const Color(0xFF0A0A0A)
-            : const Color(0xFF1E1E1E);
-
-        state = state.copyWith(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: vibrantColor,
-            primary: vibrantColor,
-            onPrimary: Colors.white,
-            tertiary: tertiaryColor,
-            surface: surfaceColor,
-            surfaceContainer: containerColor,
-            brightness: Brightness.dark,
-          ),
-        );
+        _artworkColors = (vibrantColor, tertiaryColor);
+        _applyArtworkColors();
 
         // PERSIST the color to database if enabled
         if (_settings.saveDynamicColor || _settings.dynamicAccentColor) {
@@ -173,6 +168,32 @@ class AppTheme extends _$AppTheme {
     }
   }
 
+  /// The last artwork colours, as read (before the vibrancy boost), so a
+  /// vibrancy change can redraw them without reading the artwork again.
+  (Color, Color)? _artworkColors;
+
+  /// The artwork accent before the vibrancy boost (settings preview).
+  Color? get artworkAccent => _artworkColors?.$1;
+
+  void _applyArtworkColors() {
+    final colors = _artworkColors;
+    if (colors == null) return;
+    final primary = _settings.vibrantAccent(colors.$1);
+    state = state.copyWith(
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primary,
+        primary: primary,
+        onPrimary: Colors.white,
+        tertiary: _settings.vibrantAccent(colors.$2),
+        surface: _settings.darkTheme ? Colors.black : const Color(0xFF11110E),
+        surfaceContainer: _settings.darkTheme
+            ? const Color(0xFF0A0A0A)
+            : const Color(0xFF1E1E1E),
+        brightness: Brightness.dark,
+      ),
+    );
+  }
+
   void _resetTheme() {
     // darkTheme ON = OLED/Pure Black (#000000)
     // darkTheme OFF = Premium Deep Black (#11110E)
@@ -185,8 +206,8 @@ class AppTheme extends _$AppTheme {
 
     state = state.copyWith(
       colorScheme: ColorScheme.fromSeed(
-        seedColor: Color(_settings.accentColor),
-        primary: Color(_settings.accentColor),
+        seedColor: _settings.accent,
+        primary: _settings.accent,
         surface: surfaceColor,
         surfaceContainer: containerColor,
         brightness: Brightness.dark,

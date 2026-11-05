@@ -71,7 +71,7 @@ class PlainTimestampsTile extends ConsumerWidget {
       secondary: const Icon(LucideIcons.clock, color: Colors.white70),
       title: Text(l10n.plainTimestamps, style: _tileTitleStyle()),
       subtitle: Text(l10n.useStaticTextTimestamps, style: _tileSubtitleStyle()),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.disableAnimatedDuration,
       onChanged: (value) {
         ref
@@ -93,7 +93,7 @@ class ShowQualityBadgeTile extends ConsumerWidget {
       secondary: const Icon(LucideIcons.info, color: Colors.white70),
       title: Text(l10n.showQualityBadge, style: _tileTitleStyle()),
       subtitle: Text(l10n.showQualityBadgeDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.showQualityBadge,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateShowQualityBadge(value);
@@ -114,7 +114,7 @@ class GroupArtistByAlbumTile extends ConsumerWidget {
       secondary: const Icon(LucideIcons.libraryBig, color: Colors.white70),
       title: Text(l10n.groupByAlbum, style: _tileTitleStyle()),
       subtitle: Text(l10n.groupByAlbumDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.artistGroupByAlbum,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateArtistGroupByAlbum(value);
@@ -138,7 +138,7 @@ class ShowAlbumNextToArtistTile extends ConsumerWidget {
         l10n.showAlbumNextToArtistDesc,
         style: _tileSubtitleStyle(),
       ),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.showAlbumNextToArtist,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateShowAlbumNextToArtist(value);
@@ -163,7 +163,7 @@ class ShowAlbumInQuickPicksTile extends ConsumerWidget {
         l10n.showAlbumInQuickPicksDesc,
         style: _tileSubtitleStyle(),
       ),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.showAlbumInQuickPicks,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateShowAlbumInQuickPicks(value);
@@ -212,13 +212,81 @@ class SegmentedUtilityButtonsTile extends ConsumerWidget {
         l10n.segmentedUtilityButtonsDesc,
         style: _tileSubtitleStyle(),
       ),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.segmentedUtilityButtons,
       onChanged: (value) {
         ref
             .read(settingsProvider.notifier)
             .updateSegmentedUtilityButtons(value);
       },
+    );
+  }
+}
+
+/// Shows the current lyric line under the player's cover.
+class PlayerLyricLineTile extends ConsumerWidget {
+  const PlayerLyricLineTile({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final l10n = AppLocalizations.of(context)!;
+    return SwitchListTile(
+      secondary: const Icon(LucideIcons.micVocal, color: Colors.white70),
+      title: Text(l10n.playerLyricLine, style: _tileTitleStyle()),
+      subtitle: Text(l10n.playerLyricLineDesc, style: _tileSubtitleStyle()),
+      activeThumbColor: settings.accent,
+      value: settings.playerLyricLine,
+      onChanged: (value) {
+        ref.read(settingsProvider.notifier).updatePlayerLyricLine(value);
+      },
+    );
+  }
+}
+
+/// How that line changes to the next: cube, rolling, flip or blur.
+class PlayerLyricLineTransitionTile extends ConsumerWidget {
+  const PlayerLyricLineTransitionTile({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final l10n = AppLocalizations.of(context)!;
+    final accent = settings.accent;
+    final current = settings.playerLyricLineTransition.isEmpty
+        ? 'cube'
+        : settings.playerLyricLineTransition;
+    final options = [
+      ('cube', l10n.lyricLineTransitionCube),
+      ('roll', l10n.lyricLineTransitionRoll),
+      ('flip', l10n.lyricLineTransitionFlip),
+      ('blur', l10n.lyricLineTransitionBlur),
+    ];
+    return ListTile(
+      leading: const Icon(LucideIcons.box, color: Colors.white70),
+      title: Text(l10n.playerLyricLineTransition, style: _tileTitleStyle()),
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final (value, label) in options)
+              ChoiceChip(
+                label: Text(label),
+                selected: current == value,
+                showCheckmark: false,
+                selectedColor: accent.withValues(alpha: 0.25),
+                onSelected: (_) {
+                  AppHaptics.selection();
+                  ref
+                      .read(settingsProvider.notifier)
+                      .updatePlayerLyricLineTransition(value);
+                },
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -237,7 +305,7 @@ class EnablePlayerGradientTile extends ConsumerWidget {
         l10n.enablePlayerGradientDesc,
         style: _tileSubtitleStyle(),
       ),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.enablePlayerGradient,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateEnablePlayerGradient(value);
@@ -260,7 +328,7 @@ class AnimatePlayerGradientTile extends ConsumerWidget {
         l10n.animatePlayerGradientDesc,
         style: _tileSubtitleStyle(),
       ),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.animatePlayerGradient,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateAnimatePlayerGradient(value);
@@ -283,7 +351,7 @@ class KeepBackgroundGradientTile extends ConsumerWidget {
         l10n.keepBackgroundGradientDesc,
         style: _tileSubtitleStyle(),
       ),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.keepBackgroundGradient,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateKeepBackgroundGradient(value);
@@ -306,7 +374,7 @@ class AnimateBackgroundGradientTile extends ConsumerWidget {
         l10n.animateBackgroundGradientDesc,
         style: _tileSubtitleStyle(),
       ),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.animateBackgroundGradient,
       onChanged: (value) {
         ref

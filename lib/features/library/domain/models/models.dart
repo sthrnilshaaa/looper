@@ -222,6 +222,13 @@ class AppSettings {
   // Replaces the player's shuffle/repeat/next up/lyrics pill groups with
   // four icon-only tiles styled like the prev/play/next transport row.
   bool segmentedUtilityButtons = false;
+  // How much more saturated the app accent is drawn (0..1, Android). Null
+  // = AppAccent.defaultVibrancy.
+  double? accentVibrancy;
+  // Shows the current lyric line under the cover on the portrait player.
+  bool playerLyricLine = false;
+  // How that line changes: 'cube', 'roll', 'flip' or 'blur' ('' = cube).
+  String playerLyricLineTransition = 'cube';
   // Shows "Artist • Album" instead of just the artist under song titles
   // (lists, players, Home, Analyze, share card).
   bool showAlbumNextToArtist = false;
@@ -280,6 +287,9 @@ class AppSettings {
   // Default 35 %. Rows saved before this field existed come back as NaN -
   // treat as the default.
   double activeLyricsIntensity = 0.35;
+  // Opacity of the lyric lines around the playing one, 0.1 (most see-through)
+  // to 1 (solid). Null = the default 35 %.
+  double? inactiveLyricsOpacity;
   // "Accent Color Active Line" off: the active lyric line uses the accent
   // blended with white instead of the pure accent. Stored inverted so the
   // toggle defaults to on, also for settings saved before it existed.

@@ -40,7 +40,7 @@ class EmptyLibraryView extends ConsumerWidget {
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Color(settings.accentColor).withValues(alpha: 0.06),
+                    color: settings.accent.withValues(alpha: 0.06),
                   ),
                   child: const AppLoadingIndicator(size: 96),
                 )
@@ -58,7 +58,7 @@ class EmptyLibraryView extends ConsumerWidget {
                   child: Icon(
                     LucideIcons.music,
                     size: 48,
-                    color: Color(settings.accentColor).withValues(alpha: 0.8),
+                    color: settings.accent.withValues(alpha: 0.8),
                   ),
                 ),
               const SizedBox(height: 24),
@@ -99,7 +99,7 @@ class EmptyLibraryView extends ConsumerWidget {
                   label: l10n.scanForMusic,
                   icon: LucideIcons.searchCode,
                   isPrimary: true,
-                  accentColor: Color(settings.accentColor),
+                  accentColor: settings.accent,
                 ),
                 const SizedBox(height: 12),
                 // Secondary Action: Select Folder
@@ -111,7 +111,7 @@ class EmptyLibraryView extends ConsumerWidget {
                   label: l10n.selectCustomFolder,
                   icon: LucideIcons.folderPlus,
                   isPrimary: false,
-                  accentColor: Color(settings.accentColor),
+                  accentColor: settings.accent,
                 ),
               ] else ...[
                 // Loading indicator auxiliary status

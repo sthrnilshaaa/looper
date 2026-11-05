@@ -495,8 +495,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           label: l10n.rescanStorage,
           icon: LucideIcons.refreshCw,
           gradientColors: [
-            Color(settings.accentColor),
-            Color(settings.accentColor).withValues(alpha: 0.75),
+            settings.accent,
+            settings.accent.withValues(alpha: 0.75),
           ],
         ),
         const SizedBox(height: 16),

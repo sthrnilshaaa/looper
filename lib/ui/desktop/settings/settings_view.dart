@@ -246,6 +246,20 @@ class SettingsView extends ConsumerWidget {
                             .updateActiveLyricsIntensity(val / 100.0),
                         isLast: false,
                       ),
+                    _PremiumSliderRow(
+                      icon: LucideIcons.contrast,
+                      title: l10n.inactiveLyricsOpacity,
+                      subtitle: l10n.inactiveLyricsOpacityDesc,
+                      value: inactiveLyricsOpacity(settings) * 100,
+                      min: AdvancedLyricLine.minInactiveOpacity * 100,
+                      max: AdvancedLyricLine.maxInactiveOpacity * 100,
+                      divisions: 90,
+                      suffix: '%',
+                      onChanged: (val) => ref
+                          .read(settingsProvider.notifier)
+                          .updateInactiveLyricsOpacity(val / 100.0),
+                      isLast: false,
+                    ),
                     _PremiumDropdownRow<String>(
                       icon: LucideIcons.alignCenter,
                       title: l10n.lyricsAlignment,

@@ -51,7 +51,7 @@ class _SleepTimerSheetContentState
         ),
       ),
     );
-    final accentColor = Color(settings.accentColor);
+    final accentColor = settings.accent;
     final useBlur =
         settings.alwaysBlurSheets ||
         (!settings.disableBlur && settings.enableDynamicTheming);

@@ -1,6 +1,7 @@
 import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'dart:io';
 import 'package:looper_player/core/utils/ui_utils.dart';
+import 'package:looper_player/core/utils/motion.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -44,6 +45,10 @@ class SettingsCategoryScreen extends ConsumerWidget {
     List<Widget> children = [];
     // Theme is split into titled cards; other categories use one card.
     List<({String title, List<Widget> tiles})> sections = [];
+    // Options that only apply while a parent option is on sit indented
+    // under it (see _SubGroup).
+    _SubGroup sub(bool visible, List<Widget> tiles) =>
+        _SubGroup(visible: visible, accent: settings.accent, children: tiles);
     if (categoryId == 'theme') {
       final dynamicTheming = settings.enableDynamicTheming;
       sections = [
@@ -51,28 +56,32 @@ class SettingsCategoryScreen extends ConsumerWidget {
           title: l10n.themeGroupColors,
           tiles: [
             const DynamicThemingTile(),
-            if (!dynamicTheming) ...[
+            sub(!dynamicTheming, [
               const DynamicAccentColorTile(),
-              if (!settings.dynamicAccentColor) ...[
-                const AccentColorTile(),
-                const CustomAccentColorTile(),
-              ],
+              sub(!settings.dynamicAccentColor, const [
+                AccentColorTile(),
+                CustomAccentColorTile(),
+              ]),
               const PureBlackOledTile(),
-            ],
+            ]),
+            const AccentVibrancyTile(),
           ],
         ),
         (
           title: l10n.themeGroupBlurBackgrounds,
           tiles: [
-            if (dynamicTheming) const DisableBlurTile(),
-            if (!dynamicTheming) const AlwaysBlurSheetsTile(),
+            if (dynamicTheming)
+              const DisableBlurTile()
+            else
+              const AlwaysBlurSheetsTile(),
             const EnablePlayerGradientTile(),
-            if (settings.enablePlayerGradient) ...[
+            sub(settings.enablePlayerGradient, [
               const AnimatePlayerGradientTile(),
               const KeepBackgroundGradientTile(),
-              if (settings.keepBackgroundGradient)
-                const AnimateBackgroundGradientTile(),
-            ],
+              sub(settings.keepBackgroundGradient, const [
+                AnimateBackgroundGradientTile(),
+              ]),
+            ]),
           ],
         ),
         (
@@ -86,7 +95,79 @@ class SettingsCategoryScreen extends ConsumerWidget {
             ],
             if (dynamicTheming || settings.enablePlayerGradient)
               const MusicDarknessSlider(),
-            if (dynamicTheming ||
+          ],
+        ),
+        (
+          title: l10n.themeGroupFonts,
+          tiles: [
+            const UseNewFontTile(),
+            sub(settings.useNewFont, const [
+              FontFamilySelectionTile(),
+              FontWeightSelectionTile(),
+            ]),
+            const UseNewFontLyricsTile(),
+            sub(settings.useNewFontLyrics, const [
+              LyricsFontFamilySelectionTile(),
+              LyricsFontWeightSelectionTile(),
+            ]),
+          ],
+        ),
+      ];
+    } else if (categoryId == 'now_playing') {
+      sections = [
+        (
+          title: l10n.sectionPlayer,
+          tiles: [
+            if (!UiUtils.isDesktop) const FluidPlayerTile(),
+            const SegmentedUtilityButtonsTile(),
+          ],
+        ),
+        (
+          title: l10n.sectionSeekBarVisuals,
+          tiles: const [
+            ProgressBarStyleTile(),
+            PlainTimestampsTile(),
+            ArtworkVisualizerTile(),
+          ],
+        ),
+        (
+          title: l10n.sectionTrackInfo,
+          tiles: [
+            const ShowQualityBadgeTile(),
+            sub(settings.showQualityBadge, const [QualityBadgeStyleTile()]),
+          ],
+        ),
+        (
+          title: l10n.sectionLyricLine,
+          tiles: [
+            const PlayerLyricLineTile(),
+            sub(settings.playerLyricLine, const [
+              PlayerLyricLineTransitionTile(),
+            ]),
+          ],
+        ),
+      ];
+    } else if (categoryId == 'lyrics') {
+      sections = [
+        (
+          title: l10n.sectionLook,
+          tiles: [
+            const DynamicColorActiveLyricsTile(),
+            sub(!activeLyricsIsWhite(settings), const [
+              ActiveLyricsUseAccentTile(),
+              ActiveLyricsIntensityTile(),
+            ]),
+            const InactiveLyricsOpacityTile(),
+            const LyricsAlignmentTile(),
+            const LyricsLineGroupingTile(),
+          ],
+        ),
+        (
+          title: l10n.sectionBackground,
+          tiles: [
+            const AmbientLyricsBgTile(),
+            const BlurredArtworkLyricsTile(),
+            if (settings.enableDynamicTheming ||
                 settings.ambientColorBackground ||
                 settings.keepBackgroundGradient ||
                 settings.blurredArtworkForLyrics)
@@ -94,135 +175,99 @@ class SettingsCategoryScreen extends ConsumerWidget {
           ],
         ),
         (
-          title: l10n.nowPlaying,
-          tiles: [
-            const ProgressBarStyleTile(),
-            const ArtworkVisualizerTile(),
-            const PlainTimestampsTile(),
-            const ShowQualityBadgeTile(),
-            if (settings.showQualityBadge) const QualityBadgeStyleTile(),
-            const SegmentedUtilityButtonsTile(),
-            const ShowAlbumNextToArtistTile(),
-            if (settings.showAlbumNextToArtist)
-              const ShowAlbumInQuickPicksTile(),
+          title: l10n.sectionSources,
+          tiles: const [
+            LyricsProviderTile(),
+            SyncLyricsOfflineTile(),
+            ClearLyricsCacheTile(),
           ],
         ),
-        (title: l10n.library, tiles: const [GroupArtistByAlbumTile()]),
-        (
-          title: l10n.lyrics,
-          tiles: [
-            const AmbientLyricsBgTile(),
-            const BlurredArtworkLyricsTile(),
-            const DynamicColorActiveLyricsTile(),
-            // Both do nothing while the active line is plain white.
-            if (!activeLyricsIsWhite(settings)) ...[
-              const ActiveLyricsUseAccentTile(),
-              const ActiveLyricsIntensityTile(),
-            ],
-            const LyricsAlignmentTile(),
-            const LyricsLineGroupingTile(),
-            const LyricsProviderTile(),
-          ],
-        ),
-        (
-          title: l10n.themeGroupFonts,
-          tiles: [
-            const UseNewFontTile(),
-            if (settings.useNewFont) ...[
-              const FontFamilySelectionTile(),
-              const FontWeightSelectionTile(),
-            ],
-            const UseNewFontLyricsTile(),
-            if (settings.useNewFontLyrics) ...[
-              const LyricsFontFamilySelectionTile(),
-              const LyricsFontWeightSelectionTile(),
-            ],
-          ],
-        ),
-        (title: l10n.themeGroupProfile, tiles: const [SelectAvatarsTile()]),
-      ].where((section) => section.tiles.isNotEmpty).toList();
-    } else if (categoryId == 'dashboard') {
-      children = [
-        const ShowArtistsRowTile(),
-        const Divider(height: 1, indent: 72, color: Colors.white10),
-        const ShowAlbumsRowTile(),
-        const Divider(height: 1, indent: 72, color: Colors.white10),
-        const ShowGenresRowTile(),
-        const Divider(height: 1, indent: 72, color: Colors.white10),
-        const ShowRecentRowTile(),
-        const Divider(height: 1, indent: 72, color: Colors.white10),
-        const ShowPlaylistsRowTile(),
-        const Divider(height: 1, indent: 72, color: Colors.white10),
-        const ReorderDashboardSectionsTile(),
-      ];
-    } else if (categoryId == 'playback') {
-      children = [
-        const LanguageTile(),
-        if (!UiUtils.isDesktop) ...[
-          const Divider(height: 1, indent: 72, color: Colors.white10),
-          const FluidPlayerTile(),
-        ],
-        if (Platform.isAndroid) ...[
-          const Divider(height: 1, indent: 72, color: Colors.white10),
-          const HapticFeedbackTile(),
-          const Divider(height: 1, indent: 72, color: Colors.white10),
-          const StopServiceTile(),
-        ],
-        const Divider(height: 1, indent: 72, color: Colors.white10),
-        const InternetModeTile(),
-        const Divider(height: 1, indent: 72, color: Colors.white10),
-        const DownloadMissingArtworkTile(),
-      ];
-    } else if (categoryId == 'audio_playback') {
-      children = [
-        const EqualizerTile(),
-        const Divider(height: 1, indent: 72, color: Colors.white10),
-        const FadePlayPauseStopTile(),
-        if (settings.fadePlayPauseStop) ...[
-          const Divider(height: 1, indent: 72, color: Colors.white10),
-          const FadeDurationSlider(),
-        ],
-
-        const Divider(height: 1, indent: 72, color: Colors.white10),
-        const ShuffleTile(),
-        const Divider(height: 1, indent: 72, color: Colors.white10),
-        const PersistQueueTile(),
-        const Divider(height: 1, indent: 72, color: Colors.white10),
-        const KeepSongProgressTile(),
-        if (!Platform.isAndroid) ...[
-          const Divider(height: 1, indent: 72, color: Colors.white10),
-          const ResumeOnStartTile(),
-        ],
-        if (Platform.isAndroid) ...[
-          const Divider(height: 1, indent: 72, color: Colors.white10),
-          const ManageAudioFocusTile(),
-          if (settings.audioFocus) ...[
-            const Divider(height: 1, indent: 72, color: Colors.white10),
-            const ResumeAfterCallTile(),
-            const Divider(height: 1, indent: 72, color: Colors.white10),
-            const ResumeOnBluetoothConnectTile(),
-          ],
-          const Divider(height: 1, indent: 72, color: Colors.white10),
-          const ResumeOnStartTile(),
-        ],
       ];
     } else if (categoryId == 'library') {
-      children = [
-        const LibraryFoldersList(),
-        const Divider(height: 1, indent: 72, color: Colors.white10),
-        const AddFolderTile(),
-        const Divider(height: 1, indent: 72, color: Colors.white10),
-        const SyncLyricsOfflineTile(),
-        const Divider(height: 1, indent: 72, color: Colors.white10),
-        const ClearLyricsCacheTile(),
-        const Divider(height: 1, indent: 72, color: Colors.white10),
-        const IncludeSystemAndMessagingAudioTile(),
-        const Divider(height: 1, indent: 72, color: Colors.white10),
-        const ExcludedFoldersTile(),
-        const Divider(height: 1, indent: 72, color: Colors.white10),
-        const RescanLibraryTile(),
-        const Divider(height: 1, indent: 72, color: Colors.white10),
-        const ResetLibraryTile(),
+      sections = [
+        (
+          title: l10n.sectionHomeRows,
+          tiles: const [
+            ShowArtistsRowTile(),
+            ShowAlbumsRowTile(),
+            ShowGenresRowTile(),
+            ShowRecentRowTile(),
+            ShowPlaylistsRowTile(),
+            ReorderDashboardSectionsTile(),
+          ],
+        ),
+        (
+          title: l10n.sectionDisplay,
+          tiles: [
+            const GroupArtistByAlbumTile(),
+            const ShowAlbumNextToArtistTile(),
+            sub(settings.showAlbumNextToArtist, const [
+              ShowAlbumInQuickPicksTile(),
+            ]),
+          ],
+        ),
+        (
+          title: l10n.sectionFolders,
+          tiles: const [
+            LibraryFoldersList(),
+            AddFolderTile(),
+            ExcludedFoldersTile(),
+            IncludeSystemAndMessagingAudioTile(),
+            RescanLibraryTile(),
+            ResetLibraryTile(),
+          ],
+        ),
+      ];
+    } else if (categoryId == 'audio_playback') {
+      sections = [
+        (
+          title: l10n.sectionSound,
+          tiles: [
+            const EqualizerTile(),
+            const FadePlayPauseStopTile(),
+            sub(settings.fadePlayPauseStop, const [FadeDurationSlider()]),
+          ],
+        ),
+        (
+          title: l10n.queue,
+          tiles: [
+            const ShuffleTile(),
+            const PersistQueueTile(),
+            const KeepSongProgressTile(),
+            if (!Platform.isAndroid) const ResumeOnStartTile(),
+          ],
+        ),
+        if (Platform.isAndroid)
+          (
+            title: l10n.sectionInterruptions,
+            tiles: [
+              const ManageAudioFocusTile(),
+              sub(settings.audioFocus, const [
+                ResumeAfterCallTile(),
+                ResumeOnBluetoothConnectTile(),
+              ]),
+              const ResumeOnStartTile(),
+            ],
+          ),
+      ];
+    } else if (categoryId == 'playback') {
+      // "General".
+      sections = [
+        (
+          title: l10n.sectionApp,
+          tiles: [
+            const LanguageTile(),
+            if (Platform.isAndroid) ...[
+              const HapticFeedbackTile(),
+              const StopServiceTile(),
+            ],
+          ],
+        ),
+        (
+          title: l10n.sectionInternet,
+          tiles: const [InternetModeTile(), DownloadMissingArtworkTile()],
+        ),
+        (title: l10n.themeGroupProfile, tiles: const [SelectAvatarsTile()]),
       ];
     } else if (categoryId == 'backups_logs') {
       children = [
@@ -251,7 +296,7 @@ class SettingsCategoryScreen extends ConsumerWidget {
                 style: AppFonts.jostStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: Color(settings.accentColor).withValues(alpha: 0.8),
+                  color: settings.accent.withValues(alpha: 0.8),
                   letterSpacing: 1.0,
                 ),
               ),
@@ -283,9 +328,15 @@ class SettingsCategoryScreen extends ConsumerWidget {
           ),
         ),
         const Divider(height: 1, indent: 72, color: Colors.white10), //4
-        LyricsCreditsSection(accentColor: Color(settings.accentColor)), //5
+        LyricsCreditsSection(accentColor: settings.accent), //5
       ];
     }
+
+    // A section whose options all depend on something that's off.
+    sections = [
+      for (final section in sections)
+        if (section.tiles.isNotEmpty) section,
+    ];
 
     return Scaffold(
       // See the comment on the main SettingsView's Scaffold above - same
@@ -488,14 +539,14 @@ class SettingsCategoryScreen extends ConsumerWidget {
                         for (final section in sections) ...[
                           _SectionHeader(
                             title: section.title,
-                            color: Color(settings.accentColor),
+                            color: settings.accent,
                           ),
                           _SettingsCard(
                             useBlur: useBlur,
                             children: [
                               for (final (i, tile)
                                   in section.tiles.indexed) ...[
-                                if (i > 0)
+                                if (i > 0 && tile is! _SubGroup)
                                   const Divider(
                                     height: 1,
                                     indent: 72,
@@ -561,6 +612,62 @@ class _SettingsCard extends StatelessWidget {
       useExpanded: false,
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(mainAxisSize: MainAxisSize.min, children: children),
+    );
+  }
+}
+
+/// Options that only apply while the option above them is on: indented
+/// under it with an accent rail, sliding open and shut with it.
+class _SubGroup extends StatelessWidget {
+  final bool visible;
+  final Color accent;
+  final List<Widget> children;
+
+  const _SubGroup({
+    required this.visible,
+    required this.accent,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSize(
+      duration: Duration(milliseconds: Motion.reducedOf(context) ? 0 : 260),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: !visible
+          ? const SizedBox(width: double.infinity)
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Divider(height: 1, indent: 72, color: Colors.white10),
+                Container(
+                  margin: const EdgeInsets.only(left: 18),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      left: BorderSide(
+                        color: accent.withValues(alpha: 0.45),
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final (i, tile) in children.indexed) ...[
+                        if (i > 0 && tile is! _SubGroup)
+                          const Divider(
+                            height: 1,
+                            indent: 44,
+                            color: Colors.white10,
+                          ),
+                        tile,
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }

@@ -116,25 +116,32 @@ Color readableOnDark(Color color, {double minTone = 58}) {
 /// more colorful than that keeps its tone.
 Color lyricsActiveColor(Color color, {double intensity = 0}) {
   final double t = intensity.isNaN ? 0.35 : intensity.clamp(0.0, 1.0);
-  Hct hct = Hct.fromInt(readableOnDark(color).toARGB32());
-  if (t > 0 && hct.chroma >= 4) {
-    // Hct.from clamps to the most chroma this hue/tone can show on screen;
-    // scale towards that so the whole slider range does something.
-    final double maxChroma = Hct.from(hct.hue, 200, hct.tone).chroma;
-    if (maxChroma > hct.chroma) {
-      hct = Hct.from(
-        hct.hue,
-        hct.chroma + (maxChroma - hct.chroma) * t,
-        hct.tone,
-      );
-    }
-  }
+  Hct hct = Hct.fromInt(boostChroma(readableOnDark(color), t).toARGB32());
   final double greyness = ((10 - hct.chroma) / 6).clamp(0.0, 1.0);
   final double minTone = 58 + (88 - 58) * greyness;
   if (hct.tone < minTone) {
     hct = Hct.from(hct.hue, hct.chroma, minTone);
   }
   return Color(hct.toInt());
+}
+
+/// [color] made more vibrant by [t] (0..1): chroma pushed towards the most
+/// this hue can show at the same tone, so it keeps its look and brightness
+/// instead of washing out. Near-greys (chroma under 4) stay as they are.
+Color boostChroma(Color color, double t) {
+  if (t.isNaN || t <= 0) return color;
+  Hct hct = Hct.fromInt(color.toARGB32());
+  if (hct.chroma < 4) return color;
+  // Hct.from clamps to the most chroma this hue/tone can show on screen;
+  // scale towards that so the whole slider range does something.
+  final double maxChroma = Hct.from(hct.hue, 200, hct.tone).chroma;
+  if (maxChroma <= hct.chroma) return color;
+  hct = Hct.from(
+    hct.hue,
+    hct.chroma + (maxChroma - hct.chroma) * t.clamp(0.0, 1.0),
+    hct.tone,
+  );
+  return Color(hct.toInt()).withValues(alpha: color.a);
 }
 
 /// The softer active lyric line color: [color] blended towards white by

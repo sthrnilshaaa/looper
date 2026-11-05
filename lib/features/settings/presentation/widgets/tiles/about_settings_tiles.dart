@@ -220,9 +220,7 @@ class _CheckForUpdatesTileState extends ConsumerState<CheckForUpdatesTile> {
     final l10n = context.l10n;
     final update = ref.watch(apkUpdateProvider);
     final release = update.release;
-    final accentColor = Color(
-      ref.watch(settingsProvider.select((s) => s.accentColor)),
-    );
+    final accentColor = ref.watch(settingsProvider.select((s) => s.accent));
 
     return ListTile(
       leading: Container(
