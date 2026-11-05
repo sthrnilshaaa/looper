@@ -59,6 +59,10 @@ class SongsList extends ConsumerStatefulWidget {
   final bool loading;
   final int? totalCount;
 
+  /// False when the list cross-fades in over a loading skeleton: that fade
+  /// is the arrival animation, so the rows don't wave in on top of it.
+  final bool wave;
+
   const SongsList({
     super.key,
     required this.songs,
@@ -70,6 +74,7 @@ class SongsList extends ConsumerStatefulWidget {
     this.showEnrichmentIndicator = false,
     this.loading = false,
     this.totalCount,
+    this.wave = true,
   });
 
   @override
@@ -434,49 +439,48 @@ class _SongsListState extends ConsumerState<SongsList> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    // Rows arrive as one wave when the list first appears on screen.
-    return ListWave(
-      child: Column(
-        children: [
-          _buildHeader(context, l10n),
-          if (widget.shrinkWrap)
-            ListView.builder(
-              controller: widget.controller,
-              shrinkWrap: true,
-              physics: widget.physics ?? const LooperScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(0, 8, 0, 180),
-              itemCount: widget.songs.length,
-              // Every row is the same fixed-height SongTile, so give the
-              // sliver one real instance to measure once instead of
-              // re-measuring each row as it scrolls into view.
-              prototypeItem: _buildPrototypeRow(l10n),
-              itemBuilder: (context, index) => _buildRow(index, l10n),
-            )
-          else
-            Expanded(
-              child: AppRefreshIndicator(
-                onRefresh: () => ref
-                    .read(libraryProvider.notifier)
-                    .refreshLibrary(showVisualIndicator: false),
-                child: UiUtils.isDesktop
-                    ? LayoutBuilder(
-                        builder: (context, constraints) =>
-                            songColumnsFor(
-                                  constraints.maxWidth,
-                                  desktop: true,
-                                  searching:
-                                      widget.searchQuery?.isNotEmpty ?? false,
-                                ) ==
-                                2
-                            ? _buildTwoColumnGrid(l10n)
-                            : _buildSingleColumnList(l10n),
-                      )
-                    : _buildSingleColumnList(l10n),
-              ),
+    final list = Column(
+      children: [
+        _buildHeader(context, l10n),
+        if (widget.shrinkWrap)
+          ListView.builder(
+            controller: widget.controller,
+            shrinkWrap: true,
+            physics: widget.physics ?? const LooperScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(0, 8, 0, 180),
+            itemCount: widget.songs.length,
+            // Every row is the same fixed-height SongTile, so give the
+            // sliver one real instance to measure once instead of
+            // re-measuring each row as it scrolls into view.
+            prototypeItem: _buildPrototypeRow(l10n),
+            itemBuilder: (context, index) => _buildRow(index, l10n),
+          )
+        else
+          Expanded(
+            child: AppRefreshIndicator(
+              onRefresh: () => ref
+                  .read(libraryProvider.notifier)
+                  .refreshLibrary(showVisualIndicator: false),
+              child: UiUtils.isDesktop
+                  ? LayoutBuilder(
+                      builder: (context, constraints) =>
+                          songColumnsFor(
+                                constraints.maxWidth,
+                                desktop: true,
+                                searching:
+                                    widget.searchQuery?.isNotEmpty ?? false,
+                              ) ==
+                              2
+                          ? _buildTwoColumnGrid(l10n)
+                          : _buildSingleColumnList(l10n),
+                    )
+                  : _buildSingleColumnList(l10n),
             ),
-        ],
-      ),
+          ),
+      ],
     );
+    // Rows arrive as one wave when the list first appears on screen.
+    return widget.wave ? ListWave(child: list) : list;
   }
 }
 

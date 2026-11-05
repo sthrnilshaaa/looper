@@ -30,6 +30,10 @@ class AndroidSongsTab extends ConsumerStatefulWidget {
 class _AndroidSongsTabState extends ConsumerState<AndroidSongsTab> {
   late final ScrollController _scrollController;
   bool _isButtonVisible = true;
+
+  // The skeleton was on screen in this tab: the list then cross-fades in
+  // over it and skips its row wave.
+  bool _shownSkeleton = false;
   double _lastOffset = 0;
 
   @override
@@ -123,6 +127,7 @@ class _AndroidSongsTabState extends ConsumerState<AndroidSongsTab> {
     // database. The first scan of an empty library keeps the animated view
     // with its progress messages.
     if (!isInitialized && !loadingInParts) {
+      _shownSkeleton = true;
       return const LoadStateSwitcher(state: 'loading', child: SongsSkeleton());
     }
     if (isScanning && songs.isEmpty) {
@@ -232,6 +237,7 @@ class _AndroidSongsTabState extends ConsumerState<AndroidSongsTab> {
                             showEnrichmentIndicator: true,
                             loading: loadingInParts,
                             totalCount: totalCount,
+                            wave: !_shownSkeleton,
                           ),
                         ),
                       ],
