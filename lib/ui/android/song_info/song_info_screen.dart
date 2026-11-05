@@ -1,3 +1,4 @@
+import 'package:looper_player/features/playback/domain/lyric_models.dart';
 import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'dart:io';
 import 'dart:ui';
@@ -40,30 +41,7 @@ class _SongInfoScreenState extends ConsumerState<SongInfoScreen> {
     _lyricsFuture = LyricsFetcher.fetchLyrics(widget.song);
   }
 
-  String _cleanLyrics(String rawLrc) {
-    final lines = rawLrc.split('\n');
-    final cleanedLines = <String>[];
-    final metadataPattern = RegExp(r'^\[[a-zA-Z]+:.*\]$');
-    final timestampPattern = RegExp(r'^\[\d{2}:\d{2}\.\d{2,3}\]');
-
-    for (var line in lines) {
-      line = line.trim();
-      if (line.isEmpty) continue;
-      // Skip source marker tags we add
-      if (line.startsWith('[source:')) continue;
-      if (metadataPattern.hasMatch(line)) continue;
-
-      final match = timestampPattern.firstMatch(line);
-      if (match != null) {
-        line = line.substring(match.end).trim();
-      }
-
-      line = line.replaceAll(RegExp(r'<\d{2}:\d{2}\.\d{2,3}>'), '');
-
-      cleanedLines.add(line);
-    }
-    return cleanedLines.join('\n');
-  }
+  String _cleanLyrics(String rawLrc) => LrcParser.plainText(rawLrc);
 
   @override
   Widget build(BuildContext context) {
