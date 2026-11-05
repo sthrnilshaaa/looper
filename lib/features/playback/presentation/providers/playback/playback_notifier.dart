@@ -2431,6 +2431,12 @@ class Playback extends _$Playback {
   }
 
   Future<void> _ensureDynamicQueue() async {
+    const int bufferSize = 5;
+    // Loading the whole library on every skip was the main skip-spam cost.
+    if (_playlist.isNotEmpty &&
+        _playlist.length - 1 - _currentIndex >= bufferSize) {
+      return;
+    }
     final allSongs = await DbService.isar.songs.where().findAll();
     if (allSongs.isEmpty) return;
 
@@ -2447,7 +2453,6 @@ class Playback extends _$Playback {
     }
 
     // 2. Ensure we have at least 5 songs ahead of the current index (dynamic queue auto-fill)
-    const int bufferSize = 5;
     while (_playlist.length - 1 - _currentIndex < bufferSize) {
       final lastSong = _playlist.isNotEmpty ? _playlist.last : null;
       var candidates = allSongs;

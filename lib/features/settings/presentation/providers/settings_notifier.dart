@@ -733,21 +733,32 @@ class Settings extends _$Settings {
   Future<void> updateAccentColor(int color) =>
       _update((s) => s..accentColor = color);
 
+  // Both run on every song change and nothing on screen shows them, so they
+  // save quietly like [updateLastPosition] - a state change here rebuilt the
+  // whole app (MaterialApp watches settings) on each skip.
   Future<void> updateLastPlayedSong(int? songId) =>
-      _update((s) => s..lastPlayedSongId = songId);
+      _persistQuietly((s) => s.lastPlayedSongId = songId);
 
   Future<void> updateLastQueueState(
     List<int> queueIds,
     int index,
     int? lastSongId, {
     int? positionMs,
-  }) => _update(
+  }) => _persistQuietly(
     (s) => s
       ..lastQueueSongIds = queueIds
       ..lastQueueIndex = index
       ..lastPlayedSongId = lastSongId
       ..lastPositionMs = positionMs ?? 0,
   );
+
+  Future<void> _persistQuietly(void Function(AppSettings live) mutate) async {
+    final AppSettings current = state;
+    mutate(current);
+    await DbService.isar.writeTxn(() async {
+      await DbService.isar.appSettings.put(current);
+    });
+  }
 
   /// Saves the resume position quietly. It runs every few seconds while
   /// playing, and nothing on screen shows it, so it updates the live object
