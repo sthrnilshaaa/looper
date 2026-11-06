@@ -149,22 +149,22 @@ class FluidSectionMotion {
 
 /// Underdamped spring for every open: the whole sheet (background, artwork
 /// and controls together) carries a little past the top and settles back
-/// once. A plain tap overshoots ~10 % of the travel, which the rubber band
-/// shows as ~25 dp; a hard flick goes further but never past the stretch max.
+/// once. A plain tap overshoots ~8 % of the travel, which the rubber band
+/// shows as ~22 dp; a hard flick goes further but never past the stretch max.
 final SpringDescription fluidPlayerOpenBounceSpring =
     SpringDescription.withDampingRatio(
       mass: 1.0,
       stiffness: 380.0,
-      ratio: 0.62,
+      ratio: 0.65,
     );
 
-/// Firmer bounce for minimizing: the mini bar dips ~15 dp under its resting
+/// Firmer bounce for minimizing: the mini bar dips ~14 dp under its resting
 /// spot and comes back, so it lands like the sheet it was.
 final SpringDescription fluidPlayerCloseBounceSpring =
     SpringDescription.withDampingRatio(
       mass: 1.0,
       stiffness: 380.0,
-      ratio: 0.72,
+      ratio: 0.73,
     );
 
 /// Critically damped settle (no bounce): releases from inside a stretch,

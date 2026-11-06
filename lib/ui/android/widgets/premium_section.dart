@@ -152,7 +152,9 @@ class PremiumSection extends ConsumerWidget {
       containerBody = RepaintBoundary(
         child: ClipRRect(
           borderRadius: borderRadius,
-          child: BackdropFilter(
+          // Grouped: cards under one BackdropGroup share a single backdrop
+          // read instead of one each (plain blur when there's no group).
+          child: BackdropFilter.grouped(
             filter: ImageFilter.blur(
               sigmaX: blurAmount.clamp(0.0, 16.0),
               sigmaY: blurAmount.clamp(0.0, 16.0),

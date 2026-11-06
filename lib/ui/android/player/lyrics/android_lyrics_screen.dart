@@ -21,7 +21,7 @@ import 'package:looper_player/core/theme/app_icons.dart';
 import 'package:looper_player/ui/widgets/player/animated_play_pause_icon.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:looper_player/ui/widgets/common/scrolling_text.dart';
-import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:looper_player/core/services/screen_awake.dart';
 import 'package:looper_player/ui/widgets/player/fluid_background.dart';
 import 'package:looper_player/features/playback/presentation/providers/lyrics/lyrics_notifier.dart';
 import 'package:looper_player/ui/widgets/player/premium_progress_bar.dart';
@@ -175,17 +175,9 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
     super.dispose();
   }
 
-  Future<void> _enableWakelock() async {
-    try {
-      await WakelockPlus.enable();
-    } catch (e) {}
-  }
+  void _enableWakelock() => ScreenAwake.set(this, true);
 
-  Future<void> _disableWakelock() async {
-    try {
-      await WakelockPlus.disable();
-    } catch (e) {}
-  }
+  void _disableWakelock() => ScreenAwake.set(this, false);
 
   void _maybeShowGesturesTutorial() {
     if (!mounted) return;
@@ -825,135 +817,142 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                                   // safe-area padding overflowed it.
                                   final double transportButtonHeight =
                                       isCompactHeight ? 56.0 : 80.0;
-                                  return Row(
-                                    children: [
-                                      // Previous
-                                      PremiumSection(
-                                        heroTag: 'player_prev_btn',
-                                        borderRadius: const BorderRadius.only(
-                                          topLeft: Radius.circular(40),
-                                          bottomLeft: Radius.circular(40),
-                                          topRight: Radius.circular(12),
-                                          bottomRight: Radius.circular(12),
-                                        ),
-                                        height: transportButtonHeight,
-                                        showShadow: false,
-                                        useBlur: settings.enableDynamicTheming,
-                                        forceNoBlur: true,
-                                        backgroundColor: Colors.white
-                                            .withOpacity(0.04),
-                                        showBorder: false,
-                                        onTap: () {
-                                          _resetHideTimer();
-                                          AppHaptics.light();
-                                          _prevTapPulse.value++;
-                                          ref
-                                              .read(playbackProvider.notifier)
-                                              .skipPrevious();
-                                        },
-                                        child: ValueListenableBuilder<int>(
-                                          valueListenable: _prevTapPulse,
-                                          builder: (context, tick, child) {
-                                            return AnimatedTransportIcon(
-                                              asset: AppIcons.prev,
-                                              color: Colors.white,
-                                              size: AppIcons
-                                                  .expandedPlayerMainControl
-                                                  .s,
-                                              triggerKey: tick,
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      // Play/Pause
-                                      PremiumSection(
-                                        heroTag: 'player_play_pause_btn',
-                                        borderRadius: BorderRadius.circular(12),
-                                        height: transportButtonHeight,
-                                        showBorder: false,
-                                        showShadow: false,
-                                        useBlur: settings.enableDynamicTheming,
-                                        forceNoBlur: true,
-                                        backgroundColor: isPlaying
-                                            ? Colors.white.withOpacity(0.04)
-                                            : Theme.of(context)
-                                                  .colorScheme
-                                                  .primary
-                                                  .withValues(alpha: 0.9),
-                                        onTap: () {
-                                          _resetHideTimer();
-                                          AppHaptics.medium();
-                                          ref
-                                              .read(playbackProvider.notifier)
-                                              .togglePlay();
-                                        },
-                                        child: AnimatedScale(
-                                          scale: 1.1,
-                                          duration: const Duration(
-                                            milliseconds: 300,
+                                  return BackdropGroup(
+                                    child: Row(
+                                      children: [
+                                        // Previous
+                                        PremiumSection(
+                                          heroTag: 'player_prev_btn',
+                                          borderRadius: const BorderRadius.only(
+                                            topLeft: Radius.circular(40),
+                                            bottomLeft: Radius.circular(40),
+                                            topRight: Radius.circular(12),
+                                            bottomRight: Radius.circular(12),
                                           ),
-                                          curve: Curves.easeOutBack,
-                                          child: AnimatedPlayPauseIcon(
-                                            isPlaying: isPlaying,
-                                            // Dark on the accent while paused,
-                                            // as on the player screen (the two
-                                            // share a hero).
-                                            color: isPlaying
-                                                ? Colors.white
-                                                : HSLColor.fromColor(
-                                                        Theme.of(
-                                                          context,
-                                                        ).colorScheme.primary,
-                                                      )
-                                                      .withLightness(0.15)
-                                                      .toColor(),
-                                            size: AppIcons
-                                                .expandedPlayerPlayPauseIcon
-                                                .s,
+                                          height: transportButtonHeight,
+                                          showShadow: false,
+                                          useBlur:
+                                              settings.enableDynamicTheming,
+                                          forceNoBlur: true,
+                                          backgroundColor: Colors.white
+                                              .withOpacity(0.04),
+                                          showBorder: false,
+                                          onTap: () {
+                                            _resetHideTimer();
+                                            AppHaptics.light();
+                                            _prevTapPulse.value++;
+                                            ref
+                                                .read(playbackProvider.notifier)
+                                                .skipPrevious();
+                                          },
+                                          child: ValueListenableBuilder<int>(
+                                            valueListenable: _prevTapPulse,
+                                            builder: (context, tick, child) {
+                                              return AnimatedTransportIcon(
+                                                asset: AppIcons.prev,
+                                                color: Colors.white,
+                                                size: AppIcons
+                                                    .expandedPlayerMainControl
+                                                    .s,
+                                                triggerKey: tick,
+                                              );
+                                            },
                                           ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      // Next
-                                      PremiumSection(
-                                        heroTag: 'player_next_btn',
-                                        borderRadius: const BorderRadius.only(
-                                          topLeft: Radius.circular(12),
-                                          bottomLeft: Radius.circular(12),
-                                          topRight: Radius.circular(40),
-                                          bottomRight: Radius.circular(40),
-                                        ),
-                                        height: transportButtonHeight,
-                                        useBlur: settings.enableDynamicTheming,
-                                        showShadow: false,
-                                        backgroundColor: Colors.white
-                                            .withOpacity(0.04),
-                                        showBorder: false,
-                                        forceNoBlur: true,
-                                        onTap: () {
-                                          _resetHideTimer();
-                                          AppHaptics.light();
-                                          _nextTapPulse.value++;
-                                          ref
-                                              .read(playbackProvider.notifier)
-                                              .skipNext();
-                                        },
-                                        child: ValueListenableBuilder<int>(
-                                          valueListenable: _nextTapPulse,
-                                          builder: (context, tick, child) {
-                                            return AnimatedTransportIcon(
-                                              asset: AppIcons.next,
-                                              color: Colors.white,
-                                              size: AppIcons
-                                                  .expandedPlayerMainControl
-                                                  .s,
-                                              triggerKey: tick,
-                                            );
+                                        const SizedBox(width: 6),
+                                        // Play/Pause
+                                        PremiumSection(
+                                          heroTag: 'player_play_pause_btn',
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          height: transportButtonHeight,
+                                          showBorder: false,
+                                          showShadow: false,
+                                          useBlur:
+                                              settings.enableDynamicTheming,
+                                          forceNoBlur: true,
+                                          backgroundColor: isPlaying
+                                              ? Colors.white.withOpacity(0.04)
+                                              : Theme.of(context)
+                                                    .colorScheme
+                                                    .primary
+                                                    .withValues(alpha: 0.9),
+                                          onTap: () {
+                                            _resetHideTimer();
+                                            AppHaptics.medium();
+                                            ref
+                                                .read(playbackProvider.notifier)
+                                                .togglePlay();
                                           },
+                                          child: AnimatedScale(
+                                            scale: 1.1,
+                                            duration: const Duration(
+                                              milliseconds: 300,
+                                            ),
+                                            curve: Curves.easeOutBack,
+                                            child: AnimatedPlayPauseIcon(
+                                              isPlaying: isPlaying,
+                                              // Dark on the accent while paused,
+                                              // as on the player screen (the two
+                                              // share a hero).
+                                              color: isPlaying
+                                                  ? Colors.white
+                                                  : HSLColor.fromColor(
+                                                          Theme.of(
+                                                            context,
+                                                          ).colorScheme.primary,
+                                                        )
+                                                        .withLightness(0.15)
+                                                        .toColor(),
+                                              size: AppIcons
+                                                  .expandedPlayerPlayPauseIcon
+                                                  .s,
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 6),
+                                        // Next
+                                        PremiumSection(
+                                          heroTag: 'player_next_btn',
+                                          borderRadius: const BorderRadius.only(
+                                            topLeft: Radius.circular(12),
+                                            bottomLeft: Radius.circular(12),
+                                            topRight: Radius.circular(40),
+                                            bottomRight: Radius.circular(40),
+                                          ),
+                                          height: transportButtonHeight,
+                                          useBlur:
+                                              settings.enableDynamicTheming,
+                                          showShadow: false,
+                                          backgroundColor: Colors.white
+                                              .withOpacity(0.04),
+                                          showBorder: false,
+                                          forceNoBlur: true,
+                                          onTap: () {
+                                            _resetHideTimer();
+                                            AppHaptics.light();
+                                            _nextTapPulse.value++;
+                                            ref
+                                                .read(playbackProvider.notifier)
+                                                .skipNext();
+                                          },
+                                          child: ValueListenableBuilder<int>(
+                                            valueListenable: _nextTapPulse,
+                                            builder: (context, tick, child) {
+                                              return AnimatedTransportIcon(
+                                                asset: AppIcons.next,
+                                                color: Colors.white,
+                                                size: AppIcons
+                                                    .expandedPlayerMainControl
+                                                    .s,
+                                                triggerKey: tick,
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   );
                                 },
                               ),

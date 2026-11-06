@@ -1171,41 +1171,46 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
               ),
             ),
           // Background stack (Only active when slide gesture is disabled, since the parent panel draws it otherwise)
-          if (!enableSlide) ...[
-            if (useBlur && song.artPath != null) ...[
-              Positioned.fill(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 800),
-                  transitionBuilder: (child, animation) {
-                    return FadeTransition(opacity: animation, child: child);
-                  },
-                  child: BlurredBackgroundArt(
-                    key: ValueKey(song.artPath),
-                    song: song,
-                  ),
-                ),
+          if (!enableSlide)
+            // One switcher for art and gradient, so a song without a cover
+            // fades in and out instead of cutting.
+            Positioned.fill(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 800),
+                transitionBuilder: (child, animation) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+                child: useBlur && song.artPath != null
+                    ? SizedBox.expand(
+                        key: ValueKey(('art', song.artPath)),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            BlurredBackgroundArt(song: song, zoom: 1.08),
+                            ColoredBox(
+                              color: Colors.black.withValues(
+                                alpha: musicDarkness,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : settings.enablePlayerGradient
+                    ? SizedBox.expand(
+                        key: const ValueKey('gradient'),
+                        child: PlayerGradientBackground(
+                          darkness: musicDarkness,
+                          animated: settings.animatePlayerGradient,
+                        ),
+                      )
+                    : SizedBox.expand(
+                        key: const ValueKey('surface'),
+                        child: ColoredBox(
+                          color: Theme.of(context).colorScheme.surface,
+                        ),
+                      ),
               ),
-              Positioned.fill(
-                child: Container(
-                  color: Colors.black.withValues(alpha: musicDarkness),
-                ),
-              ),
-            ] else ...[
-              if (settings.enablePlayerGradient)
-                Positioned.fill(
-                  child: PlayerGradientBackground(
-                    darkness: musicDarkness,
-                    animated: settings.animatePlayerGradient,
-                  ),
-                )
-              else
-                Positioned.fill(
-                  child: Container(
-                    color: Theme.of(context).colorScheme.surface,
-                  ),
-                ),
-            ],
-          ],
+            ),
           if (landscape != null)
             Positioned.fill(
               child: PlayerLandscapeLayout(

@@ -3,6 +3,7 @@ import 'dart:ui' show ImageFilter, lerpDouble;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:looper_player/core/services/screen_awake.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/core/utils/motion.dart';
 import 'package:looper_player/features/library/domain/models/models.dart'
@@ -93,6 +94,12 @@ class _PlayerLyricLineState extends ConsumerState<PlayerLyricLine> {
   bool _forward = true;
 
   @override
+  void dispose() {
+    ScreenAwake.set(this, false);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final lines = ref.watch(playerLyricLinesProvider);
     final index = ref.watch(
@@ -103,6 +110,14 @@ class _PlayerLyricLineState extends ConsumerState<PlayerLyricLine> {
       _forward = _shown < 0 || index > _shown;
       _shown = index;
     }
+    // Screen stays on while the line is showing and playing; the expanded
+    // player stays mounted when collapsed, with its tickers off.
+    ScreenAwake.set(
+      this,
+      lines.isNotEmpty &&
+          TickerMode.valuesOf(context).enabled &&
+          ref.watch(playbackProvider.select((s) => s.isPlaying)),
+    );
     final settings = ref.watch(settingsProvider);
     final transition = LyricLineTransition.fromSetting(
       settings.playerLyricLineTransition,

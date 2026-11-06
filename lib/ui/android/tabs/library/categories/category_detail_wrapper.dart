@@ -328,6 +328,8 @@ class CategoryDetailWrapper extends ConsumerWidget {
                     height: 48,
                     backgroundColor: Colors.white.withValues(alpha: 0.04),
                     useBlur: true,
+                    // Static background behind it: a live blur looks the same.
+                    forceNoBlur: true,
                     onTap: () =>
                         ref.read(appNavigationProvider.notifier).goBack(),
                     child: const Icon(
@@ -356,6 +358,8 @@ class CategoryDetailWrapper extends ConsumerWidget {
                       height: 48,
                       backgroundColor: Colors.white.withValues(alpha: 0.04),
                       useBlur: true,
+                      // Static background behind it: a live blur looks the same.
+                      forceNoBlur: true,
                       onTap: () {
                         AppHaptics.light();
                         _showSortBottomSheet(context, ref, title, l10n);

@@ -414,24 +414,40 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
     // rebuilding an identical widget instance, and each of these gets fixed
     // constraints, so a frame of motion is just new paint offsets/opacities.
     final Widget expandedBackground = RepaintBoundary(
-      child: () {
-        if (useBlur && song.artPath != null) {
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              BlurredBackgroundArt(song: song),
-              ColoredBox(color: Colors.black.withValues(alpha: musicDarkness)),
-            ],
+      // Fades between songs and between art and gradient instead of cutting.
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 800),
+        transitionBuilder: (child, animation) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        child: () {
+          if (useBlur && song.artPath != null) {
+            return Stack(
+              key: ValueKey(('art', song.artPath)),
+              fit: StackFit.expand,
+              children: [
+                BlurredBackgroundArt(song: song),
+                ColoredBox(
+                  color: Colors.black.withValues(alpha: musicDarkness),
+                ),
+              ],
+            );
+          } else if (settings.enablePlayerGradient) {
+            return SizedBox.expand(
+              key: const ValueKey('gradient'),
+              child: PlayerGradientBackground(
+                darkness: musicDarkness,
+                animated: settings.animatePlayerGradient,
+                followExpandProgress: true,
+              ),
+            );
+          }
+          return ColoredBox(
+            key: const ValueKey('surface'),
+            color: Theme.of(context).colorScheme.surface,
           );
-        } else if (settings.enablePlayerGradient) {
-          return PlayerGradientBackground(
-            darkness: musicDarkness,
-            animated: settings.animatePlayerGradient,
-            followExpandProgress: true,
-          );
-        }
-        return ColoredBox(color: Theme.of(context).colorScheme.surface);
-      }(),
+        }(),
+      ),
     );
 
     // Taps on the mini bar only - the expanded player's own buttons handle

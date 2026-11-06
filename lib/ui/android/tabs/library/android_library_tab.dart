@@ -42,6 +42,8 @@ class AndroidLibraryTab extends ConsumerWidget {
                   height: 48,
                   useExpanded: false,
                   useBlur: true,
+                  // Static background behind it: a live blur looks the same.
+                  forceNoBlur: true,
                   backgroundColor: Colors.white.withValues(alpha: 0.04),
                   onTap: () {
                     AppHaptics.light();
@@ -76,6 +78,8 @@ class AndroidLibraryTab extends ConsumerWidget {
                   height: 48,
                   useExpanded: false,
                   useBlur: true,
+                  // Static background behind it: a live blur looks the same.
+                  forceNoBlur: true,
                   onTap: () {
                     AppHaptics.light();
                     ref

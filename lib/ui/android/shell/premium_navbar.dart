@@ -214,7 +214,7 @@ class PremiumNavbar extends ConsumerWidget {
               ];
             }
 
-            return Row(children: children);
+            return BackdropGroup(child: Row(children: children));
           },
         ),
       ),
