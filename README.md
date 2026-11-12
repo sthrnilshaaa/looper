@@ -18,7 +18,6 @@
 
 <p align="center">
   <a href="https://trendshift.io/repositories/39819" target="_blank"><img src="https://trendshift.io/api/badge/trendshift/repositories/39819/daily?language=Dart" alt="sthrnilshaaa/looper | Trendshift daily" height="55" /></a>
-  <a href="https://trendshift.io/repositories/39819" target="_blank"><img src="https://trendshift.io/api/badge/trendshift/repositories/39819/weekly?language=Dart" alt="sthrnilshaaa/looper | Trendshift weekly" height="55" /></a>
 </p>
 
 <p align="center">
