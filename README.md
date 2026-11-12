@@ -22,6 +22,11 @@
 </p>
 
 <p align="center">
+  <a href="https://ko-fi.com/sthrnilshaaa">
+    <img src="https://raw.githubusercontent.com/icedman/dash2dock-lite/main/docs/support-kofi.png" alt="Ko-fi" />
+  </a>
+</p>
+<p align="center">
   <a href="https://play.google.com/store/apps/details?id=com.looper.player">
     <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="70">
   </a>
