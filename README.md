@@ -294,6 +294,16 @@ This project is licensed under the GPL-3.0 License.
 
 ---
 
+## Star History
+
+<a href="https://www.star-history.com/?repos=sthrnilshaaaa%2Flooper&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=sthrnilshaaa/looper&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=sthrnilshaaa/looper&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=sthrnilshaaa/looper&type=date&legend=top-left" />
+ </picture>
+</a>
+
 <a id="contact"></a>
 ## Contact
 
