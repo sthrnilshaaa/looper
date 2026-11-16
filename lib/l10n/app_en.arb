@@ -1878,11 +1878,6 @@
   "setupNotifications": "Notifications",
   "setupMusicAudio": "Music & Audio",
   "setupAllFiles": "All Files Access (RECOMMENDED)",
-  "setupGenresDesc": "Select your favorite genres to help us curate your perfect playlist.",
-  "setupArtistsTitle": "Who are your\nfavorite artists?",
-  "setupArtistsDesc": "Select a few to help us personalize your recommendations.",
-  "setupSearchArtist": "Search artist",
-  "setupAlmostThere": "Almost There",
   "setupCommunityTitle": "Join Our\nCommunity",
   "setupCommunityDesc": "Looper Player is open-source and depends on community support to grow. Your help makes a difference!",
   "setupStarGithub": "Star On Github",
@@ -1894,6 +1889,6 @@
   "setupKofi": "Buy Me A Coffee",
   "setupKofiDesc": "Support the project through Ko-fi.",
   "setupDoneTitle": "You’re all set!",
-  "setupDoneDesc": "We've tailored your profile based on your favorites. Dive in to discover your new personalized library.",
+  "setupDoneDesc": "Your library is being scanned in the background. Dive in and start listening.",
   "setupStartListening": "Start Listening"
 }
