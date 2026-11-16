@@ -13,6 +13,9 @@ import 'package:looper_player/features/library/data/services/artist_catalog.dart
 import 'package:isar_community/isar.dart';
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
 import 'package:looper_player/features/playback/data/lyrics_fetcher.dart';
+import 'package:looper_player/features/playback/data/lyrics_providers/lyrics_http.dart';
+import 'package:looper_player/features/playback/data/lyrics_providers/lyrics_query.dart';
+import 'package:looper_player/features/playback/data/lyrics_providers/musicbrainz_isrc.dart';
 import 'package:looper_player/core/services/storage/local_json_store.dart';
 import 'package:looper_player/core/services/storage/storage_access.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,6 +33,7 @@ class Library extends _$Library {
   StreamSubscription<List<Album>>? _albumsSubscription;
   StreamSubscription<List<Playlist>>? _playlistsSubscription;
   bool _isFetchingArtistImages = false;
+  bool _isFetchingGenres = false;
 
   // Bumped whenever the songs load is restarted or paused, so an older
   // part-by-part load (see _loadSongsInParts) stops at its next step.
@@ -240,6 +244,8 @@ class Library extends _$Library {
     }
     // Enrichment replaces quick-scan artist tags with the real ones.
     await _syncArtists();
+    // Only songs still without a genre after their tags were read are left.
+    unawaited(_fetchMissingGenres());
   }
 
   /// Rebuilds the artist list from the songs' artist tags.
@@ -700,6 +706,75 @@ class Library extends _$Library {
     } finally {
       _isFetchingArtistImages = false;
     }
+  }
+
+  /// Asks MusicBrainz for the genre of each song whose tags carry none,
+  /// one song at a time in the background (see MusicBrainzIsrc for its rate
+  /// limit). Stops when a scan starts, internet use is turned off or the
+  /// service can't be reached; the rest are tried on the next run.
+  Future<void> _fetchMissingGenres() async {
+    if (_isFetchingGenres) return;
+
+    _isFetchingGenres = true;
+    final found = <int, String?>{};
+    var failures = 0;
+    try {
+      final songs = await DbService.isar.songs
+          .filter()
+          .genreIsNull()
+          .genreLookedUpEqualTo(false)
+          .findAll();
+
+      for (final song in songs) {
+        if (_isScanRunning ||
+            state.isScanning ||
+            !ref.read(settingsProvider).enableInternet) {
+          break;
+        }
+
+        final report = LyricsLookupReport();
+        final genre = await LyricsHttp.tracked(
+          report,
+          () => MusicBrainzIsrc.genre(
+            title: song.title,
+            artists: LyricsQuery.artistVariants(song.artist ?? ''),
+            durationSeconds: (song.duration ?? 0) ~/ 1000,
+          ),
+        );
+        if (report.failed) {
+          // MusicBrainz turns requests away now and then even at its pace;
+          // a few misses in a row means it can't be reached at all.
+          if (++failures >= 3) break;
+          await Future<void>.delayed(const Duration(seconds: 10));
+          continue;
+        }
+        failures = 0;
+
+        found[song.id] = genre;
+        // Written in batches, as every write reloads the song list.
+        if (found.length >= 25) await _saveGenres(found);
+      }
+    } finally {
+      await _saveGenres(found);
+      _isFetchingGenres = false;
+    }
+  }
+
+  /// Stores each looked-up genre in [found] (null = none found) and clears
+  /// it. Reads every song afresh, so plays counted meanwhile aren't lost.
+  Future<void> _saveGenres(Map<int, String?> found) async {
+    if (found.isEmpty) return;
+    await DbService.isar.writeTxn(() async {
+      final songs = await DbService.isar.songs.getAll(found.keys.toList());
+      final updated = [
+        for (final song in songs.nonNulls)
+          song
+            ..genre ??= found[song.id]
+            ..genreLookedUp = true,
+      ];
+      await DbService.isar.songs.putAll(updated);
+    });
+    found.clear();
   }
 
   Future<bool> _requestPermissions() async {

@@ -7,7 +7,8 @@ import 'package:looper_player/core/utils/logger_helper.dart';
 import 'lyrics_http.dart';
 import 'lyrics_query.dart';
 
-/// ISRC lookup on MusicBrainz, for lrc.red's `/s/{isrc}.ttml`.
+/// ISRC lookup on MusicBrainz, for lrc.red's `/s/{isrc}.ttml`, and genre
+/// lookup for songs whose tags carry none.
 ///
 /// lrc.red's own search (`match.json`/`search.json`) can hang for minutes
 /// while its TTML files still load instantly (seen 2026-09-28), and local
@@ -30,6 +31,78 @@ class MusicBrainzIsrc {
     required String title,
     required List<String> artists,
     int durationSeconds = 0,
+  }) async {
+    final recordings = await _recordings(
+      title: title,
+      artists: artists,
+      durationSeconds: durationSeconds,
+    );
+    return {
+      for (final r in recordings)
+        if (r['isrcs'] is List) ...(r['isrcs'] as List).whereType<String>(),
+    }.toList();
+  }
+
+  /// The most-voted genre of the recording of [title] by [artists] (matched
+  /// as for [find]), else of its artist - recordings are tagged far less
+  /// often than artists. Title-cased like the usual genre tags, so
+  /// "alternative rock" groups with a file's "Alternative Rock".
+  static Future<String?> genre({
+    required String title,
+    required List<String> artists,
+    int durationSeconds = 0,
+  }) async {
+    final recordings = await _recordings(
+      title: title,
+      artists: artists,
+      durationSeconds: durationSeconds,
+    );
+    if (recordings.isEmpty) return null;
+
+    try {
+      final body = await _throttled(
+        () => http
+            .get(
+              Uri.parse('$_endpoint/${recordings.first['id']}').replace(
+                queryParameters: {'inc': 'genres artists', 'fmt': 'json'},
+              ),
+              headers: LyricsHttp.headers,
+            )
+            .timeout(LyricsHttp.timeout),
+      );
+      if (body == null) return null;
+
+      final recording = jsonDecode(body) as Map;
+      final credits = recording['artist-credit'];
+      final name =
+          _topGenre(recording['genres']) ??
+          (credits is List && credits.isNotEmpty
+              ? _topGenre(credits.first['artist']?['genres'])
+              : null);
+      return name?.replaceAllMapped(
+        RegExp(r'\b\w'),
+        (m) => m[0]!.toUpperCase(),
+      );
+    } catch (e) {
+      LyricsHttp.failed();
+      LoggerHelper.write('MusicBrainzIsrc: genre lookup failed ($e)');
+      return null;
+    }
+  }
+
+  /// The name of the genre with the most votes in [genres], if any.
+  static String? _topGenre(Object? genres) {
+    if (genres is! List) return null;
+    final sorted = genres.whereType<Map>().toList()
+      ..sort((a, b) => (b['count'] as num).compareTo(a['count'] as num));
+    return sorted.isEmpty ? null : '${sorted.first['name']}';
+  }
+
+  /// Search hits for [title] credited to one of [artists].
+  static Future<List<Map>> _recordings({
+    required String title,
+    required List<String> artists,
+    required int durationSeconds,
   }) async {
     final cleanTitle = LyricsQuery.cleanTitle(title);
     final titleKey = LyricsQuery.key(cleanTitle);
@@ -72,10 +145,8 @@ class MusicBrainzIsrc {
       if (recordings is! List) return const [];
 
       final artistKeys = names.map(LyricsQuery.key).toSet();
-      final found = <String>{};
+      final found = <Map>[];
       for (final r in recordings.whereType<Map>()) {
-        final isrcs = r['isrcs'];
-        if (isrcs is! List || isrcs.isEmpty) continue;
         if (LyricsQuery.key('${r['title']}') != titleKey) continue;
         final length = r['length'];
         if (durationSeconds > 0 &&
@@ -89,9 +160,9 @@ class MusicBrainzIsrc {
                 .whereType<Map>()
                 .map((a) => LyricsQuery.key('${a['name']}'))
                 .any(artistKeys.contains);
-        if (credited) found.addAll(isrcs.whereType<String>());
+        if (credited) found.add(r);
       }
-      return found.toList();
+      return found;
     } catch (e) {
       LyricsHttp.failed();
       LoggerHelper.write('MusicBrainzIsrc: lookup failed ($e)');
