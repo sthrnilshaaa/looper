@@ -1,4 +1,6 @@
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'dart:async';
+import 'package:looper_player/core/motion/pause_when_offscreen.dart';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -295,12 +297,6 @@ class _QualityDetailsSheetState extends ConsumerState<_QualityDetailsSheet>
     duration: const Duration(milliseconds: 650),
   )..forward();
 
-  /// Endless pulse for the signal-path arrows.
-  late final AnimationController _pulse = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 2400),
-  )..repeat();
-
   late final Player _player = ref.read(audioServiceProvider).player;
   final List<StreamSubscription<Object?>> _subs = [];
   late DeviceAudioInfo? _device = widget.device;
@@ -352,7 +348,6 @@ class _QualityDetailsSheetState extends ConsumerState<_QualityDetailsSheet>
       s.cancel();
     }
     _intro.dispose();
-    _pulse.dispose();
     super.dispose();
   }
 
@@ -419,7 +414,7 @@ class _QualityDetailsSheetState extends ConsumerState<_QualityDetailsSheet>
     int block = 0;
     return QualityDialogFrame(
       child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
+        physics: const LooperScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -446,39 +441,43 @@ class _QualityDetailsSheetState extends ConsumerState<_QualityDetailsSheet>
             _stagger(block++, _SectionTitle(l10n.qualitySignalPath)),
             _stagger(
               block++,
-              _SignalPath(
-                pulse: _pulse,
-                tint: tint,
-                stages: [
-                  _Stage(
-                    LucideIcons.fileAudio,
-                    l10n.qualityStageSource,
-                    info.codec ?? l10n.qualityAudio,
-                    sourceRate != null ? _khz(sourceRate) : null,
+              PauseWhenOffscreen(
+                child: _PulseHost(
+                  builder: (pulse) => _SignalPath(
+                    pulse: pulse,
+                    tint: tint,
+                    stages: [
+                      _Stage(
+                        LucideIcons.fileAudio,
+                        l10n.qualityStageSource,
+                        info.codec ?? l10n.qualityAudio,
+                        sourceRate != null ? _khz(sourceRate) : null,
+                      ),
+                      _Stage(
+                        LucideIcons.cpu,
+                        l10n.qualityStageDecoder,
+                        (dec.codec ?? dec.codecName ?? '—').toUpperCase(),
+                        _formatLabel(dec.format),
+                      ),
+                      _Stage(
+                        LucideIcons.audioLines,
+                        l10n.qualityStageOutput,
+                        outRate != null ? _khz(outRate) : '—',
+                        _formatLabel(out.format),
+                      ),
+                      _Stage(
+                        _deviceIcon(device?.device?.kind),
+                        l10n.qualityStageDevice,
+                        device?.device != null
+                            ? _deviceKindLabel(l10n, device!.device!.kind)
+                            : '—',
+                        device?.nativeSampleRate != null
+                            ? _khz(device!.nativeSampleRate!)
+                            : null,
+                      ),
+                    ],
                   ),
-                  _Stage(
-                    LucideIcons.cpu,
-                    l10n.qualityStageDecoder,
-                    (dec.codec ?? dec.codecName ?? '—').toUpperCase(),
-                    _formatLabel(dec.format),
-                  ),
-                  _Stage(
-                    LucideIcons.audioLines,
-                    l10n.qualityStageOutput,
-                    outRate != null ? _khz(outRate) : '—',
-                    _formatLabel(out.format),
-                  ),
-                  _Stage(
-                    _deviceIcon(device?.device?.kind),
-                    l10n.qualityStageDevice,
-                    device?.device != null
-                        ? _deviceKindLabel(l10n, device!.device!.kind)
-                        : '—',
-                    device?.nativeSampleRate != null
-                        ? _khz(device!.nativeSampleRate!)
-                        : null,
-                  ),
-                ],
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -713,3 +712,32 @@ String _deviceKindLabel(AppLocalizations l10n, OutputDeviceKind kind) =>
       OutputDeviceKind.hearingAid => l10n.qualityDeviceHearingAid,
       OutputDeviceKind.dock => l10n.qualityDeviceDock,
     };
+
+/// Owns the endless pulse of the signal-path arrows, below the
+/// [PauseWhenOffscreen] around it, so the loop stops while it is scrolled
+/// out of the sheet.
+class _PulseHost extends StatefulWidget {
+  const _PulseHost({required this.builder});
+
+  final Widget Function(Animation<double> pulse) builder;
+
+  @override
+  State<_PulseHost> createState() => _PulseHostState();
+}
+
+class _PulseHostState extends State<_PulseHost>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2400),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.builder(_pulse);
+}

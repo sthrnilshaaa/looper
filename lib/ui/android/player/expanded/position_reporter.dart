@@ -1,3 +1,5 @@
+import 'package:looper_player/ui/android/shell/music_bar/fluid_player_motion.dart'
+    show kFluidHandoff;
 import 'package:flutter/material.dart' hide RepeatMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
@@ -40,21 +42,37 @@ class _PositionReporterState extends ConsumerState<PositionReporter> {
 
   void _onExpandProgress() {
     final double next = _expandProgress.value;
-    if (next > 0.99 && _lastProgress <= 0.99) {
+    if (next >= kFluidHandoff && _lastProgress < kFluidHandoff) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _reportPosition());
+    }
+    // Expand starting: the player has just woken up (its state was paused
+    // while collapsed), so its layout can differ from the last measurement.
+    // Re-measure two frames in - once the woken state has laid out - so the
+    // morphing art lands exactly on the real one instead of snapping to it.
+    if (next > 0.01 && _lastProgress <= 0.01) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => _reportPosition(force: true),
+        );
+        WidgetsBinding.instance.scheduleFrame();
+      });
     }
     _lastProgress = next;
   }
 
-  void _reportPosition() {
+  void _reportPosition({bool force = false}) {
     if (!mounted) return;
     final double progress = _expandProgress.value;
     final enableSlide = ref.read(settingsProvider).enableSlideGesture;
-    // Never report mid-motion. Fully collapsed is fine: the Fluid Player
+    // Normally not mid-motion. Fully collapsed is fine: the Fluid Player
     // keeps the expanded player mounted (Offstage, still laid out at its
     // final screen-sized layout), so measuring at launch gives the very
-    // first expand the real target instead of an approximation.
-    if (enableSlide && progress > 0.01 && progress < 0.99) return;
+    // first expand the real target instead of an approximation. [force]
+    // (expand start) is safe too: the player's layout doesn't change with
+    // the progress, only paint transforms on other sections do.
+    if (!force && enableSlide && progress > 0.01 && progress < kFluidHandoff) {
+      return;
+    }
 
     final RenderBox? renderBox = context.findRenderObject() as RenderBox?;
     final RenderBox? ancestorBox =

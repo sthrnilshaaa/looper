@@ -1,3 +1,4 @@
+import 'package:looper_player/core/utils/desktop_paths.dart';
 import 'dart:io';
 import 'package:looper_player/core/utils/ui_scale_steps.dart';
 import 'package:looper_player/core/utils/ui_utils.dart';
@@ -234,7 +235,7 @@ class SettingsView extends ConsumerWidget {
                         subtitle: l10n.activeLyricsIntensityDesc,
                         value:
                             (settings.activeLyricsIntensity.isNaN
-                                ? 0.0
+                                ? 0.35
                                 : settings.activeLyricsIntensity) *
                             100,
                         min: 0,
@@ -245,6 +246,20 @@ class SettingsView extends ConsumerWidget {
                             .updateActiveLyricsIntensity(val / 100.0),
                         isLast: false,
                       ),
+                    _PremiumSliderRow(
+                      icon: LucideIcons.contrast,
+                      title: l10n.inactiveLyricsOpacity,
+                      subtitle: l10n.inactiveLyricsOpacityDesc,
+                      value: inactiveLyricsOpacity(settings) * 100,
+                      min: AdvancedLyricLine.minInactiveOpacity * 100,
+                      max: AdvancedLyricLine.maxInactiveOpacity * 100,
+                      divisions: 90,
+                      suffix: '%',
+                      onChanged: (val) => ref
+                          .read(settingsProvider.notifier)
+                          .updateInactiveLyricsOpacity(val / 100.0),
+                      isLast: false,
+                    ),
                     _PremiumDropdownRow<String>(
                       icon: LucideIcons.alignCenter,
                       title: l10n.lyricsAlignment,
@@ -267,6 +282,19 @@ class SettingsView extends ConsumerWidget {
                               .read(settingsProvider.notifier)
                               .updateLyricsAlignment(align);
                         }
+                      },
+                      isLast: false,
+                    ),
+                    _PremiumSwitchRow(
+                      icon: LucideIcons.listCollapse,
+                      title: l10n.lyricsLineGrouping,
+                      subtitle: l10n.lyricsLineGroupingDesc,
+                      value: !settings.lyricsNoLineGrouping,
+                      onChanged: (value) {
+                        AppHaptics.light();
+                        ref
+                            .read(settingsProvider.notifier)
+                            .updateLyricsLineGrouping(value);
                       },
                       isLast: false,
                     ),
@@ -334,7 +362,20 @@ class SettingsView extends ConsumerWidget {
                       },
                       isLast: false,
                     ),
-                    if (!Platform.isLinux)
+                    _PremiumSwitchRow(
+                      icon: LucideIcons.libraryBig,
+                      title: l10n.groupByAlbum,
+                      subtitle: l10n.groupByAlbumDesc,
+                      value: settings.artistGroupByAlbum,
+                      onChanged: (value) {
+                        AppHaptics.light();
+                        ref
+                            .read(settingsProvider.notifier)
+                            .updateArtistGroupByAlbum(value);
+                      },
+                      isLast: UiUtils.isDesktop,
+                    ),
+                    if (!UiUtils.isDesktop)
                       _PremiumSwitchRow(
                         icon: LucideIcons.move,
                         title: l10n.fluidPlayer,
@@ -566,18 +607,25 @@ class SettingsView extends ConsumerWidget {
                           },
                           isLast: false,
                         ),
-                        _PremiumSwitchRow(
-                          icon: LucideIcons.power,
-                          title: l10n.resumeOnStartTitle,
-                          subtitle: l10n.resumeOnStartDesc,
-                          value: settings.resumeOnStart,
-                          onChanged: (value) {
-                            AppHaptics.light();
-                            ref
-                                .read(settingsProvider.notifier)
-                                .updateResumeOnStart(value);
-                          },
-                          isLast: true,
+                        // Nothing to resume unless the queue is remembered.
+                        Opacity(
+                          opacity: settings.persistQueue ? 1.0 : 0.4,
+                          child: IgnorePointer(
+                            ignoring: !settings.persistQueue,
+                            child: _PremiumSwitchRow(
+                              icon: LucideIcons.power,
+                              title: l10n.resumeOnStartTitle,
+                              subtitle: l10n.resumeOnStartDesc,
+                              value: settings.resumeOnStart,
+                              onChanged: (value) {
+                                AppHaptics.light();
+                                ref
+                                    .read(settingsProvider.notifier)
+                                    .updateResumeOnStart(value);
+                              },
+                              isLast: true,
+                            ),
+                          ),
                         ),
                       ],
                     ],

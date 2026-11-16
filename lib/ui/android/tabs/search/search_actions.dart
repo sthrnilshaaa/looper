@@ -3,18 +3,10 @@ part of 'android_search_tab.dart';
 /// Every song [artistName] is credited on: their own, shared ones, and ones
 /// where they are a featured guest on someone else's track.
 Future<List<Song>> _songsCrediting(String artistName) async {
-  final candidates = await DbService.isar.songs
-      .filter()
-      .artistContains(artistName, caseSensitive: false)
-      .or()
-      .titleContains(artistName, caseSensitive: false)
-      .findAll();
-  final credited = candidates
-      .where((song) => songCreditsArtist(song, artistName))
-      .toList();
+  final credited = await ArtistCatalog.songsFor(artistName);
   if (credited.isNotEmpty) return credited;
-  // A tag the credit splitter can't read still gets the exact-tag match the
-  // rest of the app uses, rather than an empty page.
+  // A tag the credit splitter can't read still gets the exact-tag match,
+  // rather than an empty page.
   return DbService.isar.songs.filter().artistEqualTo(artistName).findAll();
 }
 

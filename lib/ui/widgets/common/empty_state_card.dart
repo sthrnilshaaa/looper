@@ -33,6 +33,8 @@ class EmptyStateCard extends StatelessWidget {
         child: PremiumSection(
           borderRadius: BorderRadius.circular(24),
           useBlur: true,
+          // Static background behind it: a live blur looks the same.
+          forceNoBlur: true,
           useExpanded: false,
           padding: const EdgeInsets.symmetric(vertical: 40.0, horizontal: 24.0),
           child: Column(

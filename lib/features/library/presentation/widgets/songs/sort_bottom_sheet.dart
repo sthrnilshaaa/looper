@@ -16,7 +16,7 @@ void _showSortBottomSheet(
         builder: (context, ref, child) {
           final state = ref.watch(libraryProvider);
           final settings = ref.watch(settingsProvider);
-          final accentColor = Color(settings.accentColor);
+          final accentColor = settings.accent;
 
           return AppBottomSheetContainer(
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -67,7 +67,7 @@ void _showSortBottomSheet(
                 const Divider(color: Colors.white10, height: 24),
                 Flexible(
                   child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
+                    physics: const LooperScrollPhysics(),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20.0,

@@ -1,3 +1,4 @@
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'package:looper_player/ui/android/widgets/recent_song_pills.dart';
 import 'package:flutter/material.dart';
 import 'package:looper_player/ui/widgets/common/song_artwork.dart';
@@ -41,6 +42,8 @@ class AndroidLibraryTab extends ConsumerWidget {
                   height: 48,
                   useExpanded: false,
                   useBlur: true,
+                  // Static background behind it: a live blur looks the same.
+                  forceNoBlur: true,
                   backgroundColor: Colors.white.withValues(alpha: 0.04),
                   onTap: () {
                     AppHaptics.light();
@@ -75,6 +78,8 @@ class AndroidLibraryTab extends ConsumerWidget {
                   height: 48,
                   useExpanded: false,
                   useBlur: true,
+                  // Static background behind it: a live blur looks the same.
+                  forceNoBlur: true,
                   onTap: () {
                     AppHaptics.light();
                     ref
@@ -105,7 +110,7 @@ class AndroidLibraryTab extends ConsumerWidget {
                   .refreshLibrary(showVisualIndicator: true),
               child: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(
-                  parent: BouncingScrollPhysics(),
+                  parent: LooperScrollPhysics(),
                 ),
                 slivers: [
                   // Recent Played Pill

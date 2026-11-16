@@ -156,7 +156,7 @@ class _EditAlbumSheetState extends ConsumerState<EditAlbumSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final accentColor = Color(ref.watch(settingsProvider).accentColor);
+    final accentColor = ref.watch(settingsProvider).accent;
 
     return EditSheetScaffold(
       icon: LucideIcons.disc,

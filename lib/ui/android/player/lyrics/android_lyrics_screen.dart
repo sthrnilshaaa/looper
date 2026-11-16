@@ -1,3 +1,5 @@
+import 'package:looper_player/ui/widgets/common/player_scale.dart';
+import 'package:looper_player/ui/android/player/lyrics/lyrics_route.dart';
 import 'dart:io';
 import 'dart:async';
 import 'dart:ui';
@@ -19,7 +21,7 @@ import 'package:looper_player/core/theme/app_icons.dart';
 import 'package:looper_player/ui/widgets/player/animated_play_pause_icon.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:looper_player/ui/widgets/common/scrolling_text.dart';
-import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:looper_player/core/services/screen_awake.dart';
 import 'package:looper_player/ui/widgets/player/fluid_background.dart';
 import 'package:looper_player/features/playback/presentation/providers/lyrics/lyrics_notifier.dart';
 import 'package:looper_player/ui/widgets/player/premium_progress_bar.dart';
@@ -31,6 +33,7 @@ import 'package:looper_player/ui/widgets/player/player_gradient/animated_player_
 import 'package:looper_player/core/utils/l10n.dart';
 import 'package:looper_player/core/services/system_navigation_bar.dart';
 import 'package:looper_player/core/services/haptics/app_haptics.dart';
+import 'package:looper_player/ui/android/player/expanded/player_lyric_line.dart';
 
 class AndroidLyricsScreen extends ConsumerStatefulWidget {
   const AndroidLyricsScreen({super.key});
@@ -172,17 +175,9 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
     super.dispose();
   }
 
-  Future<void> _enableWakelock() async {
-    try {
-      await WakelockPlus.enable();
-    } catch (e) {}
-  }
+  void _enableWakelock() => ScreenAwake.set(this, true);
 
-  Future<void> _disableWakelock() async {
-    try {
-      await WakelockPlus.disable();
-    } catch (e) {}
-  }
+  void _disableWakelock() => ScreenAwake.set(this, false);
 
   void _maybeShowGesturesTutorial() {
     if (!mounted) return;
@@ -236,17 +231,6 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
     });
   }
 
-  TextStyle _getHeroStyle(Hero hero, TextStyle fallback) {
-    final child = hero.child;
-    if (child is ScrollingText) {
-      return child.style;
-    }
-    if (child is Text) {
-      return child.style ?? fallback;
-    }
-    return fallback;
-  }
-
   Widget _buildHeroTextShuttle(
     BuildContext flightContext,
     Animation<double> animation,
@@ -293,8 +277,27 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
             fontWeight: FontWeight.bold,
           );
 
-    final fromStyle = _getHeroStyle(fromHero, fallbackFrom);
-    final toStyle = _getHeroStyle(toHero, fallbackTo);
+    // Each end's style as drawn, including the player's low-density scale,
+    // so the flight starts and lands exactly on the real text.
+    TextStyle scaled(TextStyle style, BuildContext heroContext) {
+      final double k = PlayerScale.of(heroContext);
+      if (k == 1.0) return style;
+      return style.copyWith(
+        fontSize: (style.fontSize ?? 14) * k,
+        letterSpacing: style.letterSpacing == null
+            ? null
+            : style.letterSpacing! * k,
+      );
+    }
+
+    final fromStyle = scaled(
+      heroTextStyle(fromHeroContext, fallbackFrom),
+      fromHeroContext,
+    );
+    final toStyle = scaled(
+      heroTextStyle(toHeroContext, fallbackTo),
+      toHeroContext,
+    );
 
     return AnimatedBuilder(
       animation: animation,
@@ -303,16 +306,24 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
             ? animation.value
             : 1.0 - animation.value;
 
+        // Natural size, clipped at the flight's edge like the ScrollingText
+        // at both ends. (A scale-down FittedBox shrank long "Artist • Album"
+        // labels mid-flight, then they snapped back to full size on landing
+        // - the flicker.)
         return Material(
           type: MaterialType.transparency,
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              text,
-              style: TextStyle.lerp(fromStyle, toStyle, lerpValue),
-              maxLines: 1,
-              overflow: TextOverflow.visible,
+          child: ClipRect(
+            child: OverflowBox(
+              alignment: Alignment.centerLeft,
+              minWidth: 0,
+              maxWidth: double.infinity,
+              child: Text(
+                text,
+                style: TextStyle.lerp(fromStyle, toStyle, lerpValue),
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.clip,
+              ),
             ),
           ),
         );
@@ -333,13 +344,14 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
       _navBarInset = bottomInset;
       _insetOrientation = orientation;
     }
-    ref.listen<PlaybackState>(playbackProvider, (previous, next) {
-      if (next.isPlaying != previous?.isPlaying) {
-        if (next.isPlaying) {
-          _enableWakelock();
-        } else {
-          _disableWakelock();
-        }
+    ref.listen<bool>(playbackProvider.select((s) => s.isPlaying), (
+      previous,
+      isPlaying,
+    ) {
+      if (isPlaying) {
+        _enableWakelock();
+      } else {
+        _disableWakelock();
       }
     });
 
@@ -390,6 +402,7 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                 children: [
                   Hero(
                     tag: 'album_art',
+                    flightShuttleBuilder: artworkFlightShuttle,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: OptimizedImage(
@@ -515,11 +528,25 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
             // Lyrics Content. Frozen while closing so the word-sync tickers
             // and auto-scroll don't repaint the fading layer every frame.
             Expanded(
-              child: ValueListenableBuilder<bool>(
-                valueListenable: _exiting,
-                builder: (context, exiting, child) =>
-                    TickerMode(enabled: !exiting, child: child!),
-                child: const RepaintBoundary(child: LyricsView()),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: ValueListenableBuilder<bool>(
+                      valueListenable: _exiting,
+                      builder: (context, exiting, child) =>
+                          TickerMode(enabled: !exiting, child: child!),
+                      // Arrives after the shared elements land, leaves first.
+                      child: const LyricsEntrance(
+                        child: RepaintBoundary(child: LyricsView()),
+                      ),
+                    ),
+                  ),
+                  // Where the player's lyric line flies to.
+                  if (settings.playerLyricLine)
+                    Positioned.fill(
+                      child: PlayerLyricLineLanding(horizontalPadding: 24.s),
+                    ),
+                ],
               ),
             ),
           ],
@@ -544,7 +571,8 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
         settings.blurredArtworkForLyrics &&
         song.artPath != null;
 
-    const transitionDuration = Duration(milliseconds: 1000);
+    // Plain fill -> real background: a short fade in.
+    const transitionDuration = Duration(milliseconds: 700);
 
     return PopScope(
       // System back goes through [_close] too while the navigation bar is
@@ -591,6 +619,8 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                             key: const ValueKey('ambient_bg'),
                             artwork: FileImage(File(song.artPath!)),
                             darkness: lyricsDarkness,
+                            // Still unless Animated Gradient is on.
+                            animate: settings.animatePlayerGradient,
                           )
                         : showDynamicBg
                         ? Consumer(
@@ -643,13 +673,14 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                                   ),
                                 )
                               : (settings.enablePlayerGradient
-                                    // Same flowing gradient as the player, always
-                                    // animated here regardless of the player's
-                                    // Animated Gradient toggle, with lyricsDarkness
-                                    // as its darkness layer.
+                                    // Same gradient as the player, with
+                                    // lyricsDarkness as its darkness layer.
+                                    // Moves only when Animated Gradient is
+                                    // on (it used to always animate here).
                                     ? AnimatedPlayerGradient(
                                         key: const ValueKey('gradient_bg'),
                                         darkness: lyricsDarkness,
+                                        animate: settings.animatePlayerGradient,
                                       )
                                     : Container(
                                         key: const ValueKey('static_bg'),
@@ -786,124 +817,142 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                                   // safe-area padding overflowed it.
                                   final double transportButtonHeight =
                                       isCompactHeight ? 56.0 : 80.0;
-                                  return Row(
-                                    children: [
-                                      // Previous
-                                      PremiumSection(
-                                        heroTag: 'player_prev_btn',
-                                        borderRadius: const BorderRadius.only(
-                                          topLeft: Radius.circular(40),
-                                          bottomLeft: Radius.circular(40),
-                                          topRight: Radius.circular(12),
-                                          bottomRight: Radius.circular(12),
-                                        ),
-                                        height: transportButtonHeight,
-                                        showShadow: false,
-                                        useBlur: settings.enableDynamicTheming,
-                                        forceNoBlur: true,
-                                        backgroundColor: Colors.white
-                                            .withOpacity(0.04),
-                                        showBorder: false,
-                                        onTap: () {
-                                          _resetHideTimer();
-                                          AppHaptics.light();
-                                          _prevTapPulse.value++;
-                                          ref
-                                              .read(playbackProvider.notifier)
-                                              .skipPrevious();
-                                        },
-                                        child: ValueListenableBuilder<int>(
-                                          valueListenable: _prevTapPulse,
-                                          builder: (context, tick, child) {
-                                            return AnimatedTransportIcon(
-                                              asset: AppIcons.prev,
-                                              color: Colors.white,
-                                              size: AppIcons
-                                                  .expandedPlayerMainControl
-                                                  .s,
-                                              triggerKey: tick,
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      // Play/Pause
-                                      PremiumSection(
-                                        heroTag: 'player_play_pause_btn',
-                                        borderRadius: BorderRadius.circular(12),
-                                        height: transportButtonHeight,
-                                        showBorder: false,
-                                        showShadow: false,
-                                        useBlur: settings.enableDynamicTheming,
-                                        forceNoBlur: true,
-                                        backgroundColor: isPlaying
-                                            ? Colors.white.withOpacity(0.04)
-                                            : Theme.of(context)
-                                                  .colorScheme
-                                                  .primary
-                                                  .withValues(alpha: 0.9),
-                                        onTap: () {
-                                          _resetHideTimer();
-                                          AppHaptics.medium();
-                                          ref
-                                              .read(playbackProvider.notifier)
-                                              .togglePlay();
-                                        },
-                                        child: AnimatedScale(
-                                          scale: 1.1,
-                                          duration: const Duration(
-                                            milliseconds: 300,
+                                  return BackdropGroup(
+                                    child: Row(
+                                      children: [
+                                        // Previous
+                                        PremiumSection(
+                                          heroTag: 'player_prev_btn',
+                                          borderRadius: const BorderRadius.only(
+                                            topLeft: Radius.circular(40),
+                                            bottomLeft: Radius.circular(40),
+                                            topRight: Radius.circular(12),
+                                            bottomRight: Radius.circular(12),
                                           ),
-                                          curve: Curves.easeOutBack,
-                                          child: AnimatedPlayPauseIcon(
-                                            isPlaying: isPlaying,
-                                            color: Colors.white,
-                                            size: AppIcons
-                                                .expandedPlayerPlayPauseIcon
-                                                .s,
+                                          height: transportButtonHeight,
+                                          showShadow: false,
+                                          useBlur:
+                                              settings.enableDynamicTheming,
+                                          forceNoBlur: true,
+                                          backgroundColor: Colors.white
+                                              .withOpacity(0.04),
+                                          showBorder: false,
+                                          onTap: () {
+                                            _resetHideTimer();
+                                            AppHaptics.light();
+                                            _prevTapPulse.value++;
+                                            ref
+                                                .read(playbackProvider.notifier)
+                                                .skipPrevious();
+                                          },
+                                          child: ValueListenableBuilder<int>(
+                                            valueListenable: _prevTapPulse,
+                                            builder: (context, tick, child) {
+                                              return AnimatedTransportIcon(
+                                                asset: AppIcons.prev,
+                                                color: Colors.white,
+                                                size: AppIcons
+                                                    .expandedPlayerMainControl
+                                                    .s,
+                                                triggerKey: tick,
+                                              );
+                                            },
                                           ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      // Next
-                                      PremiumSection(
-                                        heroTag: 'player_next_btn',
-                                        borderRadius: const BorderRadius.only(
-                                          topLeft: Radius.circular(12),
-                                          bottomLeft: Radius.circular(12),
-                                          topRight: Radius.circular(40),
-                                          bottomRight: Radius.circular(40),
-                                        ),
-                                        height: transportButtonHeight,
-                                        useBlur: settings.enableDynamicTheming,
-                                        showShadow: false,
-                                        backgroundColor: Colors.white
-                                            .withOpacity(0.04),
-                                        showBorder: false,
-                                        forceNoBlur: true,
-                                        onTap: () {
-                                          _resetHideTimer();
-                                          AppHaptics.light();
-                                          _nextTapPulse.value++;
-                                          ref
-                                              .read(playbackProvider.notifier)
-                                              .skipNext();
-                                        },
-                                        child: ValueListenableBuilder<int>(
-                                          valueListenable: _nextTapPulse,
-                                          builder: (context, tick, child) {
-                                            return AnimatedTransportIcon(
-                                              asset: AppIcons.next,
-                                              color: Colors.white,
-                                              size: AppIcons
-                                                  .expandedPlayerMainControl
-                                                  .s,
-                                              triggerKey: tick,
-                                            );
+                                        const SizedBox(width: 6),
+                                        // Play/Pause
+                                        PremiumSection(
+                                          heroTag: 'player_play_pause_btn',
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          height: transportButtonHeight,
+                                          showBorder: false,
+                                          showShadow: false,
+                                          useBlur:
+                                              settings.enableDynamicTheming,
+                                          forceNoBlur: true,
+                                          backgroundColor: isPlaying
+                                              ? Colors.white.withOpacity(0.04)
+                                              : Theme.of(context)
+                                                    .colorScheme
+                                                    .primary
+                                                    .withValues(alpha: 0.9),
+                                          onTap: () {
+                                            _resetHideTimer();
+                                            AppHaptics.medium();
+                                            ref
+                                                .read(playbackProvider.notifier)
+                                                .togglePlay();
                                           },
+                                          child: AnimatedScale(
+                                            scale: 1.1,
+                                            duration: const Duration(
+                                              milliseconds: 300,
+                                            ),
+                                            curve: Curves.easeOutBack,
+                                            child: AnimatedPlayPauseIcon(
+                                              isPlaying: isPlaying,
+                                              // Dark on the accent while paused,
+                                              // as on the player screen (the two
+                                              // share a hero).
+                                              color: isPlaying
+                                                  ? Colors.white
+                                                  : HSLColor.fromColor(
+                                                          Theme.of(
+                                                            context,
+                                                          ).colorScheme.primary,
+                                                        )
+                                                        .withLightness(0.15)
+                                                        .toColor(),
+                                              size: AppIcons
+                                                  .expandedPlayerPlayPauseIcon
+                                                  .s,
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 6),
+                                        // Next
+                                        PremiumSection(
+                                          heroTag: 'player_next_btn',
+                                          borderRadius: const BorderRadius.only(
+                                            topLeft: Radius.circular(12),
+                                            bottomLeft: Radius.circular(12),
+                                            topRight: Radius.circular(40),
+                                            bottomRight: Radius.circular(40),
+                                          ),
+                                          height: transportButtonHeight,
+                                          useBlur:
+                                              settings.enableDynamicTheming,
+                                          showShadow: false,
+                                          backgroundColor: Colors.white
+                                              .withOpacity(0.04),
+                                          showBorder: false,
+                                          forceNoBlur: true,
+                                          onTap: () {
+                                            _resetHideTimer();
+                                            AppHaptics.light();
+                                            _nextTapPulse.value++;
+                                            ref
+                                                .read(playbackProvider.notifier)
+                                                .skipNext();
+                                          },
+                                          child: ValueListenableBuilder<int>(
+                                            valueListenable: _nextTapPulse,
+                                            builder: (context, tick, child) {
+                                              return AnimatedTransportIcon(
+                                                asset: AppIcons.next,
+                                                color: Colors.white,
+                                                size: AppIcons
+                                                    .expandedPlayerMainControl
+                                                    .s,
+                                                triggerKey: tick,
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   );
                                 },
                               ),

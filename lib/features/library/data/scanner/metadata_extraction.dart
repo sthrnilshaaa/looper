@@ -1,6 +1,45 @@
 part of 'scanner.dart';
 
 extension _ScannerMetadata on LibraryScanner {
+  Future<void> _repairMissingDurations(
+    List<Song> songs,
+    Map<String, Map<String, dynamic>> mediaStoreMap,
+  ) async {
+    await _mapWithConcurrency<Song, void>(songs, 3, (song) async {
+      final item =
+          mediaStoreMap[song.path] ?? mediaStoreMap[p.canonicalize(song.path)];
+      int? duration = (item?['duration'] as num?)?.toInt();
+      if ((duration ?? 0) <= 0) {
+        try {
+          duration = (await _metadataReader(
+            song.path,
+          ).timeout(const Duration(seconds: 10))).durationMs?.toInt();
+        } catch (_) {}
+      }
+      if ((duration ?? 0) <= 0 && Platform.isLinux) {
+        try {
+          duration = (await LinuxTagReader.read(
+            song.path,
+            timeout: const Duration(seconds: 10),
+          ))?.durationMs;
+        } catch (_) {}
+      }
+      if ((duration ?? 0) <= 0) return;
+      await DbService.isar.writeTxn(() async {
+        // Re-read inside the transaction: enrichment and playback may have
+        // updated this row while the file was being probed.
+        final current = await DbService.isar.songs.get(song.id);
+        if (current == null ||
+            current.path != song.path ||
+            (current.duration ?? 0) > 0) {
+          return;
+        }
+        current.duration = duration;
+        await DbService.isar.songs.put(current);
+      });
+    });
+  }
+
   Future<({Map<String, Album> albums, Map<String, Artist> artists})>
   _loadNameMaps() async {
     return (

@@ -5,17 +5,26 @@
 <p align="center">
   <b>A music player that makes your own collection feel new again.</b>
   <br />
-   Word-synced lyrics, album-coloured themes, On Android and Linux.
+   Word-synced lyrics, album-coloured themes. On Android, Linux and Windows.
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/github/v/release/SthrNilshaaa/looper?style=flat-square&color=000000" />
-  <img src="https://img.shields.io/github/downloads/SthrNilshaaa/looper/total?style=flat-square&color=000000" />
-  <img src="https://img.shields.io/github/stars/SthrNilshaaa/looper?style=flat-square&color=000000" />
-  <img src="https://img.shields.io/badge/platform-Android%20%7C%20Linux-blueviolet?style=flat-square" />
-  <img src="https://img.shields.io/badge/license-GPL--3.0-green?style=flat-square" />
+  <img height="20" src="https://img.shields.io/github/v/release/SthrNilshaaa/looper?style=flat-square&color=000000" />
+  <img height="20" src="https://img.shields.io/github/downloads/SthrNilshaaa/looper/total?style=flat-square&label=Downloads&color=blue&labelColor=000000&logo=github" />
+  <img height="20" src="https://img.shields.io/github/stars/SthrNilshaaa/looper?style=flat-square&color=000000" />
+  <img height="20" src="https://img.shields.io/badge/platform-Android%20%7C%20Linux%20%7C%20Windows-blueviolet?style=flat-square" />
+  <img height="20" src="https://img.shields.io/badge/license-GPL--3.0-green?style=flat-square" />
 </p>
 
+<p align="center">
+  <a href="https://trendshift.io/repositories/39819" target="_blank"><img src="https://trendshift.io/api/badge/trendshift/repositories/39819/daily?language=Dart" alt="sthrnilshaaa/looper | Trendshift daily" height="55" /></a>
+</p>
+
+<p align="center">
+  <a href="https://ko-fi.com/sthrnilshaaa">
+    <img src="https://raw.githubusercontent.com/icedman/dash2dock-lite/main/docs/support-kofi.png" alt="Ko-fi" />
+  </a>
+</p>
 <p align="center">
   <a href="https://play.google.com/store/apps/details?id=com.looper.player">
     <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="70">
@@ -48,7 +57,7 @@
 
 Looper plays the music files you already own. Point it at a folder and it builds a library you can browse by song, album, artist, genre or folder, then gets out of the way.
 
-We started it because we wanted one player that looks the same on a phone and on a Linux desktop, and that makes the album art the centre of the screen. The player, the lyrics page and the accents across the app all pick up the colours of the current cover.
+We started it because we wanted one player that looks the same on a phone and on a Linux or Windows desktop, and that makes the album art the centre of the screen. The player, the lyrics page and the accents across the app all pick up the colours of the current cover.
 
 There is no account, no ads and no subscription. Your music stays on your device; the app goes online only for things like fetching lyrics and checking for updates.
 
@@ -64,7 +73,8 @@ There is no account, no ads and no subscription. Your music stays on your device
 - **Picks up where you left off.** The queue, the track and the position are restored when you reopen the app.
 - **Fast search.** Search by title, artist, album, or a line of the lyrics.
 - **Home-screen widgets** on Android, in 12 layouts.
-- **A real desktop layout** on Linux, with a sidebar, wide grids, media keys and MPRIS.
+- **A real desktop layout** on Linux and Windows, with a sidebar, wide grids and media keys (MPRIS on Linux).
+- **Guided first run** on desktop: Looper finds your Music folder and sets up the library in one click.
 - **14 languages**, including Hindi, Arabic, Japanese, Korean and Chinese.
 - **Backups.** Export your app data and import it again later.
 
@@ -88,7 +98,7 @@ There is no account, no ads and no subscription. Your music stays on your device
   <img src="media/screenshots/settings.png" width="32%" alt="Settings" />
 </p>
 
-### Linux
+### Desktop (Linux and Windows)
 
 <p align="center">
   <img src="media/gallery/analyze.png" width="49%" alt="Looper Analyze on desktop" />
@@ -178,6 +188,18 @@ cd universal
 ./run.sh
 ```
 
+### Windows
+
+Windows 10 or 11, 64-bit.
+
+#### Installer (`-setup.exe`)
+Download `looper-player_<version>_windows_x64-setup.exe` and run it. It installs for your user only (no admin needed), adds Start menu and optional desktop shortcuts, and registers Looper under **Open with** for audio files. Uninstall it from **Settings > Apps**.
+
+#### Portable (`.zip`)
+Extract `looper-player_<version>_windows_x64.zip` anywhere and run `looper_player.exe`. Nothing is installed.
+
+> Windows may show a SmartScreen warning because the app isn't code-signed yet. Click **More info > Run anyway**.
+
 ---
 
 <a id="tech-stack"></a>
@@ -189,7 +211,7 @@ cd universal
 | State | Riverpod |
 | Database | Isar (local, on-device) |
 | Playback | mpv, through `mpv_audio_kit` |
-| Tags | `metadata_god` |
+| Tags | `metadata_god` on Android, `ffprobe` on Linux, `audio_metadata_reader` on Windows |
 
 ---
 
@@ -211,6 +233,8 @@ Contributions are welcome, whether it's a bug fix, a new feature, a translation 
    flutter run --flavor github
    # Linux. Needs: clang cmake ninja-build pkg-config libgtk-3-dev libmpv-dev
    flutter run -d linux
+   # Windows. Needs Visual Studio 2022 or newer with "Desktop development with C++"
+   flutter run -d windows
    ```
 5. If you change a Riverpod provider or an Isar model, regenerate the code:
    ```bash
@@ -269,6 +293,16 @@ Looper is free and open source. If you enjoy it, you can help by starring the re
 This project is licensed under the GPL-3.0 License.
 
 ---
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=sthrnilshaaaa%2Flooper&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=sthrnilshaaa/looper&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=sthrnilshaaa/looper&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=sthrnilshaaa/looper&type=date&legend=top-left" />
+ </picture>
+</a>
 
 <a id="contact"></a>
 ## Contact

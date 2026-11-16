@@ -15,7 +15,7 @@ import 'package:looper_player/features/playback/presentation/providers/playback/
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:looper_player/core/services/screen_awake.dart';
 
 import '../widgets/lyrics/advanced_lyric_renderer.dart';
 import '../widgets/lyrics/desktop_lyrics_toolbar.dart';
@@ -69,17 +69,9 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
     super.dispose();
   }
 
-  Future<void> _enableWakelock() async {
-    try {
-      await WakelockPlus.enable();
-    } catch (e) {}
-  }
+  void _enableWakelock() => ScreenAwake.set(this, true);
 
-  Future<void> _disableWakelock() async {
-    try {
-      await WakelockPlus.disable();
-    } catch (e) {}
-  }
+  void _disableWakelock() => ScreenAwake.set(this, false);
 
   @override
   Widget build(BuildContext context) {

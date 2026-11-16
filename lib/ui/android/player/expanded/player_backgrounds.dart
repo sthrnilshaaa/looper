@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'dart:io';
 import 'package:flutter/material.dart' hide RepeatMode;
 import 'package:looper_player/core/services/storage/db_service.dart';
@@ -7,6 +6,9 @@ import 'package:looper_player/core/utils/responsive.dart';
 import 'package:looper_player/ui/widgets/common/optimized_image.dart';
 import 'package:looper_player/ui/widgets/player/player_gradient/animated_player_gradient.dart';
 import 'player_landscape_layout.dart';
+
+export 'package:looper_player/ui/android/shell/blurred_background_art.dart'
+    show BlurredBackgroundArt;
 
 /// The player's gradient background (Dynamic Theming off, Player Gradient
 /// on), shared by the classic pushed player and the Fluid Player panel so
@@ -61,36 +63,6 @@ class PlayerGradientBackground extends StatelessWidget {
         if (darkness > 0)
           ColoredBox(color: Colors.black.withValues(alpha: darkness)),
       ],
-    );
-  }
-}
-
-class BlurredBackgroundArt extends StatelessWidget {
-  final Song song;
-  const BlurredBackgroundArt({required this.song, super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final path = song.artPath;
-    if (path == null) return const SizedBox.shrink();
-    return RepaintBoundary(
-      child: Transform.scale(
-        scale: 1.08,
-        child: ImageFiltered(
-          imageFilter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-          child: Image.file(
-            File(path),
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-            filterQuality: FilterQuality.low,
-            cacheWidth: 80,
-            cacheHeight: 80,
-            gaplessPlayback: true,
-            errorBuilder: (_, _, _) => const SizedBox.shrink(),
-          ),
-        ),
-      ),
     );
   }
 }

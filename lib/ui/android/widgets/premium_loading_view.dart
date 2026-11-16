@@ -1,3 +1,4 @@
+import 'package:looper_player/ui/widgets/common/first_scan_stage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/core/utils/ui_utils.dart';
@@ -48,7 +49,7 @@ class _PremiumLoadingViewState extends ConsumerState<PremiumLoadingView> {
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
-    final accentColor = Color(settings.accentColor);
+    final accentColor = settings.accent;
     final l10n = AppLocalizations.of(context)!;
     final loadingMessages = _getLoadingMessages(l10n);
 
@@ -71,14 +72,8 @@ class _PremiumLoadingViewState extends ConsumerState<PremiumLoadingView> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Sonic Wave / Rotating SVG loader animation
-                SizedBox(
-                  width: 400.s,
-                  height: 300.s,
-                  child: Lottie.asset(
-                    AppAssets.loadingAnimation,
-                    fit: BoxFit.contain,
-                  ),
-                ),
+                // Fits the card's width; tilted 3D stage.
+                const FirstScanStage(),
                 const SizedBox(height: 36),
 
                 // Main Loading Text

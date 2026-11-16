@@ -1,3 +1,5 @@
+import 'package:looper_player/core/motion/pause_when_offscreen.dart';
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:looper_player/core/utils/motion.dart';
@@ -273,69 +275,75 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                                 horizontal: 16.0,
                                 vertical: 12.0,
                               ),
-                              physics: const BouncingScrollPhysics(),
+                              physics: const LooperScrollPhysics(),
                               children: [
-                                // 1. Theme & Appearance
                                 _buildCategoryGroup(
                                   context: context,
                                   id: 'theme',
-                                  title: l10n.theme,
-                                  subtitle: l10n.customizeColorsTheme,
+                                  title: l10n.appearance,
+                                  subtitle: l10n.appearanceSettingsDesc,
                                   icon: LucideIcons.palette,
                                   colorScheme: Theme.of(context).colorScheme,
                                   useBlur: useBlur,
                                   settings: settings,
                                 ),
 
-                                // 2. Home Screen Customization
                                 _buildCategoryGroup(
                                   context: context,
-                                  id: 'dashboard',
-                                  title: l10n.homeDashboardSettings,
-                                  subtitle: l10n.homeDashboardSettingsDesc,
-                                  icon: LucideIcons.layout,
+                                  id: 'now_playing',
+                                  title: l10n.nowPlaying,
+                                  subtitle: l10n.nowPlayingSettingsDesc,
+                                  icon: LucideIcons.disc3,
                                   colorScheme: Theme.of(context).colorScheme,
                                   useBlur: useBlur,
                                   settings: settings,
                                 ),
 
-                                // 3. Playback & Language
                                 _buildCategoryGroup(
                                   context: context,
-                                  id: 'playback',
-                                  title: l10n.playbackAudio,
-                                  subtitle: l10n.manageLanguageAndFocus,
-                                  icon: LucideIcons.playCircle,
+                                  id: 'lyrics',
+                                  title: l10n.lyrics,
+                                  subtitle: l10n.lyricsSettingsDesc,
+                                  icon: LucideIcons.micVocal,
                                   colorScheme: Theme.of(context).colorScheme,
                                   useBlur: useBlur,
                                   settings: settings,
                                 ),
 
-                                // 4. Audio & Playback
-                                _buildCategoryGroup(
-                                  context: context,
-                                  id: 'audio_playback',
-                                  title: l10n.audioPlayback,
-                                  subtitle: l10n.audioPlaybackDesc,
-                                  icon: LucideIcons.music,
-                                  colorScheme: Theme.of(context).colorScheme,
-                                  useBlur: useBlur,
-                                  settings: settings,
-                                ),
-
-                                // 5. Music Library
                                 _buildCategoryGroup(
                                   context: context,
                                   id: 'library',
-                                  title: l10n.musicLibrary,
-                                  subtitle: l10n.libraryFoldersSync,
-                                  icon: LucideIcons.database,
+                                  title: l10n.homeAndLibrary,
+                                  subtitle: l10n.homeAndLibraryDesc,
+                                  icon: LucideIcons.library,
                                   colorScheme: Theme.of(context).colorScheme,
                                   useBlur: useBlur,
                                   settings: settings,
                                 ),
 
-                                // 6. Backups & Logs
+                                _buildCategoryGroup(
+                                  context: context,
+                                  id: 'audio_playback',
+                                  title: l10n.playbackAndAudio,
+                                  subtitle: l10n.playbackAudioSettingsDesc,
+                                  icon: LucideIcons.audioLines,
+                                  colorScheme: Theme.of(context).colorScheme,
+                                  useBlur: useBlur,
+                                  settings: settings,
+                                ),
+
+                                _buildCategoryGroup(
+                                  context: context,
+                                  id: 'playback',
+                                  title: l10n.general,
+                                  subtitle: l10n.generalSettingsDesc,
+                                  icon: LucideIcons.settings2,
+                                  colorScheme: Theme.of(context).colorScheme,
+                                  useBlur: useBlur,
+                                  settings: settings,
+                                ),
+
+                                // Backups & Logs
                                 _buildCategoryGroup(
                                   context: context,
                                   id: 'backups_logs',

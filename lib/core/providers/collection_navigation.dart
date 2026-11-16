@@ -1,6 +1,7 @@
 import 'package:isar_community/isar.dart';
 import 'package:looper_player/core/providers/navigation_provider.dart';
 import 'package:looper_player/core/services/storage/db_service.dart';
+import 'package:looper_player/features/library/data/services/artist_catalog.dart';
 
 /// Opening an album or artist as a collection page: the song lookup and the
 /// [AppNavigation.showCollection] call the album/artist cards all share.
@@ -21,14 +22,11 @@ extension CollectionNavigation on AppNavigation {
     );
   }
 
-  /// Opens [artist] with the songs whose artist tag is exactly their name.
-  /// A downloaded artist image is passed as the art, a remote one as the
-  /// image URL; with neither, the artist's own art is used.
+  /// Opens [artist] with every song that credits them, including shared
+  /// and featured ones. A downloaded artist image is passed as the art, a
+  /// remote one as the image URL; with neither, the artist's own art is used.
   Future<void> showArtist(Artist artist, {required String subtitle}) async {
-    final songs = await DbService.isar.songs
-        .filter()
-        .artistEqualTo(artist.name)
-        .findAll();
+    final songs = await ArtistCatalog.songsFor(artist.name);
     final imageUrl = artist.artistImageUrl;
     final bool isLocalImage = imageUrl != null && !imageUrl.startsWith('http');
     final bool isNetworkImage = imageUrl != null && imageUrl.startsWith('http');
@@ -39,6 +37,23 @@ extension CollectionNavigation on AppNavigation {
       imageUrl: isNetworkImage ? imageUrl : null,
       songs: songs,
       artist: artist,
+    );
+  }
+
+  /// Opens the artist called [name] (any case). [fallbackArt] is shown when
+  /// there is no stored entry for them yet.
+  Future<void> showArtistNamed(
+    String name, {
+    required String subtitle,
+    String? fallbackArt,
+  }) async {
+    final artist = await ArtistCatalog.find(name);
+    if (artist != null) return showArtist(artist, subtitle: subtitle);
+    showCollection(
+      title: name,
+      subtitle: subtitle,
+      art: fallbackArt,
+      songs: await ArtistCatalog.songsFor(name),
     );
   }
 }

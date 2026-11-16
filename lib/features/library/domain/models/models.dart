@@ -137,6 +137,8 @@ class Playlist {
   late DateTime dateCreated;
   late DateTime dateModified;
   DateTime? lastPlayed;
+  // A picture the user picked, copied into the app. Null = song covers.
+  String? coverPath;
 }
 
 @collection
@@ -224,6 +226,13 @@ class AppSettings {
   // Replaces the player's shuffle/repeat/next up/lyrics pill groups with
   // four icon-only tiles styled like the prev/play/next transport row.
   bool segmentedUtilityButtons = false;
+  // How much more saturated the app accent is drawn (0..1, Android). Null
+  // = AppAccent.defaultVibrancy.
+  double? accentVibrancy;
+  // Shows the current lyric line under the cover on the portrait player.
+  bool playerLyricLine = true;
+  // How that line changes: 'cube', 'roll', 'flip' or 'blur' ('' = cube).
+  String playerLyricLineTransition = 'cube';
   // Shows "Artist • Album" instead of just the artist under song titles
   // (lists, players, Home, Analyze, share card).
   bool showAlbumNextToArtist = false;
@@ -232,6 +241,9 @@ class AppSettings {
   // Master switch for every haptic (AppHaptics). Stored inverted so rows
   // saved before it existed read back as "haptics on".
   bool disableHaptics = false;
+  // Haptic strength: 0 = Low (the original tuning), 1 = Medium, 2 = High.
+  // Rows saved before it existed read back as 0, i.e. unchanged.
+  int hapticStrength = 0;
   // Same animated gradient on the Home/Songs/Library background. Only takes
   // effect while keepBackgroundGradient is on.
   bool animateBackgroundGradient = false;
@@ -276,12 +288,20 @@ class AppSettings {
   bool permanentAudioFocusChange = false; // Unused, see above.
   bool dynamicColorActiveLyrics = true;
   // 0..1, makes the active lyric line's color more vibrant (0 = as is).
-  // Rows saved before this field existed come back as NaN - treat as 0.
-  double activeLyricsIntensity = 0.0;
+  // Default 35 %. Rows saved before this field existed come back as NaN -
+  // treat as the default.
+  double activeLyricsIntensity = 0.35;
+  // Opacity of the lyric lines around the playing one, 0.1 (most see-through)
+  // to 1 (solid). Null = the default 35 %.
+  double? inactiveLyricsOpacity;
   // "Accent Color Active Line" off: the active lyric line uses the accent
   // blended with white instead of the pure accent. Stored inverted so the
   // toggle defaults to on, also for settings saved before it existed.
   bool activeLyricsSoftColor = false;
+  // "Group Continued Lines" off: two lyric lines sung in one breath are no
+  // longer shown as one (LyricLine.pairHeads). Stored inverted so grouping
+  // stays on by default, also for settings saved before it existed.
+  bool lyricsNoLineGrouping = false;
   bool ambientColorBackground = true;
   String lyricsAlignment = 'left'; // 'left', 'center', 'right'
   bool dynamicAccentColor = true;
@@ -291,6 +311,9 @@ class AppSettings {
   int artistSortOptionIndex = 0;
   int genreSortOptionIndex = 0;
   int collectionSortOptionIndex = 0;
+
+  /// Artist pages list songs under album headers instead of one list.
+  bool artistGroupByAlbum = false;
 
   double homeDarkness = 0.62;
   double songsDarkness = 0.45;
@@ -375,13 +398,18 @@ class AppSettings {
   /// Grotesk) to Stack Sans Text. Set once so a later deliberate pick sticks.
   bool stackSansDefaultMigrated = false;
 
+  /// One-time move of installs still on the old 0 % active-line intensity
+  /// default to the new 35 %. Set once so a later deliberate 0 % sticks.
+  bool activeLyricsIntensityDefaultMigrated = false;
+
   /// Whether the user has already been shown the one-time "hidden gestures"
   /// tutorial on the Lyrics screen (tap to seek, long-press to select lines
   /// to share, pinch to resize, swipe down to close).
   bool lyricsGestureTutorialSeen = false;
 
-  /// Desktop only: whole-UI scale, one of UiScaleSteps.steps. Rows saved
-  /// before this field existed come back as NaN - read it through
+  /// Whole-UI scale on every platform, one of UiScaleSteps.steps. The name
+  /// predates Android support; renaming it would drop saved values. Rows
+  /// saved before this field existed come back as NaN - read it through
   /// UiScaleSteps.normalize.
   double desktopUiScale = 1.0;
 

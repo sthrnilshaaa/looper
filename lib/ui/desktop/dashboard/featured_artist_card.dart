@@ -12,10 +12,7 @@ class _FeaturedArtistCard extends ConsumerWidget {
       padding: const EdgeInsets.only(right: 16),
       child: InkWell(
         onTap: () async {
-          final artistSongs = await DbService.isar.songs
-              .filter()
-              .artistEqualTo(artist.name)
-              .findAll();
+          final artistSongs = await ArtistCatalog.songsFor(artist.name);
           ref
               .read(appNavigationProvider.notifier)
               .showCollection(

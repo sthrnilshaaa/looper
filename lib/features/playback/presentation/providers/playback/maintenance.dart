@@ -38,7 +38,6 @@ extension _PlaybackMaintenance on Playback {
       await DbService.isar.writeTxn(() async {
         final remainingSongs = await DbService.isar.songs.where().findAll();
         final activeAlbumNames = remainingSongs.map((s) => s.album).toSet();
-        final activeArtistNames = remainingSongs.map((s) => s.artist).toSet();
 
         final allAlbums = await DbService.isar.albums.where().findAll();
         final albumsToDelete = allAlbums
@@ -49,14 +48,7 @@ extension _PlaybackMaintenance on Playback {
           await DbService.isar.albums.deleteAll(albumsToDelete);
         }
 
-        final allArtists = await DbService.isar.artists.where().findAll();
-        final artistsToDelete = allArtists
-            .where((art) => !activeArtistNames.contains(art.name))
-            .map((art) => art.id)
-            .toList();
-        if (artistsToDelete.isNotEmpty) {
-          await DbService.isar.artists.deleteAll(artistsToDelete);
-        }
+        await ArtistCatalog.syncInTxn();
       });
     } catch (e) {}
   }

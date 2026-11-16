@@ -44,9 +44,7 @@ class _QueueBottomSheetState extends ConsumerState<QueueBottomSheet> {
       ),
     );
     final queue = playback.queue;
-    final accentColor = Color(
-      ref.watch(settingsProvider.select((s) => s.accentColor)),
-    );
+    final accentColor = ref.watch(settingsProvider.select((s) => s.accent));
     final l10n = AppLocalizations.of(context)!;
     final anchor = playback.ids.indexOf(_initialEntryId ?? -1);
     // Keep rows still while open, but never present earlier history as upcoming.

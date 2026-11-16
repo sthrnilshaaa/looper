@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:looper_player/core/utils/ui_scale_steps.dart';
-import 'package:looper_player/core/utils/ui_utils.dart';
 
-/// Desktop only: draws the whole app [scale] times larger. The app is laid
+/// Draws the whole app [scale] times larger. The app is laid
 /// out in a box of the window size divided by [scale] and painted scaled up
 /// to fill the window, and MediaQuery reports that smaller size, so
 /// breakpoints react to the room the layout really has.
 ///
 /// The widget tree has the same shape at every scale (including 100%), so
-/// changing the scale never remounts the app below it. On other platforms
-/// it returns [child] untouched.
+/// changing the scale never remounts the app below it. At 100% the
+/// FittedBox transform is the identity, so it paints without a layer.
 class DesktopUiScale extends StatelessWidget {
   final double scale;
   final Widget child;
@@ -18,8 +17,6 @@ class DesktopUiScale extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!UiUtils.isDesktop) return child;
-
     final s = UiScaleSteps.normalize(scale);
     final mq = MediaQuery.of(context);
     return LayoutBuilder(

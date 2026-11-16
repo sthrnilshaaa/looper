@@ -89,7 +89,7 @@ extension _EqualizerPresetChips on AndroidEqualizerScreen {
     EqualizerState eqState,
   ) async {
     final controller = TextEditingController();
-    final name = await showDialog<String>(
+    final name = await showTaskDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(context.l10n.savePreset),
@@ -124,7 +124,7 @@ extension _EqualizerPresetChips on AndroidEqualizerScreen {
     WidgetRef ref,
     String name,
   ) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showTaskDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(context.l10n.deletePreset),

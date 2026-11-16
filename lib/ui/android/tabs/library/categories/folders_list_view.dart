@@ -1,3 +1,4 @@
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,7 +26,7 @@ class FoldersListView extends ConsumerWidget {
           .refreshLibrary(showVisualIndicator: true),
       child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(
-          parent: BouncingScrollPhysics(),
+          parent: LooperScrollPhysics(),
         ),
         padding: const EdgeInsets.only(
           left: 16,

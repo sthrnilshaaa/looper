@@ -8,7 +8,7 @@ void _showAudioCapabilitiesSheet(BuildContext context, WidgetRef ref) {
     barrierColor: Colors.black54,
     builder: (context) {
       final settings = ref.read(settingsProvider);
-      final accentColor = Color(settings.accentColor);
+      final accentColor = settings.accent;
 
       return FutureBuilder<Map<String, String>>(
         future: ref.read(audioServiceProvider).getAudioOutputCapabilities(),
@@ -59,7 +59,7 @@ void _showAudioCapabilitiesSheet(BuildContext context, WidgetRef ref) {
                 else
                   Flexible(
                     child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
+                      physics: const LooperScrollPhysics(),
                       child: Column(
                         children: capabilities.entries.map((entry) {
                           return Padding(

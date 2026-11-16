@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:looper_player/features/library/domain/models/models.dart';
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
@@ -37,12 +38,17 @@ class AppTheme extends _$AppTheme {
 
     // Watch current song and update theme if dynamic theming or dynamic
     // accent color is enabled
-    ref.listen(playbackProvider, (previous, next) {
+    // Only the artwork matters here; listening to the whole playback state
+    // ran this on every position tick.
+    ref.listen(playbackProvider.select((s) => s.currentSong?.artPath), (
+      previous,
+      next,
+    ) {
       final currentSettings = ref.read(settingsProvider);
       if ((currentSettings.enableDynamicTheming ||
               currentSettings.dynamicAccentColor) &&
-          next.currentSong?.artPath != previous?.currentSong?.artPath) {
-        updateFromImage(next.currentSong?.artPath);
+          next != previous) {
+        updateFromImage(next);
       }
     });
 
@@ -53,8 +59,8 @@ class AppTheme extends _$AppTheme {
 
     return ThemeState(
       colorScheme: ColorScheme.fromSeed(
-        seedColor: Color(_settings.accentColor),
-        primary: Color(_settings.accentColor),
+        seedColor: _settings.accent,
+        primary: _settings.accent,
         surface: _settings.darkTheme ? Colors.black : const Color(0xFF11110E),
         surfaceContainer: _settings.darkTheme
             ? const Color(0xFF0A0A0A)
@@ -70,6 +76,18 @@ class AppTheme extends _$AppTheme {
 
     final oldSettings = _settings;
     _settings = newSettings;
+
+    // The vibrancy slider redraws the current colours in place.
+    if (oldSettings.accentVibrancyValue != newSettings.accentVibrancyValue) {
+      final fromArtwork =
+          newSettings.enableDynamicTheming || newSettings.dynamicAccentColor;
+      if (fromArtwork && _artworkColors != null) {
+        _applyArtworkColors();
+      } else {
+        _resetTheme();
+      }
+      return;
+    }
 
     // Handle theme reset logic
     if (!newSettings.enableDynamicTheming) {
@@ -95,10 +113,20 @@ class AppTheme extends _$AppTheme {
     }
   }
 
+  int _imageToken = 0;
+
+  /// Applied in one rebuild once the song-change motion (artwork slide,
+  /// ~320 ms) is over, so re-theming the whole app never lands on top of an
+  /// animation. Only the latest of several quick skips is applied.
+  static const Duration _applyAfter = Duration(milliseconds: 450);
+
   Future<void> updateFromImage(String? imagePath) async {
     if (imagePath == null) {
       return;
     }
+    final int token = ++_imageToken;
+    await Future<void>.delayed(_applyAfter);
+    if (token != _imageToken) return;
 
     try {
       _isUpdating = true;
@@ -111,6 +139,10 @@ class AppTheme extends _$AppTheme {
       final ArtworkColors? colors = await ArtworkColors.fromProvider(
         FileImage(file),
       );
+      if (token != _imageToken) {
+        _isUpdating = false;
+        return;
+      }
 
       if (colors != null) {
         // Colors that are really in the artwork. Only lift them as far as
@@ -119,25 +151,8 @@ class AppTheme extends _$AppTheme {
         final Color vibrantColor = readableOnDark(colors.primary);
         final Color tertiaryColor = readableOnDark(colors.secondary);
 
-        // Update the state
-        final surfaceColor = _settings.darkTheme
-            ? Colors.black
-            : const Color(0xFF11110E);
-        final containerColor = _settings.darkTheme
-            ? const Color(0xFF0A0A0A)
-            : const Color(0xFF1E1E1E);
-
-        state = state.copyWith(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: vibrantColor,
-            primary: vibrantColor,
-            onPrimary: Colors.white,
-            tertiary: tertiaryColor,
-            surface: surfaceColor,
-            surfaceContainer: containerColor,
-            brightness: Brightness.dark,
-          ),
-        );
+        _artworkColors = (vibrantColor, tertiaryColor);
+        _applyArtworkColors();
 
         // PERSIST the color to database if enabled
         if (_settings.saveDynamicColor || _settings.dynamicAccentColor) {
@@ -153,6 +168,32 @@ class AppTheme extends _$AppTheme {
     }
   }
 
+  /// The last artwork colours, as read (before the vibrancy boost), so a
+  /// vibrancy change can redraw them without reading the artwork again.
+  (Color, Color)? _artworkColors;
+
+  /// The artwork accent before the vibrancy boost (settings preview).
+  Color? get artworkAccent => _artworkColors?.$1;
+
+  void _applyArtworkColors() {
+    final colors = _artworkColors;
+    if (colors == null) return;
+    final primary = _settings.vibrantAccent(colors.$1);
+    state = state.copyWith(
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primary,
+        primary: primary,
+        onPrimary: Colors.white,
+        tertiary: _settings.vibrantAccent(colors.$2),
+        surface: _settings.darkTheme ? Colors.black : const Color(0xFF11110E),
+        surfaceContainer: _settings.darkTheme
+            ? const Color(0xFF0A0A0A)
+            : const Color(0xFF1E1E1E),
+        brightness: Brightness.dark,
+      ),
+    );
+  }
+
   void _resetTheme() {
     // darkTheme ON = OLED/Pure Black (#000000)
     // darkTheme OFF = Premium Deep Black (#11110E)
@@ -165,8 +206,8 @@ class AppTheme extends _$AppTheme {
 
     state = state.copyWith(
       colorScheme: ColorScheme.fromSeed(
-        seedColor: Color(_settings.accentColor),
-        primary: Color(_settings.accentColor),
+        seedColor: _settings.accent,
+        primary: _settings.accent,
         surface: surfaceColor,
         surfaceContainer: containerColor,
         brightness: Brightness.dark,

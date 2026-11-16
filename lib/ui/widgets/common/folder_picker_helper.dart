@@ -1,3 +1,4 @@
+import 'package:looper_player/core/motion/app_routes.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -39,7 +40,7 @@ class FolderPickerHelper {
   static void showManualPathDialog(BuildContext context, WidgetRef ref) {
     final TextEditingController controller = TextEditingController();
     final l10n = AppLocalizations.of(context)!;
-    showDialog(
+    showTaskDialog(
       context: context,
       builder: (context) {
         return AlertDialog(

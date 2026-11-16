@@ -1,6 +1,13 @@
-/// The whole-UI scale a desktop user can pick.
+import 'package:looper_player/core/utils/ui_utils.dart';
+
+/// The whole-UI scale a user can pick. Phones get a narrower range: past
+/// 120% a 360dp phone has under 300dp of layout room.
 class UiScaleSteps {
-  static const List<double> steps = [0.8, 0.9, 1.0, 1.1, 1.25, 1.5];
+  static const List<double> desktopSteps = [0.8, 0.9, 1.0, 1.1, 1.25, 1.5];
+  static const List<double> mobileSteps = [0.8, 0.9, 1.0, 1.1, 1.2];
+
+  static List<double> get steps =>
+      UiUtils.isDesktop ? desktopSteps : mobileSteps;
 
   /// The nearest step. Rows saved before the setting existed read back as
   /// NaN - those, and anything else unusable, mean 100%.

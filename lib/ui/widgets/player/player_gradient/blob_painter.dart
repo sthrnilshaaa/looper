@@ -18,13 +18,18 @@ class _BlobPalette {
     intensity: 1.0,
   );
 
-  /// Ambient Color mode: the artwork's two leading real colors take the
-  /// primary and tertiary roles over a deep shade of its dominant color.
+  /// Ambient Color mode: the artwork's leading real colors - up to three,
+  /// so a third color such as a dark green wall behind a red title and gold
+  /// light shows too - over a deep shade of its dominant color. Dark colors
+  /// keep more of their depth ([minLightness]), so a dark green stays green
+  /// instead of being lifted into mustard.
   factory _BlobPalette.fromArtwork(ArtworkColors art) => _BlobPalette._build(
     primary: art.primary,
     tertiary: art.secondary,
+    third: art.accents.length > 2 ? art.accents[2] : null,
     surface: _deepShade(art.dominant),
     intensity: 1.15,
+    minLightness: 0.36,
   );
 
   /// A very dark version of [color] (same hue) to paint the field on.
@@ -39,24 +44,35 @@ class _BlobPalette {
   factory _BlobPalette._build({
     required Color primary,
     required Color tertiary,
+    Color? third,
     required Color surface,
     required double intensity,
+    double minLightness = 0.50,
   }) {
     Color tint(Color color, double alpha) => Color.alphaBlend(
       color.withValues(alpha: (alpha * intensity).clamp(0.0, 1.0)),
       surface,
     );
-    final Color vividPrimary = _vivid(primary);
-    final Color vividTertiary = _vivid(tertiary);
+    final Color vividPrimary = _vivid(primary, minLightness);
+    final Color vividTertiary = _vivid(tertiary, minLightness);
+    final Color? vividThird = third == null
+        ? null
+        : _vivid(third, minLightness);
     return _BlobPalette(tint(vividPrimary, 0.30), tint(vividTertiary, 0.18), [
-      // Only primary/tertiary shades, all at least as bright as the base:
-      // the old primaryContainer/tertiaryContainer blobs are dark tones
-      // in dark themes and read as dark holes drifting over the field.
+      // Only primary/tertiary(/third) shades, all at least as bright as the
+      // base: the old primaryContainer/tertiaryContainer blobs are dark
+      // tones in dark themes and read as dark holes drifting over the field.
       tint(vividPrimary, 0.68),
       tint(vividTertiary, 0.62),
-      tint(Color.lerp(vividPrimary, vividTertiary, 0.2)!, 0.58),
+      if (vividThird != null)
+        tint(vividThird, 0.66)
+      else
+        tint(Color.lerp(vividPrimary, vividTertiary, 0.2)!, 0.58),
       tint(Color.lerp(vividTertiary, vividPrimary, 0.15)!, 0.56),
-      tint(Color.lerp(vividPrimary, vividTertiary, 0.5)!, 0.58),
+      if (vividThird != null)
+        tint(Color.lerp(vividThird, vividPrimary, 0.25)!, 0.60)
+      else
+        tint(Color.lerp(vividPrimary, vividTertiary, 0.5)!, 0.58),
     ]);
   }
 
@@ -64,12 +80,12 @@ class _BlobPalette {
   /// washed-out field once blended over the surface. Push the hue's
   /// saturation up and keep lightness in a rich mid band so blobs read as
   /// real color. Near-grey colors are left alone: their hue is noise.
-  static Color _vivid(Color color) {
+  static Color _vivid(Color color, [double minLightness = 0.50]) {
     final HSLColor hsl = HSLColor.fromColor(color);
     if (hsl.saturation < 0.08) return color;
     return hsl
         .withSaturation(hsl.saturation + (1 - hsl.saturation) * 0.3)
-        .withLightness(hsl.lightness.clamp(0.50, 0.68))
+        .withLightness(hsl.lightness.clamp(minLightness, 0.68))
         .toColor();
   }
 

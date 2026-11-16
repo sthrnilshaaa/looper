@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:metadata_god/metadata_god.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:looper_player/features/library/data/scanner/windows_tag_reader.dart';
 
 import '../../../../core/services/storage/db_service.dart';
 
@@ -17,15 +18,23 @@ import '../services/artwork_downloader_service.dart';
 import '../services/saf_folder_service.dart';
 import '../../../../core/services/storage/local_json_store.dart';
 import 'scan_result.dart';
-import 'artist_parser.dart';
+import '../../domain/artist_names.dart';
+import '../services/artist_catalog.dart';
 import 'linux_tag_reader.dart';
-export 'artist_parser.dart';
 part 'scan_paths.dart';
 part 'media_sources.dart';
 part 'metadata_extraction.dart';
 part 'artwork_lookup.dart';
 
 class LibraryScanner {
+  LibraryScanner({Future<Metadata> Function(String path)? metadataReader})
+    : _metadataReader = metadataReader ?? _readMetadata;
+
+  final Future<Metadata> Function(String path) _metadataReader;
+
+  static Future<Metadata> _readMetadata(String path) =>
+      MetadataGod.readMetadata(file: path);
+
   final List<String> supportedExtensions = [
     '.mp3',
     '.flac',
@@ -393,6 +402,9 @@ class LibraryScanner {
         // hasn't indexed it) shouldn't wipe one already known - e.g. the
         // quick insert's MediaStore genre, or a user edit.
         song.genre ??= existingDbSong.genre;
+        if ((song.duration ?? 0) <= 0 && (existingDbSong.duration ?? 0) > 0) {
+          song.duration = existingDbSong.duration;
+        }
         song.lyrics = LyricsFetcher.mergeScanned(
           existingDbSong.lyrics,
           song.lyrics,
@@ -416,17 +428,23 @@ class LibraryScanner {
         }
       }
 
-      final primaryArtistName = ArtistParser.primaryArtist(metadata.artist);
-      final existingArtist = artistByName[primaryArtistName];
-      if (existingArtist == null) {
-        final artistObj = Artist()
-          ..name = primaryArtistName
-          ..artPath = artPath;
-        artistByName[artistObj.name] = artistObj;
-        artistsToPut.add(artistObj);
-      } else if (existingArtist.artPath == null && artPath != null) {
-        existingArtist.artPath = artPath;
-        artistsToPut.add(existingArtist);
+      // Strong separators only here; ArtistCatalog.sync() after the scan
+      // also splits "A & B" style credits once the whole library is known.
+      for (final name in ArtistNames.strongOnly.namesFor(
+        metadata.artist,
+        song.title,
+      )) {
+        final existingArtist = artistByName[name];
+        if (existingArtist == null) {
+          final artistObj = Artist()
+            ..name = name
+            ..artPath = artPath;
+          artistByName[artistObj.name] = artistObj;
+          artistsToPut.add(artistObj);
+        } else if (existingArtist.artPath == null && artPath != null) {
+          existingArtist.artPath = artPath;
+          artistsToPut.add(existingArtist);
+        }
       }
     }
 
@@ -467,7 +485,13 @@ class LibraryScanner {
         .needsEnrichmentEqualTo(false)
         .genreIsNull()
         .findAll();
-    if (pending.isEmpty && genreless.isEmpty) return;
+    final durationless = await DbService.isar.songs
+        .filter()
+        .needsEnrichmentEqualTo(false)
+        .and()
+        .group((q) => q.durationIsNull().or().durationLessThan(1))
+        .findAll();
+    if (pending.isEmpty && genreless.isEmpty && durationless.isEmpty) return;
 
     final mediaStoreItems = await _queryMediaStoreNative(
       includeSystemAndMessagingAudio: includeSystemAndMessagingAudio,
@@ -497,6 +521,9 @@ class LibraryScanner {
         await DbService.isar.songs.putAll(backfilled);
       });
     }
+    // Repair older rows without re-importing playlists or replacing song
+    // metadata/user edits. Missing durations remain eligible on the next pass.
+    await _repairMissingDurations(durationless, mediaStoreMap);
     if (pending.isEmpty) return;
 
     final dbSongsMap = {for (final s in pending) s.path: s};
@@ -614,17 +641,8 @@ class LibraryScanner {
           }
         }
 
-        // Cleanup orphaned artists
-        final allArtists = await DbService.isar.artists.where().findAll();
-        for (final artist in allArtists) {
-          final count = await DbService.isar.songs
-              .filter()
-              .artistEqualTo(artist.name)
-              .count();
-          if (count == 0) {
-            await DbService.isar.artists.delete(artist.id);
-          }
-        }
+        // Drop artists no remaining song credits.
+        await ArtistCatalog.syncInTxn();
       });
     } catch (_) {}
     return removedCount;
@@ -706,9 +724,7 @@ class LibraryScanner {
     try {
       Metadata? metadata;
       try {
-        metadata = await MetadataGod.readMetadata(
-          file: file.path,
-        ).timeout(tagTimeout);
+        metadata = await _metadataReader(file.path).timeout(tagTimeout);
       } on TimeoutException {
         transient = true;
       } catch (_) {}
@@ -716,9 +732,20 @@ class LibraryScanner {
       // Linux has no native tag fallback, so when metadata_god couldn't
       // read the file (or failed to initialise at all) ask ffprobe.
       LinuxTags? linuxTags;
-      if (Platform.isLinux && metadata == null) {
+      if (Platform.isLinux &&
+          (metadata == null || (metadata.durationMs ?? 0) <= 0)) {
         try {
           linuxTags = await LinuxTagReader.read(file.path, timeout: tagTimeout);
+        } on TimeoutException {
+          transient = true;
+        }
+      } else if (Platform.isWindows && metadata == null) {
+        // Windows has no system ffmpeg; read the tags in pure Dart instead.
+        try {
+          linuxTags = await WindowsTagReader.read(
+            file.path,
+            timeout: tagTimeout,
+          );
         } on TimeoutException {
           transient = true;
         }
@@ -728,7 +755,8 @@ class LibraryScanner {
       String? artist = metadata?.artist ?? linuxTags?.artist;
       String? album = metadata?.album ?? linuxTags?.album;
       String? genre = _cleanGenre(metadata?.genre ?? linuxTags?.genre);
-      int? durationMs = metadata?.durationMs?.toInt() ?? linuxTags?.durationMs;
+      int? durationMs = metadata?.durationMs?.toInt();
+      if ((durationMs ?? 0) <= 0) durationMs = linuxTags?.durationMs;
       int? trackNumber = metadata?.trackNumber ?? linuxTags?.trackNumber;
       int? year = metadata?.year ?? linuxTags?.year;
       List<int>? pictureData = metadata?.picture?.data;
@@ -781,6 +809,17 @@ class LibraryScanner {
       if (pictureData == null && Platform.isLinux) {
         try {
           pictureData = await LinuxTagReader.readCover(
+            file.path,
+            timeout: pictureTimeout,
+          );
+        } on TimeoutException {
+          transient = true;
+        }
+      }
+
+      if (pictureData == null && Platform.isWindows) {
+        try {
+          pictureData = await WindowsTagReader.readCover(
             file.path,
             timeout: pictureTimeout,
           );

@@ -580,87 +580,103 @@ class _AndroidMainScreenState extends ConsumerState<AndroidMainScreen>
                 // Dynamic Background / Gradient Layer
                 if (settings.enableDynamicTheming ||
                     settings.keepBackgroundGradient) ...[
-                  if (song?.artPath != null &&
-                      settings.enableDynamicTheming) ...[
-                    Positioned.fill(
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 800),
-                        transitionBuilder: (child, animation) {
-                          return FadeTransition(
-                            opacity: animation,
-                            child: child,
-                          );
-                        },
-                        child: BlurredBackgroundArt(
-                          key: ValueKey(song!.artPath),
-                          song: song,
-                        ),
-                      ),
+                  // One switcher for art and gradient, so going between a
+                  // song with a cover and one without fades instead of cutting.
+                  Positioned.fill(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 800),
+                      transitionBuilder: (child, animation) {
+                        return FadeTransition(opacity: animation, child: child);
+                      },
+                      child:
+                          song?.artPath != null && settings.enableDynamicTheming
+                          ? SizedBox.expand(
+                              key: ValueKey(('art', song!.artPath)),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  BlurredBackgroundArt(song: song),
+                                  // Dark overlay
+                                  ColoredBox(
+                                    color: Colors.black.withValues(
+                                      alpha: activeDarkness,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : settings.animateBackgroundGradient
+                          // Animated Background: the player's flowing
+                          // gradient, with the same per-screen darkness
+                          // sliders as its darkness layer.
+                          ? SizedBox.expand(
+                              key: const ValueKey('animatedGradient'),
+                              child: AnimatedPlayerGradient(
+                                darkness: activeDarkness,
+                                pauseUnderPlayer: true,
+                              ),
+                            )
+                          : SizedBox.expand(
+                              key: const ValueKey('gradient'),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  AnimatedContainer(
+                                    duration: const Duration(milliseconds: 600),
+                                    curve: Curves.easeInOut,
+                                    decoration: BoxDecoration(
+                                      gradient: RadialGradient(
+                                        center: Alignment.topRight,
+                                        radius: 1.5,
+                                        colors: [
+                                          Theme.of(context).colorScheme.primary
+                                              .withValues(alpha: 0.18),
+                                          Theme.of(context).colorScheme.surface,
+                                        ],
+                                        stops: const [0.0, 1.0],
+                                      ),
+                                    ),
+                                  ),
+                                  // Dark overlay - same per-screen darkness
+                                  // sliders as the dynamic-art background, so
+                                  // they aren't dead controls in gradient mode.
+                                  ColoredBox(
+                                    color: Colors.black.withValues(
+                                      alpha: activeDarkness,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                     ),
-
-                    // Dark overlay
-                    Positioned.fill(
-                      child: Container(
-                        color: Colors.black.withValues(alpha: activeDarkness),
-                      ),
-                    ),
-                  ] else if (settings.animateBackgroundGradient) ...[
-                    // Animated Background: the player's flowing gradient, with the
-                    // same per-screen darkness sliders as its darkness layer.
-                    Positioned.fill(
-                      child: AnimatedPlayerGradient(
-                        darkness: activeDarkness,
-                        pauseUnderPlayer: true,
-                      ),
-                    ),
-                  ] else ...[
-                    Positioned.fill(
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 600),
-                        curve: Curves.easeInOut,
-                        decoration: BoxDecoration(
-                          gradient: RadialGradient(
-                            center: Alignment.topRight,
-                            radius: 1.5,
-                            colors: [
-                              Theme.of(
-                                context,
-                              ).colorScheme.primary.withValues(alpha: 0.18),
-                              Theme.of(context).colorScheme.surface,
-                            ],
-                            stops: const [0.0, 1.0],
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // Dark overlay - same per-screen darkness sliders as the
-                    // dynamic-art background above, so they aren't dead controls
-                    // when gradient mode is what's actually active.
-                    Positioned.fill(
-                      child: Container(
-                        color: Colors.black.withValues(alpha: activeDarkness),
-                      ),
-                    ),
-                  ],
+                  ),
                 ],
 
                 Positioned.fill(
-                  child: Navigator(
-                    key: navigatorKey,
-                    observers: [_navDepthObserver],
-                    onGenerateRoute: (settings) {
-                      return PageRouteBuilder(
-                        pageBuilder: (context, animation, secondaryAnimation) =>
-                            _buildTabStack(),
-                        // The tab stack gets the same covered/uncovered parallax
-                        // as pushed pages, so popping back to it eases it in
-                        // instead of snapping it on in the last frame.
-                        transitionsBuilder:
-                            (context, animation, secondaryAnimation, child) =>
-                                _coveredTransition(secondaryAnimation, child),
-                      );
-                    },
+                  // Not painted (and its tickers paused) while the Fluid
+                  // Player covers the whole screen: Home's list, images and
+                  // GIFs were still drawn under the opaque player every
+                  // frame.
+                  child: _HiddenUnderFluidPlayer(
+                    progress: expandProgress,
+                    enabled: settings.enableSlideGesture,
+                    child: Navigator(
+                      key: navigatorKey,
+                      observers: [_navDepthObserver],
+                      onGenerateRoute: (settings) {
+                        return PageRouteBuilder(
+                          pageBuilder:
+                              (context, animation, secondaryAnimation) =>
+                                  _buildTabStack(),
+                          // The tab stack gets the same covered/uncovered parallax
+                          // as pushed pages, so popping back to it eases it in
+                          // instead of snapping it on in the last frame.
+                          transitionsBuilder:
+                              (context, animation, secondaryAnimation, child) =>
+                                  _coveredTransition(secondaryAnimation, child),
+                        );
+                      },
+                    ),
                   ),
                 ),
                 // Backdrop behind the navbar - always present and faded with it
@@ -991,6 +1007,37 @@ class _AndroidMainScreenState extends ConsumerState<AndroidMainScreen>
           ],
         );
       },
+    );
+  }
+}
+
+/// Hides [child] - no paint, tickers paused - while the Fluid Player is
+/// fully open over it. Layout and state are kept, so collapsing shows it
+/// again on the next frame.
+class _HiddenUnderFluidPlayer extends StatelessWidget {
+  const _HiddenUnderFluidPlayer({
+    required this.progress,
+    required this.enabled,
+    required this.child,
+  });
+
+  final ValueNotifier<double> progress;
+  final bool enabled;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!enabled) return child;
+    return ValueListenableBuilder<double>(
+      valueListenable: progress,
+      builder: (context, p, child) {
+        final bool covered = p >= kFluidHandoff;
+        return Offstage(
+          offstage: covered,
+          child: TickerMode(enabled: !covered, child: child!),
+        );
+      },
+      child: child,
     );
   }
 }

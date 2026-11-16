@@ -40,7 +40,7 @@ final class LibraryProvider extends $NotifierProvider<Library, LibraryState> {
   }
 }
 
-String _$libraryHash() => r'0a46eb3cfe61a60b9dc7c567b5c7b33517dad2ea';
+String _$libraryHash() => r'da37f670a0fe32f80d1d7a93aa0e7ecf3a7055e0';
 
 abstract class _$Library extends $Notifier<LibraryState> {
   LibraryState build();
@@ -204,7 +204,7 @@ final class HomeQuickPicksProvider
   }
 }
 
-String _$homeQuickPicksHash() => r'0a2bbd82db765af89f570403d78bceaf8f804dc3';
+String _$homeQuickPicksHash() => r'b00e819ea0b1233bf992ee10c5db3ddaa8bf98e8';
 
 /// Home tab's "Recently Added" section - same comparator (date added,
 /// newest first) as before. Kept as the full sorted list, not just the
@@ -256,7 +256,7 @@ final class HomeRecentlyAddedProvider
   }
 }
 
-String _$homeRecentlyAddedHash() => r'662271fb48d5b3833f5998bd5aaeb6fa73eca03b';
+String _$homeRecentlyAddedHash() => r'd08626521c63c3bffee4fc8afccd7d147fcadc0b';
 
 /// Every song grouped by its raw genre value (null for songs missing one).
 /// The "Unknown" label itself is applied by the caller instead of here,

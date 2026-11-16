@@ -1,3 +1,5 @@
+import 'package:looper_player/core/motion/list_wave.dart';
+import 'package:looper_player/core/motion/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:looper_player/core/utils/ui_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,6 +53,16 @@ class PlaylistList extends _$PlaylistList {
   }
 }
 
+// Keep the playlist record and its songs reactive independently: importing,
+// enrichment, file removal and metadata edits need not modify the playlist.
+final _playlistRecordProvider = StreamProvider.autoDispose
+    .family<Playlist?, int>(
+      (ref, playlistId) => DbService.isar.playlists.watchObject(
+        playlistId,
+        fireImmediately: true,
+      ),
+    );
+
 @Riverpod(keepAlive: true)
 Stream<List<Playlist>> dashboardPlaylists(Ref ref) {
   return DbService.isar.playlists
@@ -61,18 +73,20 @@ Stream<List<Playlist>> dashboardPlaylists(Ref ref) {
 }
 
 @Riverpod(keepAlive: true)
-Stream<List<Song>> playlistSongs(Ref ref, int playlistId) {
-  return DbService.isar.playlists
-      .watchObject(playlistId, fireImmediately: true)
-      .asyncMap((playlist) async {
-        if (playlist == null || playlist.songPaths.isEmpty) return <Song>[];
-
-        final songs = await DbService.isar.songs
-            .filter()
-            .anyOf(playlist.songPaths, (q, path) => q.pathEqualTo(path))
-            .findAll();
-
-        final songMap = {for (var s in songs) s.path: s};
+Stream<List<Song>> playlistSongs(Ref ref, int playlistId) async* {
+  final playlist = await ref.watch(_playlistRecordProvider(playlistId).future);
+  if (playlist == null || playlist.songPaths.isEmpty) {
+    yield <Song>[];
+    return;
+  }
+  yield* DbService.isar.songs
+      .filter()
+      .anyOf(playlist.songPaths, (q, path) => q.pathEqualTo(path))
+      .watch(fireImmediately: true)
+      .map((songs) {
+        final songMap = {for (final song in songs) song.path: song};
+        // Preserve saved order and repeated entries; unavailable songs are
+        // omitted consistently with the playable song list.
         return playlist.songPaths
             .map((path) => songMap[path])
             .whereType<Song>()
@@ -124,17 +138,20 @@ class PlaylistView extends ConsumerWidget {
                 ],
               ),
             )
-          : GridView.builder(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 180),
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 200,
-                childAspectRatio: 0.85,
-                crossAxisSpacing: 20,
-                mainAxisSpacing: 20,
+          : ListWave(
+              child: GridView.builder(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 180),
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 200,
+                  childAspectRatio: 0.85,
+                  crossAxisSpacing: 20,
+                  mainAxisSpacing: 20,
+                ),
+                itemCount: playlists.length,
+                itemBuilder: waveItems(
+                  (context, index) => PlaylistCard(playlist: playlists[index]),
+                ),
               ),
-              itemCount: playlists.length,
-              itemBuilder: (context, index) =>
-                  PlaylistCard(playlist: playlists[index]),
             ),
       floatingActionButton: AnimatedPadding(
         duration: const Duration(milliseconds: 250),
@@ -151,7 +168,7 @@ class PlaylistView extends ConsumerWidget {
   void _showCreateDialog(BuildContext context, WidgetRef ref) {
     final controller = TextEditingController();
     final l10n = AppLocalizations.of(context)!;
-    showDialog(
+    showTaskDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(l10n.newPlaylist),
@@ -214,7 +231,12 @@ class PlaylistCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: PlaylistArtwork(songPaths: playlist.songPaths)),
+          Expanded(
+            child: PlaylistArtwork(
+              songPaths: playlist.songPaths,
+              coverPath: playlist.coverPath,
+            ),
+          ),
           const SizedBox(height: 8),
           Text(
             playlist.name,

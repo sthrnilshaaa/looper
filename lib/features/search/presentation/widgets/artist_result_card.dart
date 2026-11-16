@@ -9,10 +9,7 @@ class _ArtistResultCard extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     return InkWell(
       onTap: () async {
-        final songs = await DbService.isar.songs
-            .filter()
-            .artistEqualTo(artist.name)
-            .findAll();
+        final songs = await ArtistCatalog.songsFor(artist.name);
         ref
             .read(appNavigationProvider.notifier)
             .showCollection(
@@ -30,8 +27,13 @@ class _ArtistResultCard extends ConsumerWidget {
             CircleAvatar(
               radius: 40,
               backgroundColor: Colors.grey.withValues(alpha: 0.1),
+              // Decoded at the avatar's size, not the file's full resolution.
               backgroundImage: artist.artPath != null
-                  ? FileImage(File(artist.artPath!))
+                  ? ResizeImage(
+                      FileImage(File(artist.artPath!)),
+                      width: (80 * MediaQuery.devicePixelRatioOf(context))
+                          .round(),
+                    )
                   : null,
               child: artist.artPath == null
                   ? const Icon(LucideIcons.user)

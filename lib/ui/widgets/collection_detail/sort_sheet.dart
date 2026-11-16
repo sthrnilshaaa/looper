@@ -10,9 +10,7 @@ extension _CollectionSortSheet on CollectionDetailView {
       builder: (context) {
         final l10n = AppLocalizations.of(context)!;
         final bool isArtistCollection =
-            (subtitle != null &&
-                (subtitle!.toLowerCase() == 'artist' ||
-                    subtitle == l10n.artist)) ||
+            _isArtistPage(l10n) ||
             (songs.isNotEmpty &&
                 songs.every(
                   (s) => s.artist?.toLowerCase() == title.toLowerCase(),
@@ -148,7 +146,7 @@ extension _CollectionSortSheet on CollectionDetailView {
   ) {
     final settings = ref.watch(settingsProvider);
     final isSelected = settings.collectionSortOptionIndex == value.index;
-    final accentColor = Color(settings.accentColor);
+    final accentColor = settings.accent;
 
     return InkWell(
       onTap: () {

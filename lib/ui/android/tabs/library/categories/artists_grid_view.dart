@@ -1,3 +1,4 @@
+import 'package:looper_player/core/motion/list_wave.dart';
 import 'package:looper_player/core/providers/collection_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,66 +30,73 @@ class ArtistsGridView extends ConsumerWidget {
       return EmptyStateCard(icon: LucideIcons.user, title: l10n.noArtistsFound);
     }
 
-    return GridView.builder(
-      padding: const EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 200),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 200,
-        mainAxisSpacing: 24,
-        crossAxisSpacing: 24,
-        childAspectRatio: 0.8,
-      ),
-      itemCount: sortedArtists.length,
-      itemBuilder: (context, index) {
-        final artist = sortedArtists[index];
-        return InkWell(
-          onTap: () async {
-            await ref
-                .read(appNavigationProvider.notifier)
-                .showArtist(artist, subtitle: l10n.artist);
-          },
-          child: Column(
-            children: [
-              Expanded(
-                child: ClipOval(
-                  child: OptimizedImage(
-                    imageUrl:
-                        artist.artistImageUrl != null &&
-                            artist.artistImageUrl!.startsWith('http')
-                        ? artist.artistImageUrl
-                        : null,
-                    imagePath:
-                        artist.artistImageUrl != null &&
-                            !artist.artistImageUrl!.startsWith('http')
-                        ? artist.artistImageUrl
-                        : artist.artPath,
-                    fit: BoxFit.cover,
-                    placeholder: Container(
-                      color: Colors.white10,
-                      child: const Center(
-                        child: Icon(
-                          LucideIcons.user,
-                          size: 40,
-                          color: Colors.white38,
+    return ListWave(
+      child: GridView.builder(
+        padding: const EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: 200,
+        ),
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 200,
+          mainAxisSpacing: 24,
+          crossAxisSpacing: 24,
+          childAspectRatio: 0.8,
+        ),
+        itemCount: sortedArtists.length,
+        itemBuilder: waveItems((context, index) {
+          final artist = sortedArtists[index];
+          return InkWell(
+            onTap: () async {
+              await ref
+                  .read(appNavigationProvider.notifier)
+                  .showArtist(artist, subtitle: l10n.artist);
+            },
+            child: Column(
+              children: [
+                Expanded(
+                  child: ClipOval(
+                    child: OptimizedImage(
+                      imageUrl:
+                          artist.artistImageUrl != null &&
+                              artist.artistImageUrl!.startsWith('http')
+                          ? artist.artistImageUrl
+                          : null,
+                      imagePath:
+                          artist.artistImageUrl != null &&
+                              !artist.artistImageUrl!.startsWith('http')
+                          ? artist.artistImageUrl
+                          : artist.artPath,
+                      fit: BoxFit.cover,
+                      placeholder: Container(
+                        color: Colors.white10,
+                        child: const Center(
+                          child: Icon(
+                            LucideIcons.user,
+                            size: 40,
+                            color: Colors.white38,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                artist.name,
-                style: AppFonts.jostStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                const SizedBox(height: 12),
+                Text(
+                  artist.name,
+                  style: AppFonts.jostStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        );
-      },
+              ],
+            ),
+          );
+        }),
+      ),
     );
   }
 }

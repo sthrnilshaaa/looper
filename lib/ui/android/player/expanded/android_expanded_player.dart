@@ -1,3 +1,7 @@
+import 'package:looper_player/core/utils/ui_scale_steps.dart';
+import 'package:looper_player/ui/android/player/lyrics/lyrics_route.dart';
+import 'package:looper_player/core/providers/collection_navigation.dart';
+import 'package:looper_player/ui/widgets/common/song_artist_picker.dart';
 import 'dart:math' as math;
 
 import 'package:looper_player/core/utils/song_metadata.dart';
@@ -23,6 +27,7 @@ import 'package:looper_player/ui/widgets/player/premium_progress_bar.dart';
 import '../../widgets/premium_section.dart';
 import '../lyrics/android_lyrics_screen.dart';
 import 'player_landscape_layout.dart';
+import 'player_lyric_line.dart';
 import 'player_portrait_metrics.dart';
 import 'segmented_utility_row.dart';
 import 'quality_details_sheet.dart';
@@ -164,15 +169,7 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
 
   void _showLyrics(BuildContext context) {
     AppHaptics.light();
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const AndroidLyricsScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-      ),
-    );
+    Navigator.of(context).push(lyricsRoute());
   }
 
   void _showMoreOptionsBottomSheet(BuildContext context, WidgetRef ref) {
@@ -230,7 +227,10 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
     // drawn enlarged (scale 1 at the default density; see
     // PlayerPortraitMetrics), and the column is capped on wide windows.
     final PlayerPortraitMetrics? portrait = landscape == null
-        ? PlayerPortraitMetrics.of(screenSize)
+        ? PlayerPortraitMetrics.of(
+            screenSize,
+            uiScale: UiScaleSteps.normalize(settings.desktopUiScale),
+          )
         : null;
     final double k = portrait?.scale ?? 1.0;
     Widget scaled(Widget child) => PlayerScaled(scale: k, child: child);
@@ -258,7 +258,8 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
       required Widget child,
       HeroFlightShuttleBuilder? flightShuttleBuilder,
     }) {
-      if (enableSlide) return child;
+      // Heroes fly in the Fluid Player too (the lyrics switch). They are
+      // inert while it is collapsed: its layer turns HeroMode off.
       return Hero(
         tag: tag,
         flightShuttleBuilder:
@@ -489,11 +490,11 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                           );
 
                           final fromStyle = _scaledHeroStyle(
-                            _getHeroStyle(fromHero, fallbackFrom),
+                            heroTextStyle(fromHeroContext, fallbackFrom),
                             fromHeroContext,
                           );
                           final toStyle = _scaledHeroStyle(
-                            _getHeroStyle(toHero, fallbackTo),
+                            heroTextStyle(toHeroContext, fallbackTo),
                             toHeroContext,
                           );
 
@@ -507,8 +508,10 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                               return Material(
                                 type: MaterialType.transparency,
                                 child: ClipRect(
-                                  child: Align(
+                                  child: OverflowBox(
                                     alignment: Alignment.centerLeft,
+                                    minWidth: 0,
+                                    maxWidth: double.infinity,
                                     child: Text(
                                       song.title,
                                       style: TextStyle.lerp(
@@ -517,7 +520,7 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                                         lerpValue,
                                       ),
                                       maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                      overflow: TextOverflow.clip,
                                       softWrap: false,
                                     ),
                                   ),
@@ -566,11 +569,11 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                           );
 
                           final fromStyle = _scaledHeroStyle(
-                            _getHeroStyle(fromHero, fallbackFrom),
+                            heroTextStyle(fromHeroContext, fallbackFrom),
                             fromHeroContext,
                           );
                           final toStyle = _scaledHeroStyle(
-                            _getHeroStyle(toHero, fallbackTo),
+                            heroTextStyle(toHeroContext, fallbackTo),
                             toHeroContext,
                           );
 
@@ -583,9 +586,14 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                                   : 1.0 - animation.value;
                               return Material(
                                 type: MaterialType.transparency,
+                                // Clipped, not ellipsized: both ends are
+                                // clipped ScrollingTexts, so a "…" in
+                                // flight would snap away on landing.
                                 child: ClipRect(
-                                  child: Align(
+                                  child: OverflowBox(
                                     alignment: Alignment.centerLeft,
+                                    minWidth: 0,
+                                    maxWidth: double.infinity,
                                     child: Text(
                                       artistAlbumLabel(
                                         song,
@@ -598,7 +606,7 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                                         lerpValue,
                                       ),
                                       maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                      overflow: TextOverflow.clip,
                                       softWrap: false,
                                     ),
                                   ),
@@ -615,14 +623,15 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                         child: InkWell(
                           onTap: () async {
                             if (song.artist != null) {
-                              final artistSongs = await DbService.isar.songs
-                                  .filter()
-                                  .artistEqualTo(song.artist!)
-                                  .findAll();
-                              final artist = await DbService.isar.artists
-                                  .filter()
-                                  .nameEqualTo(song.artist!)
-                                  .findFirst();
+                              // A song by several artists asks which one
+                              // to open; dismissing that keeps the player.
+                              final artistName = await pickSongArtist(
+                                context,
+                                song,
+                              );
+                              if (artistName == null || !context.mounted) {
+                                return;
+                              }
 
                               if (enableSlide) {
                                 ref
@@ -632,16 +641,14 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                                     .bump();
                               }
 
-                              ref
+                              await ref
                                   .read(appNavigationProvider.notifier)
-                                  .showCollection(
-                                    title: song.artist!,
+                                  .showArtistNamed(
+                                    artistName,
                                     subtitle: l10n.artists,
-                                    art: artist?.artPath ?? song.artPath,
-                                    imageUrl: artist?.artistImageUrl,
-                                    songs: artistSongs,
-                                    artist: artist,
+                                    fallbackArt: song.artPath,
                                   );
+                              if (!context.mounted) return;
                             }
                             if (!enableSlide) {
                               Navigator.pop(context);
@@ -1122,6 +1129,17 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
       );
     }
 
+    Widget buildPortraitArtwork() => PositionReporter(
+      ancestorKey: _playerRootKey,
+      onPositionChanged: (rect) {
+        ref.read(playerArtworkRectProvider.notifier).set(rect);
+      },
+      child: GestureArtworkWithFeedback(
+        song: song,
+        onTap: () => _showLyrics(context),
+      ),
+    );
+
     final child = Scaffold(
       key: _playerRootKey,
       // In the Fluid Player the surface fill is a layer below that fades in
@@ -1153,41 +1171,46 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
               ),
             ),
           // Background stack (Only active when slide gesture is disabled, since the parent panel draws it otherwise)
-          if (!enableSlide) ...[
-            if (useBlur && song.artPath != null) ...[
-              Positioned.fill(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 800),
-                  transitionBuilder: (child, animation) {
-                    return FadeTransition(opacity: animation, child: child);
-                  },
-                  child: BlurredBackgroundArt(
-                    key: ValueKey(song.artPath),
-                    song: song,
-                  ),
-                ),
+          if (!enableSlide)
+            // One switcher for art and gradient, so a song without a cover
+            // fades in and out instead of cutting.
+            Positioned.fill(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 800),
+                transitionBuilder: (child, animation) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+                child: useBlur && song.artPath != null
+                    ? SizedBox.expand(
+                        key: ValueKey(('art', song.artPath)),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            BlurredBackgroundArt(song: song, zoom: 1.08),
+                            ColoredBox(
+                              color: Colors.black.withValues(
+                                alpha: musicDarkness,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : settings.enablePlayerGradient
+                    ? SizedBox.expand(
+                        key: const ValueKey('gradient'),
+                        child: PlayerGradientBackground(
+                          darkness: musicDarkness,
+                          animated: settings.animatePlayerGradient,
+                        ),
+                      )
+                    : SizedBox.expand(
+                        key: const ValueKey('surface'),
+                        child: ColoredBox(
+                          color: Theme.of(context).colorScheme.surface,
+                        ),
+                      ),
               ),
-              Positioned.fill(
-                child: Container(
-                  color: Colors.black.withValues(alpha: musicDarkness),
-                ),
-              ),
-            ] else ...[
-              if (settings.enablePlayerGradient)
-                Positioned.fill(
-                  child: PlayerGradientBackground(
-                    darkness: musicDarkness,
-                    animated: settings.animatePlayerGradient,
-                  ),
-                )
-              else
-                Positioned.fill(
-                  child: Container(
-                    color: Theme.of(context).colorScheme.surface,
-                  ),
-                ),
-            ],
-          ],
+            ),
           if (landscape != null)
             Positioned.fill(
               child: PlayerLandscapeLayout(
@@ -1258,25 +1281,96 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                     Expanded(
                       child: Padding(
                         padding: EdgeInsets.symmetric(horizontal: 20 * k),
-                        child: LayoutBuilder(
-                          builder: (context, box) => Center(
-                            child: SizedBox.square(
-                              dimension: math.min(box.maxWidth, box.maxHeight),
-                              child: PositionReporter(
-                                ancestorKey: _playerRootKey,
-                                onPositionChanged: (rect) {
-                                  ref
-                                      .read(playerArtworkRectProvider.notifier)
-                                      .set(rect);
-                                },
-                                child: GestureArtworkWithFeedback(
-                                  song: song,
-                                  onTap: () => _showLyrics(context),
+                        child: !settings.playerLyricLine
+                            ? LayoutBuilder(
+                                builder: (context, box) => Center(
+                                  child: SizedBox.square(
+                                    dimension: math.min(
+                                      box.maxWidth,
+                                      box.maxHeight,
+                                    ),
+                                    child: buildPortraitArtwork(),
+                                  ),
                                 ),
+                              )
+                            : Consumer(
+                                builder: (context, ref, _) {
+                                  final hasLine = ref
+                                      .watch(playerLyricLinesProvider)
+                                      .isNotEmpty;
+                                  // The cover makes room for the line as it
+                                  // appears instead of jumping.
+                                  return TweenAnimationBuilder<double>(
+                                    tween: Tween(end: hasLine ? 1.0 : 0.0),
+                                    duration: const Duration(milliseconds: 320),
+                                    curve: Curves.easeOutCubic,
+                                    builder: (context, reveal, _) => LayoutBuilder(
+                                      builder: (context, box) {
+                                        final room =
+                                            PlayerLyricLine.rowHeight *
+                                            k *
+                                            reveal;
+                                        final dimension = math.max(
+                                          0.0,
+                                          math.min(
+                                            box.maxWidth,
+                                            box.maxHeight - room,
+                                          ),
+                                        );
+                                        return Center(
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              SizedBox.square(
+                                                dimension: dimension,
+                                                child: buildPortraitArtwork(),
+                                              ),
+                                              SizedBox(
+                                                width: dimension,
+                                                height: room,
+                                                child: reveal <= 0
+                                                    ? null
+                                                    : OverflowBox(
+                                                        alignment:
+                                                            Alignment.topCenter,
+                                                        maxHeight:
+                                                            PlayerLyricLine
+                                                                .rowHeight *
+                                                            k,
+                                                        child: Opacity(
+                                                          opacity: reveal,
+                                                          child: fadeWithSlide(
+                                                            PlayerLyricLine(
+                                                              width: dimension,
+                                                              scale: k,
+                                                              // Title starts 32 in
+                                                              // (scaled); the cover
+                                                              // 20 plus its centring.
+                                                              edgeInset:
+                                                                  32 * k -
+                                                                  (20 * k +
+                                                                      (box.maxWidth -
+                                                                              dimension) /
+                                                                          2),
+                                                              onTap: () =>
+                                                                  _showLyrics(
+                                                                    context,
+                                                                  ),
+                                                            ),
+                                                            FluidSectionMotion
+                                                                .songInfo,
+                                                          ),
+                                                        ),
+                                                      ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  );
+                                },
                               ),
-                            ),
-                          ),
-                        ),
                       ),
                     ),
 

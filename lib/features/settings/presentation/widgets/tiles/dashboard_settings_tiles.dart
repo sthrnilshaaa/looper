@@ -17,7 +17,7 @@ class ShowArtistsRowTile extends ConsumerWidget {
       secondary: const Icon(LucideIcons.user, color: Colors.white70),
       title: Text(l10n.showArtistsRow, style: _tileTitleStyle()),
       subtitle: Text(l10n.showArtistsRowDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.showHomeArtists,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateShowHomeArtists(value);
@@ -37,7 +37,7 @@ class ShowAlbumsRowTile extends ConsumerWidget {
       secondary: const Icon(LucideIcons.disc, color: Colors.white70),
       title: Text(l10n.showAlbumsRow, style: _tileTitleStyle()),
       subtitle: Text(l10n.showAlbumsRowDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.showHomeAlbums,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateShowHomeAlbums(value);
@@ -57,7 +57,7 @@ class ShowGenresRowTile extends ConsumerWidget {
       secondary: const Icon(LucideIcons.music, color: Colors.white70),
       title: Text(l10n.showGenresRow, style: _tileTitleStyle()),
       subtitle: Text(l10n.showGenresRowDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.showHomeGenres,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateShowHomeGenres(value);
@@ -77,7 +77,7 @@ class ShowRecentRowTile extends ConsumerWidget {
       secondary: const Icon(LucideIcons.history, color: Colors.white70),
       title: Text(l10n.showRecentRow, style: _tileTitleStyle()),
       subtitle: Text(l10n.showRecentRowDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.showHomeRecent,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateShowHomeRecent(value);
@@ -97,7 +97,7 @@ class ShowPlaylistsRowTile extends ConsumerWidget {
       secondary: const Icon(LucideIcons.listMusic, color: Colors.white70),
       title: Text(l10n.showPlaylistsRow, style: _tileTitleStyle()),
       subtitle: Text(l10n.showPlaylistsRowDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: Color(settings.accentColor),
+      activeThumbColor: settings.accent,
       value: settings.showHomePlaylists ?? true,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateShowHomePlaylists(value);

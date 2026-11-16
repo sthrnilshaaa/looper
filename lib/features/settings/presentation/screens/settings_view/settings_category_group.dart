@@ -49,11 +49,7 @@ extension _SettingsCategoryGroup on _SettingsViewState {
                       ).withValues(alpha: 0.08),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      icon,
-                      color: Color(settings.accentColor),
-                      size: 20.s,
-                    ),
+                    child: Icon(icon, color: settings.accent, size: 20.s),
                   ),
                   const SizedBox(width: 16),
                   Expanded(

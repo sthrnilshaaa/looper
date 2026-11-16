@@ -12,7 +12,39 @@ import '../../domain/artwork_visualizer_style.dart';
 import '../../domain/quality_badge_style.dart';
 import '../../domain/progress_bar_style.dart';
 
+import 'package:flutter/painting.dart' show Color;
+import 'package:looper_player/core/utils/artwork_colors.dart' show boostChroma;
+import 'package:looper_player/core/utils/ui_utils.dart' show UiUtils;
+
 part 'settings_notifier.g.dart';
+
+/// The app accent as drawn: the saved colour made more vibrant by the
+/// "Accent Vibrancy" slider. Use [accent] wherever the accent is painted.
+extension AppAccent on AppSettings {
+  static const double defaultVibrancy = 0.05;
+
+  /// 0..1. Desktop has no slider, so it draws the saved colour as is.
+  double get accentVibrancyValue {
+    if (UiUtils.isDesktop) return 0;
+    final v = accentVibrancy;
+    return v == null || v.isNaN ? defaultVibrancy : v.clamp(0.0, 1.0);
+  }
+
+  Color get accent => vibrantAccent(Color(accentColor));
+
+  /// [base] boosted by this vibrancy (theme colours from the artwork).
+  Color vibrantAccent(Color base) {
+    final t = accentVibrancyValue;
+    final key = (base.toARGB32(), t);
+    if (key == _lastKey) return _last!;
+    _lastKey = key;
+    return _last = boostChroma(base, t);
+  }
+}
+
+// One-entry memo: the same accent is asked for by every tile in a build.
+(int, double)? _lastKey;
+Color? _last;
 
 @Riverpod(keepAlive: true)
 class Settings extends _$Settings {
@@ -20,7 +52,10 @@ class Settings extends _$Settings {
 
   @override
   AppSettings build() {
-    listenSelf((_, next) => AppHaptics.enabled = !next.disableHaptics);
+    listenSelf((_, next) {
+      AppHaptics.enabled = !next.disableHaptics;
+      AppHaptics.strength = next.hapticStrength;
+    });
     initialization = _loadSettings();
     return AppSettings();
   }
@@ -144,6 +179,12 @@ class Settings extends _$Settings {
         settings.stackSansDefaultMigrated = true;
         needsSave = true;
       }
+      if (!settings.activeLyricsIntensityDefaultMigrated) {
+        final double v = settings.activeLyricsIntensity;
+        if (v.isNaN || v == 0.0) settings.activeLyricsIntensity = 0.35;
+        settings.activeLyricsIntensityDefaultMigrated = true;
+        needsSave = true;
+      }
       if (!settings.lyricsProviderWordSyncMigrated) {
         if (settings.lyricsProvider == 'LRCLIB') {
           settings.lyricsProvider = 'lrc.red';
@@ -189,6 +230,7 @@ class Settings extends _$Settings {
         ..lyricsProviderWordSyncMigrated = true
         ..lyricsOffsetEarlierMigrated = true
         ..stackSansDefaultMigrated = true
+        ..activeLyricsIntensityDefaultMigrated = true
         ..enableDynamicTheming = !Platform.isAndroid
         ..bgBrightness = 0.5
         ..bgOpacity = 0.3
@@ -335,9 +377,13 @@ class Settings extends _$Settings {
       ..enablePlayerGradient = s.enablePlayerGradient
       ..animatePlayerGradient = s.animatePlayerGradient
       ..segmentedUtilityButtons = s.segmentedUtilityButtons
+      ..playerLyricLine = s.playerLyricLine
+      ..accentVibrancy = s.accentVibrancy
+      ..playerLyricLineTransition = s.playerLyricLineTransition
       ..showAlbumNextToArtist = s.showAlbumNextToArtist
       ..showAlbumInQuickPicks = s.showAlbumInQuickPicks
       ..disableHaptics = s.disableHaptics
+      ..hapticStrength = s.hapticStrength
       ..animateBackgroundGradient = s.animateBackgroundGradient
       ..settingsV2 = s.settingsV2
       ..settingsV3 = s.settingsV3
@@ -376,7 +422,9 @@ class Settings extends _$Settings {
       ..permanentAudioFocusChange = s.permanentAudioFocusChange
       ..dynamicColorActiveLyrics = s.dynamicColorActiveLyrics
       ..activeLyricsIntensity = s.activeLyricsIntensity
+      ..inactiveLyricsOpacity = s.inactiveLyricsOpacity
       ..activeLyricsSoftColor = s.activeLyricsSoftColor
+      ..lyricsNoLineGrouping = s.lyricsNoLineGrouping
       ..ambientColorBackground = s.ambientColorBackground
       ..lyricsAlignment = s.lyricsAlignment
       ..dynamicAccentColor = s.dynamicAccentColor
@@ -386,6 +434,7 @@ class Settings extends _$Settings {
       ..artistSortOptionIndex = s.artistSortOptionIndex
       ..genreSortOptionIndex = s.genreSortOptionIndex
       ..collectionSortOptionIndex = s.collectionSortOptionIndex
+      ..artistGroupByAlbum = s.artistGroupByAlbum
       ..homeDarkness = s.homeDarkness
       ..desktopBackgroundDarkness = s.desktopBackgroundDarkness
       ..songsDarkness = s.songsDarkness
@@ -425,6 +474,8 @@ class Settings extends _$Settings {
       ..lyricsOffsetEarlierMigrated = s.lyricsOffsetEarlierMigrated
       ..lyricsOffsetPerSongMigrated = s.lyricsOffsetPerSongMigrated
       ..stackSansDefaultMigrated = s.stackSansDefaultMigrated
+      ..activeLyricsIntensityDefaultMigrated =
+          s.activeLyricsIntensityDefaultMigrated
       ..equalizerGlobalMode = s.equalizerGlobalMode
       ..firstTimeEqualizer = s.firstTimeEqualizer
       ..lyricsGestureTutorialSeen = s.lyricsGestureTutorialSeen
@@ -480,6 +531,15 @@ class Settings extends _$Settings {
   Future<void> updateSegmentedUtilityButtons(bool value) =>
       _update((s) => s..segmentedUtilityButtons = value);
 
+  Future<void> updateAccentVibrancy(double value) =>
+      _update((s) => s..accentVibrancy = value);
+
+  Future<void> updatePlayerLyricLine(bool value) =>
+      _update((s) => s..playerLyricLine = value);
+
+  Future<void> updatePlayerLyricLineTransition(String value) =>
+      _update((s) => s..playerLyricLineTransition = value);
+
   Future<void> updateShowAlbumNextToArtist(bool value) =>
       _update((s) => s..showAlbumNextToArtist = value);
 
@@ -488,6 +548,10 @@ class Settings extends _$Settings {
 
   Future<void> updateHapticsEnabled(bool value) =>
       _update((s) => s..disableHaptics = !value);
+
+  /// 0 = Low, 1 = Medium, 2 = High.
+  Future<void> updateHapticStrength(int value) =>
+      _update((s) => s..hapticStrength = value.clamp(0, 2));
 
   Future<void> updateEnablePlayerGradient(bool value) => _update((s) {
     s.enablePlayerGradient = value;
@@ -673,8 +737,11 @@ class Settings extends _$Settings {
   Future<void> updateAccentColor(int color) =>
       _update((s) => s..accentColor = color);
 
+  // Both run on every song change and nothing on screen shows them, so they
+  // save quietly like [updateLastPosition] - a state change here rebuilt the
+  // whole app (MaterialApp watches settings) on each skip.
   Future<void> updateLastPlayedSong(int? songId) =>
-      _update((s) => s..lastPlayedSongId = songId);
+      _persistQuietly((s) => s.lastPlayedSongId = songId);
 
   Future<void> updateLastQueueState(
     List<int> queueIds,
@@ -683,7 +750,7 @@ class Settings extends _$Settings {
     int? positionMs,
     List<int> manualIndices = const [],
     List<int> originalOrder = const [],
-  }) => _update(
+  }) => _persistQuietly(
     (s) => s
       ..lastQueueSongIds = queueIds
       ..lastQueueIndex = index
@@ -693,8 +760,27 @@ class Settings extends _$Settings {
       ..lastPositionMs = positionMs ?? 0,
   );
 
-  Future<void> updateLastPosition(int positionMs) =>
-      _update((s) => s..lastPositionMs = positionMs);
+  Future<void> _persistQuietly(void Function(AppSettings live) mutate) async {
+    final AppSettings current = state;
+    mutate(current);
+    await DbService.isar.writeTxn(() async {
+      await DbService.isar.appSettings.put(current);
+    });
+  }
+
+  /// Saves the resume position quietly. It runs every few seconds while
+  /// playing, and nothing on screen shows it, so it updates the live object
+  /// and the database without a state change - going through [_update]
+  /// cloned the whole settings object (queue list included) and rebuilt
+  /// every widget watching settings each time.
+  Future<void> updateLastPosition(int positionMs) async {
+    if (state.lastPositionMs == positionMs) return;
+    state.lastPositionMs = positionMs;
+    final AppSettings current = state;
+    await DbService.isar.writeTxn(() async {
+      await DbService.isar.appSettings.put(current);
+    });
+  }
 
   Future<void> updateVolume(double volume) =>
       _update((s) => s..volume = volume);
@@ -705,8 +791,14 @@ class Settings extends _$Settings {
   Future<void> updateActiveLyricsIntensity(double value) =>
       _update((s) => s..activeLyricsIntensity = value);
 
+  Future<void> updateInactiveLyricsOpacity(double value) =>
+      _update((s) => s..inactiveLyricsOpacity = value);
+
   Future<void> updateActiveLyricsUseAccent(bool enabled) =>
       _update((s) => s..activeLyricsSoftColor = !enabled);
+
+  Future<void> updateLyricsLineGrouping(bool enabled) =>
+      _update((s) => s..lyricsNoLineGrouping = !enabled);
 
   Future<void> updateLyricsAlignment(String alignment) =>
       _update((s) => s..lyricsAlignment = alignment);
@@ -737,6 +829,9 @@ class Settings extends _$Settings {
 
   Future<void> updateCollectionSortOptionIndex(int index) =>
       _update((s) => s..collectionSortOptionIndex = index);
+
+  Future<void> updateArtistGroupByAlbum(bool value) =>
+      _update((s) => s..artistGroupByAlbum = value);
 
   Future<void> updateHomeDarkness(double value) =>
       _update((s) => s..homeDarkness = value);

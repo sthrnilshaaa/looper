@@ -1,3 +1,4 @@
+import 'package:looper_player/features/library/data/services/artist_catalog.dart';
 import 'package:flutter/material.dart';
 import 'package:looper_player/ui/widgets/common/app_loading_indicator.dart';
 import 'package:looper_player/core/utils/ui_utils.dart';
@@ -235,10 +236,7 @@ class _ArtistCard extends ConsumerWidget {
 
     return HoverCard(
       onTap: () async {
-        final songs = await DbService.isar.songs
-            .filter()
-            .artistEqualTo(artist.name)
-            .findAll();
+        final songs = await ArtistCatalog.songsFor(artist.name);
         final isLocalImage =
             artist.artistImageUrl != null &&
             !artist.artistImageUrl!.startsWith('http');

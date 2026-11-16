@@ -228,6 +228,10 @@ class LrcParser {
   static final RegExp _timingLine = RegExp(r'^\[w:([0-9,;]*)\]$');
   static final RegExp _voiceLine = RegExp(r'^\[v:(\d+)\]$');
 
+  /// Singer prefix some Apple-Music-derived LRC files put on each line
+  /// (`[00:12.34]v1: text`, `v2:` for the duet partner). Not lyric text.
+  static final RegExp _voicePrefix = RegExp(r'^v(\d{1,2}):\s*');
+
   /// Word-timed lines whose singing ends this long before the next line
   /// hand the gap over to the instrumental "♫" line.
   static const Duration _wordTimedInstrumentalGap = Duration(seconds: 5);
@@ -319,7 +323,9 @@ class LrcParser {
               _toMs(match.group(1)!, match.group(2)!, match.group(3)) +
               globalOffsetMs,
         );
-        final content = match.group(4)!.trim();
+        var content = match.group(4)!.trim();
+        final voice = _voicePrefix.firstMatch(content);
+        if (voice != null) content = content.substring(voice.end);
 
         final words = _wordTag.hasMatch(content)
             ? _parseWords(content, globalOffsetMs)
@@ -327,7 +333,10 @@ class LrcParser {
         final text = words.isNotEmpty
             ? words.map((w) => w.text).join().trim()
             : content;
-        rawLines.add(_RawLine(startTime, text, words));
+        rawLines.add(
+          _RawLine(startTime, text, words)
+            ..opposite = voice != null && voice.group(1) != '1',
+        );
       }
     }
 
@@ -347,7 +356,7 @@ class LrcParser {
             !trimmed.contains(' ')) {
           continue;
         }
-        plainLines.add(trimmed);
+        plainLines.add(trimmed.replaceFirst(_voicePrefix, ''));
       }
 
       return [
@@ -502,7 +511,8 @@ class LrcParser {
       line = line
           .replaceAll(RegExp(r'\[\d{1,3}:\d{2}(?:[:\.]\d{1,3})?\]'), '')
           .replaceAll(_wordTag, '')
-          .trim();
+          .trim()
+          .replaceFirst(_voicePrefix, '');
       if (line.isNotEmpty) out.add(line);
     }
     return out.join('\n');

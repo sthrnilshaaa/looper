@@ -1,3 +1,5 @@
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
+import 'package:looper_player/features/library/data/services/artist_catalog.dart';
 import 'package:looper_player/core/providers/collection_navigation.dart';
 import 'dart:io';
 
@@ -300,7 +302,7 @@ class SearchView extends ConsumerWidget {
         : <Song>[];
 
     return CustomScrollView(
-      physics: const BouncingScrollPhysics(),
+      physics: const LooperScrollPhysics(),
       slivers: [
         if (results.songs.isNotEmpty)
           SliverToBoxAdapter(

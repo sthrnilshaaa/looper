@@ -55,24 +55,32 @@ class ScrollingText extends StatelessWidget {
           // SizedBox allowed and overflowed by a few pixels on non-Latin
           // lyrics/titles. textPainter is already laid out for this exact
           // text+style above, so its measured height is exact.
-          return SizedBox(
-            height: height ?? measuredHeight,
-            child: Marqueer(
-              pps: 30.0,
-              infinity: true,
-              direction: MarqueerDirection.rtl,
-              autoStart: true,
-              autoStartAfter: const Duration(seconds: 3),
+          // Readable as one fixed label; the endlessly scrolling copy stays
+          // out of the accessibility tree, or its moving geometry was
+          // recomputed every frame whenever an accessibility service is on.
+          return Semantics(
+            label: text,
+            child: ExcludeSemantics(
+              child: SizedBox(
+                height: height ?? measuredHeight,
+                child: Marqueer(
+                  pps: 30.0,
+                  infinity: true,
+                  direction: MarqueerDirection.rtl,
+                  autoStart: true,
+                  autoStartAfter: const Duration(seconds: 3),
 
-              child: Padding(
-                padding: const EdgeInsets.only(right: 40.0),
-                child: Text(
-                  text,
-                  style: style,
-                  strutStyle: strut,
-                  textAlign: textAlign,
-                  maxLines: 1,
-                  overflow: TextOverflow.visible,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 40.0),
+                    child: Text(
+                      text,
+                      style: style,
+                      strutStyle: strut,
+                      textAlign: textAlign,
+                      maxLines: 1,
+                      overflow: TextOverflow.visible,
+                    ),
+                  ),
                 ),
               ),
             ),

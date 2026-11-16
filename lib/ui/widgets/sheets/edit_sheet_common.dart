@@ -38,7 +38,7 @@ class EditSheetScaffold extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final settings = ref.watch(settingsProvider);
-    final accentColor = Color(settings.accentColor);
+    final accentColor = settings.accent;
 
     Widget content = Container(
       decoration: const BoxDecoration(
@@ -240,6 +240,10 @@ class EditSheetArtwork extends StatelessWidget {
                         width: size,
                         height: size,
                         fit: BoxFit.cover,
+                        // Decode at display size, not full resolution.
+                        cacheWidth:
+                            (size * MediaQuery.devicePixelRatioOf(context))
+                                .round(),
                         errorBuilder: (_, _, _) => placeholder,
                       )
                     : placeholder,

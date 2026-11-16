@@ -1,3 +1,6 @@
+import 'package:looper_player/ui/widgets/common/first_scan_stage.dart';
+import 'package:looper_player/core/motion/looper_scroll_physics.dart';
+import 'package:looper_player/core/utils/desktop_paths.dart';
 import 'dart:io';
 import 'package:looper_player/core/utils/ui_utils.dart';
 import 'package:flutter/material.dart';
@@ -33,9 +36,15 @@ class WelcomeBypassed extends _$WelcomeBypassed {
     final forceWelcome = ref.watch(forceWelcomeProvider);
     if (forceWelcome) return false;
 
-    // On desktop platforms (Linux, Windows, macOS), bypass mobile permission screen
+    // Desktop (Linux, Windows, macOS) shows its own setup screen only while
+    // there is no library yet. Until the library has loaded, assume set up,
+    // so returning users never see the setup screen flash.
     if (!Platform.isAndroid && !Platform.isIOS) {
-      return true;
+      if (!ref.watch(libraryProvider.select((s) => s.isInitialized))) {
+        return true;
+      }
+      return ref.read(libraryProvider).songs.isNotEmpty ||
+          ref.read(settingsProvider).libraryFolders.isNotEmpty;
     }
 
     // Re-derive when forceWelcome changes, and once more when the library
@@ -178,7 +187,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: const LooperScrollPhysics(),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 28.0,
@@ -260,6 +269,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         }
       } catch (_) {}
       scanRoots.add(defaultPath);
+    } else if (Platform.isWindows) {
+      scanRoots.add(windowsMusicFolder(Platform.environment));
     } else if (Platform.isAndroid && await StorageAccess.hasAllFilesAccess()) {
       // github flavor with All Files Access: walk the whole internal storage
       // root and every SD card. These are coarse roots - the real per-song
@@ -484,8 +495,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           label: l10n.rescanStorage,
           icon: LucideIcons.refreshCw,
           gradientColors: [
-            Color(settings.accentColor),
-            Color(settings.accentColor).withValues(alpha: 0.75),
+            settings.accent,
+            settings.accent.withValues(alpha: 0.75),
           ],
         ),
         const SizedBox(height: 16),

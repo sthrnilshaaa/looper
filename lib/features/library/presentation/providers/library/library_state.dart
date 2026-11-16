@@ -59,8 +59,30 @@ bool _songsUnchanged(List<Song> current, List<Song> fresh) {
 
 class LibraryState {
   final bool isScanning;
+
+  /// The whole song list is loaded. Everything except the Home and Songs
+  /// tabs waits for this, so nothing else ever sees a half-loaded library.
   final bool isInitialized;
   final List<Song> songs;
+
+  // Cold-start loading in parts (see Library._loadSongsInParts). Only the
+  // Home and Songs tabs read these, and only while [isInitialized] is false;
+  // they are emptied once it turns true.
+
+  /// The first small queries are done: the tabs can drop their full-screen
+  /// skeleton and fill in part by part.
+  final bool previewReady;
+
+  /// The songs loaded so far, in the Songs tab's sort order.
+  final List<Song> loadingSongs;
+
+  /// Home's Quick Picks and Recently Added rows, from their own small
+  /// queries, so they show before the whole list is loaded.
+  final List<Song> previewQuickPicks;
+  final List<Song> previewRecentlyAdded;
+
+  /// How many songs the database holds, for the Songs tab's count.
+  final int totalSongCount;
   final List<Artist> artists;
   final List<Album> albums;
   final List<Playlist> playlists;
@@ -71,6 +93,11 @@ class LibraryState {
     this.isScanning = false,
     this.isInitialized = false,
     this.songs = const [],
+    this.previewReady = false,
+    this.loadingSongs = const [],
+    this.previewQuickPicks = const [],
+    this.previewRecentlyAdded = const [],
+    this.totalSongCount = 0,
     this.artists = const [],
     this.albums = const [],
     this.playlists = const [],
@@ -82,16 +109,34 @@ class LibraryState {
     bool? isScanning,
     bool? isInitialized,
     List<Song>? songs,
+    bool? previewReady,
+    List<Song>? loadingSongs,
+    List<Song>? previewQuickPicks,
+    List<Song>? previewRecentlyAdded,
+    int? totalSongCount,
     List<Artist>? artists,
     List<Album>? albums,
     List<Playlist>? playlists,
     SongSortStrategy? sortStrategy,
     bool? isAscending,
   }) {
+    final bool initialized = isInitialized ?? this.isInitialized;
     return LibraryState(
       isScanning: isScanning ?? this.isScanning,
-      isInitialized: isInitialized ?? this.isInitialized,
+      isInitialized: initialized,
       songs: songs ?? this.songs,
+      // The part-by-part lists are dropped as soon as the full list is in.
+      previewReady: previewReady ?? this.previewReady,
+      loadingSongs: initialized
+          ? const []
+          : (loadingSongs ?? this.loadingSongs),
+      previewQuickPicks: initialized
+          ? const []
+          : (previewQuickPicks ?? this.previewQuickPicks),
+      previewRecentlyAdded: initialized
+          ? const []
+          : (previewRecentlyAdded ?? this.previewRecentlyAdded),
+      totalSongCount: totalSongCount ?? this.totalSongCount,
       artists: artists ?? this.artists,
       albums: albums ?? this.albums,
       playlists: playlists ?? this.playlists,

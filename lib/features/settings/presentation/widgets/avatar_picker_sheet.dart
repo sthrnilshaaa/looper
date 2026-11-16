@@ -29,9 +29,7 @@ class _AvatarPickerSheetContent extends ConsumerWidget {
         (s) => (s.selectedAvatarAsset, s.avatarDynamicColor),
       ),
     );
-    final accentColor = Color(
-      ref.watch(settingsProvider.select((s) => s.accentColor)),
-    );
+    final accentColor = ref.watch(settingsProvider.select((s) => s.accent));
 
     return AppBottomSheetContainer(
       child: Column(

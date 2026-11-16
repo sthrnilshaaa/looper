@@ -1,3 +1,4 @@
+import 'package:looper_player/core/utils/desktop_paths.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -143,7 +144,7 @@ class LibraryFoldersList extends ConsumerWidget {
               contentPadding: const EdgeInsets.symmetric(horizontal: 20),
               leading: const Icon(LucideIcons.folder, color: Colors.white70),
               title: Text(
-                path.split('/').last,
+                displayFileName(path),
                 style: AppFonts.jostStyle(color: Colors.white, fontSize: 14),
               ),
               subtitle: Text(
@@ -192,6 +193,10 @@ class SettingsSliderTile extends ConsumerWidget {
   final String suffix;
   final ValueChanged<double> onChanged;
 
+  /// Called once when the drag ends (for settings too costly to apply on
+  /// every step).
+  final ValueChanged<double>? onChangeEnd;
+
   const SettingsSliderTile({
     super.key,
     required this.icon,
@@ -203,6 +208,7 @@ class SettingsSliderTile extends ConsumerWidget {
     this.divisions = 100,
     required this.suffix,
     required this.onChanged,
+    this.onChangeEnd,
   });
 
   @override
@@ -253,12 +259,13 @@ class SettingsSliderTile extends ConsumerWidget {
           SliderTheme(
             data: SliderTheme.of(context).copyWith(
               trackHeight: 4,
-              activeTrackColor: Color(ref.watch(settingsProvider).accentColor),
+              activeTrackColor: ref.watch(settingsProvider).accent,
               inactiveTrackColor: Colors.white10,
-              thumbColor: Color(ref.watch(settingsProvider).accentColor),
-              overlayColor: Color(
-                ref.watch(settingsProvider).accentColor,
-              ).withValues(alpha: 0.12),
+              thumbColor: ref.watch(settingsProvider).accent,
+              overlayColor: ref
+                  .watch(settingsProvider)
+                  .accent
+                  .withValues(alpha: 0.12),
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
               overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
             ),
@@ -268,6 +275,7 @@ class SettingsSliderTile extends ConsumerWidget {
               max: max,
               divisions: divisions,
               onChanged: onChanged,
+              onChangeEnd: onChangeEnd,
             ),
           ),
         ],

@@ -1,3 +1,5 @@
+import 'package:looper_player/core/providers/collection_navigation.dart';
+import 'package:looper_player/ui/widgets/common/song_artist_picker.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/core/utils/song_metadata.dart';
 import 'package:flutter/material.dart';
@@ -38,6 +40,10 @@ class SongTile extends ConsumerWidget {
   final bool highlightTitle;
   final VoidCallback? onPlay;
 
+  /// Supplies the queue a tap plays when [songs] is only part of it - a list
+  /// still loading at app start. Null plays [songs].
+  final Future<List<Song>> Function()? resolveQueue;
+
   const SongTile({
     required this.song,
     required this.songs,
@@ -53,30 +59,21 @@ class SongTile extends ConsumerWidget {
     this.reorderIndex,
     this.highlightTitle = false,
     this.onPlay,
+    this.resolveQueue,
     super.key,
   });
 
   Future<void> _openArtist(BuildContext context, WidgetRef ref) async {
-    final artistName = song.artist;
-    if (artistName == null || artistName.trim().isEmpty) return;
-    final artistSongs = await DbService.isar.songs
-        .filter()
-        .artistEqualTo(artistName)
-        .findAll();
-    final artist = await DbService.isar.artists
-        .filter()
-        .nameEqualTo(artistName)
-        .findFirst();
-    if (!context.mounted) return;
-    ref
+    if (song.artist == null || song.artist!.trim().isEmpty) return;
+    // A song by several artists asks which one to open.
+    final artistName = await pickSongArtist(context, song);
+    if (artistName == null || !context.mounted) return;
+    await ref
         .read(appNavigationProvider.notifier)
-        .showCollection(
-          title: artistName,
+        .showArtistNamed(
+          artistName,
           subtitle: l10n.artists,
-          art: artist?.artPath ?? song.artPath,
-          imageUrl: artist?.artistImageUrl,
-          songs: artistSongs,
-          artist: artist,
+          fallbackArt: song.artPath,
         );
   }
 
@@ -133,6 +130,23 @@ class SongTile extends ConsumerWidget {
             return;
           }
           onPlay?.call();
+          final resolve = resolveQueue;
+          if (resolve != null) {
+            final notifier = ref.read(playbackProvider.notifier);
+            resolve().then((queue) {
+              final at = queue.indexWhere((s) => s.path == song.path);
+              if (at == -1) {
+                notifier.play(song, sourcePlaylistId: playlist?.id);
+              } else {
+                notifier.setPlaylist(
+                  queue,
+                  initialIndex: at,
+                  sourcePlaylistId: playlist?.id,
+                );
+              }
+            });
+            return;
+          }
           final index =
               collectionIndex ?? songs.indexWhere((s) => s.path == song.path);
           if (index != -1) {

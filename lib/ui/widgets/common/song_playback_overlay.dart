@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:looper_player/ui/widgets/common/looper_loader.dart';
 import 'package:flutter/material.dart';
 import 'package:looper_player/core/theme/app_assets.dart';
 import 'package:looper_player/core/utils/motion.dart';
@@ -12,9 +14,13 @@ class SongPlaybackOverlay extends StatelessWidget {
   final bool isPlaying;
   final double indicatorSize;
 
+  /// Darkening behind the playing bars on artwork. Shared by the classic
+  /// mini bar and the Fluid Player's artwork so both always match.
+  static const double dimAlpha = 0.18;
+
   @override
   Widget build(BuildContext context) => ColoredBox(
-    color: Colors.black.withValues(alpha: 0.4),
+    color: Colors.black.withValues(alpha: dimAlpha),
     child: Center(
       child: SongPlaybackIndicator(isPlaying: isPlaying, size: indicatorSize),
     ),
@@ -32,16 +38,34 @@ class SongPlaybackIndicator extends StatelessWidget {
   final double size;
 
   @override
-  Widget build(BuildContext context) =>
-      // GIF decoding keeps running offstage and while paused, so only mount it
-      // when visible and playing.
+  Widget build(BuildContext context) {
+    // Play/pause cross-fades between the playing animation and the still
+    // dots instead of snapping. Keyed on isPlaying only: the GIF also gives
+    // way to the dots while tickers are off (e.g. the mini bar under the
+    // classic player), and that swap must be instant - cross-fading it made
+    // the mini bar art flicker right as the closing player's artwork landed.
+    return AnimatedSwitcher(
+      duration: Duration(milliseconds: Motion.reducedOf(context) ? 0 : 250),
+      child: KeyedSubtree(
+        key: ValueKey<bool>(isPlaying),
+        child: _content(context),
+      ),
+    );
+  }
+
+  Widget _content(BuildContext context) =>
+      // Android shows the playing GIF; desktop the code-drawn bars. Either is
+      // only mounted when visible and playing (GIF decoding keeps running
+      // offstage and while paused).
       isPlaying && TickerMode.of(context) && !Motion.reducedOf(context)
-      ? Image.asset(
-          AppAssets.playingGif,
-          width: size,
-          height: size,
-          color: Colors.white,
-        )
+      ? (Platform.isAndroid
+            ? Image.asset(
+                AppAssets.playingGif,
+                width: size,
+                height: size,
+                color: Colors.white,
+              )
+            : LooperLoader(size: size, color: Colors.white))
       : FittedBox(
           fit: BoxFit.scaleDown,
           child: SizedBox(

@@ -26,6 +26,7 @@ PROJECT_DIR="$SCRIPT_DIR"
 OUTPUT_DIR="dist"
 LINUX_DIST_DIR="$OUTPUT_DIR/linux"
 ANDROID_DIST_DIR="$OUTPUT_DIR/android"
+WINDOWS_DIST_DIR="$OUTPUT_DIR/windows"
 
 # --- Flags & Targets ---
 TARGET="all"
@@ -72,6 +73,8 @@ Targets:
   linux       Package Linux distributions (.deb, .rpm, .tar.gz, .AppImage)
   android     Package Android applications (Split APKs, Universal APK, AAB;
               github flavor for APKs and play flavor for the AAB when defined)
+  windows     Package Windows (portable .zip + Inno Setup installer .exe).
+              Windows only: run it in Git Bash; elsewhere it is skipped.
   all         Package all supported target platforms (Default)
 
 Options:
@@ -99,6 +102,7 @@ With --build, any missing artifact fails the run (non-zero exit) instead of bein
 Examples:
   ./package.sh linux --build
   ./package.sh android --build
+  ./package.sh windows --build   # in Git Bash on Windows
   ./package.sh all --build --clean
   ./package.sh --project-dir ~/other_flutter_app all --build
 EOF
@@ -108,7 +112,7 @@ EOF
 # --- Argument Parsing ---
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        linux|android|all)
+        linux|android|windows|all)
             TARGET="$1"
             shift
             ;;
@@ -859,6 +863,181 @@ package_android() {
     fi
 }
 
+# True when running under Git Bash / MSYS2 / Cygwin on Windows.
+is_windows_host() {
+    case "$(uname -s)" in
+        MINGW*|MSYS*|CYGWIN*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Inno Setup compiler: on PATH, or in its default install folders.
+find_iscc() {
+    if command -v iscc >/dev/null 2>&1; then command -v iscc; return; fi
+    if command -v ISCC.exe >/dev/null 2>&1; then command -v ISCC.exe; return; fi
+    local candidate
+    for candidate in "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" "/c/Program Files/Inno Setup 6/ISCC.exe"; do
+        if [[ -f "$candidate" ]]; then echo "$candidate"; return; fi
+    done
+}
+
+package_windows() {
+    echo ""
+    echo "--------------------------------------------------"
+    echo "🪟 Packaging Windows Target..."
+    echo "--------------------------------------------------"
+
+    if ! is_windows_host; then
+        echo "⚠️  Windows packages can only be built on Windows (Git Bash). Skipping."
+        return 0
+    fi
+
+    if [[ ! -d "windows" ]]; then
+        echo "⚠️  No 'windows/' platform directory found in this project. Skipping Windows packaging."
+        return 0
+    fi
+
+    # Executable name from the runner's CMakeLists (BINARY_NAME).
+    local binary_name
+    binary_name=$(grep -m1 -oE 'set\(BINARY_NAME "[^"]+"' windows/CMakeLists.txt 2>/dev/null | sed -E 's/.*"(.*)"/\1/' || true)
+    [[ -z "$binary_name" ]] && binary_name=$(detect_pubspec_field "name")
+
+    local build_dir="build/windows/x64/runner/Release"
+    if [[ "$BUILD_FLAG" == true || ! -f "$build_dir/$binary_name.exe" ]]; then
+        echo "🔨 Building Windows Release Bundle..."
+        flutter build windows --release
+    fi
+
+    if [[ ! -f "$build_dir/$binary_name.exe" ]]; then
+        echo "❌ Error: $build_dir/$binary_name.exe not found"
+        exit 1
+    fi
+    echo "🎯 Windows executable: $binary_name.exe"
+
+    # Flutter doesn't ship the Visual C++ runtime; PCs without the VC++
+    # Redistributable couldn't start the app. Bundle it next to the exe
+    # (app-local deployment).
+    local system32 dll
+    system32="$(cygpath -u "${SYSTEMROOT:-C:\\Windows}")/System32"
+    for dll in msvcp140.dll vcruntime140.dll vcruntime140_1.dll; do
+        if [[ -f "$build_dir/$dll" ]]; then
+            continue
+        elif [[ -f "$system32/$dll" ]]; then
+            cp "$system32/$dll" "$build_dir/"
+            echo "➕ Bundled $dll"
+        else
+            echo "⚠️  $dll not found in $system32; users may need the VC++ Redistributable"
+        fi
+    done
+
+    mkdir -p "$WINDOWS_DIST_DIR"
+    local base="${APP_NAME}_${VERSION}_windows_x64"
+    local zip_file="$WINDOWS_DIST_DIR/${base}.zip"
+    local setup_name="${base}-setup"
+    rm -f "$zip_file" "$WINDOWS_DIST_DIR/${setup_name}.exe"
+
+    # Portable zip: one "<Display Name>" folder holding the bundle.
+    echo "📦 Creating portable zip..."
+    local stage="build/windows/package"
+    rm -rf "$stage"
+    mkdir -p "$stage/$DISPLAY_NAME"
+    cp -r "$build_dir"/. "$stage/$DISPLAY_NAME/"
+    local stage_win zip_win
+    stage_win=$(cygpath -w "$stage/$DISPLAY_NAME")
+    zip_win=$(cygpath -w "$(pwd)/$zip_file")
+    powershell.exe -NoProfile -NonInteractive -Command \
+        "Compress-Archive -Path '$stage_win' -DestinationPath '$zip_win' -Force"
+    if [[ ! -f "$zip_file" ]]; then
+        echo "❌ Error: zip was not created"
+        PACKAGING_FAILED=true
+    else
+        echo "✓ $(basename "$zip_file")"
+    fi
+
+    # Installer (Inno Setup). Per-user by default; admins can pick all users.
+    local iscc
+    iscc=$(find_iscc || true)
+    if [[ -z "$iscc" ]]; then
+        if [[ "$BUILD_FLAG" == true ]]; then
+            echo "❌ Inno Setup (ISCC.exe) not found; cannot build the installer"
+            PACKAGING_FAILED=true
+        else
+            echo "⚠️  Inno Setup (ISCC.exe) not found; skipping the installer"
+        fi
+    else
+        echo "📦 Creating installer with Inno Setup..."
+        local iss="build/windows/installer.iss"
+        local source_win icon_win out_win
+        source_win=$(cygpath -w "$(pwd)/$build_dir")
+        icon_win=$(cygpath -w "$(pwd)/windows/runner/resources/app_icon.ico")
+        out_win=$(cygpath -w "$(pwd)/$WINDOWS_DIST_DIR")
+        local types=(.mp3 .flac .m4a .aac .ogg .opus .wav .wma .alac .aiff .ape .wv)
+        {
+            cat <<ISS
+#define AppName "$DISPLAY_NAME"
+#define AppExe "$binary_name.exe"
+
+[Setup]
+AppId={{8F3C2A4E-6B1D-4E7A-9C55-2D1F0B7A9E31}
+AppName={#AppName}
+AppVersion=$VERSION
+AppVerName={#AppName} $VERSION
+AppPublisher=$DISPLAY_NAME
+VersionInfoVersion=$VERSION
+DefaultDirName={autopf}\\{#AppName}
+DefaultGroupName={#AppName}
+DisableProgramGroupPage=yes
+PrivilegesRequired=lowest
+PrivilegesRequiredOverridesAllowed=dialog
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
+OutputDir=$out_win
+OutputBaseFilename=$setup_name
+SetupIconFile=$icon_win
+UninstallDisplayIcon={app}\\{#AppExe}
+Compression=lzma2
+SolidCompression=yes
+WizardStyle=modern
+ChangesAssociations=yes
+CloseApplications=yes
+
+[Tasks]
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+
+[Files]
+Source: "$source_win\\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+[Icons]
+Name: "{autoprograms}\\{#AppName}"; Filename: "{app}\\{#AppExe}"
+Name: "{autodesktop}\\{#AppName}"; Filename: "{app}\\{#AppExe}"; Tasks: desktopicon
+
+[Registry]
+Root: HKA; Subkey: "Software\\Classes\\Applications\\{#AppExe}"; ValueType: string; ValueName: "FriendlyAppName"; ValueData: "{#AppName}"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\\Classes\\Applications\\{#AppExe}\\DefaultIcon"; ValueType: string; ValueData: "{app}\\{#AppExe},0"
+Root: HKA; Subkey: "Software\\Classes\\Applications\\{#AppExe}\\shell\\open\\command"; ValueType: string; ValueData: """{app}\\{#AppExe}"" ""%1"""
+ISS
+            local ext
+            for ext in "${types[@]}"; do
+                echo "Root: HKA; Subkey: \"Software\\Classes\\Applications\\{#AppExe}\\SupportedTypes\"; ValueType: string; ValueName: \"$ext\"; ValueData: \"\""
+                echo "Root: HKA; Subkey: \"Software\\Classes\\$ext\\OpenWithList\\{#AppExe}\"; ValueType: none; Flags: uninsdeletekey"
+            done
+            cat <<ISS
+
+[Run]
+Filename: "{app}\\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
+ISS
+        } > "$iss"
+        if "$iscc" //Q "$(cygpath -w "$(pwd)/$iss")" && [[ -f "$WINDOWS_DIST_DIR/${setup_name}.exe" ]]; then
+            echo "✓ ${setup_name}.exe"
+        else
+            echo "❌ Error: installer was not created"
+            PACKAGING_FAILED=true
+        fi
+    fi
+
+    (cd "$WINDOWS_DIST_DIR" && sha256sum -- "${base}"* > "SHA256SUMS-v${VERSION}.txt")
+}
+
 # --- Execution Flow ---
 case "$TARGET" in
     linux)
@@ -867,9 +1046,18 @@ case "$TARGET" in
     android)
         package_android
         ;;
+    windows)
+        package_windows
+        ;;
     all)
-        package_linux
-        package_android
+        # Linux and Android packages need Linux tools; on Windows build only Windows.
+        if is_windows_host; then
+            echo "ℹ️  Running on Windows: skipping Linux and Android packages."
+        else
+            package_linux
+            package_android
+        fi
+        package_windows
         ;;
 esac
 
@@ -894,6 +1082,12 @@ if [[ -d "$ANDROID_DIST_DIR" ]]; then
     echo ""
     echo "🤖 Android Packages ($ANDROID_DIST_DIR):"
     ls -lh "$ANDROID_DIST_DIR" 2>/dev/null || echo "   (No Android packages found)"
+fi
+
+if [[ -d "$WINDOWS_DIST_DIR" ]]; then
+    echo ""
+    echo "🪟 Windows Packages ($WINDOWS_DIST_DIR):"
+    ls -lh "$WINDOWS_DIST_DIR" 2>/dev/null || echo "   (No Windows packages found)"
 fi
 echo "=================================================="
 

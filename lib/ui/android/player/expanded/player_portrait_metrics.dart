@@ -37,11 +37,15 @@ class PlayerPortraitMetrics {
 
   const PlayerPortraitMetrics._(this.scale, this.contentWidth);
 
-  factory PlayerPortraitMetrics.of(Size size) {
+  /// [uiScale] is the user's whole-app scale: the density check uses the
+  /// size at 100%, so picking 80% shrinks the player instead of being
+  /// undone by the low-density enlargement.
+  factory PlayerPortraitMetrics.of(Size size, {double uiScale = 1.0}) {
+    final Size unscaled = size * uiScale;
     // Height counts too: a wide but short window (16:9 phone at a low dpi)
     // must not grow the controls until they squeeze out the cover.
     final double scale = math
-        .min(size.width / referenceWidth, size.height / referenceHeight)
+        .min(unscaled.width / referenceWidth, unscaled.height / referenceHeight)
         .clamp(1.0, maxScale);
     return PlayerPortraitMetrics._(
       scale,
