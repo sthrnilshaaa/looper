@@ -5,7 +5,7 @@ import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:ui';
+import 'package:flutter_svg/svg.dart';
 import 'package:looper_player/core/utils/responsive.dart';
 import 'package:looper_player/ui/android/widgets/premium_section.dart';
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
@@ -345,69 +345,62 @@ class CollectionDetailView extends ConsumerWidget {
                           : null,
                     ),
                   ),
-                  SliverToBoxAdapter(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Header - Now always a Row for cover and name
-                        Container(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                          child: isNarrow
-                              ? Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Center(
-                                      // The cover stays on stage as the
-                                      // list scrolls, then shrinks and fades.
-                                      child: ScrollStage(
-                                        controller: controller,
-                                        length: 220,
-                                        child: _buildArt(
-                                          context,
-                                          true,
-                                          artToRender,
-                                          playlist: reactivePlaylist,
-                                          imageUrl: imageUrlToRender,
+                  if (_isArtistPage(AppLocalizations.of(context)!))
+                    SliverToBoxAdapter(
+                      child: _buildArtistHero(
+                        context,
+                        ref,
+                        art: artToRender,
+                        imageUrl: imageUrlToRender,
+                        info: _buildInfo(
+                          context,
+                          ref,
+                          true,
+                          activeSong?.artPath,
+                          null,
+                          null,
+                          titleToRender,
+                          subtitleToRender,
+                          sortedSongs,
+                          songsLoading: songsLoading,
+                          titleKey: titleKey(controller),
+                          reactiveArtist: reactiveArtist,
+                        ),
+                      ),
+                    )
+                  else
+                    SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Header - Now always a Row for cover and name
+                          Container(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                            child: isNarrow
+                                ? Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Center(
+                                        // The cover stays on stage as the
+                                        // list scrolls, then shrinks and fades.
+                                        child: ScrollStage(
+                                          controller: controller,
+                                          length: 220,
+                                          child: _buildArt(
+                                            context,
+                                            true,
+                                            artToRender,
+                                            playlist: reactivePlaylist,
+                                            imageUrl: imageUrlToRender,
+                                            album: reactiveAlbum,
+                                            artist: reactiveArtist,
+                                            ref: ref,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    _buildInfo(
-                                      context,
-                                      ref,
-                                      true,
-                                      activeSong?.artPath,
-                                      reactivePlaylist,
-                                      reactiveAlbum,
-                                      titleToRender,
-                                      subtitleToRender,
-                                      sortedSongs,
-                                      songsLoading: songsLoading,
-                                      canReorder:
-                                          canReorderPlaylist &&
-                                          sortedSongs.length > 1,
-                                      titleKey: titleKey(controller),
-                                      reactiveArtist: reactiveArtist,
-                                    ),
-                                  ],
-                                )
-                              : Row(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    ScrollStage(
-                                      controller: controller,
-                                      length: 220,
-                                      child: _buildArt(
-                                        context,
-                                        true,
-                                        artToRender,
-                                        playlist: reactivePlaylist,
-                                        imageUrl: imageUrlToRender,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 20),
-                                    Expanded(
-                                      child: _buildInfo(
+                                      const SizedBox(height: 20),
+                                      _buildInfo(
                                         context,
                                         ref,
                                         true,
@@ -424,13 +417,52 @@ class CollectionDetailView extends ConsumerWidget {
                                         titleKey: titleKey(controller),
                                         reactiveArtist: reactiveArtist,
                                       ),
-                                    ),
-                                  ],
-                                ),
-                        ),
-                      ],
+                                    ],
+                                  )
+                                : Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      ScrollStage(
+                                        controller: controller,
+                                        length: 220,
+                                        child: _buildArt(
+                                          context,
+                                          true,
+                                          artToRender,
+                                          playlist: reactivePlaylist,
+                                          imageUrl: imageUrlToRender,
+                                          album: reactiveAlbum,
+                                          artist: reactiveArtist,
+                                          ref: ref,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 20),
+                                      Expanded(
+                                        child: _buildInfo(
+                                          context,
+                                          ref,
+                                          true,
+                                          activeSong?.artPath,
+                                          reactivePlaylist,
+                                          reactiveAlbum,
+                                          titleToRender,
+                                          subtitleToRender,
+                                          sortedSongs,
+                                          songsLoading: songsLoading,
+                                          canReorder:
+                                              canReorderPlaylist &&
+                                              sortedSongs.length > 1,
+                                          titleKey: titleKey(controller),
+                                          reactiveArtist: reactiveArtist,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
                   if (groupedItems != null)
                     SliverList(
                       delegate: SliverChildBuilderDelegate((context, i) {
@@ -509,3 +541,4 @@ class CollectionDetailView extends ConsumerWidget {
     );
   }
 }
+

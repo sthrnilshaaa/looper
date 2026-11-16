@@ -55,7 +55,18 @@ object AudioOutputInfo {
             "maxBits" to (encodings.maxOfOrNull { bitsOf(it) } ?: 0),
             "float" to encodings.contains(AudioFormat.ENCODING_PCM_FLOAT),
             "bitPerfect" to supportsBitPerfect(am, d),
+            "bluetoothCodec" to if (kind == "bluetooth") bluetoothCodecOf(d) else null,
         )
+    }
+
+    private fun bluetoothCodecOf(d: AudioDeviceInfo): String? {
+        val enc = d.encodings
+        return when {
+            Build.VERSION.SDK_INT >= 33 && enc.contains(23) -> "LDAC"
+            enc.contains(AudioFormat.ENCODING_AAC_LC) -> "AAC"
+            Build.VERSION.SDK_INT >= 30 && enc.contains(20) -> "Opus"
+            else -> "SBC"
+        }
     }
 
     private fun supportsBitPerfect(am: AudioManager, d: AudioDeviceInfo): Boolean {

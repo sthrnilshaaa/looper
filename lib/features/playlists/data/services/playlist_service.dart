@@ -8,7 +8,6 @@ import 'package:looper_player/core/services/storage/db_service.dart';
 class PlaylistService {
   static Future<void> addSongToPlaylist(Playlist playlist, Song song) async {
     if (playlist.songPaths.contains(song.path)) return;
-
     final updatedPaths = List<String>.from(playlist.songPaths)..add(song.path);
 
     await DbService.isar.writeTxn(() async {
@@ -46,7 +45,6 @@ class PlaylistService {
         .where((path) => existing.add(path))
         .toList();
     if (newPaths.isEmpty) return;
-
     final updatedPaths = List<String>.from(playlist.songPaths)
       ..addAll(newPaths);
 

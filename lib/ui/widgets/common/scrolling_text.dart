@@ -63,22 +63,24 @@ class ScrollingText extends StatelessWidget {
             child: ExcludeSemantics(
               child: SizedBox(
                 height: height ?? measuredHeight,
-                child: Marqueer(
-                  pps: 30.0,
-                  infinity: true,
-                  direction: MarqueerDirection.rtl,
-                  autoStart: true,
-                  autoStartAfter: const Duration(seconds: 3),
+                child: RepaintBoundary(
+                  child: Marqueer(
+                    pps: 30.0,
+                    infinity: true,
+                    direction: MarqueerDirection.rtl,
+                    autoStart: true,
+                    autoStartAfter: const Duration(seconds: 3),
 
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 40.0),
-                    child: Text(
-                      text,
-                      style: style,
-                      strutStyle: strut,
-                      textAlign: textAlign,
-                      maxLines: 1,
-                      overflow: TextOverflow.visible,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 40.0),
+                      child: Text(
+                        text,
+                        style: style,
+                        strutStyle: strut,
+                        textAlign: textAlign,
+                        maxLines: 1,
+                        overflow: TextOverflow.visible,
+                      ),
                     ),
                   ),
                 ),

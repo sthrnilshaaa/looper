@@ -81,7 +81,7 @@ class WordSyncedLyricText extends StatefulWidget {
 }
 
 class _WordSyncedLyricTextState extends State<WordSyncedLyricText>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   /// Never extrapolate further than this past the last real position - if
   /// updates stall (buffering, a paused stream that hasn't reported yet)
   /// the wipe waits instead of racing ahead.
@@ -90,6 +90,10 @@ class _WordSyncedLyricTextState extends State<WordSyncedLyricText>
   /// A reported position this far behind the extrapolated one is a seek,
   /// not jitter.
   static const Duration _seekThreshold = Duration(milliseconds: 250);
+
+  // Capped at ~60 fps: prevents 120/144Hz continuous setState rebuild storms.
+  static const Duration _tickInterval = Duration(milliseconds: 16);
+  Duration _lastTick = Duration.zero;
 
   late final Ticker _ticker;
   late Duration _anchor;
@@ -103,9 +107,31 @@ class _WordSyncedLyricTextState extends State<WordSyncedLyricText>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _anchor = widget.position;
-    _ticker = createTicker((elapsed) => setState(() => _frameTime = elapsed));
+    _ticker = createTicker((elapsed) {
+      if (elapsed - _lastTick >= _tickInterval) {
+        _lastTick = elapsed;
+        setState(() => _frameTime = elapsed);
+      }
+    });
     if (widget.isPlaying) _ticker.start();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (widget.isPlaying && !_ticker.isActive) {
+        _frameTime = Duration.zero;
+        _anchorFrameTime = Duration.zero;
+        _lastTick = Duration.zero;
+        _ticker.start();
+      }
+    } else {
+      if (_ticker.isActive) {
+        _ticker.stop();
+      }
+    }
   }
 
   @override
@@ -137,6 +163,7 @@ class _WordSyncedLyricTextState extends State<WordSyncedLyricText>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _ticker.dispose();
     super.dispose();
   }
@@ -387,6 +414,22 @@ class _SungWord extends StatelessWidget {
     required this.emphasis,
   });
 
+  static final Map<int, double> _widthCache = {};
+
+  static double _measureWidth(String text, TextStyle style, TextDirection direction) {
+    final key = Object.hash(text, style.fontSize, style.fontWeight, style.fontFamily);
+    final cached = _widthCache[key];
+    if (cached != null) return cached;
+    if (_widthCache.length > 500) _widthCache.clear();
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: direction,
+      textScaler: TextScaler.noScaling,
+      maxLines: 1,
+    )..layout();
+    return _widthCache[key] = painter.width;
+  }
+
   @override
   Widget build(BuildContext context) {
     final Widget word;
@@ -394,14 +437,7 @@ class _SungWord extends StatelessWidget {
     final direction = rtl ? TextDirection.rtl : TextDirection.ltr;
     final singing = fraction > 0 && fraction < 1;
     // Only the word being sung needs its width (wipe gradient, swell).
-    final width = singing
-        ? (TextPainter(
-            text: TextSpan(text: text, style: style),
-            textDirection: direction,
-            textScaler: TextScaler.noScaling,
-            maxLines: 1,
-          )..layout()).width
-        : 0.0;
+    final width = singing ? _measureWidth(text, style, direction) : 0.0;
     // Sung words glow softly; unsung ones stay flat and dim, so the sung
     // part of the line reads clearly even over a bright artwork backdrop.
     // The glow fades with the line's emphasis, so a finishing line doesn't

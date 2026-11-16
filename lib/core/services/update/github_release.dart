@@ -19,14 +19,18 @@ class ApkAsset {
 /// The parts of a GitHub `releases/latest` response the updater uses.
 class GithubRelease {
   final String tag;
+  final String name;
   final String htmlUrl;
   final String notes;
+  final String? publishedAt;
   final List<ApkAsset> apks;
 
   const GithubRelease({
     required this.tag,
+    this.name = '',
     required this.htmlUrl,
     required this.notes,
+    this.publishedAt,
     required this.apks,
   });
 
@@ -56,8 +60,10 @@ class GithubRelease {
     }
     return GithubRelease(
       tag: (json['tag_name'] as String?) ?? '',
+      name: (json['name'] as String?) ?? '',
       htmlUrl: (json['html_url'] as String?) ?? fallbackHtmlUrl,
       notes: ((json['body'] as String?) ?? '').trim(),
+      publishedAt: json['published_at'] as String?,
       apks: apks,
     );
   }

@@ -160,8 +160,8 @@ class EditSheetScaffold extends ConsumerWidget {
       ),
     );
 
-    // Blur wrapper when dynamic theming is on
-    if (settings.enableDynamicTheming && !settings.disableBlur) {
+    // Blur wrapper for bottom sheet
+    if (settings.sheetShouldBlur) {
       content = ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         child: BackdropFilter(

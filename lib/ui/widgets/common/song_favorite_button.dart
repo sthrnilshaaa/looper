@@ -1,3 +1,4 @@
+import 'package:isar_community/isar.dart';
 import 'package:looper_player/core/utils/ui_utils.dart';
 
 import 'package:flutter/material.dart';
@@ -9,10 +10,12 @@ import 'package:looper_player/core/utils/l10n.dart';
 import 'package:looper_player/features/library/presentation/providers/library/library_notifier.dart';
 import 'package:looper_player/features/playback/presentation/providers/playback/playback_notifier.dart';
 
-final _favoriteProvider = StreamProvider.autoDispose.family<bool, int>(
-  (ref, id) => DbService.isar.songs
-      .watchObject(id, fireImmediately: true)
-      .map((song) => song?.isFavorite ?? false),
+final _favoriteByPathProvider = StreamProvider.autoDispose.family<bool, String>(
+  (ref, path) => DbService.isar.songs
+      .filter()
+      .pathEqualTo(path)
+      .watch(fireImmediately: true)
+      .map((matches) => matches.isNotEmpty && matches.first.isFavorite),
 );
 
 class SongFavoriteButton extends ConsumerWidget {
@@ -22,8 +25,15 @@ class SongFavoriteButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final favorite =
-        ref.watch(_favoriteProvider(song.id)).value ?? song.isFavorite;
+    final isCurrent = ref.watch(
+      playbackProvider.select((s) => s.currentSong?.path == song.path),
+    );
+    final currentFav = isCurrent
+        ? ref.watch(playbackProvider.select((s) => s.currentSong?.isFavorite))
+        : null;
+    final favorite = currentFav ??
+        ref.watch(_favoriteByPathProvider(song.path)).value ??
+        song.isFavorite;
     // Linux keeps its original red heart; Android uses a star.
     if (UiUtils.isDesktop) {
       return IconButton(

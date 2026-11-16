@@ -8,10 +8,9 @@ class UseNewFontTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return SwitchListTile(
-      secondary: const Icon(LucideIcons.type, color: Colors.white70),
+      secondary: const Icon(LucideIcons.type),
       title: Text(l10n.useCustomFont, style: _tileTitleStyle()),
       subtitle: Text(l10n.useCustomFontDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: settings.accent,
       value: settings.useNewFont,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateUseNewFont(value);
@@ -49,7 +48,7 @@ class FontWeightSelectionTile extends ConsumerWidget {
       weights: const [100, 200, 300, 400, 500, 600, 700, 800, 900],
       baseWeight: 400,
       delta: settings.customFontWeightDelta,
-      accentColor: settings.accent,
+      accentColor: Colors.white,
       onDelta: (value) => ref
           .read(settingsProvider.notifier)
           .updateCustomFontWeightDelta(value),
@@ -65,10 +64,9 @@ class UseNewFontLyricsTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return SwitchListTile(
-      secondary: const Icon(LucideIcons.type, color: Colors.white70),
+      secondary: const Icon(LucideIcons.type),
       title: Text(l10n.useCustomFontLyrics, style: _tileTitleStyle()),
       subtitle: Text(l10n.useCustomFontLyricsDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: settings.accent,
       value: settings.useNewFontLyrics,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateUseNewFontLyrics(value);
@@ -109,7 +107,7 @@ class LyricsFontWeightSelectionTile extends ConsumerWidget {
       weights: const [400, 500, 600, 700, 800, 900],
       baseWeight: 700,
       delta: settings.activeLyricsFontWeightDelta,
-      accentColor: settings.accent,
+      accentColor: Colors.white,
       onDelta: (value) => ref
           .read(settingsProvider.notifier)
           .updateActiveLyricsFontWeightDelta(value),
@@ -136,7 +134,7 @@ class _FontFamilyTile extends StatelessWidget {
   Widget build(BuildContext context) {
     const availableFonts = AppFonts.selectableFamilies;
     return ListTile(
-      leading: const Icon(LucideIcons.type, color: Colors.white70),
+      leading: const Icon(LucideIcons.type),
       title: Text(title, style: _tileTitleStyle()),
       subtitle: Text(subtitle, style: _tileSubtitleStyle()),
       trailing: DropdownButton<String>(
@@ -148,7 +146,10 @@ class _FontFamilyTile extends StatelessWidget {
         items: availableFonts.map((font) {
           return DropdownMenuItem<String>(
             value: font,
-            child: Text(font, style: AppFonts.jostStyle(color: Colors.white)),
+            child: Text(
+              font,
+              style: AppFonts.settingsStyle(color: Colors.white),
+            ),
           );
         }).toList(),
         onChanged: (value) {
@@ -187,7 +188,7 @@ class _FontWeightTile extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ListTile(
-          leading: const Icon(LucideIcons.bold, color: Colors.white70),
+          leading: const Icon(LucideIcons.bold),
           title: Text(title, style: _tileTitleStyle()),
           subtitle: Text(
             '${l10n.currentWeight}: $selectedWeight',
@@ -228,7 +229,7 @@ class _FontWeightTile extends StatelessWidget {
                     ),
                     child: Text(
                       '$w',
-                      style: AppFonts.jostStyle(
+                      style: AppFonts.settingsStyle(
                         color: isSelected
                             ? (ThemeData.estimateBrightnessForColor(
                                         accentColor,

@@ -11,6 +11,7 @@ class AppBottomSheetContainer extends ConsumerWidget {
   final double? height;
   final bool showDragHandle;
   final bool useBlurBG;
+  final bool? overrideUseBlur;
 
   const AppBottomSheetContainer({
     super.key,
@@ -19,21 +20,17 @@ class AppBottomSheetContainer extends ConsumerWidget {
     this.height,
     this.showDragHandle = true,
     this.useBlurBG = false,
+    this.overrideUseBlur,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
-    // `disableBlur` only exists as a sub-toggle of Dynamic Theming (it's
-    // hidden, and stuck at its default of `true`, whenever Dynamic Theming
-    // is off) -- so it must only gate the Dynamic Theming blur path, never
-    // veto alwaysBlurSheets, or that toggle would be permanently dead for
-    // anyone who hasn't also turned Dynamic Theming on.
-    // alwaysBlurSheets is the standalone opt-in: it lets every sheet built
-    // on this container blur without needing Dynamic Theming at all.
-    final useBlur =
-        settings.alwaysBlurSheets ||
-        (!settings.disableBlur && (useBlurBG || settings.enableDynamicTheming));
+    // Either "Always Blur Sheets" or "Disable Blur Effects" is shown to the
+    // user in settings at a time, depending on Dynamic Theming:
+    // - When Dynamic Theming is ON: blur follows `!disableBlur`.
+    // - When Dynamic Theming is OFF: blur follows `alwaysBlurSheets`.
+    final useBlur = overrideUseBlur ?? settings.sheetShouldBlur;
 
     // On a landscape phone/tablet a bottom sheet stretched edge-to-edge
     // reads as a wall of controls - cap the content's width and center it,

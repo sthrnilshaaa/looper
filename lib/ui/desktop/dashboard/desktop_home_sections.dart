@@ -1,3 +1,5 @@
+import 'package:looper_player/features/settings/domain/app_defaults.dart';
+
 /// The rows of the desktop home page.
 enum DesktopHomeSection {
   quickPicks,

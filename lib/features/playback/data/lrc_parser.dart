@@ -105,7 +105,6 @@ class LrcParser {
       }
     }
 
-    // Sort by timestamp
     lines.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
     // Post-processing: Calculate durations and fix artificial word sync

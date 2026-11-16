@@ -19,6 +19,7 @@ class OutputDeviceInfo {
 
   /// Android 14+ bit-perfect mixer mode (mostly USB DACs).
   final bool bitPerfect;
+  final String? bluetoothCodec;
 
   const OutputDeviceInfo({
     this.name,
@@ -28,6 +29,7 @@ class OutputDeviceInfo {
     this.maxBits = 0,
     this.supportsFloat = false,
     this.bitPerfect = false,
+    this.bluetoothCodec,
   });
 
   factory OutputDeviceInfo.fromMap(Map<Object?, Object?> m) => OutputDeviceInfo(
@@ -44,6 +46,7 @@ class OutputDeviceInfo {
     maxBits: m['maxBits'] as int? ?? 0,
     supportsFloat: m['float'] as bool? ?? false,
     bitPerfect: m['bitPerfect'] as bool? ?? false,
+    bluetoothCodec: m['bluetoothCodec'] as String?,
   );
 }
 

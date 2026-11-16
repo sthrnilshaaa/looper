@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:looper_player/features/library/domain/models/models.dart';
+import 'package:looper_player/features/settings/domain/app_defaults.dart';
 
 /// How the thumb (the handle at the current position) is drawn.
 enum ProgressThumbStyle { pill, round, none }
@@ -51,21 +52,17 @@ class ProgressBarStyle {
     this.inactiveOpacity = defaultInactiveOpacity,
     this.waveFromStart = false,
     this.freezeWhenPaused = false,
-    this.growThumbOnDrag = false,
+    this.growThumbOnDrag = true,
   });
 
-  static const double defaultThickness = 8;
-  static const double defaultWaveHeight = 2;
-  // The old fixed `squiggleWavelength: 6.0` fed sin(x / 6), i.e. one wave
-  // every 2 * pi * 6 dp.
-  static const double defaultWaveLength = 12 * math.pi;
-  static const double defaultWaveSpeed = 0.05;
-  static const double defaultThumbWidth = 6;
-  static const double defaultThumbHeight = 16;
-  // The old track shape hard-coded the gap as 0.75 * thumb width.
-  static const double defaultThumbGap = 4.5;
-  // Colors.white10.
-  static const double defaultInactiveOpacity = 0x1A / 0xFF;
+  static const double defaultThickness = AppDefaults.progressBarThickness;
+  static const double defaultWaveHeight = AppDefaults.progressWaveHeight;
+  static const double defaultWaveLength = AppDefaults.progressWaveLength;
+  static const double defaultWaveSpeed = AppDefaults.progressWaveSpeed;
+  static const double defaultThumbWidth = AppDefaults.progressThumbWidth;
+  static const double defaultThumbHeight = AppDefaults.progressThumbHeight;
+  static const double defaultThumbGap = AppDefaults.progressThumbGap;
+  static const double defaultInactiveOpacity = AppDefaults.progressInactiveOpacity;
 
   static const ProgressBarStyle defaults = ProgressBarStyle();
 

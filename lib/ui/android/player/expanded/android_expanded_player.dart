@@ -26,7 +26,6 @@ import 'package:looper_player/ui/android/widgets/queue_bottom_sheet.dart';
 import 'package:looper_player/ui/widgets/player/premium_progress_bar.dart';
 import '../../widgets/premium_section.dart';
 import '../lyrics/android_lyrics_screen.dart';
-import 'player_landscape_layout.dart';
 import 'player_lyric_line.dart';
 import 'player_portrait_metrics.dart';
 import 'segmented_utility_row.dart';
@@ -43,9 +42,12 @@ import 'position_reporter.dart';
 import 'gesture_artwork.dart';
 import 'player_backgrounds.dart';
 import 'sleep_timer_clock.dart';
+import 'styled_player_layout.dart';
 import 'favorite_button.dart';
+import 'player_style_picker.dart';
 import 'package:looper_player/core/utils/l10n.dart';
 import 'package:looper_player/core/services/haptics/app_haptics.dart';
+import 'package:looper_player/core/services/screen_awake.dart';
 export 'position_reporter.dart';
 export 'player_backgrounds.dart';
 
@@ -66,7 +68,10 @@ Future<AudioAnalysis?> currentSongAnalysis(Ref ref) async {
 }
 
 class AndroidExpandedPlayer extends ConsumerStatefulWidget {
-  const AndroidExpandedPlayer({super.key});
+  /// Set by the style picker: draw this style as a static, non-routed
+  /// preview (no Fluid Player shell, no back handling).
+  final PlayerLayoutStyle? previewStyle;
+  const AndroidExpandedPlayer({super.key, this.previewStyle});
 
   @override
   ConsumerState<AndroidExpandedPlayer> createState() =>
@@ -132,6 +137,7 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
 
   @override
   void dispose() {
+    ScreenAwake.set(this, false);
     _routeAnimation?.removeListener(_onRouteAnimationTick);
     _dismissController.dispose();
     _prevTapPulse.dispose();
@@ -175,7 +181,12 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
   void _showMoreOptionsBottomSheet(BuildContext context, WidgetRef ref) {
     final currentSong = ref.read(playbackProvider).currentSong;
     if (currentSong != null) {
-      showSongOptionsBottomSheet(context: context, ref: ref, song: currentSong);
+      showSongOptionsBottomSheet(
+        context: context,
+        ref: ref,
+        song: currentSong,
+        styled: true,
+      );
     }
   }
 
@@ -184,6 +195,11 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
     final showAlbum = watchShowAlbum(ref);
     final song = ref.watch(playbackProvider.select((s) => s.currentSong));
     final l10n = AppLocalizations.of(context)!;
+
+    final isPlaying = ref.watch(playbackProvider.select((s) => s.isPlaying));
+    final isExpandedOpen = widget.previewStyle == null &&
+        TickerMode.valuesOf(context).enabled;
+    ScreenAwake.set(this, isExpandedOpen && isPlaying && song != null);
 
     if (song == null) {
       return Scaffold(
@@ -211,22 +227,26 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
               QualityInfo.fromPath(song.path);
 
     final settings = ref.watch(settingsProvider);
-    final useBlur = settings.enableDynamicTheming;
-    final enableSlide = settings.enableSlideGesture;
+    final useBlur =
+        settings.enableDynamicTheming || settings.playerDynamicBackground;
+    final enableSlide =
+        widget.previewStyle == null && settings.enableSlideGesture;
+    final layoutStyle =
+        widget.previewStyle ??
+        PlayerLayoutStyle.fromSetting(settings.playerStyle);
     final musicDarkness = settings.musicDarkness.isNaN
         ? 0.62
         : settings.musicDarkness;
+    final showArtBackground = useBlur && song.artPath != null;
 
-    // In landscape the player is two panes (see PlayerLandscapeLayout); portrait
-    // keeps the original single column.
+    // Landscape uses the styled Figma layout for every player style
+    // (StyledLandscapeLayout); portrait keeps the original single column.
     final Size screenSize = MediaQuery.sizeOf(context);
-    final PlayerLandscapeMetrics? landscape = Responsive.isLandscape(screenSize)
-        ? PlayerLandscapeMetrics.of(screenSize, MediaQuery.paddingOf(context))
-        : null;
+    final bool landscape = Responsive.isLandscape(screenSize);
     // Portrait only: at a low display density the top bar and controls are
     // drawn enlarged (scale 1 at the default density; see
     // PlayerPortraitMetrics), and the column is capped on wide windows.
-    final PlayerPortraitMetrics? portrait = landscape == null
+    final PlayerPortraitMetrics? portrait = !landscape
         ? PlayerPortraitMetrics.of(
             screenSize,
             uiScale: UiScaleSteps.normalize(settings.desktopUiScale),
@@ -268,9 +288,7 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
       );
     }
 
-    // The sections below are shared by the portrait column and the landscape
-    // two-pane layout (PlayerLandscapeLayout); only their padding and the
-    // transport button height differ between the two.
+    // The sections below build the classic portrait column.
 
     // Fluid Player entrance of one section: fades in and rises a short way
     // into place over its own slice of the expand progress (see
@@ -701,6 +719,12 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
               final isPlaying = ref.watch(
                 playbackProvider.select((s) => s.isPlaying),
               );
+              final buffer = ref.watch(
+                playbackProvider.select((s) => s.buffer),
+              );
+              final isStreaming = ref.watch(
+                playbackProvider.select((s) => s.isStreaming),
+              );
               return buildHero(
                 tag: 'player_seek_bar',
                 child: Material(
@@ -709,6 +733,8 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                     position: position,
                     duration: duration,
                     isPlaying: isPlaying,
+                    buffer: buffer,
+                    isStreaming: isStreaming,
                     onSeek: (pos) =>
                         ref.read(playbackProvider.notifier).seek(pos),
                     onSeekStart: () =>
@@ -775,6 +801,9 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                 final isPlaying = ref.watch(
                   playbackProvider.select((s) => s.isPlaying),
                 );
+                final isBuffering = ref.watch(
+                  playbackProvider.select((s) => s.isBuffering),
+                );
                 return PremiumSection(
                   heroTag: 'player_play_pause_btn',
                   borderRadius: BorderRadius.circular(12),
@@ -793,19 +822,33 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                     AppHaptics.medium();
                     ref.read(playbackProvider.notifier).togglePlay();
                   },
-                  // A constant 1.1 (the AnimatedScale this replaced never
-                  // animated - its target never changed).
-                  child: Transform.scale(
-                    scale: 1.1,
-                    child: AnimatedPlayPauseIcon(
-                      isPlaying: isPlaying,
-                      color: isPlaying
-                          ? Colors.white
-                          : HSLColor.fromColor(
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Transform.scale(
+                        scale: 1.1,
+                        child: AnimatedPlayPauseIcon(
+                          isPlaying: isPlaying,
+                          color: isPlaying
+                              ? Colors.white
+                              : HSLColor.fromColor(
+                                  Theme.of(context).colorScheme.primary,
+                                ).withLightness(0.15).toColor(),
+                          size: AppIcons.expandedPlayerPlayPauseIcon.s,
+                        ),
+                      ),
+                      if (isBuffering)
+                        SizedBox(
+                          width: height * 0.7,
+                          height: height * 0.7,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.0,
+                            valueColor: AlwaysStoppedAnimation<Color>(
                               Theme.of(context).colorScheme.primary,
-                            ).withLightness(0.15).toColor(),
-                      size: AppIcons.expandedPlayerPlayPauseIcon.s,
-                    ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 );
               },
@@ -1134,9 +1177,11 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
       onPositionChanged: (rect) {
         ref.read(playerArtworkRectProvider.notifier).set(rect);
       },
-      child: GestureArtworkWithFeedback(
-        song: song,
-        onTap: () => _showLyrics(context),
+      child: HoldForPlayerStyles(
+        child: GestureArtworkWithFeedback(
+          song: song,
+          onTap: () => _showLyrics(context),
+        ),
       ),
     );
 
@@ -1163,7 +1208,9 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
             ),
           // Skipped with the gradient on: the panel's background is already
           // opaque then, and this fill would paint over the gradient.
-          if (enableSlide && !useBlur && !settings.enablePlayerGradient)
+          if (enableSlide &&
+              !showArtBackground &&
+              !settings.enablePlayerGradient)
             Positioned.fill(
               child: fadeWithSlide(
                 ColoredBox(color: Theme.of(context).colorScheme.surface),
@@ -1180,13 +1227,16 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                 transitionBuilder: (child, animation) {
                   return FadeTransition(opacity: animation, child: child);
                 },
-                child: useBlur && song.artPath != null
+                child: showArtBackground
                     ? SizedBox.expand(
-                        key: ValueKey(('art', song.artPath)),
+                        key: ValueKey(('art', song.id)),
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                            BlurredBackgroundArt(song: song, zoom: 1.08),
+                            BlurredBackgroundArt(
+                              song: song,
+                              zoom: 1.08,
+                            ),
                             ColoredBox(
                               color: Colors.black.withValues(
                                 alpha: musicDarkness,
@@ -1211,177 +1261,172 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                       ),
               ),
             ),
-          if (landscape != null)
+          if (landscape)
             Positioned.fill(
-              child: PlayerLandscapeLayout(
-                metrics: landscape,
-                topBar: fadeWithSlide(
-                  buildTopBar(
-                    EdgeInsets.fromLTRB(16, landscape.topBarTopPadding, 16, 0),
-                  ),
-                  FluidSectionMotion.topBar,
+              child: StyledLandscapeLayout(
+                style: layoutStyle,
+                song: song,
+                enableSlide: enableSlide,
+                fadeWithSlide: fadeWithSlide,
+                onShowLyrics: () => _showLyrics(context),
+                onShowOptions: () => _showMoreOptionsBottomSheet(context, ref),
+                onShowQueue: () => showModalBottomSheet(
+                  context: context,
+                  useRootNavigator: true,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => const QueueBottomSheet(),
                 ),
-                // Deliberately not wrapped in PositionReporter: in landscape the
-                // artwork rect is analytic (landscape.artRect), and reporting it
-                // would leave a landscape rect in playerArtworkRectProvider that
-                // the portrait morph would then wrongly aim at.
-                artwork: GestureArtworkWithFeedback(
-                  song: song,
-                  onTap: () => _showLyrics(context),
-                ),
-                controls: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    fadeWithSlide(
-                      buildSongInfo(4),
-                      FluidSectionMotion.songInfo,
-                    ),
-                    SizedBox(height: landscape.sectionGap),
-                    fadeWithSlide(buildSeekBar(4), FluidSectionMotion.seekBar),
-                    SizedBox(height: landscape.sectionGap),
-                    fadeWithSlide(
-                      buildTransportRow(
-                        height: landscape.transportHeight,
-                        horizontalPadding: 0,
-                      ),
-                      FluidSectionMotion.transportRow,
-                    ),
-                    SizedBox(height: landscape.sectionGap),
-                    fadeWithSlide(
-                      settings.segmentedUtilityButtons
-                          ? SegmentedUtilityRow(
-                              height: landscape.utilityHeight,
-                              horizontalPadding: 0,
-                              useBlur: useBlur,
-                              onLyrics: () => _showLyrics(context),
-                            )
-                          : buildUtilityRow(0),
-                      FluidSectionMotion.utilityRow,
-                    ),
-                  ],
+              ),
+            )
+          else if (layoutStyle != PlayerLayoutStyle.classic)
+            Positioned.fill(
+              child: StyledPlayerLayout(
+                style: layoutStyle,
+                song: song,
+                playerRootKey: _playerRootKey,
+                enableSlide: enableSlide,
+                fadeWithSlide: fadeWithSlide,
+                onShowLyrics: () => _showLyrics(context),
+                onShowOptions: () => _showMoreOptionsBottomSheet(context, ref),
+                onShowQueue: () => showModalBottomSheet(
+                  context: context,
+                  useRootNavigator: true,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => const QueueBottomSheet(),
                 ),
               ),
             )
           else
             SafeArea(
-              child: capWidth(
-                Column(
-                  children: [
+              child: Column(
+                children: [
+                  ...[
                     // Top Bar
-                    fadeWithSlide(
-                      scaled(
-                        buildTopBar(const EdgeInsets.fromLTRB(16, 8, 16, 0)),
+                    capWidth(
+                      fadeWithSlide(
+                        scaled(
+                          buildTopBar(const EdgeInsets.fromLTRB(16, 8, 16, 0)),
+                        ),
+                        FluidSectionMotion.topBar,
                       ),
-                      FluidSectionMotion.topBar,
                     ),
 
                     // Large Album Art. The largest square that fits: a
                     // Column + AspectRatio here always took the full width, so
                     // on short (16:9) windows the controls overflowed below.
                     Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 20 * k),
-                        child: !settings.playerLyricLine
-                            ? LayoutBuilder(
-                                builder: (context, box) => Center(
-                                  child: SizedBox.square(
-                                    dimension: math.min(
-                                      box.maxWidth,
-                                      box.maxHeight,
+                      child: capWidth(
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 20 * k),
+                          child: !settings.playerLyricLine
+                              ? LayoutBuilder(
+                                  builder: (context, box) => Center(
+                                    child: SizedBox.square(
+                                      dimension: math.min(
+                                        box.maxWidth,
+                                        box.maxHeight,
+                                      ),
+                                      child: buildPortraitArtwork(),
                                     ),
-                                    child: buildPortraitArtwork(),
                                   ),
-                                ),
-                              )
-                            : Consumer(
-                                builder: (context, ref, _) {
-                                  final hasLine = ref
-                                      .watch(playerLyricLinesProvider)
-                                      .isNotEmpty;
-                                  // The cover makes room for the line as it
-                                  // appears instead of jumping.
-                                  return TweenAnimationBuilder<double>(
-                                    tween: Tween(end: hasLine ? 1.0 : 0.0),
-                                    duration: const Duration(milliseconds: 320),
-                                    curve: Curves.easeOutCubic,
-                                    builder: (context, reveal, _) => LayoutBuilder(
-                                      builder: (context, box) {
-                                        final room =
-                                            PlayerLyricLine.rowHeight *
-                                            k *
-                                            reveal;
-                                        final dimension = math.max(
-                                          0.0,
-                                          math.min(
-                                            box.maxWidth,
-                                            box.maxHeight - room,
-                                          ),
-                                        );
-                                        return Center(
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              SizedBox.square(
-                                                dimension: dimension,
-                                                child: buildPortraitArtwork(),
-                                              ),
-                                              SizedBox(
-                                                width: dimension,
-                                                height: room,
-                                                child: reveal <= 0
-                                                    ? null
-                                                    : OverflowBox(
-                                                        alignment:
-                                                            Alignment.topCenter,
-                                                        maxHeight:
-                                                            PlayerLyricLine
-                                                                .rowHeight *
-                                                            k,
-                                                        child: Opacity(
-                                                          opacity: reveal,
-                                                          child: fadeWithSlide(
-                                                            PlayerLyricLine(
-                                                              width: dimension,
-                                                              scale: k,
-                                                              // Title starts 32 in
-                                                              // (scaled); the cover
-                                                              // 20 plus its centring.
-                                                              edgeInset:
-                                                                  32 * k -
-                                                                  (20 * k +
-                                                                      (box.maxWidth -
-                                                                              dimension) /
-                                                                          2),
-                                                              onTap: () =>
-                                                                  _showLyrics(
-                                                                    context,
-                                                                  ),
+                                )
+                              : Consumer(
+                                  builder: (context, ref, _) {
+                                    final hasLine = ref
+                                        .watch(playerLyricLinesProvider)
+                                        .isNotEmpty;
+                                    // The cover makes room for the line as it
+                                    // appears instead of jumping.
+                                    return TweenAnimationBuilder<double>(
+                                      tween: Tween(end: hasLine ? 1.0 : 0.0),
+                                      duration: const Duration(
+                                        milliseconds: 320,
+                                      ),
+                                      curve: Curves.easeOutCubic,
+                                      builder: (context, reveal, _) => LayoutBuilder(
+                                        builder: (context, box) {
+                                          final room =
+                                              PlayerLyricLine.rowHeight *
+                                              k *
+                                              reveal;
+                                          final dimension = math.max(
+                                            0.0,
+                                            math.min(
+                                              box.maxWidth,
+                                              box.maxHeight - room,
+                                            ),
+                                          );
+                                          return Center(
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                SizedBox.square(
+                                                  dimension: dimension,
+                                                  child: buildPortraitArtwork(),
+                                                ),
+                                                SizedBox(
+                                                  width: dimension,
+                                                  height: room,
+                                                  child: reveal <= 0
+                                                      ? null
+                                                      : OverflowBox(
+                                                          alignment: Alignment
+                                                              .topCenter,
+                                                          maxHeight:
+                                                              PlayerLyricLine
+                                                                  .rowHeight *
+                                                              k,
+                                                          child: Opacity(
+                                                            opacity: reveal,
+                                                            child: fadeWithSlide(
+                                                              PlayerLyricLine(
+                                                                width:
+                                                                    dimension,
+                                                                scale: k,
+                                                                // Title starts 32 in
+                                                                // (scaled); the cover
+                                                                // 20 plus its centring.
+                                                                edgeInset:
+                                                                    32 * k -
+                                                                    (20 * k +
+                                                                        (box.maxWidth -
+                                                                                dimension) /
+                                                                            2),
+                                                                onTap: () =>
+                                                                    _showLyrics(
+                                                                      context,
+                                                                    ),
+                                                              ),
+                                                              FluidSectionMotion
+                                                                  .songInfo,
                                                             ),
-                                                            FluidSectionMotion
-                                                                .songInfo,
                                                           ),
                                                         ),
-                                                      ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  );
-                                },
-                              ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    );
+                                  },
+                                ),
+                        ),
                       ),
                     ),
+                  ],
 
+                  capWidth(
                     scaled(
                       Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           fadeWithSlide(
-                            buildSongInfo(32),
-                            FluidSectionMotion.songInfo,
-                          ),
+                              buildSongInfo(32),
+                              FluidSectionMotion.songInfo,
+                            ),
                           const SizedBox(height: 32),
                           fadeWithSlide(
                             buildSeekBar(28),
@@ -1411,8 +1456,8 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                         ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
         ],
@@ -1434,7 +1479,7 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
     // The Fluid Player lives inside the main screen's route and stays mounted
     // while collapsed; AndroidMainScreen's own PopScope already collapses it
     // on back, so registering a second handler here would only double-fire.
-    if (enableSlide) return mainContent;
+    if (enableSlide || widget.previewStyle != null) return mainContent;
 
     return PopScope(
       canPop: false,

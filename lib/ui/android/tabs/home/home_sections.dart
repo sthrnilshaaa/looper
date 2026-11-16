@@ -236,6 +236,57 @@ extension _HomeTabSections on _AndroidHomeTabState {
   static const double _genreCardHeight = _genreCardWidth / 1.35;
   static const double genreRowHeight = _genreCardHeight + 16;
 
+  Widget _buildViewAllEndCard({
+    required VoidCallback onTap,
+    required AppLocalizations l10n,
+    double width = 120,
+    bool circle = false,
+  }) {
+    return Container(
+      width: width,
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      child: InkWell(
+        onTap: () {
+          AppHaptics.light();
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(circle ? 46 : 16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: circle ? 92 : width,
+              height: circle ? 92 : (width > 140 ? _genreCardHeight : width),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                shape: circle ? BoxShape.circle : BoxShape.rectangle,
+                borderRadius: circle ? null : BorderRadius.circular(16),
+                border: Border.all(color: Colors.white12),
+              ),
+              child: const Center(
+                child: Icon(
+                  LucideIcons.arrowRight,
+                  color: Colors.white,
+                  size: 26,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.viewAll,
+              style: AppFonts.jostStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildGenreItem(String genre, List<Song> genreSongs) {
     return Container(
       width: _genreCardWidth,

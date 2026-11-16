@@ -14,7 +14,7 @@ class ExportBackupTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     return ListTile(
-      leading: const Icon(LucideIcons.upload, color: Colors.white70),
+      leading: const Icon(LucideIcons.upload),
       title: Text(l10n.exportBackupJson, style: _tileTitleStyle()),
       subtitle: Text(l10n.exportBackupJsonDesc, style: _tileSubtitleStyle()),
       trailing: const Icon(
@@ -37,7 +37,7 @@ class ImportBackupTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     return ListTile(
-      leading: const Icon(LucideIcons.download, color: Colors.white70),
+      leading: const Icon(LucideIcons.download),
       title: Text(l10n.importBackupJson, style: _tileTitleStyle()),
       subtitle: Text(l10n.importBackupJsonDesc, style: _tileSubtitleStyle()),
       trailing: const Icon(
@@ -60,7 +60,7 @@ class ImportM3uPlaylistTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     return ListTile(
-      leading: const Icon(LucideIcons.listMusic, color: Colors.white70),
+      leading: const Icon(LucideIcons.listMusic),
       title: Text(l10n.importM3uPlaylist, style: _tileTitleStyle()),
       subtitle: Text(l10n.importM3uPlaylistDesc, style: _tileSubtitleStyle()),
       trailing: const Icon(
@@ -83,7 +83,7 @@ class ExportLogsTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     return ListTile(
-      leading: const Icon(LucideIcons.fileText, color: Colors.white70),
+      leading: const Icon(LucideIcons.fileText),
       title: Text(l10n.exportDiagnosticsLogs, style: _tileTitleStyle()),
       subtitle: Text(
         l10n.exportDiagnosticsLogsDesc,
@@ -112,7 +112,7 @@ class ClearLogsTile extends ConsumerWidget {
       leading: const Icon(LucideIcons.trash2, color: Colors.redAccent),
       title: Text(
         l10n.clearDiagnosticsLogs,
-        style: AppFonts.jostStyle(
+        style: AppFonts.settingsStyle(
           color: Colors.redAccent,
           fontWeight: FontWeight.w600,
         ),
@@ -144,7 +144,7 @@ class ClearLogsTile extends ConsumerWidget {
 }
 
 TextStyle _tileTitleStyle() =>
-    AppFonts.jostStyle(color: Colors.white, fontWeight: FontWeight.w500);
+    AppFonts.settingsStyle(color: Colors.white, fontWeight: FontWeight.w500);
 
 TextStyle _tileSubtitleStyle() =>
-    AppFonts.jostStyle(color: Colors.white54, fontSize: 12);
+    AppFonts.settingsStyle(color: Colors.white54, fontSize: 12);

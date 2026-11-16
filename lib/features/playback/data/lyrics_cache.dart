@@ -89,6 +89,43 @@ class LyricsCache {
     return false;
   }
 
+  /// Forgets every provider's "no lyrics" answer for this artist/title,
+  /// so they are asked again. Found lyrics are kept.
+  static Future<void> clearProviderMissesFor(String artist, String title) async {
+    try {
+      final dir = Directory(p.join((await _getCacheDir()).path, 'by_provider'));
+      if (!await dir.exists()) return;
+      final prefix = '${_generateKey(artist, title)}.';
+      await for (final file in dir.list()) {
+        final name = p.basename(file.path);
+        if (file is File && name.startsWith(prefix) && name.endsWith('.none')) {
+          await file.delete();
+        }
+      }
+    } catch (_) {}
+  }
+
+  /// Drops the saved lyrics of this artist/title (not per-provider copies).
+  static Future<void> forget(String artist, String title) async {
+    try {
+      final dir = await _getCacheDir();
+      final file = File(p.join(dir.path, '${_generateKey(artist, title)}.lrc'));
+      if (await file.exists()) await file.delete();
+    } catch (_) {}
+  }
+
+  /// Drops [provider]'s saved answer for this artist/title.
+  static Future<void> forgetProvider(
+    String artist,
+    String title,
+    String provider,
+  ) async {
+    try {
+      final file = await _providerFile(artist, title, provider);
+      if (await file.exists()) await file.delete();
+    } catch (_) {}
+  }
+
   /// Keeps [provider]'s source-tagged answer for this song.
   static Future<void> saveProvider(
     String artist,

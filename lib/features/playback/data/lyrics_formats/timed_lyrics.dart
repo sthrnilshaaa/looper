@@ -204,7 +204,8 @@ List<TimedLyricLine> withoutCreditLines(
 bool fitsDuration(List<TimedLyricLine> lines, int durationSeconds) =>
     durationSeconds <= 0 ||
     lines.isEmpty ||
-    lines.last.startMs <= (durationSeconds + 10) * 1000;
+    // A line can't start after the song ends (1 s for rounding).
+    lines.last.startMs <= (durationSeconds + 1) * 1000;
 
 /// Assigns duet sides from per-line singer ids: the first distinct solo
 /// singer sings on the main side, the next one on the opposite side,

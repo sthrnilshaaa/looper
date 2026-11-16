@@ -14,10 +14,9 @@ class ShowArtistsRowTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return SwitchListTile(
-      secondary: const Icon(LucideIcons.user, color: Colors.white70),
+      secondary: const Icon(LucideIcons.user),
       title: Text(l10n.showArtistsRow, style: _tileTitleStyle()),
       subtitle: Text(l10n.showArtistsRowDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: settings.accent,
       value: settings.showHomeArtists,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateShowHomeArtists(value);
@@ -34,10 +33,9 @@ class ShowAlbumsRowTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return SwitchListTile(
-      secondary: const Icon(LucideIcons.disc, color: Colors.white70),
+      secondary: const Icon(LucideIcons.disc),
       title: Text(l10n.showAlbumsRow, style: _tileTitleStyle()),
       subtitle: Text(l10n.showAlbumsRowDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: settings.accent,
       value: settings.showHomeAlbums,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateShowHomeAlbums(value);
@@ -54,10 +52,9 @@ class ShowGenresRowTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return SwitchListTile(
-      secondary: const Icon(LucideIcons.music, color: Colors.white70),
+      secondary: const Icon(LucideIcons.music),
       title: Text(l10n.showGenresRow, style: _tileTitleStyle()),
       subtitle: Text(l10n.showGenresRowDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: settings.accent,
       value: settings.showHomeGenres,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateShowHomeGenres(value);
@@ -74,10 +71,9 @@ class ShowRecentRowTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return SwitchListTile(
-      secondary: const Icon(LucideIcons.history, color: Colors.white70),
+      secondary: const Icon(LucideIcons.history),
       title: Text(l10n.showRecentRow, style: _tileTitleStyle()),
       subtitle: Text(l10n.showRecentRowDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: settings.accent,
       value: settings.showHomeRecent,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateShowHomeRecent(value);
@@ -94,10 +90,9 @@ class ShowPlaylistsRowTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return SwitchListTile(
-      secondary: const Icon(LucideIcons.listMusic, color: Colors.white70),
+      secondary: const Icon(LucideIcons.listMusic),
       title: Text(l10n.showPlaylistsRow, style: _tileTitleStyle()),
       subtitle: Text(l10n.showPlaylistsRowDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: settings.accent,
       value: settings.showHomePlaylists ?? true,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateShowHomePlaylists(value);
@@ -114,12 +109,9 @@ class ReorderDashboardSectionsTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return ListTile(
-      leading: const Icon(LucideIcons.listOrdered, color: Colors.white70),
+      leading: const Icon(LucideIcons.listOrdered),
       title: Text(l10n.reorderDashboardSections, style: _tileTitleStyle()),
-      subtitle: Text(
-        l10n.reorderDashboardSectionsDesc,
-        style: _tileSubtitleStyle(),
-      ),
+      subtitle: Text(l10n.reorderHomeHint, style: _tileSubtitleStyle()),
       trailing: const Icon(LucideIcons.chevronRight, color: Colors.white30),
       onTap: () {
         showReorderBottomSheet(context, ref, settings);
@@ -129,7 +121,7 @@ class ReorderDashboardSectionsTile extends ConsumerWidget {
 }
 
 TextStyle _tileTitleStyle() =>
-    AppFonts.jostStyle(color: Colors.white, fontWeight: FontWeight.w500);
+    AppFonts.settingsStyle(color: Colors.white, fontWeight: FontWeight.w500);
 
 TextStyle _tileSubtitleStyle() =>
-    AppFonts.jostStyle(color: Colors.white54, fontSize: 12);
+    AppFonts.settingsStyle(color: Colors.white54, fontSize: 12);

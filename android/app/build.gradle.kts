@@ -32,11 +32,22 @@ android {
 
     signingConfigs {
         if (hasSigningConfig) {
+            val keyAliasProp = keystoreProperties["keyAlias"] as String
+            val keyPasswordProp = keystoreProperties["keyPassword"] as String
+            val storeFileProp = rootProject.file(keystoreProperties["storeFile"] as String)
+            val storePasswordProp = keystoreProperties["storePassword"] as String
+
             create("release") {
-                keyAlias = keystoreProperties["keyAlias"] as String
-                keyPassword = keystoreProperties["keyPassword"] as String
-                storeFile = rootProject.file(keystoreProperties["storeFile"] as String)
-                storePassword = keystoreProperties["storePassword"] as String
+                keyAlias = keyAliasProp
+                keyPassword = keyPasswordProp
+                storeFile = storeFileProp
+                storePassword = storePasswordProp
+            }
+            getByName("debug") {
+                keyAlias = keyAliasProp
+                keyPassword = keyPasswordProp
+                storeFile = storeFileProp
+                storePassword = storePasswordProp
             }
         }
     }

@@ -7,7 +7,7 @@ class SelectAvatarsTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     return ListTile(
-      leading: const Icon(LucideIcons.userCircle, color: Colors.white70),
+      leading: const Icon(LucideIcons.userCircle),
       title: Text(l10n.selectAvatars, style: _tileTitleStyle()),
       subtitle: Text(l10n.selectAvatarsDesc, style: _tileSubtitleStyle()),
       trailing: const Icon(
@@ -31,10 +31,9 @@ class DynamicThemingTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return SwitchListTile(
-      secondary: const Icon(LucideIcons.palette, color: Colors.white70),
+      secondary: const Icon(LucideIcons.palette),
       title: Text(l10n.dynamicTheming, style: _tileTitleStyle()),
       subtitle: Text(l10n.adaptColorsArtwork, style: _tileSubtitleStyle()),
-      activeThumbColor: settings.accent,
       value: settings.enableDynamicTheming,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateDynamicTheming(value);
@@ -51,10 +50,9 @@ class DisableBlurTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return SwitchListTile(
-      secondary: const Icon(LucideIcons.eyeOff, color: Colors.white70),
+      secondary: const Icon(LucideIcons.eyeOff),
       title: Text(l10n.disableBlurEffects, style: _tileTitleStyle()),
       subtitle: Text(l10n.turnOffBlursOptimize, style: _tileSubtitleStyle()),
-      activeThumbColor: settings.accent,
       value: settings.disableBlur,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateDisableBlur(value);
@@ -77,13 +75,38 @@ class AlwaysBlurSheetsTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return SwitchListTile(
-      secondary: const Icon(LucideIcons.droplets, color: Colors.white70),
+      secondary: const Icon(LucideIcons.droplets),
       title: Text(l10n.alwaysBlurSheets, style: _tileTitleStyle()),
       subtitle: Text(l10n.alwaysBlurSheetsDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: settings.accent,
       value: settings.alwaysBlurSheets,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateAlwaysBlurSheets(value);
+      },
+    );
+  }
+}
+
+/// Dynamic Theming's art background on the player screen only. Hidden while
+/// Dynamic Theming is on, which already gives the player that background.
+class PlayerDynamicBackgroundTile extends ConsumerWidget {
+  const PlayerDynamicBackgroundTile({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final l10n = AppLocalizations.of(context)!;
+    return SwitchListTile(
+      secondary: const Icon(LucideIcons.image),
+      title: Text(l10n.playerDynamicBackground, style: _tileTitleStyle()),
+      subtitle: Text(
+        l10n.playerDynamicBackgroundDesc,
+        style: _tileSubtitleStyle(),
+      ),
+      value: settings.playerDynamicBackground,
+      onChanged: (value) {
+        ref
+            .read(settingsProvider.notifier)
+            .updatePlayerDynamicBackground(value);
       },
     );
   }
@@ -97,10 +120,9 @@ class DynamicAccentColorTile extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final settings = ref.watch(settingsProvider);
     return SwitchListTile(
-      secondary: const Icon(LucideIcons.paintBucket, color: Colors.white70),
+      secondary: const Icon(LucideIcons.paintBucket),
       title: Text(l10n.dynamicAccentColor, style: _tileTitleStyle()),
       subtitle: Text(l10n.dynamicAccentColorDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: settings.accent,
       value: settings.dynamicAccentColor,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateDynamicAccentColor(value);
@@ -117,10 +139,9 @@ class PureBlackOledTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return SwitchListTile(
-      secondary: const Icon(LucideIcons.moon, color: Colors.white70),
+      secondary: const Icon(LucideIcons.moon),
       title: Text(l10n.pureBlackOled, style: _tileTitleStyle()),
       subtitle: Text(l10n.useAbsoluteBlackBg, style: _tileSubtitleStyle()),
-      activeThumbColor: settings.accent,
       value: settings.darkTheme,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateDarkTheme(value);
@@ -164,7 +185,7 @@ class _AccentVibrancyTileState extends ConsumerState<AccentVibrancyTile> {
         ),
         child: Text(
           label,
-          style: AppFonts.jostStyle(
+          style: AppFonts.settingsStyle(
             color: Colors.black.withValues(alpha: 0.75),
             fontSize: 12,
             fontWeight: FontWeight.w600,
@@ -173,34 +194,30 @@ class _AccentVibrancyTileState extends ConsumerState<AccentVibrancyTile> {
       ),
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SettingsSliderTile(
-          icon: LucideIcons.droplet,
-          title: l10n.accentVibrancy,
-          subtitle: l10n.accentVibrancyDesc,
-          value: value * 100,
-          min: 0,
-          max: 100,
-          suffix: '%',
-          onChanged: (v) => setState(() => _dragging = v / 100),
-          onChangeEnd: (v) {
-            ref.read(settingsProvider.notifier).updateAccentVibrancy(v / 100);
-            setState(() => _dragging = null);
-          },
+    return SettingsSliderTile(
+      icon: LucideIcons.droplet,
+      title: l10n.accentVibrancy,
+      subtitle: l10n.accentVibrancyDesc,
+      value: value * 100,
+      min: 0,
+      max: 100,
+      suffix: '%',
+      onChanged: (v) => setState(() => _dragging = v / 100),
+      onChangeEnd: (v) {
+        ref.read(settingsProvider.notifier).updateAccentVibrancy(v / 100);
+        setState(() => _dragging = null);
+      },
+      // Before/after swatches only while the slider is open.
+      expandedChild: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+        child: Row(
+          children: [
+            swatch(base, '0%'),
+            const SizedBox(width: 8),
+            swatch(preview, '${(value * 100).round()}%'),
+          ],
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-          child: Row(
-            children: [
-              swatch(base, '0%'),
-              const SizedBox(width: 8),
-              swatch(preview, '${(value * 100).round()}%'),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -213,7 +230,7 @@ class AccentColorTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return ListTile(
-      leading: const Icon(LucideIcons.droplet, color: Colors.white70),
+      leading: const Icon(LucideIcons.droplet),
       title: Text(l10n.accentColor, style: _tileTitleStyle()),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -255,7 +272,7 @@ class CustomAccentColorTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return ListTile(
-      leading: const Icon(LucideIcons.palette, color: Colors.white70),
+      leading: const Icon(LucideIcons.palette),
       title: Text(l10n.customAccentColor, style: _tileTitleStyle()),
       subtitle: Text(l10n.selectCustomColor, style: _tileSubtitleStyle()),
       trailing: ColorCircle(

@@ -1,5 +1,27 @@
 part of 'theme_settings_tiles.dart';
 
+class EnableLyricsGradientTile extends ConsumerWidget {
+  const EnableLyricsGradientTile({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final l10n = AppLocalizations.of(context)!;
+    return SwitchListTile(
+      secondary: const Icon(LucideIcons.sparkles),
+      title: Text(l10n.enableLyricsGradient, style: _tileTitleStyle()),
+      subtitle: Text(
+        l10n.enableLyricsGradientDesc,
+        style: _tileSubtitleStyle(),
+      ),
+      value: settings.enableLyricsGradient,
+      onChanged: (value) {
+        ref.read(settingsProvider.notifier).updateEnableLyricsGradient(value);
+      },
+    );
+  }
+}
+
 class AmbientLyricsBgTile extends ConsumerWidget {
   const AmbientLyricsBgTile({super.key});
 
@@ -8,13 +30,12 @@ class AmbientLyricsBgTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return SwitchListTile(
-      secondary: const Icon(LucideIcons.music, color: Colors.white70),
+      secondary: const Icon(LucideIcons.music),
       title: Text(l10n.ambientColorBackground, style: _tileTitleStyle()),
       subtitle: Text(
         l10n.ambientColorBackgroundDesc,
         style: _tileSubtitleStyle(),
       ),
-      activeThumbColor: settings.accent,
       value: settings.ambientColorBackground,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateAmbientColorBackground(value);
@@ -31,13 +52,12 @@ class BlurredArtworkLyricsTile extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final settings = ref.watch(settingsProvider);
     return SwitchListTile(
-      secondary: const Icon(LucideIcons.image, color: Colors.white70),
+      secondary: const Icon(LucideIcons.image),
       title: Text(l10n.blurredArtworkForLyrics, style: _tileTitleStyle()),
       subtitle: Text(
         l10n.blurredArtworkForLyricsDesc,
         style: _tileSubtitleStyle(),
       ),
-      activeThumbColor: settings.accent,
       value: settings.blurredArtworkForLyrics,
       onChanged: (value) {
         ref
@@ -56,13 +76,12 @@ class DynamicColorActiveLyricsTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return SwitchListTile(
-      secondary: const Icon(LucideIcons.palette, color: Colors.white70),
+      secondary: const Icon(LucideIcons.palette),
       title: Text(l10n.dynamicColorActiveLyrics, style: _tileTitleStyle()),
       subtitle: Text(
         l10n.dynamicColorActiveLyricsDesc,
         style: _tileSubtitleStyle(),
       ),
-      activeThumbColor: settings.accent,
       value: settings.dynamicColorActiveLyrics,
       onChanged: (value) {
         ref
@@ -81,13 +100,12 @@ class ActiveLyricsUseAccentTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return SwitchListTile(
-      secondary: const Icon(LucideIcons.paintbrush, color: Colors.white70),
+      secondary: const Icon(LucideIcons.paintbrush),
       title: Text(l10n.activeLyricsUseAccent, style: _tileTitleStyle()),
       subtitle: Text(
         l10n.activeLyricsUseAccentDesc,
         style: _tileSubtitleStyle(),
       ),
-      activeThumbColor: settings.accent,
       value: !settings.activeLyricsSoftColor,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateActiveLyricsUseAccent(value);
@@ -105,10 +123,9 @@ class LyricsLineGroupingTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return SwitchListTile(
-      secondary: const Icon(LucideIcons.listCollapse, color: Colors.white70),
+      secondary: const Icon(LucideIcons.listCollapse),
       title: Text(l10n.lyricsLineGrouping, style: _tileTitleStyle()),
       subtitle: Text(l10n.lyricsLineGroupingDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: settings.accent,
       value: !settings.lyricsNoLineGrouping,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateLyricsLineGrouping(value);
@@ -265,8 +282,8 @@ class LyricsAlignmentTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
-    return ListTile(
-      leading: const Icon(LucideIcons.alignCenter, color: Colors.white70),
+    final tile = ListTile(
+      leading: const Icon(LucideIcons.alignCenter),
       title: Text(l10n.lyricsAlignment, style: _tileTitleStyle()),
       subtitle: Text(l10n.lyricsAlignmentDesc, style: _tileSubtitleStyle()),
       trailing: Container(
@@ -306,6 +323,19 @@ class LyricsAlignmentTile extends ConsumerWidget {
           ],
         ),
       ),
+    );
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        tile,
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+          child: LyricsAlignmentPreview(
+            alignment: settings.lyricsAlignment,
+            accent: settings.accent,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,16 +6,19 @@ import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/core/utils/responsive.dart';
 import 'package:looper_player/features/playback/presentation/providers/equalizer/equalizer_notifier.dart';
 import 'package:looper_player/core/services/haptics/app_haptics.dart';
+import 'equalizer_curve_math.dart';
 
 class InteractiveEqualizerGraph extends ConsumerStatefulWidget {
   final EqualizerState eqState;
   final Equalizer eqNotifier;
   final Color accentColor;
+  final List<double>? autoEqGains;
 
   const InteractiveEqualizerGraph({
     required this.eqState,
     required this.eqNotifier,
     required this.accentColor,
+    this.autoEqGains,
     super.key,
   });
 
@@ -93,6 +97,7 @@ class _InteractiveEqualizerGraphState
                 accentColor: widget.accentColor,
                 enabled: widget.eqState.enabled,
                 activeDragIndex: _activeDragIndex,
+                autoEqGains: widget.autoEqGains,
               ),
             ),
           ),
@@ -126,30 +131,25 @@ class _InteractiveGraphPainter extends CustomPainter {
   final Color accentColor;
   final bool enabled;
   final int? activeDragIndex;
+  final List<double>? autoEqGains;
 
   _InteractiveGraphPainter({
     required this.gains,
     required this.accentColor,
     required this.enabled,
     this.activeDragIndex,
+    this.autoEqGains,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final colWidth = size.width / 18;
-    final trackTop = 16.0;
-    final trackBottom = size.height - 24.0;
-    final trackHeight = trackBottom - trackTop;
-
-    double getMappedY(double gain) {
-      final percent = ((gain + 20) / 40).clamp(0.0, 1.0);
-      final thumbBottom = percent * trackHeight;
-      return trackBottom - thumbBottom;
-    }
-
-    double getMappedX(int index) {
-      return (index + 0.5) * colWidth;
-    }
+    final geo = EqualizerCurveGeometry(
+      width: size.width,
+      height: size.height,
+      bandCount: 18,
+      trackTop: 16.0,
+      bottomPadding: 24.0,
+    );
 
     // 1. Draw grid lines (dB)
     final gridPaint = Paint()
@@ -162,7 +162,7 @@ class _InteractiveGraphPainter extends CustomPainter {
 
     const dbValues = [-20.0, -10.0, 0.0, 10.0, 20.0];
     for (final db in dbValues) {
-      final y = getMappedY(db);
+      final y = geo.mapY(db);
       if (db == 0.0) {
         canvas.drawLine(Offset(0, y), Offset(size.width, y), dashedPaint);
       } else {
@@ -206,11 +206,11 @@ class _InteractiveGraphPainter extends CustomPainter {
       '20k',
     ];
     for (int i = 0; i < 18; i++) {
-      final x = getMappedX(i);
+      final x = geo.mapX(i);
       // Freq vertical line (drawn extremely faintly)
       canvas.drawLine(
-        Offset(x, trackTop),
-        Offset(x, trackBottom),
+        Offset(x, geo.trackTop),
+        Offset(x, geo.trackBottom),
         Paint()
           ..color = Colors.white.withValues(alpha: 0.02)
           ..strokeWidth = 1.0,
@@ -236,25 +236,27 @@ class _InteractiveGraphPainter extends CustomPainter {
 
     if (gains.length < 2) return;
 
+    // AutoEQ preview curve (dashed)
+    if (enabled && autoEqGains != null && autoEqGains!.length >= gains.length) {
+      final autoEqPath = geo.buildCubicPath(autoEqGains!);
+      final dashPaint = Paint()
+        ..color = accentColor.withValues(alpha: 0.35)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0;
+
+      for (final metric in autoEqPath.computeMetrics()) {
+        double dist = 0.0;
+        while (dist < metric.length) {
+          final len = math.min(5.0, metric.length - dist);
+          canvas.drawPath(metric.extractPath(dist, dist + len), dashPaint);
+          dist += 5.0 + 4.0;
+        }
+      }
+    }
+
     // 3. Draw smooth curve path
     final curveColor = enabled ? accentColor : Colors.grey;
-    final path = Path();
-    path.moveTo(getMappedX(0), getMappedY(gains[0]));
-
-    for (int i = 0; i < gains.length - 1; i++) {
-      final x1 = getMappedX(i);
-      final y1 = getMappedY(gains[i]);
-      final x2 = getMappedX(i + 1);
-      final y2 = getMappedY(gains[i + 1]);
-
-      final stepX = x2 - x1;
-      final cx1 = x1 + stepX / 2;
-      final cy1 = y1;
-      final cx2 = x2 - stepX / 2;
-      final cy2 = y2;
-
-      path.cubicTo(cx1, cy1, cx2, cy2, x2, y2);
-    }
+    final path = geo.buildCubicPath(gains);
 
     // Shadow glow
     canvas.drawPath(
@@ -278,8 +280,8 @@ class _InteractiveGraphPainter extends CustomPainter {
 
     // Fill under path
     final fillPath = Path.from(path)
-      ..lineTo(getMappedX(gains.length - 1), trackBottom)
-      ..lineTo(getMappedX(0), trackBottom)
+      ..lineTo(geo.mapX(gains.length - 1), geo.trackBottom)
+      ..lineTo(geo.mapX(0), geo.trackBottom)
       ..close();
 
     final gradient = LinearGradient(
@@ -297,14 +299,29 @@ class _InteractiveGraphPainter extends CustomPainter {
       );
     canvas.drawPath(fillPath, fillPaint);
 
+    // Sum curve (user EQ + AutoEQ, thin line)
+    if (enabled && autoEqGains != null && autoEqGains!.length >= gains.length) {
+      final sumGains = List.generate(gains.length, (i) {
+        return (gains[i] + autoEqGains![i]).clamp(-20.0, 20.0);
+      });
+      final sumPath = geo.buildCubicPath(sumGains);
+      canvas.drawPath(
+        sumPath,
+        Paint()
+          ..color = accentColor.withValues(alpha: 0.9)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5,
+      );
+    }
+
     // 4. Draw interactive node handles
     final handlePaint = Paint()
       ..color = curveColor.withValues(alpha: enabled ? 1.0 : 0.4)
       ..style = PaintingStyle.fill;
 
     for (int i = 0; i < gains.length; i++) {
-      final x = getMappedX(i);
-      final y = getMappedY(gains[i]);
+      final x = geo.mapX(i);
+      final y = geo.mapY(gains[i]);
       final isDragged = i == activeDragIndex;
 
       if (isDragged && enabled) {
@@ -339,6 +356,7 @@ class _InteractiveGraphPainter extends CustomPainter {
     // gains needs a value comparison, not identity, since it's a fresh
     // sublist() every time.
     return !listEquals(oldDelegate.gains, gains) ||
+        !listEquals(oldDelegate.autoEqGains, autoEqGains) ||
         oldDelegate.accentColor != accentColor ||
         oldDelegate.enabled != enabled ||
         oldDelegate.activeDragIndex != activeDragIndex;

@@ -18,11 +18,10 @@ class StyleSectionLabel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(4, 20, 4, 6),
       child: Text(
         text.toUpperCase(),
-        style: AppFonts.jostStyle(
+        style: AppFonts.settingsStyle(
           fontSize: 12,
           fontWeight: FontWeight.bold,
           color: accent.withValues(alpha: 0.8),
-          letterSpacing: 1.0,
         ),
       ),
     );
@@ -76,7 +75,7 @@ class StyleSliderRow extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: AppFonts.jostStyle(
+                        style: AppFonts.settingsStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w500,
                           fontSize: 15,
@@ -86,7 +85,7 @@ class StyleSliderRow extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           subtitle!,
-                          style: AppFonts.jostStyle(
+                          style: AppFonts.settingsStyle(
                             color: Colors.white54,
                             fontSize: 12,
                           ),
@@ -98,7 +97,7 @@ class StyleSliderRow extends StatelessWidget {
                 const SizedBox(width: 12),
                 Text(
                   valueLabel,
-                  style: AppFonts.jostStyle(
+                  style: AppFonts.settingsStyle(
                     color: Colors.white70,
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
@@ -163,7 +162,7 @@ class StyleSwitchRow extends StatelessWidget {
           contentPadding: const EdgeInsets.symmetric(horizontal: 4),
           title: Text(
             title,
-            style: AppFonts.jostStyle(
+            style: AppFonts.settingsStyle(
               color: Colors.white,
               fontWeight: FontWeight.w500,
             ),
@@ -172,7 +171,7 @@ class StyleSwitchRow extends StatelessWidget {
               ? null
               : Text(
                   subtitle!,
-                  style: AppFonts.jostStyle(
+                  style: AppFonts.settingsStyle(
                     color: Colors.white54,
                     fontSize: 12,
                   ),
@@ -241,7 +240,7 @@ class StyleSegmentedChoice<T> extends StatelessWidget {
                     label(v),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppFonts.jostStyle(
+                    style: AppFonts.settingsStyle(
                       color: v == selected ? Colors.black : Colors.white70,
                       fontWeight: FontWeight.w600,
                       fontSize: 13,

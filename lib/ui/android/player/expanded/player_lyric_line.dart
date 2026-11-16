@@ -300,15 +300,13 @@ class _LineHandOff extends StatelessWidget {
                 offset: Offset(0, side * p * height * 0.35),
                 child: Transform.scale(
                   scale: 1 - p * 0.08,
-                  child: sigma < 0.1
-                      ? child
-                      : ImageFiltered(
-                          imageFilter: ImageFilter.blur(
-                            sigmaX: sigma,
-                            sigmaY: sigma,
-                          ),
-                          child: child,
-                        ),
+                  // enabled, not a conditional parent: swapping the
+                  // parent remounts the line and makes it flash.
+                  child: ImageFiltered(
+                    enabled: sigma >= 0.1,
+                    imageFilter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+                    child: child,
+                  ),
                 ),
               ),
             );
@@ -318,10 +316,8 @@ class _LineHandOff extends StatelessWidget {
   }
 }
 
-const String _lyricEllipsis = '\u2026';
-
-/// One lyric line, kept to one row in the lyrics alignment. A line too long
-/// for the cover is cut at the last word that fits and ends in "…".
+/// One lyric line, kept to one row in the lyrics alignment. A word-timed
+/// line too long for the cover slides along as it's sung; others end in "…".
 class _ActiveLyricLine extends ConsumerWidget {
   const _ActiveLyricLine({
     super.key,
@@ -351,13 +347,25 @@ class _ActiveLyricLine extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final Widget body;
     if (_wordTimed) {
-      final shown = fitLyricWords(
-        line,
-        style,
-        // Room for the sung words' lift and swell.
-        width - (style.fontSize ?? 17) * 0.6,
-        MediaQuery.textScalerOf(context),
-      );
+      final scaler = MediaQuery.textScalerOf(context);
+      // Room for the sung words' lift and swell.
+      final room = width - (style.fontSize ?? 17) * 0.6;
+      // Where each word ends along the line, measured once per line.
+      final wordEnds = <double>[];
+      var text = '';
+      for (final word in line.words) {
+        text += word.text;
+        final painter = TextPainter(
+          text: TextSpan(text: text, style: style),
+          textDirection: TextDirection.ltr,
+          textScaler: scaler,
+          maxLines: 1,
+        )..layout();
+        wordEnds.add(painter.width);
+        painter.dispose();
+      }
+      final fullWidth = wordEnds.isEmpty ? 0.0 : wordEnds.last;
+      final overflows = fullWidth > room;
       body = Consumer(
         builder: (context, ref, _) {
           final reported = ref.watch(
@@ -372,17 +380,40 @@ class _ActiveLyricLine extends ConsumerWidget {
                   reported > line.endTime + const Duration(seconds: 1)
               ? line.startTime
               : reported;
-          return WordSyncedLyricText(
-            line: shown,
+          final text = WordSyncedLyricText(
+            line: line,
             position: position,
             isPlaying: isPlaying,
             style: style,
             activeColor: style.color ?? Colors.white,
             unsungColor: unsungColor,
-            textAlign: align,
+            textAlign: overflows ? TextAlign.left : align,
             fontScale: (style.fontSize ?? 17) / 30,
             wipe: mode == LyricsSyncMode.char,
             showBackground: false,
+          );
+          if (!overflows) return text;
+          // Too long for one row: slide left word by word so the word
+          // being sung stays in view.
+          final sung = line.words.lastIndexWhere(
+            (w) => w.startTime <= position,
+          );
+          final x = sung < 0 ? 0.0 : wordEnds[sung];
+          // Slides a little past the end so the last word sits clear of
+          // the edge instead of flush against it.
+          final endPad = (style.fontSize ?? 17) * 1.5;
+          final shift = (x - room * 0.7).clamp(0.0, fullWidth - room + endPad);
+          return OverflowBox(
+            alignment: Alignment.centerLeft,
+            maxWidth: fullWidth + endPad + (style.fontSize ?? 17),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(end: -shift),
+              duration: const Duration(milliseconds: 450),
+              curve: Curves.easeOutCubic,
+              builder: (context, dx, child) =>
+                  Transform.translate(offset: Offset(dx, 0), child: child),
+              child: text,
+            ),
           );
         },
       );
@@ -414,9 +445,10 @@ class _ActiveLyricLine extends ConsumerWidget {
   }
 }
 
+const String _lyricEllipsis = '\u2026';
+
 /// [line] as is when it fits in [maxWidth]; otherwise its words up to the
-/// last whole word that fits with "…" after it. The "…" is timed over the
-/// words it stands for, so it fills while they are sung.
+/// last whole word that fits with "…" after it.
 LyricLine fitLyricWords(
   LyricLine line,
   TextStyle style,
@@ -449,7 +481,6 @@ LyricLine fitLyricWords(
     if (widthOf(text.trimRight() + _lyricEllipsis) > maxWidth) break;
     keep = i + 1;
   }
-  // Not even one word fits: cut that word's text short.
   if (keep == 0) keep = 1;
   final kept = [
     ...words.take(keep - 1),
@@ -528,26 +559,43 @@ Widget playerLyricLineShuttle(
   BuildContext fromHeroContext,
   BuildContext toHeroContext,
 ) {
-  final playerSide = flightDirection == HeroFlightDirection.push
-      ? fromHeroContext
-      : toHeroContext;
-  double heightOf(BuildContext c) {
+  final push = flightDirection == HeroFlightDirection.push;
+  final playerSide = push ? fromHeroContext : toHeroContext;
+  final lyricsSide = push ? toHeroContext : fromHeroContext;
+  Size sizeOf(BuildContext c) {
     final box = c.findRenderObject();
-    return box is RenderBox && box.hasSize ? box.size.height : 0;
+    return box is RenderBox && box.hasSize ? box.size : Size.zero;
   }
 
+  final player = playerSide.findAncestorWidgetOfExactType<PlayerLyricLine>();
+  final smallSize = sizeOf(playerSide);
   return _LyricLineFlight(
     animation: animation,
-    smallHeight: heightOf(playerSide),
+    smallHeight: smallSize.height,
+    // Same clamp as the player line's own inset.
+    smallInset: (player?.edgeInset ?? 0).clamp(0.0, smallSize.width / 4),
+    bigWidth: sizeOf(lyricsSide).width,
   );
 }
 
 class _LyricLineFlight extends ConsumerWidget {
-  const _LyricLineFlight({required this.animation, required this.smallHeight});
+  const _LyricLineFlight({
+    required this.animation,
+    required this.smallHeight,
+    required this.smallInset,
+    required this.bigWidth,
+  });
 
-  /// 0 at the player, 1 at the lyrics screen, in both directions.
+  /// 0 at the player, 1 at the lyrics screen, in both directions. Already
+  /// eased by the Hero, so the text grows in step with its box.
   final Animation<double> animation;
   final double smallHeight;
+
+  /// The player line's indent from its left / right edge.
+  final double smallInset;
+
+  /// Width the lyrics screen wraps its active line at.
+  final double bigWidth;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -563,43 +611,54 @@ class _LyricLineFlight extends ConsumerWidget {
               (PlayerLyricLine.rowHeight - PlayerLyricLine._gap) *
               PlayerLyricLine.fontSize
         : PlayerLyricLine.fontSize;
-    final small = miniLyricStyle(settings, accent, smallSize);
-    final big = miniLyricStyle(settings, accent, 30 * fontScale);
-    final bigAlign = switch (settings.lyricsAlignment) {
-      'left' => Alignment.centerLeft,
-      'right' => Alignment.centerRight,
-      _ => Alignment.center,
+    final bigSize = 30 * fontScale;
+    final big = miniLyricStyle(settings, accent, bigSize);
+    final (textAlign, x) = switch (settings.lyricsAlignment) {
+      'left' => (TextAlign.left, -1.0),
+      'right' => (TextAlign.right, 1.0),
+      _ => (TextAlign.center, 0.0),
     };
+    final top = Alignment(x, -1);
     final text = AdvancedLyricLine.isInstrumentalText(line.text)
         ? '♫'
         : line.text;
+    // Laid out once at the lyrics screen's size and width (wrapping where
+    // the real line wraps), then scaled, so it never reflows mid-flight.
+    final body = Text(text, style: big, textAlign: textAlign, softWrap: true);
     return Material(
       type: MaterialType.transparency,
-      child: AnimatedBuilder(
-        animation: animation,
-        builder: (context, _) {
-          final t = Curves.easeInOutCubic.transform(animation.value);
-          return Opacity(
-            // Hands over to the real line as the lyrics fade in under it.
-            opacity: 1 - const Interval(0.7, 1.0).transform(animation.value),
-            child: ClipRect(
-              child: OverflowBox(
-                alignment: bigAlign,
-                minWidth: 0,
-                maxWidth: double.infinity,
-                maxHeight: double.infinity,
-                child: Text(
-                  text,
-                  style: TextStyle.lerp(small, big, t)!.copyWith(
-                    fontSize: lerpDouble(small.fontSize, big.fontSize, t),
+      child: LayoutBuilder(
+        builder: (context, box) => AnimatedBuilder(
+          animation: animation,
+          child: body,
+          builder: (context, child) {
+            final t = animation.value;
+            final s = lerpDouble(smallSize / bigSize, 1, t)!;
+            // First row centred in the box: the player's row at the start,
+            // the real line's first row at the end.
+            final dy = (box.maxHeight - bigSize * 1.15 * s) / 2;
+            final dx = -x * lerpDouble(smallInset, 0, t)!;
+            return Opacity(
+              // Hands over to the real line as the lyrics fade in under it.
+              opacity: 1 - const Interval(0.7, 1.0).transform(t),
+              child: Transform.translate(
+                offset: Offset(dx, dy),
+                child: OverflowBox(
+                  alignment: top,
+                  minWidth: 0,
+                  maxWidth: bigWidth > 0 ? bigWidth : double.infinity,
+                  minHeight: 0,
+                  maxHeight: double.infinity,
+                  child: Transform.scale(
+                    scale: s,
+                    alignment: top,
+                    child: child,
                   ),
-                  maxLines: 1,
-                  softWrap: false,
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

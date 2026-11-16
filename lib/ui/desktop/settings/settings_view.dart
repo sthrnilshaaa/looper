@@ -13,7 +13,7 @@ import 'package:looper_player/features/settings/presentation/providers/settings_
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:looper_player/ui/android/widgets/premium_section.dart';
+import 'package:looper_player/ui/widgets/common/premium_section.dart';
 import 'package:looper_player/core/providers/providers.dart';
 import 'package:looper_player/ui/desktop/equalizer/desktop_equalizer_dialog.dart';
 import 'package:looper_player/ui/widgets/common/folder_picker_helper.dart';
@@ -29,6 +29,7 @@ import 'package:looper_player/features/settings/presentation/widgets/tiles/dashb
 import 'package:looper_player/features/settings/presentation/widgets/tiles/theme/theme_settings_tiles.dart';
 import 'package:looper_player/features/playback/data/lyrics_fetcher.dart';
 import 'package:looper_player/features/playback/data/lyrics_providers/lyrics_provider_info.dart';
+import 'package:looper_player/features/playback/data/crossmix/crossmix_settings.dart';
 import 'collapsible_settings_section.dart';
 part 'settings_rows.dart';
 part 'library_folders_list.dart';
@@ -42,6 +43,7 @@ class SettingsView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final settings = ref.watch(settingsProvider);
+    final crossmix = ref.watch(crossmixSettingsProvider);
     const divider = Divider(height: 1, indent: 72, color: Colors.white10);
     final dynamicTheming = settings.enableDynamicTheming;
 
@@ -563,6 +565,64 @@ class SettingsView extends ConsumerWidget {
                         },
                         isLast: false,
                       ),
+
+                    _PremiumSwitchRow(
+                      icon: LucideIcons.gitCompare,
+                      title: l10n.audioCrossfade,
+                      subtitle: l10n.audioCrossfadeDesc,
+                      value: crossmix.crossfadeEnabled,
+                      onChanged: (value) {
+                        AppHaptics.light();
+                        ref
+                            .read(crossmixSettingsProvider.notifier)
+                            .setCrossfadeEnabled(value);
+                      },
+                      isLast: false,
+                    ),
+                    if (crossmix.crossfadeEnabled) ...[
+                      _PremiumSliderRow(
+                        icon: LucideIcons.sliders,
+                        title: l10n.crossfadeDuration,
+                        subtitle: l10n.crossfadeDurationDesc,
+                        value: crossmix.durationSeconds,
+                        min: 1.0,
+                        max: 12.0,
+                        divisions: 11,
+                        suffix: 's',
+                        onChanged: (value) {
+                          ref
+                              .read(crossmixSettingsProvider.notifier)
+                              .setDurationSeconds(value);
+                        },
+                        isLast: false,
+                      ),
+                      _PremiumSwitchRow(
+                        icon: LucideIcons.sparkles,
+                        title: l10n.smartTransitions,
+                        subtitle: l10n.smartTransitionsDesc,
+                        value: crossmix.smartTransitions,
+                        onChanged: (value) {
+                          AppHaptics.light();
+                          ref
+                              .read(crossmixSettingsProvider.notifier)
+                              .setSmartTransitions(value);
+                        },
+                        isLast: false,
+                      ),
+                      _PremiumSwitchRow(
+                        icon: LucideIcons.disc,
+                        title: l10n.beatMixing,
+                        subtitle: l10n.beatMixingDesc,
+                        value: crossmix.beatMixing,
+                        onChanged: (value) {
+                          AppHaptics.light();
+                          ref
+                              .read(crossmixSettingsProvider.notifier)
+                              .setBeatMixing(value);
+                        },
+                        isLast: false,
+                      ),
+                    ],
 
                     _PremiumActionRow(
                       icon: LucideIcons.sliders,

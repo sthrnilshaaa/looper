@@ -14,179 +14,259 @@ extension _CollectionPlaylistOptions on CollectionDetailView {
       isScrollControlled: true,
       builder: (context) {
         final l10n = AppLocalizations.of(context)!;
-        final settings = ref.watch(settingsProvider);
-        final useBlur = settings.enableDynamicTheming && !settings.disableBlur;
-        final isPureBlack = settings.darkTheme;
+        final isWide =
+            Responsive.isLandscape(MediaQuery.sizeOf(context)) ||
+            UiUtils.isDesktop;
 
-        // (icon, color, label, action) - the sheet closes before the action.
-        final rows = <(IconData, Color, String, VoidCallback)>[
-          (
-            LucideIcons.edit2,
-            Colors.greenAccent,
-            l10n.renamePlaylist,
-            () => _showRenameDialog(context, ref, playlist),
-          ),
-          (
-            LucideIcons.image,
-            Colors.lightBlueAccent,
-            l10n.changePlaylistCover,
-            () => _pickPlaylistCover(playlist),
-          ),
-          if (playlist.coverPath != null)
-            (
-              LucideIcons.imageOff,
-              Colors.orangeAccent,
-              l10n.removePlaylistCover,
-              () => PlaylistService.setCover(playlist, null),
-            ),
-          (
-            LucideIcons.trash2,
-            Colors.redAccent,
-            l10n.deletePlaylist,
-            () => _showDeleteDialog(context, ref, playlist),
-          ),
-        ];
+        Widget surface({
+          required double height,
+          required VoidCallback onTap,
+          required Widget child,
+          BoxBorder? border,
+        }) =>
+            Material(
+              color: Colors.white.withValues(alpha: 0.05),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+                side: border is Border ? border.top : BorderSide.none,
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: onTap,
+                child: SizedBox(height: height, child: child),
+              ),
+            );
 
-        final sheetBg = isPureBlack
-            ? Colors.black
-            : (useBlur
-                  ? Colors.black.withValues(alpha: 0.6)
-                  : const Color(0xFF1E1E1E));
+        Widget gridTile(Widget icon, String label, VoidCallback onTap) =>
+            surface(
+              height: 69,
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(13, 15, 8, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    SizedBox(height: 12, child: icon),
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'Stack Sans Text',
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                        letterSpacing: -0.24,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
 
-        Widget sheetContent = Container(
-          decoration: BoxDecoration(
-            color: sheetBg,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border.all(
-              color: isPureBlack
-                  ? Colors.white10
-                  : Colors.white.withValues(alpha: 0.08),
-              width: 1,
-            ),
+        Widget rowTile(
+          Widget icon,
+          String label,
+          VoidCallback onTap, {
+          BoxBorder? border,
+        }) =>
+            surface(
+              height: 62,
+              onTap: onTap,
+              border: border,
+              child: Row(
+                children: [
+                  const SizedBox(width: 20),
+                  SizedBox.square(dimension: 18, child: Center(child: icon)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'Stack Sans Text',
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                        letterSpacing: -0.28,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+
+        Widget body = Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF080808),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: SafeArea(
+            top: false,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(height: 12),
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.white24,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+                const SizedBox(height: 10),
+                Container(
+                  width: 53,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(5),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 16, 8, 16),
+                  padding: const EdgeInsets.fromLTRB(22, 21, 36, 20),
                   child: Row(
                     children: [
-                      const Icon(
-                        LucideIcons.listMusic,
-                        size: 24,
-                        color: Colors.orangeAccent,
+                      PlaylistArtwork(
+                        songPaths: playlist.songPaths,
+                        coverPath: playlist.coverPath,
+                        size: 52,
+                        borderRadius: BorderRadius.circular(5),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 20),
                       Expanded(
-                        child: Text(
-                          playlist.name,
-                          style: AppFonts.jostStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              playlist.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontFamily: 'Space Grotesk',
+                                fontWeight: FontWeight.w700,
+                                fontSize: 18,
+                                height: 23 / 18,
+                                letterSpacing: -0.36,
+                                color: Colors.white,
+                              ),
+                            ),
+                            Text(
+                              l10n.songsCount(playlist.songPaths.length),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontFamily: 'Space Grotesk',
+                                fontWeight: FontWeight.w700,
+                                fontSize: 18,
+                                height: 23 / 18,
+                                letterSpacing: -0.36,
+                                color: Colors.white.withValues(alpha: 0.3),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-                const Divider(color: Colors.white10, height: 1),
-                const SizedBox(height: 8),
-                PremiumSection(
-                  borderRadius: BorderRadius.circular(20),
-                  padding: EdgeInsets.zero,
-                  useExpanded: false,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (final (i, row) in rows.indexed) ...[
-                        if (i > 0)
-                          Divider(
-                            height: 1,
-                            thickness: 0.8,
-                            color: Colors.white.withValues(alpha: 0.04),
-                            indent: 20,
-                            endIndent: 20,
+                Container(
+                  height: 1,
+                  margin: const EdgeInsets.symmetric(horizontal: 30),
+                  color: Colors.white.withValues(alpha: 0.02),
+                ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    physics: const LooperScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(22, 16, 22, 37),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: gridTile(
+                                const Icon(
+                                  LucideIcons.edit2,
+                                  size: 14,
+                                  color: Colors.white,
+                                ),
+                                l10n.renamePlaylist,
+                                () {
+                                  AppHaptics.light();
+                                  Navigator.pop(context);
+                                  _showRenameDialog(context, ref, playlist);
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: gridTile(
+                                const Icon(
+                                  LucideIcons.image,
+                                  size: 14,
+                                  color: Colors.white,
+                                ),
+                                l10n.changePlaylistCover,
+                                () {
+                                  AppHaptics.light();
+                                  Navigator.pop(context);
+                                  _pickPlaylistCover(playlist);
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (playlist.coverPath != null) ...[
+                          const SizedBox(height: 13),
+                          rowTile(
+                            const Icon(
+                              LucideIcons.imageOff,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                            l10n.removePlaylistCover,
+                            () {
+                              AppHaptics.light();
+                              Navigator.pop(context);
+                              PlaylistService.setCover(playlist, null);
+                            },
                           ),
-                        InkWell(
-                          onTap: () {
+                        ],
+                        const SizedBox(height: 16),
+                        rowTile(
+                          SvgPicture.asset(
+                            'assets/icons/player_styles/menu_delete.svg',
+                            width: 18,
+                            height: 18,
+                            colorFilter: const ColorFilter.mode(
+                              Colors.white,
+                              BlendMode.srcIn,
+                            ),
+                          ),
+                          l10n.deletePlaylist,
+                          () {
+                            AppHaptics.warning();
                             Navigator.pop(context);
-                            row.$4();
+                            _showDeleteDialog(context, ref, playlist);
                           },
-                          borderRadius: BorderRadius.vertical(
-                            top: Radius.circular(i == 0 ? 20 : 0),
-                            bottom: Radius.circular(
-                              i == rows.length - 1 ? 20 : 0,
-                            ),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 18,
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(row.$1, size: 22, color: row.$2),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Text(
-                                    row.$3,
-                                    style: AppFonts.jostStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ),
-                                Icon(
-                                  LucideIcons.chevronRight,
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                  size: 18,
-                                ),
-                              ],
-                            ),
+                          border: Border.all(
+                            color: const Color(0x05FFAAAA),
                           ),
                         ),
                       ],
-                    ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 16),
               ],
             ),
           ),
         );
 
-        if (useBlur && !isPureBlack) {
-          return RepaintBoundary(
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28),
-              ),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                child: sheetContent,
-              ),
+        if (isWide) {
+          body = Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: body,
             ),
           );
         }
 
-        return sheetContent;
+        return body;
       },
     );
   }

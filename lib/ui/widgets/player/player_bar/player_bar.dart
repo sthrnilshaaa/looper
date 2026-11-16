@@ -146,10 +146,18 @@ class _PremiumPlayerBar extends ConsumerWidget {
                             final isPlayingVal = ref.watch(
                               playbackProvider.select((s) => s.isPlaying),
                             );
+                            final buffer = ref.watch(
+                              playbackProvider.select((s) => s.buffer),
+                            );
+                            final isStreaming = ref.watch(
+                              playbackProvider.select((s) => s.isStreaming),
+                            );
                             return ExpressiveSlider(
                               position: position,
                               duration: duration,
                               isPlaying: isPlayingVal,
+                              buffer: buffer,
+                              isStreaming: isStreaming,
                               onSeek: (pos) =>
                                   ref.read(playbackProvider.notifier).seek(pos),
                               onSeekStart: () => ref
@@ -295,27 +303,51 @@ class _PremiumPlayerBar extends ConsumerWidget {
           tooltip: l10n.previousLabel,
         ),
         const SizedBox(width: 4),
-        _BouncyTap(
-          onTap: () => ref.read(playbackProvider.notifier).togglePlay(),
-          child: Container(
-            width: (isVeryNarrow ? 28 : 36).s,
-            height: (isVeryNarrow ? 28 : 36).s,
-            decoration: BoxDecoration(
-              color: colorScheme.primary.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: isPlaying
-                ? Icon(
-                    Icons.pause,
-                    color: Colors.white,
-                    size: (isVeryNarrow ? 12 : 18).s,
-                  )
-                : Icon(
-                    Icons.play_arrow_sharp,
-                    color: Colors.white,
-                    size: (isVeryNarrow ? 12 : 18).s,
+        Consumer(
+          builder: (context, ref, _) {
+            final isBuffering = ref.watch(
+              playbackProvider.select((s) => s.isBuffering),
+            );
+            final buttonSize = (isVeryNarrow ? 28 : 36).s;
+            return _BouncyTap(
+              onTap: () => ref.read(playbackProvider.notifier).togglePlay(),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: buttonSize,
+                    height: buttonSize,
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: isPlaying
+                        ? Icon(
+                            Icons.pause,
+                            color: Colors.white,
+                            size: (isVeryNarrow ? 12 : 18).s,
+                          )
+                        : Icon(
+                            Icons.play_arrow_sharp,
+                            color: Colors.white,
+                            size: (isVeryNarrow ? 12 : 18).s,
+                          ),
                   ),
-          ),
+                  if (isBuffering)
+                    SizedBox(
+                      width: buttonSize,
+                      height: buttonSize,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.0,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
         ),
         const SizedBox(width: 4),
         IconButton(

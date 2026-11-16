@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:looper_player/core/services/storage/local_json_store.dart';
 import 'package:looper_player/core/theme/app_assets.dart';
@@ -94,3 +95,21 @@ Stream<List<GithubContributor>> githubContributors(Ref ref) async* {
     debugPrint('githubContributors: $e');
   }
 }
+
+/// Stargazer count of [AppLinks.githubStatsRepo]; null while loading/offline.
+final githubStarsProvider = FutureProvider<int?>((ref) async {
+  try {
+    final response = await http
+        .get(
+          Uri.parse(AppLinks.githubStatsRepoApi),
+          headers: const {'Accept': 'application/vnd.github+json'},
+        )
+        .timeout(const Duration(seconds: 10));
+    if (response.statusCode != 200) return null;
+    final stars = (jsonDecode(response.body) as Map)['stargazers_count'];
+    return stars is int ? stars : null;
+  } catch (e) {
+    debugPrint('githubStars: $e');
+    return null;
+  }
+});

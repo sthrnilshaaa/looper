@@ -21,7 +21,7 @@ class AddFolderTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     return ListTile(
-      leading: const Icon(LucideIcons.plus, color: Colors.white70),
+      leading: const Icon(LucideIcons.plus),
       title: Text(l10n.addFolder, style: _tileTitleStyle()),
       trailing: const Icon(
         LucideIcons.chevronRight,
@@ -44,7 +44,7 @@ class ExcludedFoldersTile extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final excluded = ref.watch(excludedFoldersProvider);
     return ListTile(
-      leading: const Icon(LucideIcons.folderMinus, color: Colors.white70),
+      leading: const Icon(LucideIcons.folderMinus),
       title: Text(context.l10n.excludedFolders, style: _tileTitleStyle()),
       subtitle: Text(
         excluded.isEmpty
@@ -88,7 +88,7 @@ class ExcludedFoldersTile extends ConsumerWidget {
                 children: [
                   Text(
                     context.l10n.excludedFolders,
-                    style: AppFonts.jostStyle(
+                    style: AppFonts.settingsStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -174,7 +174,7 @@ class SyncLyricsOfflineTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     return ListTile(
-      leading: const Icon(LucideIcons.downloadCloud, color: Colors.white70),
+      leading: const Icon(LucideIcons.downloadCloud),
       title: Text(l10n.syncLyricsOffline, style: _tileTitleStyle()),
       trailing: const Icon(
         LucideIcons.chevronRight,
@@ -199,7 +199,7 @@ class ClearLyricsCacheTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     return ListTile(
-      leading: const Icon(LucideIcons.eraser, color: Colors.white70),
+      leading: const Icon(LucideIcons.eraser),
       title: Text(l10n.clearLyricsCache, style: _tileTitleStyle()),
       subtitle: Text(l10n.clearLyricsCacheDesc, style: _tileSubtitleStyle()),
       onTap: () async {
@@ -244,7 +244,7 @@ class RescanLibraryTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     return ListTile(
-      leading: const Icon(LucideIcons.refreshCcw, color: Colors.white70),
+      leading: const Icon(LucideIcons.refreshCcw),
       title: Text(l10n.rescanLibrary, style: _tileTitleStyle()),
       trailing: const Icon(
         LucideIcons.chevronRight,
@@ -274,7 +274,7 @@ class IncludeSystemAndMessagingAudioTile extends ConsumerWidget {
       settingsProvider.select((s) => s.includeSystemAndMessagingAudio),
     );
     return SwitchListTile(
-      secondary: const Icon(LucideIcons.audioLines, color: Colors.white70),
+      secondary: const Icon(LucideIcons.audioLines),
       title: Text(l10n.includeOtherDeviceAudioTitle, style: _tileTitleStyle()),
       subtitle: Text(
         l10n.includeOtherDeviceAudioDesc,
@@ -304,7 +304,7 @@ class ResetLibraryTile extends ConsumerWidget {
       leading: const Icon(LucideIcons.trash2, color: Colors.redAccent),
       title: Text(
         l10n.resetLibrary,
-        style: AppFonts.jostStyle(
+        style: AppFonts.settingsStyle(
           color: Colors.redAccent,
           fontWeight: FontWeight.w600,
         ),
@@ -323,7 +323,7 @@ class ResetLibraryTile extends ConsumerWidget {
 }
 
 TextStyle _tileTitleStyle() =>
-    AppFonts.jostStyle(color: Colors.white, fontWeight: FontWeight.w500);
+    AppFonts.settingsStyle(color: Colors.white, fontWeight: FontWeight.w500);
 
 TextStyle _tileSubtitleStyle() =>
-    AppFonts.jostStyle(color: Colors.white54, fontSize: 12);
+    AppFonts.settingsStyle(color: Colors.white54, fontSize: 12);

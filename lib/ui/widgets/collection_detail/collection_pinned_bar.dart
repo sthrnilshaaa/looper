@@ -18,6 +18,7 @@ class CollectionPinnedBar extends SliverPersistentHeaderDelegate {
     this.imageUrl,
     this.playlist,
     this.onAdd,
+    this.actionIcon,
   });
 
   /// Top padding + button + bottom padding, as on the Songs/Library tabs.
@@ -31,6 +32,7 @@ class CollectionPinnedBar extends SliverPersistentHeaderDelegate {
   final String? imageUrl;
   final Playlist? playlist;
   final VoidCallback? onAdd;
+  final IconData? actionIcon;
 
   @override
   double get minExtent => height;
@@ -216,8 +218,8 @@ class _PinnedBarState extends State<_PinnedBar> {
                       backgroundColor: Colors.white.withValues(alpha: 0.04),
                       useBlur: true,
                       onTap: d.onAdd,
-                      child: const Icon(
-                        LucideIcons.plus,
+                      child: Icon(
+                        d.actionIcon ?? LucideIcons.plus,
                         color: Colors.white,
                         size: 20,
                       ),

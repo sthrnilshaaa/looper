@@ -23,6 +23,12 @@ extension _DesktopCollection on CollectionDetailView {
     List<Object>? groupedItems,
   }) {
     final l10n = AppLocalizations.of(context)!;
+    final isArtist = reactivePlaylist == null &&
+        reactiveAlbum == null &&
+        (reactiveArtist != null ||
+            subtitle == l10n.artist ||
+            subtitle == l10n.artists ||
+            subtitle?.toLowerCase() == 'artist');
     // Lit only while this collection is the one playing shuffled.
     final key = collectionKey(songs);
     final isShuffle = ref.watch(

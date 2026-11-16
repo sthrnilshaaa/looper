@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:looper_player/ui/widgets/common/optimized_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -130,14 +131,13 @@ class AppTheme extends _$AppTheme {
 
     try {
       _isUpdating = true;
-      final file = File(imagePath);
-      if (!await file.exists()) {
+      if (!await artAvailable(imagePath)) {
         _isUpdating = false;
         return;
       }
 
       final ArtworkColors? colors = await ArtworkColors.fromProvider(
-        FileImage(file),
+        artImage(imagePath),
       );
       if (token != _imageToken) {
         _isUpdating = false;

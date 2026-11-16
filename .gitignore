@@ -74,6 +74,9 @@ scratch/
 log.txt
 *.zip
 test_svg.png
+*.mp4
+t*.txt
+**/.cxx/
 
 # Analytics secrets - never commit these. Populate from scratch using
 # docs/ADS_ANALYTICS_SETUP.md; committed *.example templates document the
@@ -88,4 +91,9 @@ graphify-out/
 .agents/
 AGENTS.md
 docs/
+.claude/
+brag-output/
 
+AGENT_HANDOFF.md
+.gemini/
+.superpowers/

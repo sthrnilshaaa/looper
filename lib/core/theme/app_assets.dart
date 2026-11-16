@@ -8,6 +8,16 @@ class AppAssets {
 
   // Images
   static const String logo = 'assets/images/logo.svg';
+  static const String looperUpdateLogo = 'assets/images/looper_update_logo.svg';
+  static const String aboutMark = 'assets/images/about/about_mark.svg';
+  static const String aboutDownload = 'assets/images/about/about_download.svg';
+  static const String aboutInfo = 'assets/images/about/about_info.svg';
+  static const String aboutStar = 'assets/images/about/about_star.svg';
+  static const String aboutPattern = 'assets/images/about/about_pattern.png';
+  static const String aboutCurve = 'assets/images/about/about_curve.svg';
+  static const String aboutDiscord = 'assets/images/about/social_discord.svg';
+  static const String aboutGithub = 'assets/images/about/social_github.svg';
+  static const String aboutTelegram = 'assets/images/about/social_telegram.svg';
   static const String sessionIcon = 'assets/images/session_icon.png';
   static const String maintainerAvatar =
       'assets/images/about/maintainer_avatar.png';

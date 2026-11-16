@@ -40,13 +40,13 @@ final class LyricsProvider extends $NotifierProvider<Lyrics, LyricsState> {
   }
 }
 
-String _$lyricsHash() => r'845c168f9c82a6ecfc4a901c1ec566a5175a305d';
+String _$lyricsHash() => r'132074e600c9de6a70c1a9aa359efbdad82f947d';
 
 abstract class _$Lyrics extends $Notifier<LyricsState> {
   LyricsState build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<LyricsState, LyricsState>;
     final element =
         ref.element
@@ -56,7 +56,7 @@ abstract class _$Lyrics extends $Notifier<LyricsState> {
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }
 
@@ -99,7 +99,7 @@ abstract class _$LyricsManualScroll extends $Notifier<bool> {
   bool build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<bool, bool>;
     final element =
         ref.element
@@ -109,7 +109,7 @@ abstract class _$LyricsManualScroll extends $Notifier<bool> {
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }
 
@@ -161,7 +161,7 @@ abstract class _$LyricsFullscreen extends $Notifier<bool> {
   bool build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<bool, bool>;
     final element =
         ref.element
@@ -171,7 +171,7 @@ abstract class _$LyricsFullscreen extends $Notifier<bool> {
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }
 
@@ -240,7 +240,7 @@ abstract class _$LyricsActiveLineVisible extends $Notifier<bool> {
   bool build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<bool, bool>;
     final element =
         ref.element
@@ -250,6 +250,6 @@ abstract class _$LyricsActiveLineVisible extends $Notifier<bool> {
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }

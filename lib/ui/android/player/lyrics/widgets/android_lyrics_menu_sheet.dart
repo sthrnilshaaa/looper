@@ -72,6 +72,15 @@ class _LyricsMenuSheetContent extends ConsumerWidget {
       'embedded' => l10n.lyricsSourceEmbedded,
       'local' => l10n.lyricsSourceLocalSidecar,
       'custom_file' => l10n.lyricsSourceCustomFile,
+      'not_found' => l10n.lyricsSourceNotFoundOnline,
+      _ => _formatSourceName(source),
+    };
+    return l10n.lyricsSourceLabel(name);
+  }
+
+  /// A lyrics service's display name.
+  String _formatSourceName(String source) {
+    return switch (source.toLowerCase()) {
       'lrc.red' => 'lrc.red',
       'lyricsplus' => 'LyricsPlus',
       'lrclib' => 'LRCLIB',
@@ -80,10 +89,8 @@ class _LyricsMenuSheetContent extends ConsumerWidget {
       'azlyrics' => 'AZLyrics',
       'lyricsmint' => 'LyricsMINT',
       'lyricfind' => 'LyricFind',
-      'not_found' => l10n.lyricsSourceNotFoundOnline,
       _ => source.toUpperCase(),
     };
-    return l10n.lyricsSourceLabel(name);
   }
 
   String _formatDuration(int durationMs) {
@@ -356,6 +363,38 @@ class _LyricsMenuSheetContent extends ConsumerWidget {
               // song, and whether to fall back through the others.
               _MenuSection(
                 children: [
+                  if (hasLyrics &&
+                      LyricsFetcher.isReportable(lyricsState.source))
+                    _MenuActionTile(
+                      icon: LucideIcons.flag,
+                      iconColor: accent,
+                      title: l10n.wrongLyrics,
+                      subtitle: l10n.wrongLyricsDesc(
+                        _formatSourceName(lyricsState.source!),
+                      ),
+                      onTap: () async {
+                        AppHaptics.medium();
+                        final messenger = ScaffoldMessenger.of(context);
+                        Navigator.pop(context);
+                        final source = await ref
+                            .read(lyricsProvider.notifier)
+                            .reportWrong(song);
+                        messenger.showHapticSnackBar(
+                          source != null
+                              ? AppHaptics.success
+                              : AppHaptics.error,
+                          SnackBar(
+                            content: Text(
+                              source != null
+                                  ? l10n.lyricsUpdatedFrom(
+                                      _formatSourceName(source),
+                                    )
+                                  : l10n.noOtherLyricsFound,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   Padding(
                     padding: const EdgeInsets.only(top: 10, bottom: 10),
                     child: Column(
@@ -482,17 +521,29 @@ class _LyricsMenuSheetContent extends ConsumerWidget {
               _MenuSection(
                 children: [
                   // Only the Android lyrics screen has an ambient background.
-                  if (!desktop)
+                  if (!desktop) ...[
                     _MenuSwitchTile(
-                      icon: LucideIcons.palette,
-                      title: l10n.ambientColorBackground,
-                      subtitle: l10n.ambientColorBackgroundDesc,
-                      value: settings.ambientColorBackground,
+                      icon: LucideIcons.sparkles,
+                      title: l10n.enableLyricsGradient,
+                      subtitle: l10n.enableLyricsGradientDesc,
+                      value: settings.enableLyricsGradient,
                       accent: accent,
                       onChanged: (val) => ref
                           .read(settingsProvider.notifier)
-                          .updateAmbientColorBackground(val),
+                          .updateEnableLyricsGradient(val),
                     ),
+                    if (settings.enableLyricsGradient)
+                      _MenuSwitchTile(
+                        icon: LucideIcons.palette,
+                        title: l10n.ambientColorBackground,
+                        subtitle: l10n.ambientColorBackgroundDesc,
+                        value: settings.ambientColorBackground,
+                        accent: accent,
+                        onChanged: (val) => ref
+                            .read(settingsProvider.notifier)
+                            .updateAmbientColorBackground(val),
+                      ),
+                  ],
                   if (desktop)
                     ListTile(
                       contentPadding: const EdgeInsets.only(

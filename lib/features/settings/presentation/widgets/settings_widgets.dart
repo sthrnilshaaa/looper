@@ -12,6 +12,7 @@ import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/core/utils/l10n.dart';
 import 'package:looper_player/core/theme/app_assets.dart';
 import 'package:looper_player/core/services/haptics/app_haptics.dart';
+import 'package:looper_player/core/utils/motion.dart';
 
 class ColorCircle extends StatelessWidget {
   final Color color;
@@ -81,7 +82,7 @@ class MaintainerTile extends StatelessWidget {
       ),
       title: Text(
         name,
-        style: AppFonts.jostStyle(
+        style: AppFonts.settingsStyle(
           color: Colors.white,
           fontWeight: FontWeight.w600,
           fontSize: 15,
@@ -89,7 +90,7 @@ class MaintainerTile extends StatelessWidget {
       ),
       subtitle: Text(
         role,
-        style: AppFonts.jostStyle(color: Colors.white54, fontSize: 12),
+        style: AppFonts.settingsStyle(color: Colors.white54, fontSize: 12),
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -142,14 +143,20 @@ class LibraryFoldersList extends ConsumerWidget {
           .map(
             (path) => ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-              leading: const Icon(LucideIcons.folder, color: Colors.white70),
+              leading: const Icon(LucideIcons.folder),
               title: Text(
                 displayFileName(path),
-                style: AppFonts.jostStyle(color: Colors.white, fontSize: 14),
+                style: AppFonts.settingsStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                ),
               ),
               subtitle: Text(
                 path,
-                style: AppFonts.jostStyle(color: Colors.white54, fontSize: 11),
+                style: AppFonts.settingsStyle(
+                  color: Colors.white54,
+                  fontSize: 11,
+                ),
               ),
               trailing: IconButton(
                 icon: const Icon(
@@ -182,7 +189,9 @@ class LibraryFoldersList extends ConsumerWidget {
   }
 }
 
-class SettingsSliderTile extends ConsumerWidget {
+/// A slider row that reads like a toggle row: the value sits in a pill on
+/// the right, and tapping the row slides the track open below it.
+class SettingsSliderTile extends StatefulWidget {
   final IconData icon;
   final String title;
   final String subtitle;
@@ -197,6 +206,9 @@ class SettingsSliderTile extends ConsumerWidget {
   /// every step).
   final ValueChanged<double>? onChangeEnd;
 
+  /// Extra content (e.g. a live preview) shown under the track while open.
+  final Widget? expandedChild;
+
   const SettingsSliderTile({
     super.key,
     required this.icon,
@@ -209,77 +221,123 @@ class SettingsSliderTile extends ConsumerWidget {
     required this.suffix,
     required this.onChanged,
     this.onChangeEnd,
+    this.expandedChild,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: Colors.white70, size: 22),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: AppFonts.jostStyle(
+  State<SettingsSliderTile> createState() => _SettingsSliderTileState();
+}
+
+class _SettingsSliderTileState extends State<SettingsSliderTile> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final reduced = Motion.reducedOf(context);
+    final value = widget.value.clamp(widget.min, widget.max).toDouble();
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Semantics(
+          button: true,
+          expanded: _open,
+          child: InkWell(
+            onTap: () {
+              AppHaptics.selection();
+              setState(() => _open = !_open);
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(widget.icon, color: Colors.white70, size: 22),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.title,
+                          style: AppFonts.settingsStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          widget.subtitle,
+                          style: AppFonts.settingsStyle(
+                            color: Colors.white54,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Same footprint as a switch so rows line up.
+                  AnimatedContainer(
+                    duration: Duration(milliseconds: reduced ? 0 : 200),
+                    constraints: const BoxConstraints(minWidth: 52),
+                    height: 30,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(
+                        alpha: _open ? 0.18 : 0.08,
+                      ),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Text(
+                      '${value.round()}${widget.suffix}',
+                      style: AppFonts.settingsStyle(
                         color: Colors.white,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: AppFonts.jostStyle(
-                        color: Colors.white54,
-                        fontSize: 12,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        AnimatedSize(
+          duration: Duration(milliseconds: reduced ? 0 : 240),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: !_open
+              ? const SizedBox(width: double.infinity)
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(44, 0, 12, 8),
+                      child: SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 6,
+                          ),
+                          overlayShape: const RoundSliderOverlayShape(
+                            overlayRadius: 16,
+                          ),
+                        ),
+                        child: Slider(
+                          value: value,
+                          min: widget.min,
+                          max: widget.max,
+                          divisions: widget.divisions,
+                          onChanged: widget.onChanged,
+                          onChangeEnd: widget.onChangeEnd,
+                        ),
                       ),
                     ),
+                    ?widget.expandedChild,
                   ],
                 ),
-              ),
-              Text(
-                '${value.round()}$suffix',
-                style: AppFonts.jostStyle(
-                  color: Colors.white70,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              trackHeight: 4,
-              activeTrackColor: ref.watch(settingsProvider).accent,
-              inactiveTrackColor: Colors.white10,
-              thumbColor: ref.watch(settingsProvider).accent,
-              overlayColor: ref
-                  .watch(settingsProvider)
-                  .accent
-                  .withValues(alpha: 0.12),
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
-            ),
-            child: Slider(
-              value: value,
-              min: min,
-              max: max,
-              divisions: divisions,
-              onChanged: onChanged,
-              onChangeEnd: onChangeEnd,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -297,3 +355,254 @@ class SettingsSearchItem {
     required this.widget,
   });
 }
+
+/// Card fill for the settings screens (Figma devvlooper). Neutral on
+/// purpose: settings chrome never takes the accent colour.
+const kSettingsCard = Color(0xFF101010);
+const kSettingsDivider = Color(0x0FFFFFFF);
+
+/// Icons exported from the Figma devvlooper settings/account screens.
+abstract final class SettingsIcons {
+  static const _d = 'assets/icons/settings';
+  static const backButton = '$_d/back_button.svg';
+  static const arrow = '$_d/arrow.svg';
+  static const chevron = '$_d/chevron.svg';
+  static const search = '$_d/search.svg';
+  static const gear = '$_d/gear.svg';
+  static const headerGear = '$_d/header_gear.svg';
+  static const userCircle = '$_d/user_circle.svg';
+  static const edit = '$_d/edit.svg';
+  static const forward = '$_d/forward.svg';
+  static const palette = '$_d/palette.svg';
+  static const musicManage = '$_d/music_manage.svg';
+  static const gesture = '$_d/gesture.svg';
+  static const info = '$_d/info.svg';
+  static const check = '$_d/check.svg';
+}
+
+/// Circle back button + title, used by Settings and every sub-screen.
+class SettingsHeader extends StatelessWidget {
+  const SettingsHeader({
+    super.key,
+    required this.title,
+    required this.onBack,
+    this.centerTitle = false,
+  });
+
+  final String title;
+  final VoidCallback onBack;
+  final bool centerTitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final material = MaterialLocalizations.of(context);
+    return Row(
+      children: [
+        Semantics(
+          button: true,
+          label: material.backButtonTooltip,
+          child: InkWell(
+            onTap: onBack,
+            customBorder: const CircleBorder(),
+            child: SvgPicture.asset(
+              SettingsIcons.backButton,
+              width: 41,
+              height: 40,
+            ),
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: centerTitle ? TextAlign.center : TextAlign.start,
+            style: AppFonts.settingsStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        // Balances the back button so a centred title sits truly centred.
+        if (centerTitle) const SizedBox(width: 55),
+      ],
+    );
+  }
+}
+
+/// Rounded neutral card; children are separated by inset hairlines.
+class SettingsGroupCard extends StatelessWidget {
+  const SettingsGroupCard({super.key, required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: kSettingsCard,
+      borderRadius: BorderRadius.circular(15),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final (i, child) in children.indexed) ...[
+            if (i > 0)
+              const Divider(
+                height: 1,
+                indent: 16,
+                endIndent: 16,
+                color: kSettingsDivider,
+              ),
+            child,
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Icon + title/subtitle + chevron row that opens a settings sub-screen.
+class SettingsNavRow extends StatelessWidget {
+  const SettingsNavRow({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.svg,
+  });
+
+  final IconData icon;
+
+  /// Figma icon; takes precedence over [icon] when set.
+  final String? svg;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: Center(
+                child: svg != null
+                    ? SvgPicture.asset(svg!, width: 20, height: 20)
+                    : Icon(icon, color: Colors.white, size: 22),
+              ),
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppFonts.settingsStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppFonts.settingsStyle(
+                      color: Colors.white.withValues(alpha: 0.4),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(LucideIcons.chevronRight, color: Colors.white, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Theme for settings sub-screens: neutral white/grey switches, sliders
+/// and icons instead of the accent colour (Figma devvlooper 2162:1359).
+/// [t] in DM Sans with zero letter spacing, for text in settings that
+/// doesn't set its own style (chips, dialogs, default list text).
+TextTheme _settingsText(TextTheme t) {
+  TextStyle? z(TextStyle? s) =>
+      s?.copyWith(fontFamily: AppFonts.dmSans, letterSpacing: 0);
+  return t.copyWith(
+    displayLarge: z(t.displayLarge),
+    displayMedium: z(t.displayMedium),
+    displaySmall: z(t.displaySmall),
+    headlineLarge: z(t.headlineLarge),
+    headlineMedium: z(t.headlineMedium),
+    headlineSmall: z(t.headlineSmall),
+    titleLarge: z(t.titleLarge),
+    titleMedium: z(t.titleMedium),
+    titleSmall: z(t.titleSmall),
+    bodyLarge: z(t.bodyLarge),
+    bodyMedium: z(t.bodyMedium),
+    bodySmall: z(t.bodySmall),
+    labelLarge: z(t.labelLarge),
+    labelMedium: z(t.labelMedium),
+    labelSmall: z(t.labelSmall),
+  );
+}
+
+ThemeData settingsTheme(ThemeData base) => base.copyWith(
+  textTheme: _settingsText(base.textTheme),
+  switchTheme: SwitchThemeData(
+    thumbColor: WidgetStateProperty.resolveWith(
+      (s) => s.contains(WidgetState.selected)
+          ? Colors.white
+          : const Color(0xFF3A3A3A),
+    ),
+    trackColor: WidgetStateProperty.resolveWith(
+      (s) => s.contains(WidgetState.selected)
+          ? Colors.white.withValues(alpha: 0.5)
+          : Colors.white.withValues(alpha: 0.05),
+    ),
+    trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
+    thumbIcon: const WidgetStatePropertyAll(null),
+  ),
+  sliderTheme: base.sliderTheme.copyWith(
+    trackHeight: 5,
+    activeTrackColor: Colors.white,
+    inactiveTrackColor: Colors.white.withValues(alpha: 0.05),
+    thumbColor: Colors.white,
+    overlayColor: Colors.white.withValues(alpha: 0.08),
+    activeTickMarkColor: Colors.transparent,
+    inactiveTickMarkColor: Colors.transparent,
+    valueIndicatorColor: kSettingsCard,
+  ),
+  listTileTheme: base.listTileTheme.copyWith(
+    iconColor: Colors.white,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+    // Compact rows so long categories read as fewer options.
+    visualDensity: VisualDensity.compact,
+    minVerticalPadding: 6,
+  ),
+  radioTheme: RadioThemeData(
+    fillColor: const WidgetStatePropertyAll(Colors.white),
+  ),
+  checkboxTheme: CheckboxThemeData(
+    fillColor: WidgetStateProperty.resolveWith(
+      (s) => s.contains(WidgetState.selected) ? Colors.white : null,
+    ),
+    checkColor: const WidgetStatePropertyAll(Colors.black),
+  ),
+  progressIndicatorTheme: const ProgressIndicatorThemeData(color: Colors.white),
+);

@@ -6,6 +6,12 @@ class EqualizerState {
   final List<double> currentSongGains;
   final bool currentSongHasCustom;
   final String customFilterString;
+  final bool monoEnabled;
+  final bool autoEqEnabled;
+  final double autoEqBass;
+  final double autoEqTilt;
+  final String? autoEqSelectedProfile;
+  final String? autoEqProfileText;
 
   EqualizerState({
     required this.enabled,
@@ -13,6 +19,12 @@ class EqualizerState {
     required this.currentSongGains,
     required this.currentSongHasCustom,
     this.customFilterString = '',
+    this.monoEnabled = false,
+    this.autoEqEnabled = false,
+    this.autoEqBass = 0.0,
+    this.autoEqTilt = 0.0,
+    this.autoEqSelectedProfile,
+    this.autoEqProfileText,
   });
 
   double get preampGain =>
@@ -77,6 +89,12 @@ class EqualizerState {
     List<double>? currentSongGains,
     bool? currentSongHasCustom,
     String? customFilterString,
+    bool? monoEnabled,
+    bool? autoEqEnabled,
+    double? autoEqBass,
+    double? autoEqTilt,
+    String? autoEqSelectedProfile,
+    String? autoEqProfileText,
   }) {
     return EqualizerState(
       enabled: enabled ?? this.enabled,
@@ -84,6 +102,13 @@ class EqualizerState {
       currentSongGains: currentSongGains ?? this.currentSongGains,
       currentSongHasCustom: currentSongHasCustom ?? this.currentSongHasCustom,
       customFilterString: customFilterString ?? this.customFilterString,
+      monoEnabled: monoEnabled ?? this.monoEnabled,
+      autoEqEnabled: autoEqEnabled ?? this.autoEqEnabled,
+      autoEqBass: autoEqBass ?? this.autoEqBass,
+      autoEqTilt: autoEqTilt ?? this.autoEqTilt,
+      autoEqSelectedProfile:
+          autoEqSelectedProfile ?? this.autoEqSelectedProfile,
+      autoEqProfileText: autoEqProfileText ?? this.autoEqProfileText,
     );
   }
 }

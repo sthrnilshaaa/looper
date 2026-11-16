@@ -18,10 +18,14 @@ class AppRefreshIndicator extends StatelessWidget {
   final Widget child;
   final Future<void> Function() onRefresh;
 
+  /// False turns pull-to-refresh off without rebuilding the list below.
+  final bool enabled;
+
   const AppRefreshIndicator({
     super.key,
     required this.child,
     required this.onRefresh,
+    this.enabled = true,
   });
 
   @override
@@ -29,6 +33,9 @@ class AppRefreshIndicator extends StatelessWidget {
     return RefreshIndicator(
       color: Theme.of(context).colorScheme.primary,
       backgroundColor: const Color(0xFF1E1E1E),
+      notificationPredicate: enabled
+          ? defaultScrollNotificationPredicate
+          : (_) => false,
       onRefresh: () => Future.wait([
         Future<void>.sync(onRefresh).catchError((_) {}),
         Future<void>.delayed(_minimumVisible),

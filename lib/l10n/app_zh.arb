@@ -39,6 +39,12 @@
   "ascending": "升序",
   "audioCrossfade": "音频交叉淡入淡出",
   "audioCrossfadeDesc": "在切歌时平滑重叠轨道",
+  "crossfadeDuration": "交叉淡化时长",
+  "crossfadeDurationDesc": "歌曲之间重叠过渡的持续时间",
+  "smartTransitions": "智能过渡",
+  "smartTransitionsDesc": "对齐提示点、跳过静音片段并防止歌词被截断",
+  "beatMixing": "节奏混音（实验性）",
+  "beatMixingDesc": "匹配节拍速度并对齐重音，实现无缝 DJ 式过渡",
   "audioFocusDenied": "播放暂停：系统拒绝音频焦点",
   "audioPlayback": "音频与播放",
   "audioPlaybackDesc": "交叉淡入淡出、静音间隙和淡入淡出设置",
@@ -104,6 +110,8 @@
   "enableNetworkLyricsArt": "启用网络使用在线歌词和艺术家艺术",
   "enablePlayerGradient": "音乐屏幕渐变",
   "enablePlayerGradientDesc": "在正在播放的屏幕上启用径向强调渐变背景",
+  "enableLyricsGradient": "歌词屏幕渐变",
+  "enableLyricsGradientDesc": "在歌词屏幕上启用径向强调渐变背景",
   "fadeDuration": "淡入淡出时长",
   "fadeDurationDesc": "播放/暂停/停止淡化效果的持续时间",
   "fadeOnSeek": "跳转进度时淡出淡入",
@@ -1008,6 +1016,11 @@
   "checkForUpdates": "检查更新",
   "updateUpToDate": "当前已是最新版本。",
   "updateCheckFailed": "无法检查更新。",
+  "updateAlreadyLatest": "已是最新版本",
+  "updateWhatChangedOn": "{version} 更新内容",
+  "updateInstallHere": "在此安装",
+  "updateOpenInWeb": "在网页中打开",
+  "updateNoThanks": "不用了",
   "uiScale": "界面缩放",
   "uiScaleDesc": "将应用中的所有内容缩小或放大",
   "lyricsSize": "歌词大小",
@@ -1063,5 +1076,790 @@
   "desktopWelcomeInsightsTitle": "收听统计",
   "desktopWelcomeInsightsDesc": "在 Looper Analyze 中查看你最常听的歌曲、艺人和收听时长。",
   "groupByAlbum": "按专辑分组",
-  "groupByAlbumDesc": "在艺人页面中按专辑显示歌曲"
+  "groupByAlbumDesc": "在艺人页面中按专辑显示歌曲",
+  "onlineMusic": "在线音乐",
+  "onlineSettingsDesc": "流媒体、音质、缓存和推荐",
+  "onlineForYou": "为你推荐",
+  "onlineDiscover": "发现新音乐",
+  "onlineRefresh": "刷新",
+  "onlineRefreshDesc": "如果歌曲无法加载，请重置在线连接",
+  "onlineRefreshed": "在线音乐已刷新",
+  "onlineLoadFailed": "无法加载在线音乐。点击“刷新”重试。",
+  "onlineNoResults": "没有在线结果",
+  "onlineLoadMore": "加载更多",
+  "onlinePersonalizeTitle": "打造你的专属",
+  "onlinePersonalizeBody": "选择你喜欢的流派和艺人，获得更好的推荐。",
+  "onlineFollow": "关注",
+  "onlineFollowing": "已关注",
+  "artistsForYou": "为你推荐的艺人",
+  "tasteGenresTitle": "你平时听什么？",
+  "tasteArtistsTitle": "选择你喜欢的艺人",
+  "tasteSearchArtists": "搜索艺人",
+  "tasteSkip": "跳过",
+  "onlineEnabledDesc": "从 YouTube Music 搜索、在线播放并获取推荐",
+  "onlineNeedsInternet": "需要互联网模式（设置 > 通用）",
+  "onlineYourTaste": "你的口味",
+  "onlineYourTasteDesc": "用于推荐的流派和艺人",
+  "onlinePreferLocal": "优先使用本地文件",
+  "onlinePreferLocalDesc": "如果你有歌曲的本地副本，则播放该副本",
+  "onlineStreaming": "流媒体",
+  "onlineQualityWifi": "Wi-Fi 下的音质",
+  "onlineQualityMobile": "移动数据下的音质",
+  "onlineQualityHigh": "高",
+  "onlineQualityNormal": "标准",
+  "onlineQualityLow": "低",
+  "onlinePreload": "预加载后续歌曲",
+  "onlinePreloadDesc": "提前下载接下来的歌曲，切歌即刻播放，并可离线播放",
+  "onlinePreloadMobile": "使用移动数据时也预加载",
+  "onlineCache": "缓存",
+  "onlineCachePlayed": "保存已播放的歌曲",
+  "onlineCachePlayedDesc": "保留在线播放过的歌曲，重播时可离线播放且无需重新获取",
+  "onlineCachePlayedMobile": "使用移动数据时也保存",
+  "onlineCachePlayedMobileDesc": "首次播放时会消耗额外的移动数据，以保存歌曲供离线重播",
+  "onlineCacheLimit": "缓存大小上限",
+  "onlineCacheLimitDesc": "最久未播放的歌曲会被优先删除",
+  "onlineClearCache": "清除在线缓存",
+  "onlineClearCacheDesc": "仅音频；歌词会保留",
+  "onlineCacheUsed": "已使用 {size}",
+  "onlineSongSkipped": "已跳过 {title}：{reason}",
+  "onlinePlaybackStopped": "在线播放已停止：{reason}",
+  "onlineDisclaimerTitle": "开启在线音乐？",
+  "onlineDisclaimerBody": "在线音乐直接从 YouTube Music 播放和搜索歌曲。它会使用网络流量，并依赖可能随时变更或停止服务的第三方服务。",
+  "onlineTurnOn": "开启",
+  "onlineNotNow": "暂不",
+  "onlineStatusOn": "在线音乐：已开启",
+  "onlineStatusLimited": "在线音乐：受限",
+  "onlineStatusOffline": "在线音乐：离线",
+  "notInterested": "不感兴趣",
+  "notInterestedSongHidden": "已从推荐中隐藏该歌曲",
+  "blockArtist": "不再推荐 {artist}",
+  "artistBlocked": "已在推荐中屏蔽该艺人",
+  "detectedProfiles": "检测到的口味混音",
+  "detectedProfilesDesc": "根据你的音乐库和收听习惯自动创建的混音",
+  "hiddenProfiles": "已隐藏的混音",
+  "hiddenSongs": "已隐藏的歌曲",
+  "blockedArtists": "已屏蔽的艺人",
+  "noHiddenItems": "没有已隐藏的歌曲或已屏蔽的艺人",
+  "undo": "撤销",
+  "download": "下载",
+  "downloaded": "已下载",
+  "downloadAll": "全部下载",
+  "downloadingSong": "正在下载 {title}…",
+  "downloadQueued": "已将 {count} 首歌曲加入下载队列",
+  "downloadFolder": "下载文件夹",
+  "downloadQuality": "下载音质",
+  "onlineDownloads": "下载",
+  "onlineCreditsTitle": "在线流媒体",
+  "creditYouTubeMusicDesc": "歌曲、封面和推荐来自 YouTube Music。Looper 与 YouTube 或 Google 无关联，也未获得其认可。",
+  "creditKodaDesc": "其关于 YouTube Music 流媒体的文档化设计和修复为本功能提供了指导（参见这些文档的 README）。",
+  "creditYtDlpDesc": "在桌面端安装后，用作加载音频流的备用方案。Unlicense。",
+  "wrongLyrics": "歌词不对",
+  "wrongLyricsDesc": "此歌曲跳过 {provider} 并查找其他歌词",
+  "noOtherLyricsFound": "未找到其他歌词",
+  "downloads": "下载",
+  "accountTitle": "Google 账号",
+  "accountSignedOutDesc": "登录以查看你的 YouTube Music 音乐库和合辑",
+  "accountSignedInAs": "已登录为 {name}",
+  "accountSignedIn": "已登录",
+  "accountSignInMicrog": "使用 microG 登录",
+  "accountSignInMicrogDesc": "使用 GmsCore 中已有的 Google 账号",
+  "accountSignInWeb": "使用 Google 登录",
+  "accountSignInWebDesc": "Google 官方登录页面",
+  "accountPasteCookies": "粘贴 Cookie",
+  "accountPasteCookiesDesc": "使用已登录浏览器的会话",
+  "accountPasteHelp": "在浏览器无痕窗口中打开 music.youtube.com 并登录。在开发者工具（网络标签）中复制任意 music.youtube.com 请求的 Cookie 请求头，粘贴到这里，然后关闭该窗口。",
+  "accountCookieHeader": "Cookie 请求头",
+  "accountNoSapisid": "这段文本中没有 SAPISID Cookie。请从已登录的 music.youtube.com 请求中复制。",
+  "accountSignOut": "退出登录",
+  "accountSignOutDesc": "在此设备上移除此账号",
+  "accountExpired": "会话已过期，请重新登录。",
+  "accountSignInFailed": "登录失败：{error}",
+  "accountRisk": "在第三方应用中登录 YouTube 违反 YouTube 条款，可能导致账号被要求验证。使用备用账号更安全。无论是否登录，歌曲播放都不会使用你的账号。",
+  "reorderHome": "重新排列主页",
+  "reorderHomeDragHint": "按住并拖动一行",
+  "reorderHomeHint": "或在主页空白处按住 5 秒，然后按住并拖动各行。",
+  "onlineFeedRow": "在线精选",
+  "onlineFeedRowDesc": "心情和靠前的在线栏目",
+  "onlineMoreRow": "更多在线内容",
+  "onlineMoreRowDesc": "其余在线栏目",
+  "artistsForYouRowDesc": "按你口味挑选的在线艺人",
+  "reorderMoveUp": "上移",
+  "reorderMoveDown": "下移",
+  "reorderRowA11yHint": "双击并按住以移动",
+  "bluetoothCodec": "Bluetooth Codec",
+  "qualityBlockersTitle": "Active Blockers",
+  "qualityTurnBlockersOff": "Turn these off",
+  "qualityTurnBlockersOn": "Turn these back on",
+  "eqMono": "Mono Audio (Single Earbud)",
+  "eqReplayGainTitle": "Volume Normalization (ReplayGain)",
+  "eqReplayGainPreamp": "Normalization Preamp",
+  "@hapticStrength": {
+    "description": "Label of the haptic strength slider under the Haptic feedback switch"
+  },
+  "@activeFont": {
+    "placeholders": {
+      "fontName": {
+        "type": "String"
+      }
+    }
+  },
+  "@activeLyricsFont": {
+    "placeholders": {
+      "fontName": {
+        "type": "String"
+      }
+    }
+  },
+  "@sleepTimerStoppingIn": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "@sleepTimerStoppingAfter": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "@enrichingSongs": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@analyzePlaysAndSongs": {
+    "placeholders": {
+      "plays": {
+        "type": "int"
+      },
+      "songs": {
+        "type": "int"
+      }
+    }
+  },
+  "@playsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@songsPlayedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@errorWithDetails": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@songsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@lyricsProvidedBy": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "@failedToImportLyrics": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@lyricsEditorLineNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "@lyricsEditorSelectedLine": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "@fileNotFoundOrInaccessible": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "@playbackFailedCorrupted": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "@shareSongText": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "@shareSongsText": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@noSettingsFoundFor": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "@lyricsFontWeightValue": {
+    "placeholders": {
+      "weight": {
+        "type": "int"
+      }
+    }
+  },
+  "@versionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "@foldersSkippedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@deletePresetConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@lyricsSourceLabel": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "@fetchingLyricsFrom": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "@lyricsUpdatedFrom": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "@noLyricsFoundOn": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "@lyricsExportedTo": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "@failedToExportLyrics": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@linesSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@playCountTimes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@channelShort": {
+    "placeholders": {
+      "channel": {
+        "type": "int"
+      }
+    }
+  },
+  "@sampleRateHz": {
+    "placeholders": {
+      "rate": {
+        "type": "int"
+      }
+    }
+  },
+  "@nyquistKhz": {
+    "placeholders": {
+      "khz": {
+        "type": "String"
+      }
+    }
+  },
+  "@qualityResampledBy": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "@welcomeStep": {
+    "placeholders": {
+      "step": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "@minutesShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@minuteChip": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@songsCountTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@songsLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@sleepTimerWithRemaining": {
+    "placeholders": {
+      "remaining": {
+        "type": "String"
+      }
+    }
+  },
+  "@addedSongsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@updateAvailableOnGithub": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "@backupImportedSummary": {
+    "placeholders": {
+      "favorites": {
+        "type": "int"
+      },
+      "stats": {
+        "type": "int"
+      },
+      "playlists": {
+        "type": "int"
+      }
+    }
+  },
+  "@analyzeSongsOfTotal": {
+    "placeholders": {
+      "played": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "@daysCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@durationHoursMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "@durationMinutesOnly": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "@analyzeAvgPerDay": {
+    "placeholders": {
+      "avg": {
+        "type": "String"
+      }
+    }
+  },
+  "@m3uImportedSummary": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "found": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "@m3uImportedMany": {
+    "placeholders": {
+      "playlists": {
+        "type": "int"
+      },
+      "found": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "@noResultsFor": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "@selectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@desktopWelcomeScanningFolder": {
+    "placeholders": {
+      "folder": {
+        "type": "String"
+      }
+    }
+  },
+  "@desktopWelcomeNoSongsDesc": {
+    "placeholders": {
+      "folder": {
+        "type": "String"
+      }
+    }
+  },
+  "@onlineCacheUsed": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "@onlineSongSkipped": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "@onlinePlaybackStopped": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "@blockArtist": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "@downloadingSong": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "@downloadQueued": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@wrongLyricsDesc": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "@accountSignedInAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@accountSignInFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "animatedArtworks": "Animated artworks",
+  "animatedArtworksDesc": "Motion album covers, playlist motion, and artist banners",
+  "animatedArtworksAlways": "Always",
+  "animatedArtworksWifiOnly": "Wi-Fi only",
+  "animatedArtworksNever": "Never",
+  "immersivePlayerBackground": "Immersive motion background",
+  "immersivePlayerBackgroundDesc": "Use motion artwork as full player backdrop",
+  "customArtworkServer": "Motion artwork server",
+  "customArtworkServerDesc": "Self-hosted m8tec server URL or direct Apple Music",
+  "animatedArtworkCacheLimit": "Motion artwork cache limit",
+  "clearAnimatedArtworkCache": "Clear motion artwork cache",
+  "animatedArtworkCacheCleared": "Motion artwork cache cleared",
+  "linkAnimatedArtwork": "Link animated artwork",
+  "linkAnimatedArtworkPrompt": "Enter Apple Music album or playlist URL",
+  "onlineRadioStation": "Radio station",
+  "onlineMixSongRadio": "Radio based on this song",
+  "onlineMixArtistRadio": "Artist radio",
+  "onlineMixPersonal": "Made for you",
+  "onlineMixPlaylistRadio": "Radio based on this playlist",
+  "onlineGuestPrivacyNote": "Guest mode uses a few of your most played song names to search YouTube Music. Nothing else leaves your phone.",
+  "onlineGuestQuickPicks": "Quick picks from your library",
+  "onlineGuestRadio": "Radio: based on {song}",
+  "@onlineGuestRadio": {
+    "placeholders": {
+      "song": {
+        "type": "String"
+      }
+    }
+  },
+  "onlineGuestBecause": "Because you listen to {artist}",
+  "@onlineGuestBecause": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "onlineGuestSimilar": "Similar to {artist}",
+  "@onlineGuestSimilar": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "onlineGuestMoreFrom": "More from {artist}",
+  "@onlineGuestMoreFrom": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "onlineGuestTrending": "Trending in {genre}",
+  "@onlineGuestTrending": {
+    "placeholders": {
+      "genre": {
+        "type": "String"
+      }
+    }
+  },
+  "onlineContentRegion": "Content region",
+  "onlineContentRegionDesc": "Changes charts, trending and suggestions. Song availability still depends on where you are.",
+  "onlineContentRegionAuto": "Auto ({country})",
+  "@onlineContentRegionAuto": {
+    "placeholders": {
+      "country": {
+        "type": "String"
+      }
+    }
+  },
+  "onlineContentRegionSearch": "Search country or region",
+  "ambientGlow": "Ambient glow",
+  "ambientGlowDesc": "Soft moving reflection of the cover around the player",
+  "headphoneCorrection": "Headphone correction",
+  "headphoneCorrectionDesc": "AutoEQ parametric headphone correction profiles",
+  "autoEqBass": "Bass",
+  "autoEqTilt": "Tilt",
+  "autoEqChooseHeadphones": "Choose headphones…",
+  "autoEqUseForDevice": "Use for this device",
+  "autoEqSavedDevices": "Saved devices",
+  "autoEqSearchHeadphones": "Search headphone models",
+  "autoEqDownloadIndex": "Download headphone profiles index",
+  "autoEqNoProfile": "None",
+  "autoEqSpeakerDisabled": "Disabled on phone speaker",
+  "autoEqForget": "Forget",
+  "autoEqCredit": "Profiles: AutoEQ by Jaakko Pasanen (MIT)",
+  "autoEqNoSavedDevices": "No saved devices",
+  "autoEqIndexDownloading": "Downloading index…",
+  "account": "账户",
+  "accountDefaultName": "听众",
+  "accountEditName": "您的称呼",
+  "accountEditNameDesc": "显示在您的账户页面上",
+  "accountHello": "你好，",
+  "accountLooperTag": "{name}的Looper",
+  "@accountLooperTag": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "accountNameHint": "输入您的称呼",
+  "accountOpenSettings": "打开设置",
+  "accountPhoto": "个人资料头像",
+  "accountPhotoDesc": "从设备中选取任意图片",
+  "accountPhotoRemove": "移除头像",
+  "accountProfile": "个人资料",
+  "accountSettings": "账户设置",
+  "accountSettingsDesc": "姓名、头像与已关联账户",
+  "accountTodayListening": "今日收听时长",
+  "accountVersionAbout": "版本与关于应用",
+  "accountViewStats": "查看统计",
+  "catAbout": "关于",
+  "catAboutDesc": "应用信息、版本与致谢",
+  "catBehavior": "操作与行为",
+  "catBehaviorDesc": "手势、触感反馈、语言",
+  "catMisc": "其他设置",
+  "catMiscDesc": "存储、触觉、备份与恢复",
+  "catMusicManagement": "音乐管理",
+  "catMusicManagementDesc": "下载、文件夹与曲库",
+  "catNetwork": "网络与互联网",
+  "catNetworkDesc": "互联网模式、在线音乐、歌词来源",
+  "catPlayerInterface": "播放器界面",
+  "catPlayerInterfaceDesc": "主题、布局与视觉风格",
+  "nowPlayingArtworkMotion": "正在播放封面动态效果",
+  "nowPlayingArtworkMotionDesc": "在正在播放页面中动画显示专辑封面（如果可用）",
+  "onlineSetupDoneTitle": "已准备就绪",
+  "onlineSetupLastOneDesc": "关闭您不需要的功能。您可以稍后在设置中更改这些选项。",
+  "onlineSetupLastOneTitle": "最后一步",
+  "onlineSetupNext": "下一步",
+  "onlineSetupNoSongsTitle": "未找到本地音乐？改为在线收听",
+  "onlineSetupSkip": "暂时跳过",
+  "onlineSetupStreamInstead": "在线收听音乐",
+  "onlineSetupTitle": "同时也在线收听音乐吗？",
+  "onlineSetupYes": "是的，开启",
+  "otherMenu": "其他菜单",
+  "playerDynamicBackground": "动态播放器背景",
+  "playerDynamicBackgroundDesc": "仅在播放器页面使用模糊专辑封面背景",
+  "playerStyle": "播放器样式",
+  "playerStyleAccent": "使用强调色",
+  "playerStyleAccentDesc": "使用强调色着色当前歌词行和进度条",
+  "playerStyleArc": "弧形",
+  "playerStyleClassic": "经典",
+  "playerStyleDesc": "竖屏下正在播放界面的布局",
+  "playerStyleLinear": "线性",
+  "playerStyleCard": "卡片",
+  "cardBlackBackground": "Black Background",
+  "cardBlackBackgroundDesc": "Plain black behind the player",
+  "cardAccentBackground": "Accent Background Color",
+  "cardAccentBackgroundDesc": "A dark shade of the accent color behind the player",
+  "playerStyleBlurBackground": "Blur Background",
+  "playerStyleBlurBackgroundDesc": "Show blurred album artwork as background",
+  "cardAccentColors": "Accent Colors",
+  "cardAccentColorsDesc": "Color the active lyric line and progress bar with the accent color",
+  "playerStyleTitle": "{name} 样式",
+  "@playerStyleTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sectionBackupRestore": "备份与恢复",
+  "sectionClassicLayout": "经典布局",
+  "sectionPlayerBackground": "播放器背景",
+  "sectionStorage": "存储",
+  "settingsGroupTitle": "设置",
+  "settingsSearchShort": "搜索设置",
+  "showPreview": "显示预览",
+  "keepScreenAwake": "保持屏幕常亮",
+  "keepScreenAwakeDesc": "在播放器或歌词打开时防止屏幕变暗熄灭",
+  "highRefreshRate": "高刷新率",
+  "highRefreshRateDesc": "以 90/120Hz 运行以获得更流畅的动画；关闭以使用 60Hz 省电模式",
+  "reshuffleQueue": "重新随机排序队列",
+  "reorderQueue": "重新排序",
+  "nextInQueue": "接下来的播放",
+  "relatedLabel": "相关内容",
+  "noRelatedTracks": "未找到相关曲目"
 }

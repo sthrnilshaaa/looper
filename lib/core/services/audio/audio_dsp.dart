@@ -75,43 +75,87 @@ extension AudioServiceDsp on AudioService {
     if (!_filtersInitialized || player.state.playlist.items.isEmpty) return;
     if (_lastEqualizerGains == null) return;
     _lastEqualizerGains![bandIndex] = gain;
+    final clampedGain = gain.clamp(-20.0, 20.0);
     try {
-      await player.updateAudioEffects((e) {
-        final List<AnequalizerBand> bands = [];
-        for (int i = 0; i < 18; i++) {
-          final freq = _eqBandFreqs[i];
-          final width = _eqBandWidths[i];
-          final currentGain = _lastEqualizerGains![i].clamp(-20.0, 20.0);
-          bands.add(
-            AnequalizerBand(
-              frequency: freq,
-              bandwidth: width,
-              gain: currentGain,
-              type: AnequalizerBandType.butterworth,
-            ),
+      // Live af-command to avoid tearing down the filter chain (doc 25 §3.3)
+      await player.sendRawCommand([
+        'af-command',
+        'aek_anequalizer',
+        'change',
+        'f$bandIndex|g=${clampedGain.toStringAsFixed(2)}',
+      ]);
+      if (idlePlayer.state.playlist.items.isNotEmpty) {
+        try {
+          await idlePlayer.sendRawCommand([
+            'af-command',
+            'aek_anequalizer',
+            'change',
+            'f$bandIndex|g=${clampedGain.toStringAsFixed(2)}',
+          ]);
+        } catch (_) {}
+      }
+    } catch (_) {
+      try {
+        await player.updateAudioEffects((e) {
+          final List<AnequalizerBand> bands = [];
+          for (int i = 0; i < 18; i++) {
+            final freq = _eqBandFreqs[i];
+            final width = _eqBandWidths[i];
+            final currentGain = _lastEqualizerGains![i].clamp(-20.0, 20.0);
+            bands.add(
+              AnequalizerBand(
+                frequency: freq,
+                bandwidth: width,
+                gain: currentGain,
+                type: AnequalizerBandType.butterworth,
+              ),
+            );
+          }
+          final anequalizer = AnequalizerSettings(
+            enabled: _equalizerEnabled,
+          ).withBands(bands, channels: 2);
+          return e.copyWith(
+            superequalizer: const SuperequalizerSettings(enabled: false),
+            anequalizer: anequalizer,
           );
-        }
-        final anequalizer = AnequalizerSettings(
-          enabled: _equalizerEnabled,
-        ).withBands(bands, channels: 2);
-        return e.copyWith(
-          superequalizer: const SuperequalizerSettings(enabled: false),
-          anequalizer: anequalizer,
-        );
-      });
-    } catch (_) {}
+        });
+      } catch (_) {}
+    }
   }
 
   Future<void> setLivePreamp(double preamp) async {
     if (!_filtersInitialized || player.state.playlist.items.isEmpty) return;
     if (_lastEqualizerGains == null) return;
     _lastEqualizerGains![18] = preamp;
+    // The preamp is the limiter's input gain, so the limiter catches it
+    // (doc 25 §3.1); a live af-command, no chain rebuild while dragging.
+    final levelIn = _preampLevel(_equalizerEnabled ? preamp : 0.0);
+    Future<void> apply(Player p) =>
+        p.updateAudioEffects((e) => e.copyWith(alimiter: _limiter(levelIn)));
     try {
-      await player.setVolumeGain(
-        _equalizerEnabled ? preamp.clamp(-12.0, 12.0) : 0.0,
-      );
+      await apply(player);
+      if (idlePlayer.state.playlist.items.isNotEmpty) {
+        try {
+          await apply(idlePlayer);
+        } catch (_) {}
+      }
     } catch (_) {}
   }
+
+  /// Preamp in dB (±12) as the limiter's linear input gain.
+  static double _preampLevel(double db) =>
+      math.pow(10, db.clamp(-12.0, 12.0) / 20).toDouble();
+
+  /// Always in the chain, last before the resampler (patched
+  /// mpv_audio_kit), at -0.5 dBFS.
+  static AlimiterSettings _limiter(double levelIn) => AlimiterSettings(
+    enabled: true,
+    limit: 0.944,
+    attack: 5.0,
+    release: 80.0,
+    level: false,
+    level_in: levelIn,
+  );
 
   Future<void> setLiveCompressor({
     double? threshold,
@@ -212,11 +256,15 @@ extension AudioServiceDsp on AudioService {
     List<double> gains,
     bool enabled, {
     String? customFilter,
+    bool? monoEnabled,
+    List<String>? autoEqFilters,
   }) async {
     _liveEqThrottleTimer?.cancel();
     _lastEqualizerGains = gains;
     _equalizerEnabled = enabled;
     _customFilterString = customFilter;
+    if (monoEnabled != null) _monoEnabled = monoEnabled;
+    if (autoEqFilters != null) _autoEqFilters = autoEqFilters;
 
     if (player.state.playlist.items.isEmpty) {
       // FILE_LOADED hasn't fired yet — the playlist stream listener will
@@ -388,6 +436,9 @@ extension AudioServiceDsp on AudioService {
 
     AudioEffects buildEffects() {
       final List<String> finalCustomFilters = [];
+      if (_autoEqFilters.isNotEmpty) {
+        finalCustomFilters.addAll(_autoEqFilters);
+      }
       if (customFilter != null && customFilter.trim().isNotEmpty) {
         finalCustomFilters.add(customFilter.trim());
       }
@@ -407,17 +458,35 @@ extension AudioServiceDsp on AudioService {
         highpass: highpass,
         aecho: aecho,
         surround: surround,
+        pan: _monoEnabled
+            ? const PanSettings(
+                enabled: true,
+                args: 'stereo|c0=0.5*c0+0.5*c1|c1=0.5*c0+0.5*c1',
+              )
+            : null,
+        alimiter: _limiter(
+          _preampLevel(
+            enabled && gains.length > 18 ? gains[18].clamp(-12.0, 12.0) : 0.0,
+          ),
+        ),
+        aresample: const AresampleSettings(enabled: true),
       );
     }
 
     bool success = false;
     try {
-      final double preamp = gains.length > 18
-          ? gains[18].clamp(-12.0, 12.0)
-          : 0.0;
-      await player.setVolumeGain(enabled ? preamp : 0.0);
-      await player.setAudioEffects(buildEffects());
-      AudioService._resolvedResamplerFilter = 'none';
+      // The preamp lives in the limiter (buildEffects); volume-gain stays unity.
+      const double totalGain = 0.0;
+      final effects = buildEffects();
+      await player.setVolumeGain(totalGain);
+      await player.setAudioEffects(effects);
+      if (idlePlayer.state.playlist.items.isNotEmpty) {
+        try {
+          await idlePlayer.setVolumeGain(totalGain);
+          await idlePlayer.setAudioEffects(effects);
+        } catch (_) {}
+      }
+      AudioService._resolvedResamplerFilter = 'aresample';
       AudioService._resamplerProbed = true;
       success = true;
     } catch (e) {
@@ -439,6 +508,10 @@ extension AudioServiceDsp on AudioService {
       try {
         await player.setPitch(pitch);
         await player.setRate(tempo);
+        try {
+          await idlePlayer.setPitch(pitch);
+          await idlePlayer.setRate(tempo);
+        } catch (_) {}
 
         // ReplayGain (gain index 36-37)
         final int rgMode = gains.length > 36 ? gains[36].toInt() : 0;

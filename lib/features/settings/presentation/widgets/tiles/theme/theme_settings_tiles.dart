@@ -12,6 +12,7 @@ import 'package:looper_player/features/settings/presentation/providers/settings_
 import 'package:looper_player/l10n/app_localizations.dart';
 import '../../settings_widgets.dart';
 import '../../settings_dialogs.dart';
+import '../../settings_previews.dart';
 import '../../avatar_picker_sheet.dart';
 import '../../artwork_visualizer_sheet.dart';
 import '../../progress_bar_style_sheet.dart';
@@ -27,7 +28,7 @@ part 'player_appearance_tiles.dart';
 part 'font_tiles.dart';
 
 TextStyle _tileTitleStyle() =>
-    AppFonts.jostStyle(color: Colors.white, fontWeight: FontWeight.w500);
+    AppFonts.settingsStyle(color: Colors.white, fontWeight: FontWeight.w500);
 
 TextStyle _tileSubtitleStyle() =>
-    AppFonts.jostStyle(color: Colors.white54, fontSize: 12);
+    AppFonts.settingsStyle(color: Colors.white54, fontSize: 12);

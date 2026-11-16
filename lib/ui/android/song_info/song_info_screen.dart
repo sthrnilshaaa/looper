@@ -56,7 +56,7 @@ class _SongInfoScreenState extends ConsumerState<SongInfoScreen> {
       body: Stack(
         children: [
           // Blurred Background
-          if (settings.enableDynamicTheming && widget.song.artPath != null)
+          if (settings.enableDynamicTheming && !settings.disableBlur && widget.song.artPath != null)
             Positioned.fill(
               child: RepaintBoundary(
                 child: Stack(
@@ -513,47 +513,52 @@ class _SongInfoScreenState extends ConsumerState<SongInfoScreen> {
     required List<_InfoItem> items,
     bool isLoading = false,
   }) {
+    final card = _buildCard(
+      icon: icon,
+      title: title,
+      isLoading: isLoading,
+      children: [
+        ...items.map(
+          (item) => Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.label.toUpperCase(),
+                  style: AppFonts.jostStyle(
+                    color: Colors.white.withValues(alpha: 0.4),
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  item.value,
+                  style: AppFonts.jostStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                  ),
+                  maxLines: item.isLong ? 5 : 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+
+    final useBlur = ref.watch(settingsProvider.select((s) => s.sheetShouldBlur));
+    if (!useBlur) return card;
+
     return RepaintBoundary(
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: _buildCard(
-            icon: icon,
-            title: title,
-            isLoading: isLoading,
-            children: [
-              ...items.map(
-                (item) => Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.label.toUpperCase(),
-                        style: AppFonts.jostStyle(
-                          color: Colors.white.withValues(alpha: 0.4),
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.value,
-                        style: AppFonts.jostStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                        ),
-                        maxLines: item.isLong ? 5 : 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+          child: card,
         ),
       ),
     );

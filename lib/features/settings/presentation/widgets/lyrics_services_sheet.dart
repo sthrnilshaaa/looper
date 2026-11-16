@@ -54,7 +54,7 @@ class _LyricsServicesSheet extends ConsumerWidget {
           children: [
             Text(
               l10n.lyricsServices,
-              style: AppFonts.jostStyle(
+              style: AppFonts.settingsStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -63,12 +63,18 @@ class _LyricsServicesSheet extends ConsumerWidget {
             const SizedBox(height: 6),
             Text(
               l10n.lyricsServicesDesc,
-              style: AppFonts.jostStyle(color: Colors.white54, fontSize: 13),
+              style: AppFonts.settingsStyle(
+                color: Colors.white54,
+                fontSize: 13,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               lyricsServiceChain(settings),
-              style: AppFonts.jostStyle(color: Colors.white38, fontSize: 12),
+              style: AppFonts.settingsStyle(
+                color: Colors.white38,
+                fontSize: 12,
+              ),
             ),
             const SizedBox(height: 12),
             Flexible(
@@ -113,7 +119,7 @@ class _LyricsServicesSheet extends ConsumerWidget {
                       ),
                       title: Text(
                         LyricsProviderInfo.of(id)?.label ?? id,
-                        style: AppFonts.jostStyle(
+                        style: AppFonts.settingsStyle(
                           color: isOn ? Colors.white : Colors.white38,
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
@@ -149,7 +155,7 @@ class _LyricsServicesSheet extends ConsumerWidget {
                 },
                 child: Text(
                   l10n.done,
-                  style: AppFonts.jostStyle(
+                  style: AppFonts.settingsStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 15,

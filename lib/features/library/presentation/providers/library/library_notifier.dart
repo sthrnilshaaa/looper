@@ -469,18 +469,28 @@ class Library extends _$Library {
   }
 
   Future<void> toggleFavorite(Song song) async {
-    await DbService.isar.writeTxn(() async {
-      // Direct ID lookup is safer to ensure we're updating the correct record
-      final dbSong = await DbService.isar.songs.get(song.id);
-      if (dbSong != null) {
-        dbSong.isFavorite = !dbSong.isFavorite;
-        await DbService.isar.songs.put(dbSong);
-      } else {
-        // Fallback for songs not yet in DB (e.g. played from file)
-        song.isFavorite = !song.isFavorite;
-        await DbService.isar.songs.put(song);
-      }
-    });
+    final newFavorite = !song.isFavorite;
+    song.isFavorite = newFavorite;
+
+    try {
+      await DbService.isar.writeTxn(() async {
+        final dbSong = await DbService.isar.songs.getByPath(song.path) ??
+            await DbService.isar.songs.get(song.id);
+        if (dbSong != null) {
+          dbSong.isFavorite = newFavorite;
+          await DbService.isar.songs.put(dbSong);
+          song.id = dbSong.id;
+        } else {
+          song.isFavorite = newFavorite;
+          try {
+            song.dateAdded;
+          } catch (_) {
+            song.dateAdded = DateTime.now();
+          }
+          await DbService.isar.songs.put(song);
+        }
+      });
+    } catch (_) {}
   }
 
   /// Sets (rather than toggles) [value] on every song in [songs] in one
@@ -531,7 +541,6 @@ class Library extends _$Library {
         final remainingSongs = await DbService.isar.songs.where().findAll();
         final activeAlbumNames = remainingSongs.map((s) => s.album).toSet();
 
-        // Load all albums and artists
         final allAlbums = await DbService.isar.albums.where().findAll();
         final albumsToDelete = allAlbums
             .where((a) => !activeAlbumNames.contains(a.name))
@@ -966,48 +975,49 @@ class Library extends _$Library {
     unawaited(_enrichPendingSongs());
   }
 
+  QueryBuilder<Song, Song, QWhere> _localSongs() => DbService.isar.songs.where();
+
   QueryBuilder<Song, Song, QAfterSortBy> _buildSongsQuery() {
     final isAsc = state.isAscending;
     switch (state.sortStrategy) {
       case SongSortStrategy.title:
         return isAsc
-            ? DbService.isar.songs.where().sortByTitle()
-            : DbService.isar.songs.where().sortByTitleDesc();
+            ? _localSongs().sortByTitle()
+            : _localSongs().sortByTitleDesc();
       case SongSortStrategy.artist:
         return isAsc
-            ? DbService.isar.songs.where().sortByArtist().thenByTitle()
-            : DbService.isar.songs.where().sortByArtistDesc().thenByTitle();
+            ? _localSongs().sortByArtist().thenByTitle()
+            : _localSongs().sortByArtistDesc().thenByTitle();
       case SongSortStrategy.album:
         return isAsc
-            ? DbService.isar.songs.where().sortByAlbum().thenByTrackNumber()
-            : DbService.isar.songs
-                  .where()
+            ? _localSongs().sortByAlbum().thenByTrackNumber()
+            : _localSongs()
                   .sortByAlbumDesc()
                   .thenByTrackNumber();
       case SongSortStrategy.duration:
         return isAsc
-            ? DbService.isar.songs.where().sortByDuration()
-            : DbService.isar.songs.where().sortByDurationDesc();
+            ? _localSongs().sortByDuration()
+            : _localSongs().sortByDurationDesc();
       case SongSortStrategy.year:
         return isAsc
-            ? DbService.isar.songs.where().sortByYear()
-            : DbService.isar.songs.where().sortByYearDesc();
+            ? _localSongs().sortByYear()
+            : _localSongs().sortByYearDesc();
       case SongSortStrategy.playCount:
         return isAsc
-            ? DbService.isar.songs.where().sortByPlayCount()
-            : DbService.isar.songs.where().sortByPlayCountDesc();
+            ? _localSongs().sortByPlayCount()
+            : _localSongs().sortByPlayCountDesc();
       case SongSortStrategy.lastPlayed:
         return isAsc
-            ? DbService.isar.songs.where().sortByLastPlayed()
-            : DbService.isar.songs.where().sortByLastPlayedDesc();
+            ? _localSongs().sortByLastPlayed()
+            : _localSongs().sortByLastPlayedDesc();
       case SongSortStrategy.fullPlays:
         // A computed value Isar can't sort by; _watchSongs orders the result.
-        return DbService.isar.songs.where().sortByPlayCountDesc();
+        return _localSongs().sortByPlayCountDesc();
       case SongSortStrategy.dateAdded:
       default:
         return isAsc
-            ? DbService.isar.songs.where().sortByDateAdded()
-            : DbService.isar.songs.where().sortByDateAddedDesc();
+            ? _localSongs().sortByDateAdded()
+            : _localSongs().sortByDateAddedDesc();
     }
   }
 
@@ -1055,7 +1065,7 @@ class Library extends _$Library {
     bool stale() => gen != _songsLoadGen || state.isInitialized;
     try {
       final Isar isar = DbService.isar;
-      final int total = await isar.songs.count();
+      final int total = await _localSongs().count();
       if (stale()) return;
       if (total == 0) {
         _applySongs(const []);
@@ -1231,14 +1241,18 @@ Stream<List<Song>> topSongs(Ref ref) {
 // the UI - is unchanged; only when the work happens is different.
 
 /// Home tab's "Quick Picks" - same comparator (play count, most first) and
-/// same 18-item cap as before.
+/// same 18-item cap as before. Falls back to cold-start preview songs while
+/// the full library is loading so items never jump or shuffle on launch.
 @Riverpod(keepAlive: true)
 List<Song> homeQuickPicks(Ref ref) {
-  final songs = ref.watch(libraryProvider.select((s) => s.songs));
+  final (songs, previewReady, previewQuickPicks) = ref.watch(
+    libraryProvider.select((s) => (s.songs, s.previewReady, s.previewQuickPicks)),
+  );
+  final source = (songs.isEmpty && previewReady) ? previewQuickPicks : songs;
   // Ties go newest first, then by path - the same order as the cold-start
   // preview query (see Library._loadSongsInParts), so the row doesn't jump
   // when the full list replaces it.
-  final sorted = List<Song>.from(songs)
+  final sorted = List<Song>.from(source)
     ..sort((a, b) {
       final byPlays = b.playCount.compareTo(a.playCount);
       if (byPlays != 0) return byPlays;
@@ -1252,11 +1266,15 @@ List<Song> homeQuickPicks(Ref ref) {
 /// Home tab's "Recently Added" section - same comparator (date added,
 /// newest first) as before. Kept as the full sorted list, not just the
 /// visible prefix, since tapping into this section queues it in full.
+/// Falls back to cold-start preview songs while the full library is loading.
 @Riverpod(keepAlive: true)
 List<Song> homeRecentlyAdded(Ref ref) {
-  final songs = ref.watch(libraryProvider.select((s) => s.songs));
+  final (songs, previewReady, previewRecentlyAdded) = ref.watch(
+    libraryProvider.select((s) => (s.songs, s.previewReady, s.previewRecentlyAdded)),
+  );
+  final source = (songs.isEmpty && previewReady) ? previewRecentlyAdded : songs;
   // Ties by path, matching the cold-start preview query.
-  return List<Song>.from(songs)..sort((a, b) {
+  return List<Song>.from(source)..sort((a, b) {
     final byDate = b.dateAdded.compareTo(a.dateAdded);
     return byDate != 0 ? byDate : a.path.compareTo(b.path);
   });

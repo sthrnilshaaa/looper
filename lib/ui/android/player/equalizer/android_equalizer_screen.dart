@@ -20,6 +20,8 @@ import 'equalizer_curve_painter.dart';
 import 'interactive_equalizer_graph.dart';
 import 'package:looper_player/core/utils/l10n.dart';
 import 'package:looper_player/core/services/haptics/app_haptics.dart';
+import 'package:looper_player/features/playback/data/auto_eq_service.dart';
+import 'package:looper_player/features/playback/data/device_audio_info.dart';
 export 'equalizer_curve_painter.dart';
 
 part 'android_equalizer_screen.g.dart';
@@ -28,6 +30,7 @@ part 'audio_capabilities_sheet.dart';
 part 'custom_filter_input.dart';
 part 'preset_chips.dart';
 part 'setting_rows.dart';
+part 'headphone_correction_card.dart';
 
 // false = Sliders, true = Graph
 @Riverpod(keepAlive: true)
@@ -106,13 +109,30 @@ class AndroidEqualizerScreen extends ConsumerWidget {
 
     final accentColor = settings.accent;
     final isPureBlack = settings.darkTheme;
-    final useBlur = settings.enableDynamicTheming && !settings.disableBlur;
+    final useBlur = settings.sheetShouldBlur;
     // Same check PlayerLandscapeMetrics uses for "landscape phone, not
     // tablet" - the graph/slider area's fixed 290dp height was tuned for a
     // tall portrait screen and ate a large fraction of a short window.
     final barModeHeight = Responsive.isShort(MediaQuery.sizeOf(context))
         ? 200.0
         : 290.0;
+
+    List<double>? autoEqGains;
+    if (eqState.autoEqEnabled &&
+        eqState.autoEqProfileText != null &&
+        eqState.autoEqProfileText!.isNotEmpty) {
+      final parsed = AutoEqService.parseParametricEq(
+        id: eqState.autoEqSelectedProfile ?? 'custom',
+        name: eqState.autoEqSelectedProfile ?? 'custom',
+        source: 'AutoEQ',
+        content: eqState.autoEqProfileText!,
+      );
+      autoEqGains = AutoEqService.evaluateProfileAtFrequencies(
+        parsed,
+        bass: eqState.autoEqBass,
+        tilt: eqState.autoEqTilt,
+      );
+    }
 
     if (settings.firstTimeEqualizer) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -126,6 +146,12 @@ class AndroidEqualizerScreen extends ConsumerWidget {
     // The scrolling content, in two groups so the desktop dialog can put
     // them side by side. On a phone they are one column, in this order.
     final mainSections = <Widget>[
+      _HeadphoneCorrectionCard(
+        eqState: eqState,
+        eqNotifier: eqNotifier,
+        accentColor: accentColor,
+      ),
+
       // Preset Selector Row
       if (eqState.enabled) ...[
         Text(
@@ -286,6 +312,7 @@ class AndroidEqualizerScreen extends ConsumerWidget {
               eqState: eqState,
               eqNotifier: eqNotifier,
               accentColor: accentColor,
+              autoEqGains: autoEqGains,
             )
           : Container(
               height: barModeHeight,
@@ -344,6 +371,7 @@ class AndroidEqualizerScreen extends ConsumerWidget {
                                           18,
                                         ),
                                         color: accentColor,
+                                        autoEqGains: autoEqGains,
                                       ),
                                     ),
                                   ),
@@ -622,6 +650,13 @@ class AndroidEqualizerScreen extends ConsumerWidget {
           icon: LucideIcons.headphones,
           children: [
             _buildSwitchRow(
+              title: context.l10n.eqMono,
+              value: eqState.monoEnabled,
+              onChanged: (val) => eqNotifier.setMonoEnabled(val),
+              accentColor: accentColor,
+            ),
+            const SizedBox(height: 12),
+            _buildSwitchRow(
               title: context.l10n.eqBinauralCrossfeed,
               value: eqState.crossfeedEnabled,
               onChanged: (val) => eqNotifier.setCrossfeedEnabled(val),
@@ -659,34 +694,100 @@ class AndroidEqualizerScreen extends ConsumerWidget {
         DspCard(
           title: context.l10n.eqLoudnessNormalization,
           icon: LucideIcons.volume2,
-          trailing: Switch.adaptive(
-            value: eqState.loudnormEnabled,
-            activeThumbColor: accentColor,
-            activeTrackColor: accentColor.withValues(alpha: 0.35),
-            onChanged: (val) {
-              AppHaptics.medium();
-              eqNotifier.setLoudnormEnabled(val);
-            },
-          ),
           children: [
-            Opacity(
-              opacity: eqState.loudnormEnabled ? 1.0 : 0.4,
-              child: IgnorePointer(
-                ignoring: !eqState.loudnormEnabled,
-                child: Column(
+            // ReplayGain (Track / Album / Off) - mutually exclusive with live loudnorm (doc 25 §3.2)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  context.l10n.eqReplayGainTitle,
+                  style: AppFonts.jostStyle(
+                    fontSize: 13,
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
                   children: [
-                    _buildSliderRow(
-                      title: context.l10n.eqTargetLoudness,
-                      value: eqState.loudnormTarget,
-                      min: -30.0,
-                      max: -5.0,
-                      unit: 'LUFS',
-                      onChanged: (v) => eqNotifier.setLoudnormTarget(v),
-                    ),
+                    for (final mode in [0, 1, 2])
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: ChoiceChip(
+                            label: Center(
+                              child: Text(
+                                mode == 0
+                                    ? context.l10n.off
+                                    : (mode == 1
+                                          ? context.l10n.qualityReplayGainTrack
+                                          : context
+                                                .l10n
+                                                .qualityReplayGainAlbum),
+                                style: AppFonts.jostStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: eqState.replayGainMode == mode
+                                      ? Colors.white
+                                      : Colors.white54,
+                                ),
+                              ),
+                            ),
+                            selected: eqState.replayGainMode == mode,
+                            selectedColor: accentColor.withValues(alpha: 0.35),
+                            backgroundColor: Colors.white.withValues(
+                              alpha: 0.04,
+                            ),
+                            side: BorderSide(
+                              color: eqState.replayGainMode == mode
+                                  ? accentColor
+                                  : Colors.white10,
+                            ),
+                            showCheckmark: false,
+                            onSelected: (selected) {
+                              if (selected) {
+                                AppHaptics.selection();
+                                eqNotifier.setReplayGainMode(mode);
+                              }
+                            },
+                          ),
+                        ),
+                      ),
                   ],
                 ),
-              ),
+                if (eqState.replayGainMode > 0) ...[
+                  const SizedBox(height: 8),
+                  _buildSliderRow(
+                    title: context.l10n.eqReplayGainPreamp,
+                    value: eqState.replayGainPreamp,
+                    min: -6.0,
+                    max: 14.0,
+                    unit: 'dB',
+                    onChanged: (v) => eqNotifier.setReplayGainPreamp(v),
+                  ),
+                ],
+              ],
             ),
+            const SizedBox(height: 16),
+            const Divider(color: Colors.white10, height: 1),
+            const SizedBox(height: 12),
+
+            // Live Loudnorm (one pass)
+            _buildSwitchRow(
+              title: context.l10n.eqLoudnessNormalization,
+              value: eqState.loudnormEnabled,
+              onChanged: (val) => eqNotifier.setLoudnormEnabled(val),
+              accentColor: accentColor,
+            ),
+            if (eqState.loudnormEnabled)
+              _buildSliderRow(
+                title: context.l10n.eqTargetLoudness,
+                value: eqState.loudnormTarget,
+                min: -30.0,
+                max: -5.0,
+                unit: 'LUFS',
+                onChanged: (v) => eqNotifier.setLoudnormTarget(v),
+              ),
           ],
         ),
 

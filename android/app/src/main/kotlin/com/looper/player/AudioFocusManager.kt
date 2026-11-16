@@ -41,6 +41,7 @@ class AudioFocusManager(
                 val isNew = knownAudioDeviceIds.add(device.id)
                 isNew && isBluetoothAudioOutput(device)
             }
+            if (addedDevices.any { it.isSink }) notifyOutputsChanged()
             if (newlyConnectedBluetoothAudio && resumeOnBluetoothConnect) {
                 Log.d("AudioFocusManager", "Bluetooth audio output connected")
                 try {
@@ -53,6 +54,16 @@ class AudioFocusManager(
 
         override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>) {
             removedDevices.forEach { knownAudioDeviceIds.remove(it.id) }
+            if (removedDevices.any { it.isSink }) notifyOutputsChanged()
+        }
+    }
+
+    /// Lets Dart re-apply the headphone EQ profile saved for the new output.
+    private fun notifyOutputsChanged() {
+        try {
+            channel.invokeMethod("onOutputDevicesChanged", null)
+        } catch (e: Exception) {
+            Log.e("AudioFocusManager", "Error invoking onOutputDevicesChanged", e)
         }
     }
 

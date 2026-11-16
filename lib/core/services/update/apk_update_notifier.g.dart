@@ -50,7 +50,7 @@ final class ApkUpdateProvider
   }
 }
 
-String _$apkUpdateHash() => r'a917a0fd7572a332343b47b1094e9aa8d6f7bff4';
+String _$apkUpdateHash() => r'2f3c5ade48e0ac0a67dc9de6630a384326c95e7a';
 
 /// In-app update for the Android `github` build: finds the newest GitHub
 /// release, downloads the APK for this device and hands it to the system
@@ -60,7 +60,7 @@ abstract class _$ApkUpdate extends $Notifier<ApkUpdateState> {
   ApkUpdateState build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<ApkUpdateState, ApkUpdateState>;
     final element =
         ref.element
@@ -70,6 +70,6 @@ abstract class _$ApkUpdate extends $Notifier<ApkUpdateState> {
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }

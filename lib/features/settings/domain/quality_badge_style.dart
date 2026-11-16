@@ -1,4 +1,5 @@
 import 'package:looper_player/features/library/domain/models/models.dart';
+import 'package:looper_player/features/settings/domain/app_defaults.dart';
 
 /// How the Now Playing quality badge is drawn. The stored index is the enum
 /// index, so only append.
@@ -70,24 +71,36 @@ class QualityBadgeStyle {
 
   /// The original badge's details (everything before channels was added),
   /// so an untouched badge reads the same as it always has.
-  static const int defaultFields = 0x1f;
+  static const int defaultFields = AppDefaults.qualityBadgeFields;
 
   const QualityBadgeStyle({
     this.look = QualityBadgeLook.pill,
-    this.icon = QualityBadgeIcon.none,
+    this.icon = QualityBadgeIcon.headphones,
     this.colors = QualityBadgeColors.white,
-    this.separator = QualityBadgeSeparator.dot,
-    this.shape = QualityBadgeShape.pill,
+    this.separator = QualityBadgeSeparator.bar,
+    this.shape = QualityBadgeShape.rounded,
     this.layout = QualityBadgeLayout.details,
     required this.fields,
   });
 
   factory QualityBadgeStyle.fromSettings(AppSettings s) => QualityBadgeStyle(
     look: _at(QualityBadgeLook.values, s.qualityBadgeLook),
-    icon: _at(QualityBadgeIcon.values, s.qualityBadgeIcon),
+    icon: _at(
+      QualityBadgeIcon.values,
+      s.qualityBadgeIcon,
+      QualityBadgeIcon.headphones,
+    ),
     colors: _at(QualityBadgeColors.values, s.qualityBadgeColors),
-    separator: _at(QualityBadgeSeparator.values, s.qualityBadgeSeparator),
-    shape: _at(QualityBadgeShape.values, s.qualityBadgeShape),
+    separator: _at(
+      QualityBadgeSeparator.values,
+      s.qualityBadgeSeparator,
+      QualityBadgeSeparator.bar,
+    ),
+    shape: _at(
+      QualityBadgeShape.values,
+      s.qualityBadgeShape,
+      QualityBadgeShape.rounded,
+    ),
     layout: _at(QualityBadgeLayout.values, s.qualityBadgeLayout),
     // An empty mask would leave an empty badge; treat it as unset.
     fields: (s.qualityBadgeFields ?? 0) & allFields == 0
@@ -95,8 +108,10 @@ class QualityBadgeStyle {
         : s.qualityBadgeFields! & allFields,
   );
 
-  static T _at<T>(List<T> values, int? i) =>
-      i != null && i >= 0 && i < values.length ? values[i] : values.first;
+  static T _at<T>(List<T> values, int? i, [T? fallback]) =>
+      i != null && i >= 0 && i < values.length
+      ? values[i]
+      : fallback ?? values.first;
 
   bool shows(QualityBadgeField field) => fields & (1 << field.index) != 0;
 

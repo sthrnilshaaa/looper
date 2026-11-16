@@ -16,6 +16,16 @@ class PlaybackState {
   final bool isScrubbing;
   final List<Song> queue;
 
+  /// True when audio is actively streaming from a remote network source
+  /// (false for local files, cached files, and downloaded songs).
+  final bool isStreaming;
+
+  /// True while stalled or buffering data over the network (debounced by 300 ms).
+  final bool isBuffering;
+
+  /// Demuxer buffer position ahead of the playhead (for streamed songs).
+  final Duration buffer;
+
   /// [collectionKey] of the songs the current queue was loaded from, so a
   /// collection can tell whether it is the one playing (shuffled or not).
   final int? queueSourceKey;
@@ -49,6 +59,9 @@ class PlaybackState {
     this.sleepTimerSongsRemaining,
     this.sleepTimerDurationInitial,
     this.sleepTimerSongsInitial,
+    this.isStreaming = false,
+    this.isBuffering = false,
+    this.buffer = Duration.zero,
   });
 
   PlaybackState copyWith({
@@ -68,6 +81,9 @@ class PlaybackState {
     Object? sleepTimerSongsRemaining = _sentinel,
     Object? sleepTimerDurationInitial = _sentinel,
     Object? sleepTimerSongsInitial = _sentinel,
+    bool? isStreaming,
+    bool? isBuffering,
+    Duration? buffer,
   }) {
     return PlaybackState(
       currentSong: currentSong == _sentinel
@@ -98,6 +114,9 @@ class PlaybackState {
       sleepTimerSongsInitial: sleepTimerSongsInitial == _sentinel
           ? this.sleepTimerSongsInitial
           : sleepTimerSongsInitial as int?,
+      isStreaming: isStreaming ?? this.isStreaming,
+      isBuffering: isBuffering ?? this.isBuffering,
+      buffer: buffer ?? this.buffer,
     );
   }
 }

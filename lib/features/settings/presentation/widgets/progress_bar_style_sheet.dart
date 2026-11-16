@@ -104,7 +104,7 @@ class _ProgressBarStyleSheetState
                 Expanded(
                   child: Text(
                     l10n.progressBarStyle,
-                    style: AppFonts.jostStyle(
+                    style: AppFonts.settingsStyle(
                       color: Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,

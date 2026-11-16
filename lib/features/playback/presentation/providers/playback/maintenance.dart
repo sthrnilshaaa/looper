@@ -11,8 +11,11 @@ extension _PlaybackMaintenance on Playback {
       final audioStatusBefore = await Permission.audio.status;
       final storageStatusBefore = await Permission.storage.status;
 
-      // Check if we already have permissions
-      if (audioStatusBefore.isGranted || storageStatusBefore.isGranted) {
+      // Check if we already have permissions. All Files Access (github
+      // flavor) reads every file too, so it needs no media prompt on play.
+      if (audioStatusBefore.isGranted ||
+          storageStatusBefore.isGranted ||
+          await StorageAccess.hasAllFilesAccess()) {
         return true;
       }
 

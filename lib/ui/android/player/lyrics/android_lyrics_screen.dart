@@ -78,12 +78,7 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    final isPlaying = ref.read(playbackProvider).isPlaying;
-    if (isPlaying) {
-      _enableWakelock();
-    } else {
-      _disableWakelock();
-    }
+    _enableWakelock();
 
     _delayTimer = Timer(const Duration(seconds: 1), () {
       // Closed within the first second: don't bring in the heavy
@@ -107,6 +102,12 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // Landscape: both system bars hidden (follows rotation, since this
+    // depends on the orientation).
+    SystemNavigationBar.setFullscreen(
+      this,
+      MediaQuery.orientationOf(context) == Orientation.landscape,
+    );
     final route = ModalRoute.of(context);
     if (route != null && route.animation != _routeAnimation) {
       _routeAnimation?.removeStatusListener(_onRouteAnimationStatusChanged);
@@ -134,7 +135,8 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
   /// lands before the fade-out instead of in the middle of it.
   void _close() {
     if (_closePending || !mounted) return;
-    if (!_navBarHidden) {
+    // Fullscreen keeps the bars hidden either way: no inset change to wait for.
+    if (!_navBarHidden || SystemNavigationBar.isFullscreen) {
       Navigator.of(context).pop();
       return;
     }
@@ -167,6 +169,7 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
     _hideTimer?.cancel();
     _closeFallbackTimer?.cancel();
     SystemNavigationBar.setHidden(false);
+    SystemNavigationBar.setFullscreen(this, false);
     _routeAnimation?.removeStatusListener(_onRouteAnimationStatusChanged);
     _disableWakelock();
     _prevTapPulse.dispose();
@@ -344,16 +347,6 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
       _navBarInset = bottomInset;
       _insetOrientation = orientation;
     }
-    ref.listen<bool>(playbackProvider.select((s) => s.isPlaying), (
-      previous,
-      isPlaying,
-    ) {
-      if (isPlaying) {
-        _enableWakelock();
-      } else {
-        _disableWakelock();
-      }
-    });
 
     final song = ref.watch(playbackProvider.select((s) => s.currentSong));
     final isManualScroll = ref.watch(lyricsManualScrollProvider);
@@ -467,6 +460,7 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                     backgroundColor: Colors.white.withOpacity(0.04),
                     showBorder: false,
                     useBlur:
+                        settings.enableLyricsGradient ||
                         settings.ambientColorBackground ||
                         settings.enableDynamicTheming ||
                         settings.dynamicLyrics ||
@@ -497,6 +491,7 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                     forceNoBlur: true,
                     backgroundColor: Colors.white.withOpacity(0.04),
                     useBlur:
+                        settings.enableLyricsGradient ||
                         settings.ambientColorBackground ||
                         settings.enableDynamicTheming ||
                         settings.dynamicLyrics ||
@@ -558,18 +553,23 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
         ? 0.55
         : settings.lyricsDarkness;
 
-    final showDynamicBg =
+    final showAmbientBg =
         _delayCompleted &&
-        (settings.ambientColorBackground ||
-            ((settings.enableDynamicTheming || settings.dynamicLyrics) &&
-                !settings.blurredArtworkForLyrics)) &&
+        settings.enableLyricsGradient &&
+        settings.ambientColorBackground &&
         song.artPath != null;
 
     final showBlurredArtworkBg =
         _delayCompleted &&
-        !settings.ambientColorBackground &&
+        (!settings.enableLyricsGradient || !settings.ambientColorBackground) &&
         settings.blurredArtworkForLyrics &&
         song.artPath != null;
+
+    final showAccentGradientBg =
+        _delayCompleted &&
+        settings.enableLyricsGradient &&
+        !showAmbientBg &&
+        !showBlurredArtworkBg;
 
     // Plain fill -> real background: a short fade in.
     const transitionDuration = Duration(milliseconds: 700);
@@ -610,34 +610,17 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                       TickerMode(enabled: !exiting, child: child!),
                   child: AnimatedSwitcher(
                     duration: transitionDuration,
-                    child: showDynamicBg && settings.ambientColorBackground
+                    child: showAmbientBg
                         // Ambient Color Background: the animated gradient in the
                         // artwork's colors. One stable key so a song change
                         // cross-fades colors inside it instead of restarting
                         // the motion.
                         ? AnimatedPlayerGradient(
                             key: const ValueKey('ambient_bg'),
-                            artwork: FileImage(File(song.artPath!)),
+                            artwork: artImage(song.artPath!),
                             darkness: lyricsDarkness,
                             // Still unless Animated Gradient is on.
                             animate: settings.animatePlayerGradient,
-                          )
-                        : showDynamicBg
-                        ? Consumer(
-                            key: ValueKey('fluid_bg_${song.path}'),
-                            builder: (context, ref, child) {
-                              final isPlaying = ref.watch(
-                                playbackProvider.select((s) => s.isPlaying),
-                              );
-                              return FluidBackground(
-                                key: ValueKey('fluid_bg_child_${song.path}'),
-                                imageProvider: FileImage(File(song.artPath!)),
-                                animate: isPlaying,
-                                blurSigma: 80,
-                                overlayDarken: lyricsDarkness,
-                                child: const SizedBox.expand(),
-                              );
-                            },
                           )
                         : (showBlurredArtworkBg
                               ? RepaintBoundary(
@@ -650,12 +633,14 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                                             sigmaX: 25,
                                             sigmaY: 25,
                                           ),
-                                          child: Image.file(
-                                            File(song.artPath!),
+                                          child: Image(
+                                            image: ResizeImage(
+                                              artImage(song.artPath!),
+                                              width: 100,
+                                              height: 100,
+                                            ),
                                             fit: BoxFit.cover,
                                             filterQuality: FilterQuality.low,
-                                            cacheWidth: 100,
-                                            cacheHeight: 100,
                                             gaplessPlayback: true,
                                             errorBuilder: (_, _, _) =>
                                                 const SizedBox.shrink(),
@@ -672,8 +657,8 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                                     ],
                                   ),
                                 )
-                              : (settings.enablePlayerGradient
-                                    // Same gradient as the player, with
+                              : (showAccentGradientBg
+                                    // Same radial accent gradient as the player, with
                                     // lyricsDarkness as its darkness layer.
                                     // Moves only when Animated Gradient is
                                     // on (it used to always animate here).
@@ -758,6 +743,14 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                                   final isPlaying = ref.watch(
                                     playbackProvider.select((s) => s.isPlaying),
                                   );
+                                  final buffer = ref.watch(
+                                    playbackProvider.select((s) => s.buffer),
+                                  );
+                                  final isStreaming = ref.watch(
+                                    playbackProvider.select(
+                                      (s) => s.isStreaming,
+                                    ),
+                                  );
                                   return Hero(
                                     tag: 'player_seek_bar',
                                     child: Material(
@@ -766,6 +759,8 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                                         position: currentPosition,
                                         duration: duration,
                                         isPlaying: isPlaying,
+                                        buffer: buffer,
+                                        isStreaming: isStreaming,
                                         onSeek: (pos) {
                                           _resetHideTimer();
                                           ref

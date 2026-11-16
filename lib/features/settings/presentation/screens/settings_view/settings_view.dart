@@ -2,6 +2,7 @@ import 'package:looper_player/core/motion/pause_when_offscreen.dart';
 import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:looper_player/core/utils/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -17,6 +18,7 @@ import 'package:looper_player/core/utils/responsive.dart';
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
 import 'package:looper_player/ui/android/widgets/premium_section.dart';
+import 'package:looper_player/ui/widgets/common/mochy_card_row.dart';
 import 'package:looper_player/core/utils/ui_utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:looper_player/ui/widgets/sheets/app_bottom_sheet.dart';
@@ -54,13 +56,26 @@ class SettingsView extends ConsumerStatefulWidget {
 }
 
 class _SettingsViewState extends ConsumerState<SettingsView> {
-  bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocus = FocusNode();
+
+  bool get _isSearching => _searchController.text.trim().isNotEmpty;
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocus.dispose();
     super.dispose();
+  }
+
+  void _back() {
+    AppHaptics.light();
+    if (_isSearching) {
+      setState(_searchController.clear);
+      _searchFocus.unfocus();
+      return;
+    }
+    ref.read(appNavigationProvider.notifier).goBack();
   }
 
   @override
@@ -68,6 +83,84 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     final l10n = AppLocalizations.of(context)!;
     final settings = ref.watch(settingsProvider);
     final useBlur = settings.enableDynamicTheming && !settings.disableBlur;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    _CategoryEntry entry(
+      String id,
+      String title,
+      String subtitle,
+      IconData icon, [
+      String? svg,
+    ]) => (id: id, title: title, subtitle: subtitle, icon: icon, svg: svg);
+
+    // Grouped by what the user is trying to do: how it looks, how it
+    // sounds, where music comes from, then app chores and info.
+    final groups = <List<_CategoryEntry>>[
+      [
+        entry(
+          'theme',
+          l10n.catPlayerInterface,
+          l10n.catPlayerInterfaceDesc,
+          LucideIcons.palette,
+          SettingsIcons.palette,
+        ),
+        entry(
+          'now_playing',
+          l10n.nowPlaying,
+          l10n.nowPlayingSettingsDesc,
+          LucideIcons.disc3,
+        ),
+        entry(
+          'lyrics',
+          l10n.lyrics,
+          l10n.lyricsSettingsDesc,
+          LucideIcons.micVocal,
+        ),
+      ],
+      [
+        entry(
+          'audio_playback',
+          l10n.playbackAndAudio,
+          l10n.playbackAudioSettingsDesc,
+          LucideIcons.audioLines,
+        ),
+        entry(
+          'online',
+          l10n.catNetwork,
+          l10n.catNetworkDesc,
+          LucideIcons.cloud,
+        ),
+        entry(
+          'library',
+          l10n.catMusicManagement,
+          l10n.catMusicManagementDesc,
+          LucideIcons.library,
+          SettingsIcons.musicManage,
+        ),
+      ],
+      [
+        entry(
+          'playback',
+          l10n.catMisc,
+          l10n.catMiscDesc,
+          LucideIcons.settings2,
+          SettingsIcons.gesture,
+        ),
+        entry(
+          'about',
+          l10n.catAbout,
+          l10n.catAboutDesc,
+          LucideIcons.info,
+          SettingsIcons.info,
+        ),
+        entry(
+          'support_us',
+          l10n.supportUs,
+          l10n.supportUsDesc,
+          LucideIcons.heart,
+        ),
+      ],
+    ];
 
     return PopScope(
       canPop: true,
@@ -85,312 +178,160 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
       // a white/native-window-background flash on some devices). Painting
       // an explicit opaque background here removes the dependency on that
       // compositing entirely.
-      child: Material(
-        color: Theme.of(context).colorScheme.surface,
-        child: Scaffold(
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          body: SafeArea(
-            child: Column(
-              children: [
-                // Header title / Search bar
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
-                    child: _isSearching
-                        ? Row(
-                            key: const ValueKey('searching_header'),
-                            children: [
-                              PremiumSection(
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(32),
-                                  bottomLeft: Radius.circular(32),
-                                  topRight: Radius.circular(10),
-                                  bottomRight: Radius.circular(10),
-                                ),
-                                width: 48,
-                                height: 48,
-                                useBlur: useBlur,
-                                useExpanded: false,
-                                forceNoBlur: true,
-                                onTap: () {
-                                  AppHaptics.light();
-                                  setState(() {
-                                    _isSearching = false;
-                                    _searchController.clear();
-                                  });
-                                },
-                                child: const Icon(
-                                  LucideIcons.arrowLeft,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Container(
-                                  height: 48,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.06),
-                                    borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(10),
-                                      bottomLeft: Radius.circular(10),
-                                      topRight: Radius.circular(32),
-                                      bottomRight: Radius.circular(32),
-                                    ),
-                                    border: Border.all(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.08,
-                                      ),
-                                    ),
-                                  ),
-                                  child: Center(
-                                    child: TextField(
-                                      controller: _searchController,
-                                      autofocus: true,
-                                      style: AppFonts.jostStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                      ),
-                                      decoration: InputDecoration(
-                                        hintText: l10n.searchSettingsHint,
-                                        hintStyle: AppFonts.jostStyle(
-                                          color: Colors.white38,
-                                        ),
-                                        border: InputBorder.none,
-                                        isDense: true,
-                                        suffixIcon:
-                                            _searchController.text.isNotEmpty
-                                            ? IconButton(
-                                                icon: const Icon(
-                                                  LucideIcons.x,
-                                                  color: Colors.white70,
-                                                  size: 18,
-                                                ),
-                                                padding: EdgeInsets.zero,
-                                                constraints:
-                                                    const BoxConstraints(),
-                                                onPressed: () {
-                                                  _searchController.clear();
-                                                  setState(() {});
-                                                },
-                                              )
-                                            : null,
-                                      ),
-                                      onChanged: (val) {
-                                        setState(() {});
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          )
-                        : Row(
-                            key: const ValueKey('standard_header'),
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              PremiumSection(
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(32),
-                                  bottomLeft: Radius.circular(32),
-                                  topRight: Radius.circular(10),
-                                  bottomRight: Radius.circular(10),
-                                ),
-                                width: 48,
-                                height: 48,
-                                useBlur: useBlur,
-                                forceNoBlur: true,
-                                useExpanded: false,
-                                onTap: () {
-                                  AppHaptics.light();
-                                  ref
-                                      .read(appNavigationProvider.notifier)
-                                      .goBack();
-                                },
-                                child: const Icon(
-                                  LucideIcons.arrowLeft,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                              Text(
-                                l10n.settings,
-                                style: AppFonts.jostStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              PremiumSection(
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(10),
-                                  bottomLeft: Radius.circular(10),
-                                  topRight: Radius.circular(32),
-                                  bottomRight: Radius.circular(32),
-                                ),
-                                width: 48,
-                                height: 48,
-                                useExpanded: false,
-                                forceNoBlur: true,
-                                useBlur: useBlur,
-                                onTap: () {
-                                  AppHaptics.light();
-                                  setState(() {
-                                    _isSearching = true;
-                                  });
-                                },
-                                child: const Icon(
-                                  LucideIcons.search,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                            ],
-                          ),
+      child: Theme(
+        data: settingsTheme(Theme.of(context)),
+        child: Material(
+          color: colorScheme.surface,
+          child: Scaffold(
+            backgroundColor: colorScheme.surface,
+            body: SafeArea(
+              // In landscape the list is capped to a readable width and
+              // centered instead of stretching every tile edge-to-edge.
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: Responsive.isLandscape(MediaQuery.sizeOf(context))
+                        ? 640
+                        : double.infinity,
                   ),
-                ),
-
-                // Settings Body
-                //
-                // In landscape the list is capped to a readable width and
-                // centered instead of stretching every settings tile
-                // edge-to-edge across the whole window.
-                Expanded(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth:
-                            Responsive.isLandscape(MediaQuery.sizeOf(context))
-                            ? 640
-                            : double.infinity,
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(22, 12, 22, 12),
+                        child: SettingsHeader(
+                          title: l10n.settings,
+                          centerTitle: true,
+                          onBack: _back,
+                        ),
                       ),
-                      child: _isSearching
-                          ? _buildSearchResults(context, ref, settings, l10n)
-                          : ListView(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                                vertical: 12.0,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 22),
+                        child: _SearchField(
+                          controller: _searchController,
+                          focusNode: _searchFocus,
+                          hint: l10n.settingsSearchShort,
+                          onChanged: () => setState(() {}),
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+                      Expanded(
+                        child: _isSearching
+                            ? _buildSearchResults(context, ref, settings, l10n)
+                            : ListView(
+                                padding: const EdgeInsets.fromLTRB(
+                                  22,
+                                  0,
+                                  22,
+                                  140,
+                                ),
+                                physics: const LooperScrollPhysics(),
+                                children: [
+                                  for (final group in groups)
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 11,
+                                      ),
+                                      child: SettingsGroupCard(
+                                        children: [
+                                          for (final e in group)
+                                            SettingsNavRow(
+                                              icon: e.icon,
+                                              title: e.title,
+                                              subtitle: e.subtitle,
+                                              onTap: () => _openCategory(
+                                                context,
+                                                e.id,
+                                                e.title,
+                                                colorScheme,
+                                                useBlur,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
                               ),
-                              physics: const LooperScrollPhysics(),
-                              children: [
-                                _buildCategoryGroup(
-                                  context: context,
-                                  id: 'theme',
-                                  title: l10n.appearance,
-                                  subtitle: l10n.appearanceSettingsDesc,
-                                  icon: LucideIcons.palette,
-                                  colorScheme: Theme.of(context).colorScheme,
-                                  useBlur: useBlur,
-                                  settings: settings,
-                                ),
-
-                                _buildCategoryGroup(
-                                  context: context,
-                                  id: 'now_playing',
-                                  title: l10n.nowPlaying,
-                                  subtitle: l10n.nowPlayingSettingsDesc,
-                                  icon: LucideIcons.disc3,
-                                  colorScheme: Theme.of(context).colorScheme,
-                                  useBlur: useBlur,
-                                  settings: settings,
-                                ),
-
-                                _buildCategoryGroup(
-                                  context: context,
-                                  id: 'lyrics',
-                                  title: l10n.lyrics,
-                                  subtitle: l10n.lyricsSettingsDesc,
-                                  icon: LucideIcons.micVocal,
-                                  colorScheme: Theme.of(context).colorScheme,
-                                  useBlur: useBlur,
-                                  settings: settings,
-                                ),
-
-                                _buildCategoryGroup(
-                                  context: context,
-                                  id: 'library',
-                                  title: l10n.homeAndLibrary,
-                                  subtitle: l10n.homeAndLibraryDesc,
-                                  icon: LucideIcons.library,
-                                  colorScheme: Theme.of(context).colorScheme,
-                                  useBlur: useBlur,
-                                  settings: settings,
-                                ),
-
-                                _buildCategoryGroup(
-                                  context: context,
-                                  id: 'audio_playback',
-                                  title: l10n.playbackAndAudio,
-                                  subtitle: l10n.playbackAudioSettingsDesc,
-                                  icon: LucideIcons.audioLines,
-                                  colorScheme: Theme.of(context).colorScheme,
-                                  useBlur: useBlur,
-                                  settings: settings,
-                                ),
-
-                                _buildCategoryGroup(
-                                  context: context,
-                                  id: 'playback',
-                                  title: l10n.general,
-                                  subtitle: l10n.generalSettingsDesc,
-                                  icon: LucideIcons.settings2,
-                                  colorScheme: Theme.of(context).colorScheme,
-                                  useBlur: useBlur,
-                                  settings: settings,
-                                ),
-
-                                // Backups & Logs
-                                _buildCategoryGroup(
-                                  context: context,
-                                  id: 'backups_logs',
-                                  title: l10n.backupsAndLogs,
-                                  subtitle: l10n.backupsAndLogsDesc,
-                                  icon: LucideIcons.databaseBackup,
-                                  colorScheme: Theme.of(context).colorScheme,
-                                  useBlur: useBlur,
-                                  settings: settings,
-                                ),
-
-                                // 7. About & Creators
-                                _buildCategoryGroup(
-                                  context: context,
-                                  id: 'about',
-                                  title: l10n.aboutAndMaintainers,
-                                  subtitle: l10n.appDetailsCreator,
-                                  icon: LucideIcons.info,
-                                  colorScheme: Theme.of(context).colorScheme,
-                                  useBlur: useBlur,
-                                  settings: settings,
-                                ),
-
-                                // 7. Support Us
-                                _buildCategoryGroup(
-                                  context: context,
-                                  id: 'support_us',
-                                  title: l10n.supportUs,
-                                  subtitle: l10n.supportUsDesc,
-                                  icon: LucideIcons.heart,
-                                  colorScheme: Theme.of(context).colorScheme,
-                                  useBlur: useBlur,
-                                  settings: settings,
-                                ),
-
-                                const SizedBox(
-                                  height: 140,
-                                ), // Bottom breathing room for expanded player bar
-                              ],
-                            ),
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+typedef _CategoryEntry = ({
+  String id,
+  String title,
+  String subtitle,
+  IconData icon,
+  String? svg,
+});
+
+class _SearchField extends StatelessWidget {
+  const _SearchField({
+    required this.controller,
+    required this.focusNode,
+    required this.hint,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String hint;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 55,
+      padding: const EdgeInsets.only(left: 21, right: 8),
+      decoration: BoxDecoration(
+        color: kSettingsCard,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              focusNode: focusNode,
+              cursorColor: Colors.white,
+              style: AppFonts.settingsStyle(color: Colors.white, fontSize: 16),
+              decoration: InputDecoration(
+                hintText: hint,
+                hintStyle: AppFonts.settingsStyle(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  fontSize: 16,
+                ),
+                border: InputBorder.none,
+                isDense: true,
+              ),
+              onChanged: (_) => onChanged(),
+            ),
+          ),
+          IconButton(
+            onPressed: () {
+              if (controller.text.isEmpty) {
+                focusNode.requestFocus();
+              } else {
+                controller.clear();
+                onChanged();
+              }
+            },
+            icon: controller.text.isEmpty
+                ? SvgPicture.asset(SettingsIcons.search, width: 16, height: 15)
+                : Icon(
+                    LucideIcons.x,
+                    size: 18,
+                    color: Colors.white.withValues(alpha: 0.4),
+                  ),
+          ),
+        ],
       ),
     );
   }

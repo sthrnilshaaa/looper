@@ -1,0 +1,10 @@
+# Limits codegen (Freezed, json_serializable, etc.) to the package's own
+# `lib/` and `test/` trees. Without this file `build_runner` walks every
+# symlinked plugin under `example/.../ephemeral/.plugin_symlinks/`, which
+# inflates input count from ~20 to ~1000 and slows incremental rebuilds.
+targets:
+  $default:
+    sources:
+      - "lib/**"
+      - "test/**"
+      - "$package$"

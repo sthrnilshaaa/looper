@@ -83,6 +83,29 @@ class AppFonts {
     );
   }
 
+  static const String dmSans = 'DM Sans';
+
+  /// Settings screens' text: always DM Sans at its default weight and
+  /// zero letter spacing, whatever app font the user picked.
+  static TextStyle settingsStyle({
+    Color? color,
+    double? fontSize,
+    FontWeight? fontWeight,
+    FontStyle? fontStyle,
+    double? height,
+    List<FontFeature>? fontFeatures,
+  }) => familyStyle(
+    dmSans,
+    weightDelta: 0,
+    color: color,
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    fontStyle: fontStyle,
+    height: height,
+    fontFeatures: fontFeatures,
+    letterSpacing: 0,
+  );
+
   /// The app's text style: the active app font, with the app weight delta
   /// applied. (Named for the font it started out as.)
   static TextStyle jostStyle({

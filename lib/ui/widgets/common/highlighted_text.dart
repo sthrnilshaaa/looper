@@ -25,13 +25,11 @@ Widget highlightedText({
   int indexOfMatch;
 
   while ((indexOfMatch = lowerText.indexOf(lowerQuery, start)) != -1) {
-    // Add text before match
     if (indexOfMatch > start) {
       spans.add(
         TextSpan(text: text.substring(start, indexOfMatch), style: baseStyle),
       );
     }
-    // Add matched text
     spans.add(
       TextSpan(
         text: text.substring(indexOfMatch, indexOfMatch + query.length),
@@ -41,7 +39,6 @@ Widget highlightedText({
     start = indexOfMatch + query.length;
   }
 
-  // Add remaining text
   if (start < text.length) {
     spans.add(TextSpan(text: text.substring(start), style: baseStyle));
   }

@@ -46,3 +46,4 @@ analyzer:
     - windows/**
     - linux/**
     - ad_firebase/**
+    - third_party/**
