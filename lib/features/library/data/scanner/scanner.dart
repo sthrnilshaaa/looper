@@ -402,6 +402,7 @@ class LibraryScanner {
         // hasn't indexed it) shouldn't wipe one already known - e.g. the
         // quick insert's MediaStore genre, or a user edit.
         song.genre ??= existingDbSong.genre;
+        song.genreLookedUp = existingDbSong.genreLookedUp;
         if ((song.duration ?? 0) <= 0 && (existingDbSong.duration ?? 0) > 0) {
           song.duration = existingDbSong.duration;
         }

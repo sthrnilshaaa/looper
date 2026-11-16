@@ -18,6 +18,9 @@ class Song {
   String? album;
 
   String? genre;
+
+  bool genreLookedUp = false;
+
   int? duration; // In milliseconds
   int? trackNumber;
   int? year;

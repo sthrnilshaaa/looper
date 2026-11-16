@@ -32,60 +32,65 @@ const SongSchema = CollectionSchema(
       type: IsarType.doubleList,
     ),
     r'genre': PropertySchema(id: 6, name: r'genre', type: IsarType.string),
-    r'hasCustomEqualizer': PropertySchema(
+    r'genreLookedUp': PropertySchema(
       id: 7,
+      name: r'genreLookedUp',
+      type: IsarType.bool,
+    ),
+    r'hasCustomEqualizer': PropertySchema(
+      id: 8,
       name: r'hasCustomEqualizer',
       type: IsarType.bool,
     ),
     r'isFavorite': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'isFavorite',
       type: IsarType.bool,
     ),
     r'lastPlayed': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'lastPlayed',
       type: IsarType.dateTime,
     ),
     r'lastPositionMs': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'lastPositionMs',
       type: IsarType.long,
     ),
-    r'lyrics': PropertySchema(id: 11, name: r'lyrics', type: IsarType.string),
+    r'lyrics': PropertySchema(id: 12, name: r'lyrics', type: IsarType.string),
     r'lyricsOffsetMs': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'lyricsOffsetMs',
       type: IsarType.long,
     ),
     r'needsEnrichment': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'needsEnrichment',
       type: IsarType.bool,
     ),
-    r'path': PropertySchema(id: 14, name: r'path', type: IsarType.string),
+    r'path': PropertySchema(id: 15, name: r'path', type: IsarType.string),
     r'playCount': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'playCount',
       type: IsarType.long,
     ),
     r'searchTerms': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'searchTerms',
       type: IsarType.stringList,
     ),
-    r'title': PropertySchema(id: 17, name: r'title', type: IsarType.string),
+    r'title': PropertySchema(id: 18, name: r'title', type: IsarType.string),
     r'totalListenedMs': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'totalListenedMs',
       type: IsarType.long,
     ),
     r'trackNumber': PropertySchema(
-      id: 19,
+      id: 20,
       name: r'trackNumber',
       type: IsarType.long,
     ),
-    r'year': PropertySchema(id: 20, name: r'year', type: IsarType.long),
+    r'year': PropertySchema(id: 21, name: r'year', type: IsarType.long),
   },
 
   estimateSize: _songEstimateSize,
@@ -262,20 +267,21 @@ void _songSerialize(
   writer.writeLong(offsets[4], object.duration);
   writer.writeDoubleList(offsets[5], object.equalizerGains);
   writer.writeString(offsets[6], object.genre);
-  writer.writeBool(offsets[7], object.hasCustomEqualizer);
-  writer.writeBool(offsets[8], object.isFavorite);
-  writer.writeDateTime(offsets[9], object.lastPlayed);
-  writer.writeLong(offsets[10], object.lastPositionMs);
-  writer.writeString(offsets[11], object.lyrics);
-  writer.writeLong(offsets[12], object.lyricsOffsetMs);
-  writer.writeBool(offsets[13], object.needsEnrichment);
-  writer.writeString(offsets[14], object.path);
-  writer.writeLong(offsets[15], object.playCount);
-  writer.writeStringList(offsets[16], object.searchTerms);
-  writer.writeString(offsets[17], object.title);
-  writer.writeLong(offsets[18], object.totalListenedMs);
-  writer.writeLong(offsets[19], object.trackNumber);
-  writer.writeLong(offsets[20], object.year);
+  writer.writeBool(offsets[7], object.genreLookedUp);
+  writer.writeBool(offsets[8], object.hasCustomEqualizer);
+  writer.writeBool(offsets[9], object.isFavorite);
+  writer.writeDateTime(offsets[10], object.lastPlayed);
+  writer.writeLong(offsets[11], object.lastPositionMs);
+  writer.writeString(offsets[12], object.lyrics);
+  writer.writeLong(offsets[13], object.lyricsOffsetMs);
+  writer.writeBool(offsets[14], object.needsEnrichment);
+  writer.writeString(offsets[15], object.path);
+  writer.writeLong(offsets[16], object.playCount);
+  writer.writeStringList(offsets[17], object.searchTerms);
+  writer.writeString(offsets[18], object.title);
+  writer.writeLong(offsets[19], object.totalListenedMs);
+  writer.writeLong(offsets[20], object.trackNumber);
+  writer.writeLong(offsets[21], object.year);
 }
 
 Song _songDeserialize(
@@ -292,20 +298,21 @@ Song _songDeserialize(
   object.duration = reader.readLongOrNull(offsets[4]);
   object.equalizerGains = reader.readDoubleList(offsets[5]);
   object.genre = reader.readStringOrNull(offsets[6]);
-  object.hasCustomEqualizer = reader.readBool(offsets[7]);
+  object.genreLookedUp = reader.readBool(offsets[7]);
+  object.hasCustomEqualizer = reader.readBool(offsets[8]);
   object.id = id;
-  object.isFavorite = reader.readBool(offsets[8]);
-  object.lastPlayed = reader.readDateTimeOrNull(offsets[9]);
-  object.lastPositionMs = reader.readLong(offsets[10]);
-  object.lyrics = reader.readStringOrNull(offsets[11]);
-  object.lyricsOffsetMs = reader.readLongOrNull(offsets[12]);
-  object.needsEnrichment = reader.readBool(offsets[13]);
-  object.path = reader.readString(offsets[14]);
-  object.playCount = reader.readLong(offsets[15]);
-  object.title = reader.readString(offsets[17]);
-  object.totalListenedMs = reader.readLong(offsets[18]);
-  object.trackNumber = reader.readLongOrNull(offsets[19]);
-  object.year = reader.readLongOrNull(offsets[20]);
+  object.isFavorite = reader.readBool(offsets[9]);
+  object.lastPlayed = reader.readDateTimeOrNull(offsets[10]);
+  object.lastPositionMs = reader.readLong(offsets[11]);
+  object.lyrics = reader.readStringOrNull(offsets[12]);
+  object.lyricsOffsetMs = reader.readLongOrNull(offsets[13]);
+  object.needsEnrichment = reader.readBool(offsets[14]);
+  object.path = reader.readString(offsets[15]);
+  object.playCount = reader.readLong(offsets[16]);
+  object.title = reader.readString(offsets[18]);
+  object.totalListenedMs = reader.readLong(offsets[19]);
+  object.trackNumber = reader.readLongOrNull(offsets[20]);
+  object.year = reader.readLongOrNull(offsets[21]);
   return object;
 }
 
@@ -335,28 +342,30 @@ P _songDeserializeProp<P>(
     case 8:
       return (reader.readBool(offset)) as P;
     case 9:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 10:
-      return (reader.readLong(offset)) as P;
-    case 11:
-      return (reader.readStringOrNull(offset)) as P;
-    case 12:
-      return (reader.readLongOrNull(offset)) as P;
-    case 13:
       return (reader.readBool(offset)) as P;
-    case 14:
-      return (reader.readString(offset)) as P;
-    case 15:
+    case 10:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 11:
       return (reader.readLong(offset)) as P;
-    case 16:
-      return (reader.readStringList(offset) ?? []) as P;
-    case 17:
-      return (reader.readString(offset)) as P;
-    case 18:
-      return (reader.readLong(offset)) as P;
-    case 19:
+    case 12:
+      return (reader.readStringOrNull(offset)) as P;
+    case 13:
       return (reader.readLongOrNull(offset)) as P;
+    case 14:
+      return (reader.readBool(offset)) as P;
+    case 15:
+      return (reader.readString(offset)) as P;
+    case 16:
+      return (reader.readLong(offset)) as P;
+    case 17:
+      return (reader.readStringList(offset) ?? []) as P;
+    case 18:
+      return (reader.readString(offset)) as P;
+    case 19:
+      return (reader.readLong(offset)) as P;
     case 20:
+      return (reader.readLongOrNull(offset)) as P;
+    case 21:
       return (reader.readLongOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2102,6 +2111,16 @@ extension SongQueryFilter on QueryBuilder<Song, Song, QFilterCondition> {
     });
   }
 
+  QueryBuilder<Song, Song, QAfterFilterCondition> genreLookedUpEqualTo(
+    bool value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'genreLookedUp', value: value),
+      );
+    });
+  }
+
   QueryBuilder<Song, Song, QAfterFilterCondition> hasCustomEqualizerEqualTo(
     bool value,
   ) {
@@ -3396,6 +3415,18 @@ extension SongQuerySortBy on QueryBuilder<Song, Song, QSortBy> {
     });
   }
 
+  QueryBuilder<Song, Song, QAfterSortBy> sortByGenreLookedUp() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'genreLookedUp', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterSortBy> sortByGenreLookedUpDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'genreLookedUp', Sort.desc);
+    });
+  }
+
   QueryBuilder<Song, Song, QAfterSortBy> sortByHasCustomEqualizer() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'hasCustomEqualizer', Sort.asc);
@@ -3626,6 +3657,18 @@ extension SongQuerySortThenBy on QueryBuilder<Song, Song, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Song, Song, QAfterSortBy> thenByGenreLookedUp() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'genreLookedUp', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterSortBy> thenByGenreLookedUpDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'genreLookedUp', Sort.desc);
+    });
+  }
+
   QueryBuilder<Song, Song, QAfterSortBy> thenByHasCustomEqualizer() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'hasCustomEqualizer', Sort.asc);
@@ -3846,6 +3889,12 @@ extension SongQueryWhereDistinct on QueryBuilder<Song, Song, QDistinct> {
     });
   }
 
+  QueryBuilder<Song, Song, QDistinct> distinctByGenreLookedUp() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'genreLookedUp');
+    });
+  }
+
   QueryBuilder<Song, Song, QDistinct> distinctByHasCustomEqualizer() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'hasCustomEqualizer');
@@ -3983,6 +4032,12 @@ extension SongQueryProperty on QueryBuilder<Song, Song, QQueryProperty> {
   QueryBuilder<Song, String?, QQueryOperations> genreProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'genre');
+    });
+  }
+
+  QueryBuilder<Song, bool, QQueryOperations> genreLookedUpProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'genreLookedUp');
     });
   }
 
