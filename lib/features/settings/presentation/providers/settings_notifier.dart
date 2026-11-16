@@ -325,6 +325,8 @@ class Settings extends _$Settings {
       ..lastPlayedSongId = s.lastPlayedSongId
       ..lastQueueSongIds = List.from(s.lastQueueSongIds)
       ..lastQueueIndex = s.lastQueueIndex
+      ..lastQueueManualIndices = List.from(s.lastQueueManualIndices)
+      ..lastQueueOriginalOrder = List.from(s.lastQueueOriginalOrder)
       ..volume = s.volume
       ..lastPositionMs = s.lastPositionMs
       ..shuffle = s.shuffle
@@ -591,6 +593,8 @@ class Settings extends _$Settings {
     if (!value) {
       s.lastQueueSongIds = [];
       s.lastQueueIndex = -1;
+      s.lastQueueManualIndices = [];
+      s.lastQueueOriginalOrder = [];
       s.lastPlayedSongId = null;
       s.lastPositionMs = 0;
     }
@@ -744,10 +748,14 @@ class Settings extends _$Settings {
     int index,
     int? lastSongId, {
     int? positionMs,
+    List<int> manualIndices = const [],
+    List<int> originalOrder = const [],
   }) => _persistQuietly(
     (s) => s
       ..lastQueueSongIds = queueIds
       ..lastQueueIndex = index
+      ..lastQueueManualIndices = manualIndices
+      ..lastQueueOriginalOrder = originalOrder
       ..lastPlayedSongId = lastSongId
       ..lastPositionMs = positionMs ?? 0,
   );
