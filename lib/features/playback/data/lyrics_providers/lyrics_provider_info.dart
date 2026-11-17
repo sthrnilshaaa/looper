@@ -1,4 +1,5 @@
 import 'package:looper_player/core/utils/app_links.dart';
+import 'package:looper_player/features/settings/domain/app_defaults.dart';
 
 /// An online lyrics service: how it's stored ([id], also the lowercase
 /// `[source:]` tag on saved lyrics), shown ([label]) and credited ([url]).
@@ -36,6 +37,10 @@ class LyricsProviderInfo {
       : plainOnly
       ? 1
       : 2;
+
+  /// The default lookup order IDs, defined in [AppDefaults.defaultLyricsProviderOrder].
+  static const List<String> defaultOrder =
+      AppDefaults.defaultLyricsProviderOrder;
 
   /// Every service, in the default lookup order: word-synced sources first
   /// (the two Apple-quality ones, then the catalogues that are searched by
@@ -83,6 +88,38 @@ class LyricsProviderInfo {
       wordCapable: true,
       letterCapable: true,
     ),
+    LyricsProviderInfo(
+      'BETTERLYRICS',
+      'BetterLyrics',
+      AppLinks.betterLyricsWeb,
+      wordCapable: true,
+      letterCapable: true,
+    ),
+    LyricsProviderInfo(
+      'PAXSENIX',
+      'PaxSenix',
+      AppLinks.paxsenixWeb,
+      wordCapable: true,
+      letterCapable: true,
+    ),
+    LyricsProviderInfo(
+      'BINILYRICS',
+      'BiniLyrics',
+      AppLinks.biniLyricsWeb,
+      wordCapable: true,
+    ),
+    LyricsProviderInfo(
+      'UNISON',
+      'Unison',
+      AppLinks.unisonWeb,
+      wordCapable: true,
+    ),
+    LyricsProviderInfo(
+      'BETTERLYRICS_QQ',
+      'BetterLyrics (QQ)',
+      AppLinks.betterLyricsQqWeb,
+      wordCapable: true,
+    ),
     LyricsProviderInfo('LRCLIB', 'LRCLIB', AppLinks.lrclibWeb),
     LyricsProviderInfo('GENIUS', 'Genius', AppLinks.geniusWeb, plainOnly: true),
     LyricsProviderInfo(
@@ -101,6 +138,12 @@ class LyricsProviderInfo {
       'LYRICFIND',
       'LyricFind',
       AppLinks.lyricfindWeb,
+      plainOnly: true,
+    ),
+    LyricsProviderInfo(
+      'LYRICSOVH',
+      'lyrics.ovh',
+      AppLinks.lyricsOvhWeb,
       plainOnly: true,
     ),
   ];

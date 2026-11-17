@@ -226,14 +226,15 @@ class _SearchResultsBody extends ConsumerWidget {
   }
 
   List<Widget> _allSongs(AppLocalizations l10n) => [
-    SliverToBoxAdapter(
-      child: _SectionHeader(
-        title: l10n.songsCount(results.songs.length),
-        quiet: true,
-        actionLabel: l10n.selectAll,
-        onAction: onSelectAll,
+    if (results.songs.isNotEmpty)
+      SliverToBoxAdapter(
+        child: _SectionHeader(
+          title: l10n.songsCount(results.songs.length),
+          quiet: true,
+          actionLabel: l10n.selectAll,
+          onAction: onSelectAll,
+        ),
       ),
-    ),
     SliverList.builder(
       itemCount: results.songs.length,
       itemBuilder: (context, index) => _song(l10n, results.songs[index]),

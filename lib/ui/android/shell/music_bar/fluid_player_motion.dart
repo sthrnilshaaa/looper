@@ -39,6 +39,26 @@ class FluidPlayerGeometry {
   static const double miniMargin = 16.0;
   static const double panelRadius = 36.0;
 
+  /// Progress threshold where the panel corners begin smoothing from [panelRadius]
+  /// down to 0 at full expansion. During flight (p <= 0.94), corners remain constant
+  /// at 36dp.
+  static const double panelCornerProgressThreshold = 0.94;
+
+  /// Corner radius of the player panel as a function of expand progress [p]:
+  /// constant [panelRadius] (36) throughout flight (p <= 0.94), transitioning
+  /// smoothly via an easeInOut curve to 0 at full expansion (p = 1.0) so square-corner
+  /// devices have seamless edge-to-edge coverage while any small drag restores
+  /// the rounded floating card appearance.
+  static double panelRadiusAt(double p) {
+    if (p <= panelCornerProgressThreshold) return panelRadius;
+    if (p >= 1.0) return 0.0;
+    final double t =
+        (p - panelCornerProgressThreshold) /
+        (1.0 - panelCornerProgressThreshold);
+    final double curved = Curves.easeInOut.transform(t);
+    return lerpDouble(panelRadius, 0.0, curved)!;
+  }
+
   /// Width the mini content is laid out at. Fixed (the collapsed panel's
   /// width) so a moving panel never re-lays it out.
   double get miniWidth => screenSize.width - 2 * miniMargin;
@@ -75,7 +95,12 @@ class FluidPlayerGeometry {
 
   /// [stretch] > 0 (open end) raises the top edge and keeps the bottom on
   /// the screen edge; [stretch] < 0 (collapsed end) moves the whole rect down.
-  Rect panelRect(double p, {double stretch = 0.0}) {
+  /// [horizontalOffset] shifts the collapsed mini panel sideways during swipe gestures.
+  Rect panelRect(
+    double p, {
+    double stretch = 0.0,
+    double horizontalOffset = 0.0,
+  }) {
     final double margin = miniMargin * (1.0 - p);
     double top = collapsedTop * (1.0 - p);
     double bottom = screenSize.height - restingBottom * (1.0 - p);
@@ -85,7 +110,9 @@ class FluidPlayerGeometry {
       top -= stretch;
       bottom -= stretch;
     }
-    return Rect.fromLTRB(margin, top, screenSize.width - margin, bottom);
+    final double left = margin + horizontalOffset;
+    final double right = screenSize.width - margin + horizontalOffset;
+    return Rect.fromLTRB(left, top, right, bottom);
   }
 
   /// Converts a vertical pointer velocity (px/s, down positive) into
@@ -93,22 +120,42 @@ class FluidPlayerGeometry {
   double progressVelocity(double pixelsPerSecondDy) =>
       -pixelsPerSecondDy / travel;
 
-  /// Rect of the morphing album art: from the mini bar's 50dp thumbnail
+  /// Rect of the morphing album art: from the mini bar's 50dp (or 40dp compact) thumbnail
   /// (riding the panel) to the expanded player's artwork rect.
-  Rect morphArtRect(double p, Rect expandedArt, {double stretch = 0.0}) {
-    final Rect panel = panelRect(p, stretch: stretch);
-    final double size = lerpDouble(50.0, expandedArt.width, p)!;
+  Rect morphArtRect(
+    double p,
+    Rect expandedArt, {
+    double stretch = 0.0,
+    double horizontalOffset = 0.0,
+    bool compact = false,
+  }) {
+    final Rect panel = panelRect(
+      p,
+      stretch: stretch,
+      horizontalOffset: horizontalOffset,
+    );
+    final double miniSize = compact ? 40.0 : 50.0;
+    final double miniTop = compact ? 8.0 : 11.0;
+    final double size = lerpDouble(miniSize, expandedArt.width, p)!;
     final double left = panel.left + 12.0 + (expandedArt.left - 12.0) * p;
-    final double top = panel.top + 11.0 + (expandedArt.top - 11.0) * p;
+    final double top = panel.top + miniTop + (expandedArt.top - miniTop) * p;
     return Rect.fromLTWH(left, top, size, size);
   }
 
-  /// Corner radius of the morphing art: the mini thumbnail's 32 to the
-  /// expanded artwork's 12.
-  static double morphArtRadius(double p) => lerpDouble(32.0, 12.0, p)!;
+  /// Corner radius of the morphing art: the mini thumbnail's 32 (or 26 compact)
+  /// to the expanded artwork's 12.
+  static double morphArtRadius(double p, {bool compact = false}) =>
+      lerpDouble(compact ? 26.0 : 32.0, 12.0, p)!;
 
-  Offset miniOrigin(double p, {double stretch = 0.0}) =>
-      panelRect(p, stretch: stretch).topLeft;
+  Offset miniOrigin(
+    double p, {
+    double stretch = 0.0,
+    double horizontalOffset = 0.0,
+  }) => panelRect(
+    p,
+    stretch: stretch,
+    horizontalOffset: horizontalOffset,
+  ).topLeft;
 }
 
 /// Staggered entrance of one expanded-player section: it fades in and rises
@@ -158,6 +205,16 @@ final SpringDescription fluidPlayerOpenBounceSpring =
       ratio: 0.65,
     );
 
+/// Tap on the mini bar to open: barely underdamped, so the sheet lands with
+/// only a hint of carry past the top (~0.6 % of the travel) instead of the
+/// full drag/flick bounce.
+final SpringDescription fluidPlayerTapOpenSpring =
+    SpringDescription.withDampingRatio(
+      mass: 1.0,
+      stiffness: 380.0,
+      ratio: 0.85,
+    );
+
 /// Firmer bounce for minimizing: the mini bar dips ~14 dp under its resting
 /// spot and comes back, so it lands like the sheet it was.
 final SpringDescription fluidPlayerCloseBounceSpring =
@@ -175,3 +232,46 @@ final SpringDescription fluidPlayerSpring = SpringDescription.withDampingRatio(
   stiffness: 380.0,
   ratio: 1.0,
 );
+
+/// Pure calculation helper for horizontal swipe gesture physics and commit
+/// thresholds in Fluid Player.
+class FluidHorizontalSwipe {
+  static const double commitThresholdFraction = 0.25;
+  static const double commitThresholdMin = 60.0;
+  static const double projectionTime = 0.15;
+
+  /// Returns drag displacement, dampening through [rubberBand] if the drag is
+  /// blocked at a boundary (start or end of queue).
+  static double computeOffset({
+    required double fingerDx,
+    required bool isBlocked,
+    required double limit,
+  }) {
+    if (!isBlocked) return fingerDx;
+    if (fingerDx == 0.0) return 0.0;
+    return fingerDx.sign * rubberBand(fingerDx.abs(), limit);
+  }
+
+  /// Projects final offset from [offset] and pointer [velocityX] (px/s).
+  static double projectedOffset({
+    required double offset,
+    required double velocityX,
+    double projectionTime = projectionTime,
+  }) {
+    return offset + velocityX * projectionTime;
+  }
+
+  /// Minimum horizontal travel required to trigger a track skip.
+  static double threshold(double containerWidth) {
+    final double fraction = containerWidth * commitThresholdFraction;
+    return fraction > commitThresholdMin ? fraction : commitThresholdMin;
+  }
+
+  /// Whether the swipe throw or drag has crossed the commit threshold.
+  static bool shouldCommit({
+    required double projectedOffset,
+    required double threshold,
+  }) {
+    return projectedOffset.abs() >= threshold;
+  }
+}

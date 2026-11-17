@@ -40,7 +40,6 @@ class ArtworkDownloaderService {
     );
     // Replace underscores and dashes with spaces for better matching
     cleanTitle = cleanTitle.replaceAll('_', ' ').replaceAll('-', ' ');
-    // Remove extra spaces
     cleanTitle = cleanTitle.replaceAll(RegExp(r'\s+'), ' ').trim();
 
     // 2. Smart Artist Filter

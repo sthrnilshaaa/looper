@@ -1,6 +1,6 @@
 part of 'premium_music_bar.dart';
 
-extension _MiniPlayerContent on _PremiumMusicBarState {
+extension _MiniPlayerContent on PremiumMusicBarState {
   Widget _buildMiniPlayerContent(
     Song song,
     bool isPlaying,
@@ -51,13 +51,14 @@ extension _MiniPlayerContent on _PremiumMusicBarState {
                     width: artSize,
                     height: artSize,
                     child: !settings.enableSlideGesture
-                        ? Hero(
-                            tag: 'album_art',
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(artRadius),
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(artRadius),
+                            child: Hero(
+                              tag: 'album_art',
                               child: Stack(
                                 fit: StackFit.expand,
                                 children: [
+                                  // Mini player shows static art only (Doc 20 §2 bug A17)
                                   OptimizedImage(
                                     imagePath:
                                         song.artPath != null &&
@@ -141,19 +142,43 @@ extension _MiniPlayerContent on _PremiumMusicBarState {
               topRight: Radius.circular(36),
               bottomRight: Radius.circular(36),
             ),
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.only(right: 2.0),
-                child: AnimatedPlayPauseIcon(
-                  isPlaying: isPlaying,
-                  color: Colors.white,
-                  size:
-                      (compact
-                              ? AppIcons.expandedPlayerPlayPauseIcon * 0.8
-                              : AppIcons.expandedPlayerPlayPauseIcon)
-                          .s,
-                ),
-              ),
+            child: Consumer(
+              builder: (context, ref, _) {
+                final isBuffering = ref.watch(
+                  playbackProvider.select((s) => s.isBuffering),
+                );
+                return Center(
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(right: 2.0),
+                        child: AnimatedPlayPauseIcon(
+                          isPlaying: isPlaying,
+                          color: Colors.white,
+                          size:
+                              (compact
+                                      ? AppIcons.expandedPlayerPlayPauseIcon *
+                                            0.8
+                                      : AppIcons.expandedPlayerPlayPauseIcon)
+                                  .s,
+                        ),
+                      ),
+                      if (isBuffering)
+                        SizedBox(
+                          width: (compact ? 24.0 : 30.0).s,
+                          height: (compact ? 24.0 : 30.0).s,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.0,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ],

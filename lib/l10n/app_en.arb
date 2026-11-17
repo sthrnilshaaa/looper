@@ -39,6 +39,12 @@
   "ascending": "Ascending",
   "audioCrossfade": "Audio Crossfade",
   "audioCrossfadeDesc": "When one song ends and the next begins, the current track fades out while the next track fades in at the same time. This gives a continuous, DJ-like flow.",
+  "crossfadeDuration": "Crossfade Duration",
+  "crossfadeDurationDesc": "Duration of the overlapping transition between songs",
+  "smartTransitions": "Smart Transitions",
+  "smartTransitionsDesc": "Aligns transitions to cue points, skips silent intros/outros, and prevents cutting off active lyrics",
+  "beatMixing": "Beat Mixing (Experimental)",
+  "beatMixingDesc": "Matches tempos and phase aligns beats for seamless DJ-style blending between compatible tracks",
   "audioFocusDenied": "Playback paused: Audio focus denied by system",
   "audioPlayback": "Audio & Playback",
   "audioPlaybackDesc": "Crossfade, silence gap, and fading settings",
@@ -104,6 +110,8 @@
   "enableNetworkLyricsArt": "Enable network use for online lyrics & artist art",
   "enablePlayerGradient": "Music Screen Gradient",
   "enablePlayerGradientDesc": "Enable the radial accent gradient background on the now playing screen",
+  "enableLyricsGradient": "Lyrics Screen Gradient",
+  "enableLyricsGradientDesc": "Enable the radial accent gradient background on the lyrics screen",
   "fadeDuration": "Fade Duration",
   "fadeDurationDesc": "How long the fade takes for play, pause, and stop actions. Example: 150ms means the audio becomes audible or silent very quickly, but still smoothly.",
   "fadeOnSeek": "Fade on Seek",
@@ -148,6 +156,7 @@
   "loadingPhase4": "OPTIMIZING PLAYBACK MEMORY...",
   "@@locale": "en",
   "lyrics": "Lyrics",
+  "otherMenu": "Other menu",
   "lyricsAlignment": "Lyrics Alignment",
   "lyricsAlignmentDesc": "Align text positions for scrolling lyrics",
   "lyricsDarkness": "Lyrics Screen Darkness",
@@ -297,6 +306,30 @@
   "lyricLineTransitionRoll": "Rolling",
   "lyricLineTransitionFlip": "Flip",
   "lyricLineTransitionBlur": "Blur",
+  "playerStyle": "Player Style",
+  "playerStyleDesc": "Layout of the Now Playing screen in portrait",
+  "playerStyleClassic": "Classic",
+  "playerStyleArc": "Arc",
+  "playerStyleLinear": "Linear",
+  "playerStyleCard": "Card",
+  "playerStyleTitle": "{name} Style",
+  "@playerStyleTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "playerStyleAccent": "Use Accent Color",
+  "playerStyleAccentDesc": "Color the active lyric line and the progress bar with the accent color",
+  "cardBlackBackground": "Black Background",
+  "cardBlackBackgroundDesc": "Plain black behind the player",
+  "cardAccentBackground": "Accent Background Color",
+  "cardAccentBackgroundDesc": "A dark shade of the accent color behind the player",
+  "playerStyleBlurBackground": "Blur Background",
+  "playerStyleBlurBackgroundDesc": "Show blurred album artwork as background",
+  "cardAccentColors": "Accent Colors",
+  "cardAccentColorsDesc": "Color the active lyric line and progress bar with the accent color",
   "accentVibrancy": "Accent Vibrancy",
   "accentVibrancyDesc": "Make the accent color more vivid without changing its brightness",
   "appearanceSettingsDesc": "Colors, backgrounds, darkness and fonts",
@@ -307,7 +340,7 @@
   "playbackAndAudio": "Playback & Audio",
   "playbackAudioSettingsDesc": "Equalizer, fades, queue and interruptions",
   "general": "General",
-  "generalSettingsDesc": "Language, haptics, internet and profile",
+  "generalSettingsDesc": "Language, haptics and internet",
   "sectionPlayer": "Player",
   "sectionSeekBarVisuals": "Seek Bar & Visuals",
   "sectionTrackInfo": "Track Info",
@@ -529,6 +562,8 @@
   "tapFieldToEdit": "Tap a field to edit",
   "alwaysBlurSheets": "Always Blur Sheets",
   "alwaysBlurSheetsDesc": "Blur popup sheets even when Dynamic Theming is off",
+  "playerDynamicBackground": "Dynamic Player Background",
+  "playerDynamicBackgroundDesc": "Use the blurred album art background on the player screen only",
   "removeArtwork": "Remove artwork",
   "resetArtworkToDefault": "Reset to default",
   "artworkResetToDefault": "Artwork reset to default",
@@ -1378,6 +1413,18 @@
   "checkForUpdates": "Check for updates",
   "updateUpToDate": "You're on the latest version.",
   "updateCheckFailed": "Couldn't check for updates.",
+  "updateAlreadyLatest": "Already latest",
+  "updateWhatChangedOn": "What changed on {version}",
+  "@updateWhatChangedOn": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updateInstallHere": "Install here.",
+  "updateOpenInWeb": "Open in web",
+  "updateNoThanks": "No thanks",
   "uiScale": "UI scale",
   "uiScaleDesc": "Make everything in the app smaller or larger",
   "lyricsSize": "Lyrics size",
@@ -1487,5 +1534,381 @@
   "desktopWelcomeInsightsTitle": "Listening insights",
   "desktopWelcomeInsightsDesc": "See your top songs, artists and listening time in Looper Analyze.",
   "groupByAlbum": "Group by album",
-  "groupByAlbumDesc": "On artist pages, list songs under their albums"
+  "groupByAlbumDesc": "On artist pages, list songs under their albums",
+  "onlineMusic": "Online music",
+  "onlineSettingsDesc": "Streaming, quality, cache and suggestions",
+  "onlineForYou": "For you",
+  "onlineDiscover": "Discover new",
+  "onlineRefresh": "Refresh",
+  "onlineRefreshDesc": "Reset the online connection if songs stop loading",
+  "onlineRefreshed": "Online music refreshed",
+  "onlineLoadFailed": "Couldn't load online music. Tap Refresh to try again.",
+  "onlineNoResults": "No online results",
+  "onlineLoadMore": "Load more",
+  "onlinePersonalizeTitle": "Make it yours",
+  "onlinePersonalizeBody": "Pick genres and artists you like for better suggestions.",
+  "onlineFollow": "Follow",
+  "onlineFollowing": "Following",
+  "artistsForYou": "Artists for you",
+  "tasteGenresTitle": "What do you listen to?",
+  "tasteArtistsTitle": "Pick artists you like",
+  "tasteSearchArtists": "Search artists",
+  "tasteSkip": "Skip",
+  "onlineEnabledDesc": "Search, stream and get suggestions from YouTube Music",
+  "onlineNeedsInternet": "Needs Internet mode (Settings > General)",
+  "onlineYourTaste": "Your taste",
+  "onlineYourTasteDesc": "Genres and artists used for suggestions",
+  "onlinePreferLocal": "Prefer local files",
+  "onlinePreferLocalDesc": "Play your own copy of a song when you have it",
+  "onlineStreaming": "Streaming",
+  "onlineQualityWifi": "Quality on Wi-Fi",
+  "onlineQualityMobile": "Quality on mobile data",
+  "onlineQualityHigh": "High",
+  "onlineQualityNormal": "Normal",
+  "onlineQualityLow": "Low",
+  "onlinePreload": "Preload upcoming songs",
+  "onlinePreloadDesc": "Download the next songs ahead, so skips start at once and they play offline",
+  "onlinePreloadMobile": "Also preload on mobile data",
+  "onlineCache": "Cache",
+  "onlineCachePlayed": "Save played songs",
+  "onlineCachePlayedDesc": "Keep streamed songs so replaying them works offline and needs no refetch",
+  "onlineCachePlayedMobile": "Also save on mobile data",
+  "onlineCachePlayedMobileDesc": "Uses extra mobile data on first play to save the song for offline replays",
+  "onlineCacheLimit": "Cache size limit",
+  "onlineCacheLimitDesc": "Songs played least recently are removed first",
+  "onlineClearCache": "Clear online cache",
+  "onlineClearCacheDesc": "Audio only; lyrics are kept",
+  "onlineCacheUsed": "{size} used",
+  "@onlineCacheUsed": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "onlineSongSkipped": "Skipped {title}: {reason}",
+  "@onlineSongSkipped": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "onlinePlaybackStopped": "Online playback stopped: {reason}",
+  "@onlinePlaybackStopped": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "onlineDisclaimerTitle": "Turn on online music?",
+  "onlineDisclaimerBody": "Online music streams songs and searches directly from YouTube Music. It uses network data and relies on a third-party service that may change or stop working at any time.",
+  "onlineTurnOn": "Turn on",
+  "onlineNotNow": "Not now",
+  "onlineStatusOn": "Online music: on",
+  "onlineStatusLimited": "Online music: limited",
+  "onlineStatusOffline": "Online music: offline",
+  "notInterested": "Not interested",
+  "notInterestedSongHidden": "Song hidden from recommendations",
+  "blockArtist": "Don't recommend {artist}",
+  "@blockArtist": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "artistBlocked": "Artist blocked from recommendations",
+  "detectedProfiles": "Detected taste mixes",
+  "detectedProfilesDesc": "Mixes automatically created from your library and listening habits",
+  "hiddenProfiles": "Hidden mixes",
+  "hiddenSongs": "Hidden songs",
+  "blockedArtists": "Blocked artists",
+  "noHiddenItems": "No hidden songs or blocked artists",
+  "undo": "Undo",
+  "download": "Download",
+  "downloaded": "Downloaded",
+  "downloadAll": "Download all",
+  "downloadingSong": "Downloading {title}…",
+  "@downloadingSong": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadQueued": "Queued {count} songs for download",
+  "@downloadQueued": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "downloadFolder": "Download folder",
+  "downloadQuality": "Download quality",
+  "onlineDownloads": "Downloads",
+  "onlineCreditsTitle": "Online streaming",
+  "creditYouTubeMusicDesc": "Songs, artwork and suggestions come from YouTube Music. Looper is not affiliated with or endorsed by YouTube or Google.",
+  "creditKodaDesc": "Its documented design and fixes for YouTube Music streaming guided this one (see these docs' README).",
+  "creditYtDlpDesc": "Used on desktop, when installed, as a fallback to load streams. Unlicense.",
+  "wrongLyrics": "Wrong lyrics",
+  "wrongLyricsDesc": "Skip {provider} for this song and find other lyrics",
+  "@wrongLyricsDesc": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "noOtherLyricsFound": "No other lyrics found",
+  "downloads": "Downloads",
+  "accountTitle": "Google account",
+  "accountSignedOutDesc": "Sign in for your YouTube Music library and mixes",
+  "accountSignedInAs": "Signed in as {name}",
+  "@accountSignedInAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "accountSignedIn": "Signed in",
+  "accountSignInMicrog": "Sign in with microG",
+  "accountSignInMicrogDesc": "Use the Google account already in GmsCore",
+  "accountSignInWeb": "Sign in with Google",
+  "accountSignInWebDesc": "Google's own sign-in page",
+  "accountPasteCookies": "Paste cookies",
+  "accountPasteCookiesDesc": "Use the session of a browser where you are signed in",
+  "accountPasteHelp": "Open music.youtube.com in a private browser window and sign in. In the developer tools (Network tab), copy the Cookie header of any music.youtube.com request, paste it here, then close that window.",
+  "accountCookieHeader": "Cookie header",
+  "accountNoSapisid": "No SAPISID cookie in this text. Copy it from a signed-in music.youtube.com request.",
+  "accountSignOut": "Sign out",
+  "accountSignOutDesc": "Forget this account on this device",
+  "accountExpired": "Your session expired. Sign in again.",
+  "accountSignInFailed": "Sign-in failed: {error}",
+  "@accountSignInFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "accountRisk": "Signing a third-party app into YouTube breaks YouTube's terms and can get the account challenged. A secondary account is safer. Songs stream without your account either way.",
+  "animatedArtworks": "Animated artworks",
+  "animatedArtworksDesc": "Motion album covers, playlist motion, and artist banners",
+  "animatedArtworksAlways": "Always",
+  "animatedArtworksWifiOnly": "Wi-Fi only",
+  "animatedArtworksNever": "Never",
+  "immersivePlayerBackground": "Immersive motion background",
+  "immersivePlayerBackgroundDesc": "Use motion artwork as full player backdrop",
+  "customArtworkServer": "Motion artwork server",
+  "customArtworkServerDesc": "Self-hosted m8tec server URL or direct Apple Music",
+  "animatedArtworkCacheLimit": "Motion artwork cache limit",
+  "clearAnimatedArtworkCache": "Clear motion artwork cache",
+  "animatedArtworkCacheCleared": "Motion artwork cache cleared",
+  "linkAnimatedArtwork": "Link animated artwork",
+  "linkAnimatedArtworkPrompt": "Enter Apple Music album or playlist URL",
+  "onlineRadioStation": "Radio station",
+  "onlineMixSongRadio": "Radio based on this song",
+  "onlineMixArtistRadio": "Artist radio",
+  "onlineMixPersonal": "Made for you",
+  "onlineMixPlaylistRadio": "Radio based on this playlist",
+  "onlineGuestPrivacyNote": "Guest mode uses a few of your most played song names to search YouTube Music. Nothing else leaves your phone.",
+  "onlineGuestQuickPicks": "Quick picks from your library",
+  "onlineGuestRadio": "Radio: based on {song}",
+  "@onlineGuestRadio": {
+    "placeholders": {
+      "song": {
+        "type": "String"
+      }
+    }
+  },
+  "onlineGuestBecause": "Because you listen to {artist}",
+  "@onlineGuestBecause": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "onlineGuestSimilar": "Similar to {artist}",
+  "@onlineGuestSimilar": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "onlineGuestMoreFrom": "More from {artist}",
+  "@onlineGuestMoreFrom": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "onlineGuestTrending": "Trending in {genre}",
+  "@onlineGuestTrending": {
+    "placeholders": {
+      "genre": {
+        "type": "String"
+      }
+    }
+  },
+  "onlineContentRegion": "Content region",
+  "onlineContentRegionDesc": "Changes charts, trending and suggestions. Song availability still depends on where you are.",
+  "onlineContentRegionAuto": "Auto ({country})",
+  "@onlineContentRegionAuto": {
+    "placeholders": {
+      "country": {
+        "type": "String"
+      }
+    }
+  },
+  "onlineContentRegionSearch": "Search country or region",
+  "ambientGlow": "Ambient glow",
+  "ambientGlowDesc": "Soft moving reflection of the cover around the player",
+  "headphoneCorrection": "Headphone correction",
+  "headphoneCorrectionDesc": "AutoEQ parametric headphone correction profiles",
+  "autoEqBass": "Bass",
+  "autoEqTilt": "Tilt",
+  "autoEqChooseHeadphones": "Choose headphones…",
+  "autoEqUseForDevice": "Use for this device",
+  "autoEqSavedDevices": "Saved devices",
+  "autoEqSearchHeadphones": "Search headphone models",
+  "autoEqDownloadIndex": "Download headphone profiles index",
+  "autoEqNoProfile": "None",
+  "autoEqSpeakerDisabled": "Disabled on phone speaker",
+  "autoEqForget": "Forget",
+  "autoEqCredit": "Profiles: AutoEQ by Jaakko Pasanen (MIT)",
+  "autoEqNoSavedDevices": "No saved devices",
+  "autoEqIndexDownloading": "Downloading index…",
+  "reorderHome": "Reorder Home",
+  "reorderHomeDragHint": "Hold and drag a row",
+  "reorderHomeHint": "Or hold an empty spot on Home for 5 seconds, then hold and drag rows.",
+  "onlineFeedRow": "Online picks",
+  "onlineFeedRowDesc": "Moods and the top online shelves",
+  "onlineMoreRow": "More from online",
+  "onlineMoreRowDesc": "The rest of the online shelves",
+  "artistsForYouRowDesc": "Online artists picked for your taste",
+  "reorderMoveUp": "Move up",
+  "reorderMoveDown": "Move down",
+  "reorderRowA11yHint": "Double-tap and hold to move",
+  "bluetoothCodec": "Bluetooth Codec",
+  "qualityBlockersTitle": "Active Blockers",
+  "qualityTurnBlockersOff": "Turn these off",
+  "qualityTurnBlockersOn": "Turn these back on",
+  "eqMono": "Mono Audio (Single Earbud)",
+  "eqReplayGainTitle": "Volume Normalization (ReplayGain)",
+  "eqReplayGainPreamp": "Normalization Preamp",
+  "onlineSetupTitle": "Stream music online too?",
+  "onlineSetupNoSongsTitle": "No music found? Stream it instead",
+  "onlineSetupYes": "YES, TURN IT ON",
+  "onlineSetupSkip": "SKIP FOR NOW",
+  "onlineSetupStreamInstead": "STREAM MUSIC ONLINE",
+  "onlineSetupLastOneTitle": "Last one",
+  "onlineSetupLastOneDesc": "Turn off anything you don't like. You can change these later in Settings.",
+  "onlineSetupNext": "NEXT",
+  "onlineSetupDoneTitle": "You're good to go",
+  "nowPlayingArtworkMotion": "Now playing artwork motion",
+  "nowPlayingArtworkMotionDesc": "Animate the album cover on the now playing screen when available",
+  "account": "Account",
+  "accountHello": "Hello,",
+  "accountDefaultName": "Listener",
+  "accountLooperTag": "{name}'s looper",
+  "@accountLooperTag": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "accountViewStats": "View Stats",
+  "accountTodayListening": "Today Listening Time",
+  "accountVersionAbout": "Version & about app",
+  "accountOpenSettings": "Open settings",
+  "accountSettings": "Account settings",
+  "accountSettingsDesc": "Name, avatar and linked accounts",
+  "accountProfile": "Profile",
+  "accountPhoto": "Profile photo",
+  "accountPhotoDesc": "Pick any image from your device",
+  "accountPhotoRemove": "Remove photo",
+  "accountEditName": "Your name",
+  "accountEditNameDesc": "Shown on your account screen",
+  "accountNameHint": "Enter your name",
+  "catPlayerInterface": "Player Interface",
+  "catPlayerInterfaceDesc": "Theme, layout, and visual styles",
+  "catMusicManagement": "Music Management",
+  "catMusicManagementDesc": "Downloads, folders and library",
+  "catBehavior": "Behavior",
+  "catBehaviorDesc": "Gestures, haptics, language",
+  "catNetwork": "Network & Internet",
+  "catNetworkDesc": "Internet mode, online music, lyrics sources",
+  "catAbout": "About",
+  "catAboutDesc": "App info, version and credits",
+  "settingsGroupTitle": "Settings",
+  "settingsSearchShort": "Search setting",
+  "catMisc": "Miscellaneous",
+  "catMiscDesc": "Storage, haptics, backup and restore",
+  "sectionStorage": "Storage",
+  "sectionBackupRestore": "Backup & Restore",
+  "sectionPlayerBackground": "Player Background",
+  "sectionClassicLayout": "Classic Layout",
+  "showPreview": "Show preview",
+  "keepScreenAwake": "Keep Screen Awake",
+  "keepScreenAwakeDesc": "Prevent screen from sleeping while player or lyrics are open",
+  "highRefreshRate": "High Refresh Rate",
+  "highRefreshRateDesc": "Runs display at 90/120Hz for smoother animations; turn off for 60Hz battery saver",
+  "reshuffleQueue": "Reshuffle queue",
+  "reorderQueue": "Reorder",
+  "nextInQueue": "Next in queue",
+  "relatedLabel": "Related",
+  "noRelatedTracks": "No related tracks found",
+  "setupStep": "Step {step} of 4",
+  "@setupStep": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      }
+    }
+  },
+  "setupBegin": "Begin Setup",
+  "setupContinue": "Continue",
+  "setupPermissionsTitle": "Required\nPermissions",
+  "setupPermissionsDesc": "These permissions are required for Looper Player to function correctly. Please grant them to proceed.",
+  "setupNotifications": "Notifications",
+  "setupMusicAudio": "Music & Audio",
+  "setupAllFiles": "All Files Access (RECOMMENDED)",
+  "setupCommunityTitle": "Join Our\nCommunity",
+  "setupCommunityDesc": "Looper Player is open-source and depends on community support to grow. Your help makes a difference!",
+  "setupStarGithub": "Star On Github",
+  "setupStarGithubDesc": "Help us reach more people by starring our repository",
+  "setupTelegram": "Telegram",
+  "setupTelegramDesc": "Get the latest updates and chat with the community.",
+  "setupUpi": "Support Via UPI",
+  "setupUpiDesc": "Directly support development via UPI.",
+  "setupKofi": "Buy Me A Coffee",
+  "setupKofiDesc": "Support the project through Ko-fi.",
+  "setupDoneTitle": "You’re all set!",
+  "setupDoneDesc": "Your library is being scanned in the background. Dive in and start listening.",
+  "setupStartListening": "Start Listening",
+  "homeTodayMix": "Today Mix",
+  "homeTodayMixDesc": "The Perfect Mix To Set The Tone For Your Day",
+  "homeHeroEmptyDesc": "Your mixes show up here once you start listening",
+  "homeSurpriseMe": "Surprise Me!",
+  "homeSurpriseMeDesc": "Not Sure What To Play? Let Fate Decide.",
+  "homeArtistPick": "Artist Pick For You",
+  "homeWeeklyMix": "Weekly Mix",
+  "homeWeeklyMixDesc": "Your Most Played Songs This Week",
+  "homePicksLabel": "Picks",
+  "homeForYou": "For You",
+  "homeYourOwn": "Your Own",
+  "notificationPermissionRequired": "Allow notifications to continue. Looper needs them for playback controls.",
+  "letterSpacing": "Letter spacing",
+  "letterSpacingDesc": "Tighten or loosen the text across the app"
 }

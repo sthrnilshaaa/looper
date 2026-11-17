@@ -1,4 +1,5 @@
 import 'package:looper_player/features/library/domain/models/models.dart';
+import 'package:looper_player/features/settings/domain/app_defaults.dart';
 
 /// The effect drawn around/over the Now Playing artwork, driven by the
 /// music's spectrum. The stored index is the enum index, so only append.
@@ -20,7 +21,7 @@ class ArtworkVisualizerStyle {
   /// the effect runs ahead of the sound.
   final int syncMs;
 
-  static const int defaultSyncMs = 150;
+  static const int defaultSyncMs = AppDefaults.artworkVisualizerSyncMs;
   static const int minSyncMs = 0;
   static const int maxSyncMs = 600;
 

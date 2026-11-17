@@ -16,6 +16,7 @@ import 'package:looper_player/l10n/app_localizations.dart';
 import 'package:looper_player/ui/android/widgets/premium_section.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../widgets/settings_widgets.dart';
+import '../widgets/settings_previews.dart';
 import '../widgets/tiles/theme/theme_settings_tiles.dart';
 import '../widgets/tiles/dashboard_settings_tiles.dart';
 import '../widgets/tiles/playback_settings_tiles.dart';
@@ -24,7 +25,10 @@ import '../widgets/tiles/library_settings_tiles.dart';
 import '../widgets/tiles/about_settings_tiles.dart';
 import '../widgets/tiles/backup_logs_settings_tiles.dart';
 import 'package:looper_player/core/theme/app_assets.dart';
+import 'account_view.dart';
+import 'package:looper_player/ui/widgets/common/setup_kit.dart';
 import 'package:looper_player/core/services/haptics/app_haptics.dart';
+import 'package:looper_player/features/playback/data/crossmix/crossmix_settings.dart';
 
 class SettingsCategoryScreen extends ConsumerWidget {
   final String categoryId;
@@ -39,16 +43,22 @@ class SettingsCategoryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
+    final crossmix = ref.watch(crossmixSettingsProvider);
     final l10n = AppLocalizations.of(context)!;
     final useBlur = settings.enableDynamicTheming && !settings.disableBlur;
 
     List<Widget> children = [];
     // Theme is split into titled cards; other categories use one card.
     List<({String title, List<Widget> tiles})> sections = [];
+    // Section titles that start folded to keep long pages compact.
+    var collapsed = <String>{};
     // Options that only apply while a parent option is on sit indented
     // under it (see _SubGroup).
     _SubGroup sub(bool visible, List<Widget> tiles) =>
-        _SubGroup(visible: visible, accent: settings.accent, children: tiles);
+        _SubGroup(visible: visible, children: tiles);
+    // Long-press shows a looping demo of what the toggle does.
+    Widget demo(SettingsDemoKind kind, Widget tile) =>
+        SettingsDemo(kind: kind, accent: settings.accent, child: tile);
     if (categoryId == 'theme') {
       final dynamicTheming = settings.enableDynamicTheming;
       sections = [
@@ -74,27 +84,44 @@ class SettingsCategoryScreen extends ConsumerWidget {
               const DisableBlurTile()
             else
               const AlwaysBlurSheetsTile(),
-            const EnablePlayerGradientTile(),
-            sub(settings.enablePlayerGradient, [
-              const AnimatePlayerGradientTile(),
-              const KeepBackgroundGradientTile(),
+            // Dynamic theming paints its own background.
+            if (!dynamicTheming) ...[
+              demo(
+                SettingsDemoKind.gradient,
+                const KeepBackgroundGradientTile(),
+              ),
               sub(settings.keepBackgroundGradient, const [
                 AnimateBackgroundGradientTile(),
               ]),
-            ]),
-          ],
-        ),
-        (
-          title: l10n.themeGroupDarkness,
-          tiles: [
+            ],
             if (dynamicTheming || settings.keepBackgroundGradient)
               const HomeDarknessSlider(),
             if (dynamicTheming) ...[
               const SongsDarknessSlider(),
               const LibraryDarknessSlider(),
             ],
-            if (dynamicTheming || settings.enablePlayerGradient)
-              const MusicDarknessSlider(),
+          ],
+        ),
+        (
+          title: l10n.sectionDisplay,
+          tiles: [
+            if (Platform.isAndroid) const HighRefreshRateTile(),
+            const GroupArtistByAlbumTile(),
+            const ShowAlbumNextToArtistTile(),
+            sub(settings.showAlbumNextToArtist, const [
+              ShowAlbumInQuickPicksTile(),
+            ]),
+          ],
+        ),
+        (
+          title: l10n.sectionHomeRows,
+          tiles: const [
+            ShowArtistsRowTile(),
+            ShowAlbumsRowTile(),
+            ShowGenresRowTile(),
+            ShowRecentRowTile(),
+            ShowPlaylistsRowTile(),
+            ReorderDashboardSectionsTile(),
           ],
         ),
         (
@@ -102,6 +129,7 @@ class SettingsCategoryScreen extends ConsumerWidget {
           tiles: [
             // Desktop has its own UI scale row in its settings view.
             if (!UiUtils.isDesktop) const UiScaleTile(),
+            const LetterSpacingTile(),
             const UseNewFontTile(),
             sub(settings.useNewFont, const [
               FontFamilySelectionTile(),
@@ -115,39 +143,65 @@ class SettingsCategoryScreen extends ConsumerWidget {
           ],
         ),
       ];
+      collapsed = {l10n.themeGroupFonts, l10n.sectionHomeRows};
     } else if (categoryId == 'now_playing') {
+      // Desktop has no style picker, so it is always the classic layout.
+      final classic =
+          UiUtils.isDesktop ||
+          settings.playerStyle.isEmpty ||
+          settings.playerStyle == 'classic';
+      // Arc / linear / card draw their own blurred background and show lyrics from
+      // the player menu, so the classic background and line options don't
+      // apply there. Dynamic background and the gradient are alternatives:
+      // while one is on, the other is hidden.
+      final dynamicBg = settings.playerDynamicBackground;
+      final gradient = settings.enablePlayerGradient;
       sections = [
         (
           title: l10n.sectionPlayer,
           tiles: [
             if (!UiUtils.isDesktop) const FluidPlayerTile(),
-            const SegmentedUtilityButtonsTile(),
+            if (!UiUtils.isDesktop) const PlayerStyleTile(),
+            if (classic) ...[
+              if (!settings.enableDynamicTheming && (dynamicBg || !gradient))
+                const PlayerDynamicBackgroundTile(),
+              demo(SettingsDemoKind.lyricLine, const PlayerLyricLineTile()),
+              sub(settings.playerLyricLine, const [
+                PlayerLyricLineTransitionTile(),
+              ]),
+            ],
+            if (!UiUtils.isDesktop) const KeepScreenAwakeTile(),
           ],
         ),
-        (
-          title: l10n.sectionSeekBarVisuals,
-          tiles: const [
-            ProgressBarStyleTile(),
-            PlainTimestampsTile(),
-            ArtworkVisualizerTile(),
-          ],
-        ),
-        (
-          title: l10n.sectionTrackInfo,
-          tiles: [
-            const ShowQualityBadgeTile(),
-            sub(settings.showQualityBadge, const [QualityBadgeStyleTile()]),
-          ],
-        ),
-        (
-          title: l10n.sectionLyricLine,
-          tiles: [
-            const PlayerLyricLineTile(),
-            sub(settings.playerLyricLine, const [
-              PlayerLyricLineTransitionTile(),
-            ]),
-          ],
-        ),
+        if (classic) ...[
+          (
+            title: l10n.sectionClassicLayout,
+            tiles: [
+              demo(
+                SettingsDemoKind.segmentedButtons,
+                const SegmentedUtilityButtonsTile(),
+              ),
+              const ProgressBarStyleTile(),
+              const PlainTimestampsTile(),
+              const ArtworkVisualizerTile(),
+              const ShowQualityBadgeTile(),
+              sub(settings.showQualityBadge, const [QualityBadgeStyleTile()]),
+            ],
+          ),
+          if (settings.enableDynamicTheming || !dynamicBg)
+            (
+              title: l10n.sectionPlayerBackground,
+              tiles: [
+                demo(
+                  SettingsDemoKind.gradient,
+                  const EnablePlayerGradientTile(),
+                ),
+                sub(gradient, const [AnimatePlayerGradientTile()]),
+                if (settings.enableDynamicTheming || gradient)
+                  const MusicDarknessSlider(),
+              ],
+            ),
+        ],
       ];
     } else if (categoryId == 'lyrics') {
       sections = [
@@ -167,47 +221,23 @@ class SettingsCategoryScreen extends ConsumerWidget {
         (
           title: l10n.sectionBackground,
           tiles: [
-            const AmbientLyricsBgTile(),
+            demo(SettingsDemoKind.gradient, const EnableLyricsGradientTile()),
+            sub(settings.enableLyricsGradient, const [
+              AnimatePlayerGradientTile(),
+              AmbientLyricsBgTile(),
+            ]),
             const BlurredArtworkLyricsTile(),
             if (settings.enableDynamicTheming ||
                 settings.ambientColorBackground ||
                 settings.keepBackgroundGradient ||
-                settings.blurredArtworkForLyrics)
+                settings.blurredArtworkForLyrics ||
+                settings.enableLyricsGradient)
               const LyricsDarknessSlider(),
-          ],
-        ),
-        (
-          title: l10n.sectionSources,
-          tiles: const [
-            LyricsProviderTile(),
-            SyncLyricsOfflineTile(),
-            ClearLyricsCacheTile(),
           ],
         ),
       ];
     } else if (categoryId == 'library') {
       sections = [
-        (
-          title: l10n.sectionHomeRows,
-          tiles: const [
-            ShowArtistsRowTile(),
-            ShowAlbumsRowTile(),
-            ShowGenresRowTile(),
-            ShowRecentRowTile(),
-            ShowPlaylistsRowTile(),
-            ReorderDashboardSectionsTile(),
-          ],
-        ),
-        (
-          title: l10n.sectionDisplay,
-          tiles: [
-            const GroupArtistByAlbumTile(),
-            const ShowAlbumNextToArtistTile(),
-            sub(settings.showAlbumNextToArtist, const [
-              ShowAlbumInQuickPicksTile(),
-            ]),
-          ],
-        ),
         (
           title: l10n.sectionFolders,
           tiles: const [
@@ -219,26 +249,10 @@ class SettingsCategoryScreen extends ConsumerWidget {
             ResetLibraryTile(),
           ],
         ),
+        (title: l10n.playlists, tiles: const [ImportM3uPlaylistTile()]),
       ];
     } else if (categoryId == 'audio_playback') {
       sections = [
-        (
-          title: l10n.sectionSound,
-          tiles: [
-            const EqualizerTile(),
-            const FadePlayPauseStopTile(),
-            sub(settings.fadePlayPauseStop, const [FadeDurationSlider()]),
-          ],
-        ),
-        (
-          title: l10n.queue,
-          tiles: [
-            const ShuffleTile(),
-            const PersistQueueTile(),
-            const KeepSongProgressTile(),
-            if (!Platform.isAndroid) const ResumeOnStartTile(),
-          ],
-        ),
         if (Platform.isAndroid)
           (
             title: l10n.sectionInterruptions,
@@ -251,9 +265,43 @@ class SettingsCategoryScreen extends ConsumerWidget {
               const ResumeOnStartTile(),
             ],
           ),
+        (
+          title: l10n.sectionSound,
+          tiles: [
+            const EqualizerTile(),
+            demo(SettingsDemoKind.fade, const FadePlayPauseStopTile()),
+            sub(settings.fadePlayPauseStop, const [FadeDurationSlider()]),
+            demo(SettingsDemoKind.crossfade, const CrossfadeTile()),
+            sub(crossmix.crossfadeEnabled, const [
+              CrossfadeDurationSlider(),
+              SmartTransitionsTile(),
+              BeatMixingTile(),
+            ]),
+          ],
+        ),
+        (
+          title: l10n.queue,
+          tiles: [
+            const ShuffleTile(),
+            const PersistQueueTile(),
+            const KeepSongProgressTile(),
+            if (!Platform.isAndroid) const ResumeOnStartTile(),
+          ],
+        ),
+      ];
+    } else if (categoryId == 'online') {
+      sections = [
+        (
+          title: l10n.sectionInternet,
+          tiles: const [InternetModeTile(), DownloadMissingArtworkTile()],
+        ),
+        (
+          title: l10n.sectionSources,
+          tiles: const [LyricsProviderTile(), SyncLyricsOfflineTile()],
+        ),
       ];
     } else if (categoryId == 'playback') {
-      // "General".
+      // "Miscellaneous".
       sections = [
         (
           title: l10n.sectionApp,
@@ -265,28 +313,37 @@ class SettingsCategoryScreen extends ConsumerWidget {
             ],
           ],
         ),
+        (title: l10n.sectionStorage, tiles: [const ClearLyricsCacheTile()]),
         (
-          title: l10n.sectionInternet,
-          tiles: const [InternetModeTile(), DownloadMissingArtworkTile()],
+          title: l10n.sectionBackupRestore,
+          tiles: const [
+            ExportBackupTile(),
+            ImportBackupTile(),
+            ExportLogsTile(),
+            ClearLogsTile(),
+          ],
         ),
-        (title: l10n.themeGroupProfile, tiles: const [SelectAvatarsTile()]),
       ];
-    } else if (categoryId == 'backups_logs') {
-      children = [
-        const ExportBackupTile(),
-        const Divider(height: 1, indent: 72, color: Colors.white10),
-        const ImportBackupTile(),
-        const Divider(height: 1, indent: 72, color: Colors.white10),
-        const ImportM3uPlaylistTile(),
-        const Divider(height: 1, indent: 72, color: Colors.white10),
-        const ExportLogsTile(),
-        const Divider(height: 1, indent: 72, color: Colors.white10),
-        const ClearLogsTile(),
+    } else if (categoryId == 'account') {
+      sections = [
+        (
+          title: l10n.accountProfile,
+          tiles: const [
+            ProfilePhotoTile(),
+            AccountNameTile(),
+            SelectAvatarsTile(),
+          ],
+        ),
       ];
     } else if (categoryId == 'about') {
       children = [
         const LooperVersionTile(), //1
-        const Divider(height: 1, indent: 72, color: Colors.white10), //2
+        const Divider(
+          height: 1,
+          indent: 20,
+          endIndent: 20,
+          color: kSettingsDivider,
+        ), //2
         Padding(
           //3
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -295,11 +352,10 @@ class SettingsCategoryScreen extends ConsumerWidget {
             children: [
               Text(
                 l10n.appInfoPrivacy.toUpperCase(),
-                style: AppFonts.jostStyle(
+                style: AppFonts.settingsStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: settings.accent.withValues(alpha: 0.8),
-                  letterSpacing: 1.0,
+                  color: Colors.white.withValues(alpha: 0.7),
                 ),
               ),
               const SizedBox(height: 16),
@@ -329,8 +385,13 @@ class SettingsCategoryScreen extends ConsumerWidget {
             ],
           ),
         ),
-        const Divider(height: 1, indent: 72, color: Colors.white10), //4
-        LyricsCreditsSection(accentColor: settings.accent), //5
+        const Divider(
+          height: 1,
+          indent: 20,
+          endIndent: 20,
+          color: kSettingsDivider,
+        ), //4
+        LyricsCreditsSection(accentColor: Colors.white), //5
       ];
     }
 
@@ -340,31 +401,22 @@ class SettingsCategoryScreen extends ConsumerWidget {
         if (section.tiles.isNotEmpty) section,
     ];
 
-    return Scaffold(
-      // See the comment on the main SettingsView's Scaffold above - same
-      // reasoning applies here.
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  PremiumSection(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(32),
-                      bottomLeft: Radius.circular(32),
-                      topRight: Radius.circular(10),
-                      bottomRight: Radius.circular(10),
-                    ),
-                    width: 48,
-                    height: 48,
-                    useBlur: useBlur,
-                    forceNoBlur: true,
-                    useExpanded: false,
-                    onTap: () {
+    return Theme(
+      data: settingsTheme(Theme.of(context)),
+      child: Scaffold(
+        // See the comment on the main SettingsView's Scaffold above - same
+        // reasoning applies here.
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        body: _aboutBackground(
+          categoryId == 'about',
+          SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(22, 12, 22, 8),
+                  child: SettingsHeader(
+                    title: title,
+                    onBack: () {
                       AppHaptics.light();
                       // Go through appNavigationProvider (not a raw Navigator
                       // pop) so its logical history stays in sync with the
@@ -372,248 +424,193 @@ class SettingsCategoryScreen extends ConsumerWidget {
                       // call site for why that matters for the back button.
                       ref.read(appNavigationProvider.notifier).goBack();
                     },
-                    child: const Icon(
-                      LucideIcons.arrowLeft,
-                      color: Colors.white,
-                      size: 20,
-                    ),
                   ),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        title,
-                        style: AppFonts.jostStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 48, height: 48),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 12.0,
                 ),
-                physics: const LooperScrollPhysics(),
-                children: categoryId == 'about'
-                    ? [
-                        // Top Section Card
-                        PremiumSection(
-                          useBlur: useBlur,
-                          forceNoBlur: true,
-                          borderRadius: BorderRadius.circular(14),
-                          useExpanded: false,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 20,
-                          ),
-                          child: Row(
-                            children: [
-                              SvgPicture.asset(
-                                AppAssets.logo,
-                                height: 36,
-                                fit: BoxFit.contain,
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 22.0,
+                      vertical: 4.0,
+                    ),
+                    physics: const LooperScrollPhysics(),
+                    children: categoryId == 'about'
+                        ? [
+                            const SizedBox(height: 20),
+                            const AboutHeroCard(),
+                            const SizedBox(height: 13),
+                            const IntrinsicHeight(
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    flex: 176,
+                                    child: AboutMaintainersCard(),
+                                  ),
+                                  SizedBox(width: 18),
+                                  Expanded(flex: 164, child: AboutStarsCard()),
+                                ],
                               ),
-                              const Spacer(),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  borderRadius: const BorderRadius.only(
-                                    topLeft: Radius.circular(32),
-                                    bottomLeft: Radius.circular(32),
-                                    topRight: Radius.circular(10),
-                                    bottomRight: Radius.circular(10),
-                                  ),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.1),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Text(
-                                  'v${ref.watch(appVersionProvider).value ?? ""}'
-                                      .trim(),
-                                  style: AppFonts.jostStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              GestureDetector(
-                                onTap: () async {
-                                  AppHaptics.light();
-                                  final Uri uri = Uri.parse(
-                                    AppLinks.githubRepo,
-                                  );
-                                  try {
-                                    await launchUrl(
-                                      uri,
-                                      mode: LaunchMode.externalApplication,
-                                    );
-                                  } catch (e) {}
-                                },
-                                child: SizedBox(
-                                  width: 32,
-                                  height: 32,
-                                  child: Center(
-                                    child: SvgPicture.asset(
-                                      AppAssets.github,
-                                      width: 32,
-                                      height: 32,
-                                    ),
-                                  ),
-                                ),
-                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            const AboutSocialsCard(),
+                            if (ApkInstaller.supported) ...[
+                              const SizedBox(height: 14),
+                              const CheckForUpdatesTile(card: true),
                             ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        // Give Star on Github Card
-                        const GitHubStarTile(),
-                        if (ApkInstaller.supported) const CheckForUpdatesTile(),
-
-                        const SizedBox(height: 32),
-                        // Maintainers Header
-                        Padding(
-                          padding: const EdgeInsets.only(left: 4.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                l10n.maintainersLabel,
-                                style: AppFonts.jostStyle(
-                                  color: Colors.white,
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.bold,
+                            const SizedBox(height: 14),
+                            AboutLicensesPrivacyCard(
+                              content: [
+                                ...children.sublist(2),
+                                const Divider(
+                                  height: 1,
+                                  indent: 20,
+                                  endIndent: 20,
+                                  color: kSettingsDivider,
                                 ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                l10n.personBehindLooperPlayer,
-                                style: AppFonts.jostStyle(
-                                  color: Colors.white.withValues(alpha: 0.4),
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Maintainers Card
-                        PremiumSection(
-                          useBlur: useBlur,
-                          forceNoBlur: true,
-                          borderRadius: BorderRadius.circular(14),
-                          useExpanded: false,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: const MaintainersRow(),
-                        ),
-                        const SizedBox(height: 32),
-                        // App Info & Privacy Card
-                        PremiumSection(
-                          useBlur: useBlur,
-                          forceNoBlur: true,
-                          borderRadius: BorderRadius.circular(14),
-                          useExpanded: false,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 20,
-                          ),
-                          child: Column(children: children.sublist(2, 5)),
-                        ),
-                        const SizedBox(height: 120),
-                        const OpenSourceLicensesTile(),
-                      ]
-                    : sections.isNotEmpty
-                    ? [
-                        for (final section in sections) ...[
-                          _SectionHeader(
-                            title: section.title,
-                            color: settings.accent,
-                          ),
-                          _SettingsCard(
-                            useBlur: useBlur,
-                            children: [
-                              for (final (i, tile)
-                                  in section.tiles.indexed) ...[
-                                if (i > 0 && tile is! _SubGroup)
-                                  const Divider(
-                                    height: 1,
-                                    indent: 72,
-                                    color: Colors.white10,
-                                  ),
-                                tile,
+                                const OpenSourceLicensesTile(),
                               ],
-                            ],
-                          ),
-                        ],
-                        const SizedBox(height: 120),
-                      ]
-                    : [
-                        _SettingsCard(useBlur: useBlur, children: children),
-                        const SizedBox(height: 120),
-                      ],
-              ),
+                            ),
+                            const SizedBox(height: 120),
+                          ]
+                        : sections.isNotEmpty
+                        ? [
+                            for (final section in sections)
+                              _Section(
+                                // Keyed by title so fold state survives the
+                                // list changing above it.
+                                key: ValueKey(section.title),
+                                title: section.title,
+                                collapsible: collapsed.contains(section.title),
+                                children: [
+                                  for (final (i, tile)
+                                      in section.tiles.indexed) ...[
+                                    if (i > 0 && tile is! _SubGroup)
+                                      const Divider(
+                                        height: 1,
+                                        indent: 20,
+                                        endIndent: 20,
+                                        color: kSettingsDivider,
+                                      ),
+                                    tile,
+                                  ],
+                                ],
+                              ),
+                            const SizedBox(height: 120),
+                          ]
+                        : [
+                            _SettingsCard(children: children),
+                            const SizedBox(height: 120),
+                          ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// Small accent-colored label above a group of settings.
-class _SectionHeader extends StatelessWidget {
+/// Titled card of settings. A collapsible one starts folded; tapping the
+/// title (or chevron) opens and shuts it.
+class _Section extends StatefulWidget {
   final String title;
-  final Color color;
-
-  const _SectionHeader({required this.title, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
-      child: Text(
-        title.toUpperCase(),
-        style: AppFonts.jostStyle(
-          color: color.withValues(alpha: 0.8),
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.0,
-        ),
-      ),
-    );
-  }
-}
-
-/// Rounded card holding a list of settings tiles.
-class _SettingsCard extends StatelessWidget {
-  final bool useBlur;
+  final bool collapsible;
   final List<Widget> children;
 
-  const _SettingsCard({required this.useBlur, required this.children});
+  const _Section({
+    super.key,
+    required this.title,
+    required this.collapsible,
+    required this.children,
+  });
+
+  @override
+  State<_Section> createState() => _SectionState();
+}
+
+class _SectionState extends State<_Section> {
+  late bool _open = !widget.collapsible;
 
   @override
   Widget build(BuildContext context) {
-    return PremiumSection(
-      useBlur: useBlur,
-      forceNoBlur: true,
-      borderRadius: BorderRadius.circular(24),
-      useExpanded: false,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(mainAxisSize: MainAxisSize.min, children: children),
+    final label = Text(
+      widget.title,
+      style: AppFonts.settingsStyle(
+        color: Colors.white.withValues(alpha: 0.7),
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+      ),
+    );
+    final reduced = Motion.reducedOf(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (!widget.collapsible)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(0, 20, 0, 14),
+            child: label,
+          )
+        else
+          Semantics(
+            button: true,
+            expanded: _open,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: () {
+                AppHaptics.selection();
+                setState(() => _open = !_open);
+              },
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(0, 20, 4, 14),
+                child: Row(
+                  children: [
+                    Expanded(child: label),
+                    AnimatedRotation(
+                      turns: _open ? 0.5 : 0,
+                      duration: Duration(milliseconds: reduced ? 0 : 220),
+                      child: Icon(
+                        LucideIcons.chevronDown,
+                        size: 18,
+                        color: Colors.white.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        AnimatedSize(
+          duration: Duration(milliseconds: reduced ? 0 : 260),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: _open
+              ? _SettingsCard(children: widget.children)
+              : const SizedBox(width: double.infinity),
+        ),
+      ],
+    );
+  }
+}
+
+/// Rounded neutral card holding a list of settings tiles.
+class _SettingsCard extends StatelessWidget {
+  final List<Widget> children;
+
+  const _SettingsCard({this.children = const []});
+
+  @override
+  Widget build(BuildContext context) {
+    // Material (not a decorated Container) so tile ripples paint on the card.
+    return Material(
+      color: kSettingsCard,
+      borderRadius: BorderRadius.circular(15),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Column(mainAxisSize: MainAxisSize.min, children: children),
+      ),
     );
   }
 }
@@ -622,14 +619,9 @@ class _SettingsCard extends StatelessWidget {
 /// under it with an accent rail, sliding open and shut with it.
 class _SubGroup extends StatelessWidget {
   final bool visible;
-  final Color accent;
   final List<Widget> children;
 
-  const _SubGroup({
-    required this.visible,
-    required this.accent,
-    required this.children,
-  });
+  const _SubGroup({required this.visible, required this.children});
 
   @override
   Widget build(BuildContext context) {
@@ -642,13 +634,18 @@ class _SubGroup extends StatelessWidget {
           : Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Divider(height: 1, indent: 72, color: Colors.white10),
+                const Divider(
+                  height: 1,
+                  indent: 20,
+                  endIndent: 20,
+                  color: kSettingsDivider,
+                ),
                 Container(
                   margin: const EdgeInsets.only(left: 18),
                   decoration: BoxDecoration(
                     border: Border(
                       left: BorderSide(
-                        color: accent.withValues(alpha: 0.45),
+                        color: Colors.white.withValues(alpha: 0.12),
                         width: 2,
                       ),
                     ),
@@ -660,8 +657,9 @@ class _SubGroup extends StatelessWidget {
                         if (i > 0 && tile is! _SubGroup)
                           const Divider(
                             height: 1,
-                            indent: 44,
-                            color: Colors.white10,
+                            indent: 20,
+                            endIndent: 20,
+                            color: kSettingsDivider,
                           ),
                         tile,
                       ],
@@ -673,3 +671,7 @@ class _SubGroup extends StatelessWidget {
     );
   }
 }
+
+/// About wears the setup flow's animated logo backdrop.
+Widget _aboutBackground(bool about, Widget child) =>
+    about ? SetupBackground(child: child) : child;

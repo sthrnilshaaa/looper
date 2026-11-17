@@ -17,7 +17,7 @@ class LanguageTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return ListTile(
-      leading: const Icon(LucideIcons.languages, color: Colors.white70),
+      leading: const Icon(LucideIcons.languages),
       title: Text(l10n.language, style: _tileTitleStyle()),
       trailing: DropdownButton<String>(
         value: settings.language,
@@ -28,96 +28,105 @@ class LanguageTile extends ConsumerWidget {
             value: '',
             child: Text(
               l10n.systemDefault,
-              style: AppFonts.jostStyle(color: Colors.white),
+              style: AppFonts.settingsStyle(color: Colors.white),
             ),
           ),
           DropdownMenuItem(
             value: 'en',
             child: Text(
               'English',
-              style: AppFonts.jostStyle(color: Colors.white),
+              style: AppFonts.settingsStyle(color: Colors.white),
             ),
           ),
           DropdownMenuItem(
             value: 'es',
             child: Text(
               'Español',
-              style: AppFonts.jostStyle(color: Colors.white),
+              style: AppFonts.settingsStyle(color: Colors.white),
             ),
           ),
           DropdownMenuItem(
             value: 'fr',
             child: Text(
               'Français',
-              style: AppFonts.jostStyle(color: Colors.white),
+              style: AppFonts.settingsStyle(color: Colors.white),
             ),
           ),
           DropdownMenuItem(
             value: 'de',
             child: Text(
               'Deutsch',
-              style: AppFonts.jostStyle(color: Colors.white),
+              style: AppFonts.settingsStyle(color: Colors.white),
             ),
           ),
           DropdownMenuItem(
             value: 'pt',
             child: Text(
               'Português',
-              style: AppFonts.jostStyle(color: Colors.white),
+              style: AppFonts.settingsStyle(color: Colors.white),
             ),
           ),
           DropdownMenuItem(
             value: 'ru',
             child: Text(
               'Русский',
-              style: AppFonts.jostStyle(color: Colors.white),
+              style: AppFonts.settingsStyle(color: Colors.white),
             ),
           ),
           DropdownMenuItem(
             value: 'it',
             child: Text(
               'Italiano',
-              style: AppFonts.jostStyle(color: Colors.white),
+              style: AppFonts.settingsStyle(color: Colors.white),
             ),
           ),
           DropdownMenuItem(
             value: 'zh',
-            child: Text('中文', style: AppFonts.jostStyle(color: Colors.white)),
+            child: Text(
+              '中文',
+              style: AppFonts.settingsStyle(color: Colors.white),
+            ),
           ),
           DropdownMenuItem(
             value: 'ja',
-            child: Text('日本語', style: AppFonts.jostStyle(color: Colors.white)),
+            child: Text(
+              '日本語',
+              style: AppFonts.settingsStyle(color: Colors.white),
+            ),
           ),
           DropdownMenuItem(
             value: 'ko',
-            child: Text('한국어', style: AppFonts.jostStyle(color: Colors.white)),
+            child: Text(
+              '한국어',
+              style: AppFonts.settingsStyle(color: Colors.white),
+            ),
           ),
           DropdownMenuItem(
             value: 'ar',
             child: Text(
               'العربية',
-              style: AppFonts.jostStyle(color: Colors.white),
+              style: AppFonts.settingsStyle(color: Colors.white),
             ),
           ),
           DropdownMenuItem(
             value: 'tr',
             child: Text(
               'Türkçe',
-              style: AppFonts.jostStyle(color: Colors.white),
+              style: AppFonts.settingsStyle(color: Colors.white),
             ),
           ),
           DropdownMenuItem(
             value: 'nl',
             child: Text(
               'Nederlands',
-              style: AppFonts.jostStyle(color: Colors.white),
+              style: AppFonts.settingsStyle(color: Colors.white),
             ),
           ),
           DropdownMenuItem(
             value: 'hi',
             child: Text(
               'हिन्दी',
-              style: AppFonts.jostStyle(color: Colors.white),
+              style: AppFonts.settingsStyle(color: Colors.white),
             ),
           ),
         ],
@@ -139,10 +148,9 @@ class FluidPlayerTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return SwitchListTile(
-      secondary: const Icon(LucideIcons.move, color: Colors.white70),
+      secondary: const Icon(LucideIcons.move),
       title: Text(l10n.fluidPlayer, style: _tileTitleStyle()),
       subtitle: Text(l10n.fluidPlayerDesc, style: _tileSubtitleStyle()),
-      activeThumbColor: settings.accent,
       value: settings.enableSlideGesture,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateEnableSlideGesture(value);
@@ -159,7 +167,7 @@ class HapticFeedbackTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     final on = !settings.disableHaptics;
-    final Color accent = settings.accent;
+    const Color accent = Colors.white;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -170,7 +178,6 @@ class HapticFeedbackTile extends ConsumerWidget {
           ),
           title: Text(l10n.hapticFeedback, style: _tileTitleStyle()),
           subtitle: Text(l10n.hapticFeedbackDesc, style: _tileSubtitleStyle()),
-          activeThumbColor: accent,
           value: on,
           onChanged: (value) async {
             await ref
@@ -279,13 +286,12 @@ class StopServiceTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return SwitchListTile(
-      secondary: const Icon(LucideIcons.power, color: Colors.white70),
+      secondary: const Icon(LucideIcons.power),
       title: Text(l10n.stopServiceOnAppDismissal, style: _tileTitleStyle()),
       subtitle: Text(
         l10n.stopServiceOnAppDismissalDesc,
         style: _tileSubtitleStyle(),
       ),
-      activeThumbColor: settings.accent,
       value: settings.stopOnTaskRemoved,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateStopOnTaskRemoved(value);
@@ -302,10 +308,9 @@ class InternetModeTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return SwitchListTile(
-      secondary: const Icon(LucideIcons.globe, color: Colors.white70),
+      secondary: const Icon(LucideIcons.globe),
       title: Text(l10n.internetMode, style: _tileTitleStyle()),
       subtitle: Text(l10n.enableNetworkLyricsArt, style: _tileSubtitleStyle()),
-      activeThumbColor: settings.accent,
       value: settings.enableInternet,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateEnableInternet(value);
@@ -322,13 +327,12 @@ class DownloadMissingArtworkTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return SwitchListTile(
-      secondary: const Icon(LucideIcons.image, color: Colors.white70),
+      secondary: const Icon(LucideIcons.image),
       title: Text(l10n.downloadMissingArtwork, style: _tileTitleStyle()),
       subtitle: Text(
         l10n.downloadMissingArtworkDesc,
         style: _tileSubtitleStyle(),
       ),
-      activeThumbColor: settings.accent,
       value: settings.downloadArtwork,
       onChanged: (value) {
         ref.read(settingsProvider.notifier).updateDownloadArtwork(value);
@@ -345,7 +349,7 @@ class EqualizerTile extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final l10n = AppLocalizations.of(context)!;
     return ListTile(
-      leading: const Icon(LucideIcons.sliders, color: Colors.white70),
+      leading: const Icon(LucideIcons.sliders),
       title: Text(l10n.equalizer, style: _tileTitleStyle()),
       subtitle: Text(
         settings.equalizerEnabled ? l10n.equalizerEnabled18Band : l10n.disabled,
@@ -370,7 +374,7 @@ class EqualizerTile extends ConsumerWidget {
 }
 
 TextStyle _tileTitleStyle() =>
-    AppFonts.jostStyle(color: Colors.white, fontWeight: FontWeight.w500);
+    AppFonts.settingsStyle(color: Colors.white, fontWeight: FontWeight.w500);
 
 TextStyle _tileSubtitleStyle() =>
-    AppFonts.jostStyle(color: Colors.white54, fontSize: 12);
+    AppFonts.settingsStyle(color: Colors.white54, fontSize: 12);

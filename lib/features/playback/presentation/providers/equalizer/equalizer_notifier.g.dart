@@ -41,13 +41,13 @@ final class EqualizerProvider
   }
 }
 
-String _$equalizerHash() => r'6a699f569b1612d65c5ada33172a0b908628de72';
+String _$equalizerHash() => r'ee16ea79c90cf7160b9bccbe204dae7441efdc08';
 
 abstract class _$Equalizer extends $Notifier<EqualizerState> {
   EqualizerState build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<EqualizerState, EqualizerState>;
     final element =
         ref.element
@@ -57,7 +57,7 @@ abstract class _$Equalizer extends $Notifier<EqualizerState> {
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }
 
@@ -113,7 +113,7 @@ abstract class _$CustomEqPresets extends $Notifier<List<CustomEqPreset>> {
   List<CustomEqPreset> build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<List<CustomEqPreset>, List<CustomEqPreset>>;
     final element =
         ref.element
@@ -123,6 +123,6 @@ abstract class _$CustomEqPresets extends $Notifier<List<CustomEqPreset>> {
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }

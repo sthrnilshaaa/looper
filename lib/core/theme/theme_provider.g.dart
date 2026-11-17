@@ -40,13 +40,13 @@ final class AppThemeProvider extends $NotifierProvider<AppTheme, ThemeState> {
   }
 }
 
-String _$appThemeHash() => r'9d75f8c3aeaf50cc65ff35e8ac1dc2e04de84084';
+String _$appThemeHash() => r'7ebf77a9620a5f3d59c58bfae30671e6f7531dc7';
 
 abstract class _$AppTheme extends $Notifier<ThemeState> {
   ThemeState build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<ThemeState, ThemeState>;
     final element =
         ref.element
@@ -56,6 +56,6 @@ abstract class _$AppTheme extends $Notifier<ThemeState> {
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }

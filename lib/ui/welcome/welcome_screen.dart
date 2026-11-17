@@ -1,33 +1,25 @@
-import 'package:looper_player/ui/widgets/common/first_scan_stage.dart';
-import 'package:looper_player/core/motion/looper_scroll_physics.dart';
-import 'package:looper_player/core/utils/desktop_paths.dart';
+import 'dart:async';
 import 'dart:io';
-import 'package:looper_player/core/utils/ui_utils.dart';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:lottie/lottie.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:looper_player/l10n/app_localizations.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:looper_player/core/providers/providers.dart';
 import 'package:looper_player/core/services/storage/storage_access.dart';
+import 'package:looper_player/core/utils/app_links.dart';
+import 'package:looper_player/core/utils/desktop_paths.dart';
+import 'package:looper_player/core/utils/motion.dart';
+import 'package:looper_player/features/settings/presentation/widgets/tiles/about_settings_tiles.dart';
+import 'package:looper_player/l10n/app_localizations.dart';
+import 'package:looper_player/ui/widgets/common/setup_kit.dart';
 import '../../features/library/presentation/providers/library/library_notifier.dart';
-import '../../features/settings/presentation/providers/settings_notifier.dart';
 import '../../features/playback/presentation/providers/playback/playback_notifier.dart';
-import '../widgets/common/folder_picker_helper.dart';
-import 'package:looper_player/core/utils/l10n.dart';
-import 'package:looper_player/core/theme/app_assets.dart';
-import 'package:looper_player/core/services/haptics/app_haptics.dart';
+import '../../features/settings/presentation/providers/settings_notifier.dart';
 
 part 'welcome_screen.g.dart';
-part 'glow_orb.dart';
-part 'premium_button.dart';
-part 'scanning_lottie_animation.dart';
-part 'welcome_states.dart';
-
-enum WelcomeState { initial, scanning, noSongs }
 
 @Riverpod(keepAlive: true)
 class WelcomeBypassed extends _$WelcomeBypassed {
@@ -79,6 +71,8 @@ class WelcomeBypassed extends _$WelcomeBypassed {
   void set(bool value) => state = value;
 }
 
+/// First-run setup: welcome, permissions, community, done. The library scan runs quietly in the background from
+/// the moment permissions are granted, so there is no loading screen.
 class WelcomeScreen extends ConsumerStatefulWidget {
   const WelcomeScreen({super.key});
 
@@ -86,19 +80,34 @@ class WelcomeScreen extends ConsumerStatefulWidget {
   ConsumerState<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
-    with WidgetsBindingObserver {
-  WelcomeState _currentState = WelcomeState.initial;
-  String _scanStatusMessage = "Initializing scanner...";
+enum _Page { welcome, permissions, community, done }
 
-  // True if standard audio/storage is granted, or (github flavor only) All
-  // Files Access - either is enough to scan.
-  bool _permissionGranted = false;
+class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+  // "Start listening": the page eases toward you and fades into the dark.
+  late final _exit = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 380),
+  );
+  late final _exitCurve = CurvedAnimation(
+    parent: _exit,
+    curve: Curves.easeInCubic,
+  );
+  late final _exitFade = Tween(begin: 1.0, end: 0.0).animate(_exitCurve);
+  late final _exitZoom = Tween(begin: 1.0, end: 1.04).animate(_exitCurve);
+  bool _leaving = false;
+  _Page _page = _Page.welcome;
+  bool _reverse = false;
+
   bool _notificationGranted = false;
   bool _audioGranted = false;
   bool _allFilesGranted = false; // github flavor only, optional
   bool _canOfferAllFiles = false; // github flavor on Android 11+
-  bool _autoScanTriggered = false;
+  bool _scanStarted = false;
+
+  // True if standard audio/storage is granted, or (github flavor only) All
+  // Files Access - either is enough to scan.
+  bool get _permissionGranted => _audioGranted || _allFilesGranted;
 
   @override
   void initState() {
@@ -110,28 +119,54 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _exitCurve.dispose();
+    _exit.dispose();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _checkPermissionStatus();
+    if (state == AppLifecycleState.resumed) _checkPermissionStatus();
+  }
+
+  void _go(_Page p) => setState(() {
+    _reverse = p.index < _page.index;
+    _page = p;
+  });
+
+  Future<void> _checkPermissionStatus() async {
+    bool notif = true;
+    bool aud = true;
+    final allFiles = await StorageAccess.allFilesStatus();
+    if (Platform.isAndroid) {
+      try {
+        notif = await Permission.notification.isGranted;
+        aud =
+            (await Permission.audio.isGranted) ||
+            (await Permission.storage.isGranted);
+      } catch (_) {}
     }
+    if (!mounted) return;
+    setState(() {
+      _notificationGranted = notif;
+      _audioGranted = aud;
+      _allFilesGranted = allFiles.granted;
+      _canOfferAllFiles = allFiles.canOffer;
+    });
   }
 
   Future<void> _requestNotificationPermission() async {
-    AppHaptics.light();
     if (!Platform.isAndroid) return;
     try {
-      await Permission.notification.request();
+      final status = await Permission.notification.request();
+      // No dialog shows once permanently denied; send them to system settings.
+      if (status.isPermanentlyDenied) await openAppSettings();
     } catch (_) {}
     await _checkPermissionStatus();
     ref.read(playbackProvider.notifier).updateNotification();
   }
 
   Future<void> _requestAudioPermission() async {
-    AppHaptics.light();
     if (!Platform.isAndroid) return;
     try {
       await Permission.audio.request();
@@ -141,123 +176,53 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   }
 
   Future<void> _requestAllFilesPermission() async {
-    AppHaptics.light();
     await StorageAccess.requestAllFilesAccess();
     await _checkPermissionStatus();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final l10n = AppLocalizations.of(context)!;
-
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-      body: Stack(
-        children: [
-          // Elegant animated-like glowing backgrounds
-          Positioned(
-            top: -100,
-            right: -100,
-            child: _GlowOrb(color: colorScheme.primary.withValues(alpha: 0.12)),
-          ),
-          Positioned(
-            bottom: -150,
-            left: -150,
-            child: _GlowOrb(color: colorScheme.primary.withValues(alpha: 0.08)),
-          ),
-
-          // Subtle vignette overlay
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment.center,
-                  radius: 1.5,
-                  colors: [
-                    Colors.white.withValues(alpha: 0.001),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
+  Future<void> _continueFromPermissions() async {
+    if (Platform.isAndroid && !_permissionGranted) {
+      await _requestAudioPermission();
+      if (!mounted) return;
+      if (!_permissionGranted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.storagePermissionRequired,
             ),
           ),
-
-          // Main Layout Content
-          SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                physics: const LooperScrollPhysics(),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 28.0,
-                    vertical: 24.0,
-                  ),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 500),
-                    switchInCurve: Curves.easeInOutCubic,
-                    switchOutCurve: Curves.easeInOutCubic,
-                    transitionBuilder: (child, animation) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0.0, 0.05),
-                            end: Offset.zero,
-                          ).animate(animation),
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: _buildStateContent(colorScheme, l10n),
-                  ),
-                ),
-              ),
+        );
+        return;
+      }
+    }
+    if (Platform.isAndroid && !_notificationGranted) {
+      await _requestNotificationPermission();
+      if (!mounted) return;
+      if (!_notificationGranted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.notificationPermissionRequired,
             ),
           ),
-        ],
-      ),
-    );
+        );
+        return;
+      }
+    }
+    if (!_scanStarted) {
+      _scanStarted = true;
+      unawaited(_scanLibrary());
+    }
+    if (mounted) _go(_Page.community);
   }
 
-  // Scan & Permission Flow Functions
-  Future<void> _startStorageScanFlow() async {
-    _autoScanTriggered = true;
-    if (!mounted) return;
-    setState(() {
-      _currentState = WelcomeState.scanning;
-      _scanStatusMessage = "Preparing music scan...";
-    });
-
-    if (!mounted) return;
-    setState(() {
-      _scanStatusMessage = "Checking system permissions...";
-    });
-
-    // Check again
-    await _checkPermissionStatus();
-
-    if (!mounted) return;
-    if (Platform.isAndroid && !_permissionGranted) {
-      final localizations = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(localizations.storagePermissionRequired)),
-      );
-      setState(() {
-        _currentState = WelcomeState.initial;
-      });
-      return;
-    }
-
-    setState(() {
-      _scanStatusMessage =
-          "Traversing standard device directories recursively...";
-    });
-
-    // Determine scan roots including all popular directories for maximum coverage
+  /// Scans every standard music location. Runs detached from the UI: the
+  /// notifier is captured up front so it finishes even after setup closes.
+  Future<void> _scanLibrary() async {
+    final library = ref.read(libraryProvider.notifier);
     final List<String> scanRoots = [];
     // Broad/coarse roots (e.g. the whole storage root) that must NOT be
-    // recorded as-is in libraryFolders - see recordFolder below.
+    // recorded as-is in libraryFolders.
     final Set<String> coarseRoots = {};
     if (Platform.isLinux) {
       String defaultPath = '${Platform.environment['HOME']}/Music';
@@ -273,20 +238,14 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       scanRoots.add(windowsMusicFolder(Platform.environment));
     } else if (Platform.isAndroid && await StorageAccess.hasAllFilesAccess()) {
       // github flavor with All Files Access: walk the whole internal storage
-      // root and every SD card. These are coarse roots - the real per-song
-      // folders are recorded after the scan instead (see below).
+      // root and every SD card; the real per-song folders are recorded after.
       final roots = await StorageAccess.wholeStorageRoots();
       scanRoots.addAll(roots);
       coarseRoots.addAll(roots);
     } else if (Platform.isAndroid) {
-      // Without All Files Access (always the case on the Play build) raw
-      // traversal can't reach an arbitrary/whole-storage root or SD cards
-      // - see AndroidManifest.xml. These specific top-level
-      // public directories are still listable with just
-      // READ_MEDIA_AUDIO/READ_EXTERNAL_STORAGE; everything else (custom
-      // folders, SD cards, formats MediaStore doesn't index) is covered by
-      // the MediaStore + SAF merges inside LibraryScanner.scanDirectory().
-      final List<String> commonPaths = [
+      // Without All Files Access raw traversal only reaches these public
+      // directories; LibraryScanner's MediaStore + SAF merges cover the rest.
+      scanRoots.addAll(const [
         '/storage/emulated/0/Music',
         '/storage/emulated/0/Download',
         '/storage/emulated/0/Documents',
@@ -299,224 +258,292 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         '/storage/emulated/0/DCIM',
         '/storage/emulated/0/Pictures',
         '/storage/emulated/0/Movies',
-      ];
-      for (final cp in commonPaths) {
-        if (!scanRoots.contains(cp)) scanRoots.add(cp);
-      }
+      ]);
     }
-
-    if (!mounted) return;
-    setState(() {
-      _scanStatusMessage = "Scanning ${scanRoots.length} folders...";
-    });
 
     final existingRoots = scanRoots
         .where((path) => Directory(path).existsSync())
         .toList();
+    if (existingRoots.isEmpty) return;
+    // One batch so the library's live watches pause/resume once, not per
+    // folder (see scanMultipleFolders).
+    await library.scanMultipleFolders(
+      existingRoots,
+      recordFolder: coarseRoots.isEmpty,
+    );
+    if (coarseRoots.isNotEmpty) await library.recordActualLibraryFolders();
+  }
 
-    // Scanned as one batch (not a per-path loop calling scanLibrary) so the
-    // library's live watches are only paused/resumed once for the whole
-    // set, not once per folder - see scanMultipleFolders' doc comment for
-    // why looping the single-folder call here used to mean up to ~24 full
-    // library requery+rebuild cycles stacked into the first few seconds on
-    // Home right after this screen hands off.
-    //
-    // coarseRoots is only populated with All Files Access (github flavor),
-    // and then every root is coarse - so either all roots are recorded as
-    // their own libraryFolders entries, or none are.
-    final totalSongsDiscovered = existingRoots.isEmpty
-        ? 0
-        : await ref
-              .read(libraryProvider.notifier)
-              .scanMultipleFolders(
-                existingRoots,
-                recordFolder: coarseRoots.isEmpty,
-              );
-
+  Future<void> _finish() async {
+    if (_leaving) return; // already on the way out
+    _leaving = true;
+    if (!Motion.reducedOf(context)) await _exit.forward();
     if (!mounted) return;
-
-    if (coarseRoots.isNotEmpty) {
-      // Coarse roots were scanned without recording themselves in
-      // libraryFolders - record the real per-song folders instead, so
-      // Settings > Library Folders shows e.g. "Music" / "Songs" rather
-      // than the whole storage root.
-      await ref.read(libraryProvider.notifier).recordActualLibraryFolders();
-    }
-
-    if (!mounted) return;
-
-    if (totalSongsDiscovered == 0) {
-      if (mounted) {
-        setState(() {
-          _currentState = WelcomeState.noSongs;
-        });
-      }
-      return;
-    }
-
     ref.read(forceWelcomeProvider.notifier).set(false);
     ref.read(welcomeBypassedProvider.notifier).set(true);
   }
 
-  Future<void> _checkPermissionStatus() async {
-    bool notif = false;
-    bool aud = false;
-    final allFiles = await StorageAccess.allFilesStatus();
-
-    if (Platform.isAndroid) {
-      try {
-        notif = await Permission.notification.isGranted;
-        aud =
-            (await Permission.audio.isGranted) ||
-            (await Permission.storage.isGranted);
-      } catch (_) {
-        aud = true;
-        notif = true;
-      }
-    } else {
-      notif = true;
-      aud = true;
-    }
-
-    if (mounted) {
-      setState(() {
-        _notificationGranted = notif;
-        _audioGranted = aud;
-        _allFilesGranted = allFiles.granted;
-        _canOfferAllFiles = allFiles.canOffer;
-        _permissionGranted = aud || allFiles.granted;
-      });
-    }
+  Future<void> _open(String url) async {
+    if (url.isEmpty) return;
+    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
 
-  // State 3: User Information / Instructions State when No Songs are Found
-  Widget _buildNoSongsState(ColorScheme colorScheme, AppLocalizations l10n) {
-    final settings = ref.watch(settingsProvider);
-    return Column(
-      key: const ValueKey('no_songs_state'),
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Informational Alert Icon
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.amber.withValues(alpha: 0.05),
-            border: Border.all(
-              color: Colors.amber.withValues(alpha: 0.2),
-              width: 1.5,
-            ),
-          ),
-          child: Icon(LucideIcons.searchCode, size: 48.s, color: Colors.amber),
-        ),
-        const SizedBox(height: 24),
-
-        Text(
-          l10n.noMusicDetected,
-          style: TextStyle(
-            fontSize: 18.ts,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            letterSpacing: 2,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          l10n.welcomeNoSongsDesc,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 13.ts,
-            color: Colors.white.withValues(alpha: 0.4),
-            height: 1.5,
-          ),
-        ),
-        const SizedBox(height: 36),
-
-        // Custom Step-by-Step Instruction Cards
-        _buildInstructionStep(
-          stepNumber: "1",
-          title: l10n.connectDevice,
-          description: l10n.welcomeInstructionConnectDesc,
-          icon: LucideIcons.usb,
-          colorScheme: colorScheme,
-        ),
-        const SizedBox(height: 16),
-        _buildInstructionStep(
-          stepNumber: "2",
-          title: l10n.transferMusicFiles,
-          description: l10n.welcomeInstructionTransferDesc,
-          icon: LucideIcons.arrowDownToLine,
-          colorScheme: colorScheme,
-        ),
-        const SizedBox(height: 16),
-        _buildInstructionStep(
-          stepNumber: "3",
-          title: l10n.downloadAudioDirectly,
-          description: l10n.welcomeInstructionDownloadDesc,
-          icon: LucideIcons.globe,
-          colorScheme: colorScheme,
-        ),
-        const SizedBox(height: 16),
-        // The automatic scan above only checks a fixed list of standard
-        // folder names (Music, Download, Podcasts, ...) plus anything
-        // manually added - without All Files Access (removed for Play
-        // Store compliance) it can't blanket-discover an arbitrarily-named
-        // folder or every SD card on its own, so this is the direct path
-        // to fixing that instead of leaving the user to find "Add Folder"
-        // buried in Settings after they've already given up here.
-        _buildInstructionStep(
-          stepNumber: "4",
-          title: context.l10n.addCustomFolder,
-          description: context.l10n.addCustomFolderDesc,
-          icon: LucideIcons.folderPlus,
-          colorScheme: colorScheme,
-        ),
-        const SizedBox(height: 12),
-        TextButton.icon(
-          onPressed: () => FolderPickerHelper.pickFolder(context, ref),
-          icon: Icon(
-            LucideIcons.folderPlus,
-            size: 16,
-            color: colorScheme.primary,
-          ),
-          label: Text(
-            context.l10n.addFolder,
-            style: TextStyle(
-              color: colorScheme.primary,
-              fontWeight: FontWeight.bold,
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return PopScope(
+      canPop: _page == _Page.welcome,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _go(_Page.values[_page.index - 1]);
+      },
+      child: ColoredBox(
+        color: kSetupBg,
+        child: FadeTransition(
+          opacity: _exitFade,
+          child: ScaleTransition(
+            scale: _exitZoom,
+            child: Scaffold(
+              backgroundColor: kSetupBg,
+              body: SetupBackground(
+                child: SetupSwitcher(
+                  reverse: _reverse,
+                  child: KeyedSubtree(
+                    key: ValueKey(_page),
+                    child: switch (_page) {
+                      _Page.welcome => _welcome(l10n),
+                      _Page.permissions => _permissions(l10n),
+                      _Page.community => _community(l10n),
+                      _Page.done => _done(l10n),
+                    },
+                  ),
+                ),
+              ),
             ),
           ),
         ),
-        const SizedBox(height: 36),
-
-        // Quick Retry/Actions
-        _PremiumButton(
-          onPressed: _startStorageScanFlow,
-          label: l10n.rescanStorage,
-          icon: LucideIcons.refreshCw,
-          gradientColors: [
-            settings.accent,
-            settings.accent.withValues(alpha: 0.75),
-          ],
-        ),
-        const SizedBox(height: 16),
-        TextButton(
-          onPressed: () {
-            setState(() {
-              _currentState = WelcomeState.initial;
-            });
-          },
-          child: Text(
-            l10n.backToMainView,
-            style: TextStyle(
-              fontSize: 12.ts,
-              color: Colors.white60,
-              letterSpacing: 1.5,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
+
+  Widget _welcome(AppLocalizations l10n) => SetupPage(
+    step: l10n.setupStep(1),
+    body: const AboutHeroCard(),
+    bottom: SetupBottomBar(
+      label: l10n.setupBegin,
+      leadingIcon: Icons.translate_rounded,
+      onBack: () => _showLanguageSheet(context),
+      onNext: Platform.isAndroid
+          ? () => _go(_Page.permissions)
+          : _continueFromPermissions,
+    ),
+  );
+
+  Widget _permissions(AppLocalizations l10n) {
+    Widget row(
+      String title,
+      String desc,
+      IconData icon,
+      bool on,
+      Future<void> Function() request,
+    ) => SetupRow(
+      title: title,
+      description: desc,
+      icon: Icon(icon, size: 16, color: Colors.white),
+      trailing: SetupCheck(on: on),
+      filled: on,
+      onTap: on ? null : request,
+    );
+    return SetupPage(
+      step: l10n.setupStep(2),
+      title: l10n.setupPermissionsTitle,
+      description: l10n.setupPermissionsDesc,
+      body: SetupCard(
+        children: [
+          row(
+            l10n.setupNotifications,
+            l10n.welcomeNotificationDesc,
+            Icons.notifications_active_rounded,
+            _notificationGranted,
+            _requestNotificationPermission,
+          ),
+          // Media access is always asked; All Files Access (github, Android
+          // 11+) is offered on top so the scan can walk the whole storage.
+          row(
+            l10n.setupMusicAudio,
+            l10n.welcomeMusicAudioDesc,
+            Icons.music_note_rounded,
+            _audioGranted,
+            _requestAudioPermission,
+          ),
+          if (_canOfferAllFiles)
+            row(
+              l10n.setupAllFiles,
+              l10n.welcomeAllFilesDesc,
+              Icons.description_rounded,
+              _allFilesGranted,
+              _requestAllFilesPermission,
+            ),
+        ],
+      ),
+      bottom: SetupBottomBar(
+        label: l10n.setupContinue,
+        onBack: () => _go(_Page.welcome),
+        onNext: _continueFromPermissions,
+      ),
+    );
+  }
+
+  Widget _community(AppLocalizations l10n) {
+    Widget link(String title, String desc, Widget icon, String url) => SetupRow(
+      title: title,
+      description: desc,
+      trailing: SizedBox(width: 24, child: Center(child: icon)),
+      onTap: () => _open(url),
+    );
+    return SetupPage(
+      step: l10n.setupStep(3),
+      title: l10n.setupCommunityTitle,
+      description: l10n.setupCommunityDesc,
+      body: SetupCard(
+        children: [
+          link(
+            l10n.setupStarGithub,
+            l10n.setupStarGithubDesc,
+            const Icon(Icons.star_rounded, color: Colors.white, size: 24),
+            AppLinks.githubStatsRepo,
+          ),
+          link(
+            l10n.setupTelegram,
+            l10n.setupTelegramDesc,
+            const Icon(LucideIcons.send, color: Colors.white, size: 20),
+            AppLinks.socialTelegram,
+          ),
+          if (AppLinks.upi.isNotEmpty)
+            link(
+              l10n.setupUpi,
+              l10n.setupUpiDesc,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                child: const Text(
+                  'UPI',
+                  style: TextStyle(
+                    fontSize: 8,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+              AppLinks.upi,
+            ),
+          link(
+            l10n.setupKofi,
+            l10n.setupKofiDesc,
+            const Icon(LucideIcons.cupSoda, color: Colors.white, size: 20),
+            AppLinks.koFi,
+          ),
+        ],
+      ),
+      bottom: SetupBottomBar(
+        label: l10n.setupContinue,
+        onBack: () => _go(_Page.permissions),
+        onNext: () => _go(_Page.done),
+      ),
+    );
+  }
+
+  Widget _done(AppLocalizations l10n) => SetupPage(
+    step: l10n.setupStep(4),
+    expand: true,
+    body: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Spacer(flex: 3),
+        const Center(child: SetupDoneBadge()),
+        const Spacer(flex: 4),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text(l10n.setupDoneTitle, style: setupTitleStyle()),
+        ),
+        const SizedBox(height: 14),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text(l10n.setupDoneDesc, style: setupBody()),
+        ),
+      ],
+    ),
+    bottom: SetupBottomBar(label: l10n.setupStartListening, onNext: _finish),
+  );
+}
+
+const _languages = [
+  ('', null),
+  ('en', 'English'),
+  ('es', 'Español'),
+  ('fr', 'Français'),
+  ('de', 'Deutsch'),
+  ('pt', 'Português'),
+  ('ru', 'Русский'),
+  ('it', 'Italiano'),
+  ('zh', '中文'),
+  ('ja', '日本語'),
+  ('ko', '한국어'),
+  ('ar', 'العربية'),
+  ('tr', 'Türkçe'),
+  ('nl', 'Nederlands'),
+  ('hi', 'हिन्दी'),
+];
+
+void _showLanguageSheet(BuildContext context) {
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: kSetupCard,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (context) => Consumer(
+      builder: (context, ref, _) {
+        final current = ref.watch(settingsProvider.select((s) => s.language));
+        final l10n = AppLocalizations.of(context)!;
+        return ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * 0.7,
+          ),
+          child: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(12, 20, 12, 24),
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                child: Text(
+                  l10n.language,
+                  style: setupBody(size: 20, color: Colors.white),
+                ),
+              ),
+              for (final (code, name) in _languages)
+                ListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  title: Text(
+                    name ?? l10n.systemDefault,
+                    style: setupBody(size: 16, color: Colors.white),
+                  ),
+                  trailing: SetupCheck(on: code == current),
+                  onTap: () {
+                    ref.read(settingsProvider.notifier).updateLanguage(code);
+                    Navigator.pop(context);
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    ),
+  );
 }

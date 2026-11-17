@@ -1,7 +1,8 @@
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:looper_player/core/utils/song_metadata.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide RepeatMode;
 import 'package:flutter/physics.dart';
 import 'package:flutter/rendering.dart';
 import 'package:looper_player/core/utils/motion.dart';
@@ -10,7 +11,7 @@ import 'package:looper_player/features/playback/presentation/providers/playback/
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
 import 'package:looper_player/ui/android/player/expanded/android_expanded_player.dart';
 import 'package:looper_player/ui/android/player/expanded/gesture_artwork.dart';
-import 'package:looper_player/ui/android/player/expanded/player_landscape_layout.dart';
+import 'package:looper_player/ui/android/player/expanded/styled_player_layout.dart';
 import 'package:looper_player/ui/widgets/common/optimized_image.dart';
 import 'package:looper_player/core/utils/responsive.dart';
 import 'package:looper_player/core/utils/ui_utils.dart';
@@ -39,10 +40,12 @@ class PremiumMusicBar extends ConsumerStatefulWidget {
   final double restingBottom;
 
   @override
-  ConsumerState<PremiumMusicBar> createState() => _PremiumMusicBarState();
+  ConsumerState<PremiumMusicBar> createState() => PremiumMusicBarState();
 }
 
-class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
+enum _FluidDragAxis { none, vertical, horizontal }
+
+class PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
     with TickerProviderStateMixin {
   late AnimationController _dragController;
   late final ValueNotifier<double> _expandProgress;
@@ -74,6 +77,15 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
   late final AnimationController _dismissController;
   double _dismissFrom = 0.0;
 
+  // Directional locking and horizontal swipe state for Fluid Player.
+  _FluidDragAxis _dragAxis = _FluidDragAxis.none;
+  double _accumulatedDx = 0.0;
+  double _accumulatedDy = 0.0;
+  double _miniHorizontalOffset = 0.0;
+  double _expandedHorizontalDx = 0.0;
+  bool _hapticTriggered = false;
+  late final AnimationController _miniHorizontalController;
+
   @override
   void initState() {
     super.initState();
@@ -85,6 +97,10 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
       vsync: this,
       value: _expandProgress.value,
     )..addListener(_onExpandTick);
+    _miniHorizontalController =
+        AnimationController.unbounded(vsync: this, value: 0.0)..addListener(() {
+          _miniHorizontalOffset = _miniHorizontalController.value;
+        });
     _barX = AnimationController.unbounded(vsync: this);
     _barY = AnimationController.unbounded(vsync: this);
     _restFrom = _restTo = widget.restingBottom;
@@ -129,6 +145,7 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
     double target, {
     double velocity = 0.0,
     bool allowBounce = true,
+    bool fromTap = false,
   }) {
     final double r = _dragController.value;
     final double v = velocity.clamp(-8.0, 8.0).toDouble();
@@ -139,7 +156,7 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
         !bounce
             ? fluidPlayerSpring
             : target == 1.0
-            ? fluidPlayerOpenBounceSpring
+            ? (fromTap ? fluidPlayerTapOpenSpring : fluidPlayerOpenBounceSpring)
             : fluidPlayerCloseBounceSpring,
         r,
         target,
@@ -183,9 +200,89 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
     _expandProgress.value = next;
   }
 
+  @visibleForTesting
+  double get miniHorizontalOffset => _miniHorizontalOffset;
+
+  @visibleForTesting
+  void expandForTesting() {
+    _dragController.value = 1.0;
+    _onExpandTick();
+  }
+
+  void _commitMiniSwipe({
+    required int direction, // -1 for next, 1 for prev
+    required FluidPlayerGeometry geometry,
+    required double velocityX,
+  }) {
+    AppHaptics.light();
+    if (Motion.reducedOf(context)) {
+      _miniHorizontalOffset = 0.0;
+      _miniHorizontalController.value = 0.0;
+      if (direction < 0) {
+        ref.read(playbackProvider.notifier).skipNext();
+      } else {
+        ref.read(playbackProvider.notifier).skipPrevious(force: true);
+      }
+      return;
+    }
+
+    final double exitTarget = direction < 0
+        ? -geometry.miniWidth
+        : geometry.miniWidth;
+    final sim = SpringSimulation(
+      fluidPlayerSpring,
+      _miniHorizontalOffset,
+      exitTarget,
+      velocityX,
+    );
+    _miniHorizontalController.animateWith(sim).then((_) {
+      if (!mounted) return;
+      if (direction < 0) {
+        ref.read(playbackProvider.notifier).skipNext();
+      } else {
+        ref.read(playbackProvider.notifier).skipPrevious(force: true);
+      }
+      _miniHorizontalOffset = -exitTarget;
+      _miniHorizontalController.value = -exitTarget;
+      final enterSim = SpringSimulation(
+        fluidPlayerSpring,
+        -exitTarget,
+        0.0,
+        0.0,
+      );
+      _miniHorizontalController.animateWith(enterSim).then((_) {
+        if (mounted) {
+          _miniHorizontalOffset = 0.0;
+          _miniHorizontalController.value = 0.0;
+        }
+      });
+    });
+  }
+
+  void _settleMiniHorizontal({double velocityX = 0.0}) {
+    if (Motion.reducedOf(context)) {
+      _miniHorizontalOffset = 0.0;
+      _miniHorizontalController.value = 0.0;
+      return;
+    }
+    final sim = SpringSimulation(
+      fluidPlayerSpring,
+      _miniHorizontalOffset,
+      0.0,
+      velocityX,
+    );
+    _miniHorizontalController.animateWith(sim).then((_) {
+      if (mounted) {
+        _miniHorizontalOffset = 0.0;
+        _miniHorizontalController.value = 0.0;
+      }
+    });
+  }
+
   @override
   void dispose() {
     _dragController.dispose();
+    _miniHorizontalController.dispose();
     _restController.dispose();
     _dismissController.dispose();
     _barX.dispose();
@@ -219,7 +316,7 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
 
   void _pushExpandedPlayer(BuildContext context, dynamic settings) async {
     if (settings.enableSlideGesture) {
-      _settle(1.0);
+      _settle(1.0, fromTap: true);
     } else {
       if (_isPushing) return;
       _isPushing = true;
@@ -245,6 +342,10 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
     final isPlaying = ref.watch(playbackProvider.select((s) => s.isPlaying));
     final settings = ref.watch(settingsProvider);
     final useBlur = settings.enableDynamicTheming;
+    // The expanded panel's background; playerDynamicBackground gives it the
+    // art without app-wide Dynamic Theming.
+    final showArtBackground =
+        (useBlur || settings.playerDynamicBackground) && song?.artPath != null;
     ref.listen<int>(playerCollapseTriggerProvider, (prev, next) {
       if (settings.enableSlideGesture) {
         _isDragging = false;
@@ -359,14 +460,16 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
             },
             child: SizedBox(
               height: barHeight,
-              child: _buildMiniPlayerContent(
-                song,
-                isPlaying,
-                useBlur,
-                null,
-                3.0,
-                settings,
-                compact: isCompact,
+              child: RepaintBoundary(
+                child: _buildMiniPlayerContent(
+                  song,
+                  isPlaying,
+                  useBlur,
+                  null,
+                  3.0,
+                  settings,
+                  compact: isCompact,
+                ),
               ),
             ),
           ),
@@ -421,9 +524,9 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
           return FadeTransition(opacity: animation, child: child);
         },
         child: () {
-          if (useBlur && song.artPath != null) {
+          if (showArtBackground) {
             return Stack(
-              key: ValueKey(('art', song.artPath)),
+              key: ValueKey(('art', song.id)),
               fit: StackFit.expand,
               children: [
                 BlurredBackgroundArt(song: song),
@@ -484,18 +587,31 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
     // has fully expanded at least once) so the handoff at p > 0.99 lands
     // exactly where the real widget renders; before it's ever been measured
     // (the very first expand after launch), an approximation. In landscape
-    // the rect is a pure function of the window (PlayerLandscapeMetrics) -
+    // the rect is a pure function of the window (styledLandscapeArtRect) -
     // the measurement is only ever taken in portrait and would be stale
     // after a rotation.
     final bool isLandscape = Responsive.isLandscape(windowSize);
+    final bool isCompact = Responsive.isShort(windowSize);
+    final PlayerLayoutStyle layoutStyle = PlayerLayoutStyle.fromSetting(
+      ref.watch(settingsProvider.select((s) => s.playerStyle)),
+    );
     final Rect expandedSlotRect = () {
       final Rect? measured = isLandscape
-          ? PlayerLandscapeMetrics.of(
+          ? styledLandscapeArtRect(
               windowSize,
               MediaQuery.paddingOf(context),
-            ).artRect
+              layoutStyle,
+            )
           : ref.watch(playerArtworkRectProvider);
-      if (measured != null) return measured;
+      if (measured != null) {
+        final double squareSize = math.min(measured.width, measured.height);
+        return Rect.fromLTWH(
+          measured.left,
+          measured.top,
+          squareSize,
+          squareSize,
+        );
+      }
       final double topPadding = MediaQuery.paddingOf(context).top;
       final double size = windowSize.width - 40.0;
       final double availableHeight =
@@ -510,10 +626,18 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
       );
     }();
     // The real artwork sits inset in that square slot while paused; land on
-    // the art itself, or the handoff jumps by the inset.
-    final Rect expandedArtRect = expandedSlotRect.deflate(
-      GestureArtworkWithFeedback.inset(isPlaying: isPlaying),
-    );
+    // the art itself, or the handoff jumps by the inset. In immersive mode,
+    // the artwork fills the top with no inset. The styled layouts (every
+    // landscape one, arc / linear in portrait) behave the same: their art is
+    // always drawn, never inset, so a flying copy only doubled it.
+    final bool styledArt =
+        isLandscape || layoutStyle != PlayerLayoutStyle.classic;
+    final bool isImmersive = styledArt;
+    final Rect expandedArtRect = isImmersive
+        ? expandedSlotRect
+        : expandedSlotRect.deflate(
+            GestureArtworkWithFeedback.inset(isPlaying: isPlaying),
+          );
 
     // Laid out once at the expanded size; the morph only scales it (a
     // Transform), so no per-frame relayout. Decoded at exactly the width
@@ -556,18 +680,163 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
         // the expanded player's own controls.
         onPanStart: (details) {
           _isDragging = true;
+          _dragAxis = _FluidDragAxis.none;
+          _accumulatedDx = 0.0;
+          _accumulatedDy = 0.0;
+          _expandedHorizontalDx = 0.0;
+          _hapticTriggered = false;
           _dragController.stop();
+          _miniHorizontalController.stop();
         },
         onPanUpdate: (details) {
-          // Linear in the unbounded position; past an end the overshoot is
-          // damped on output (stretchOf), which gives the rubber band.
-          final double travel = _geometry(windowSize).travel;
-          _dragController.value -= details.delta.dy / travel;
+          final double r = _dragController.value;
+          final bool isCollapsed = r <= 0.05;
+          final bool isExpanded = r >= 0.95;
+
+          if (_dragAxis == _FluidDragAxis.none) {
+            _accumulatedDx += details.delta.dx;
+            _accumulatedDy += details.delta.dy;
+            const double kTouchSlop = 8.0;
+            if (_accumulatedDx.abs() > kTouchSlop ||
+                _accumulatedDy.abs() > kTouchSlop) {
+              if (_accumulatedDx.abs() > _accumulatedDy.abs() &&
+                  (isCollapsed || isExpanded)) {
+                _dragAxis = _FluidDragAxis.horizontal;
+                if (isCollapsed) {
+                  _miniHorizontalOffset = _accumulatedDx;
+                  _miniHorizontalController.value = _miniHorizontalOffset;
+                } else {
+                  _expandedHorizontalDx = _accumulatedDx;
+                }
+              } else {
+                _dragAxis = _FluidDragAxis.vertical;
+                final double travel = _geometry(windowSize).travel;
+                _dragController.value -= _accumulatedDy / travel;
+              }
+            }
+            return;
+          }
+
+          if (_dragAxis == _FluidDragAxis.vertical) {
+            final double travel = _geometry(windowSize).travel;
+            _dragController.value -= details.delta.dy / travel;
+          } else if (_dragAxis == _FluidDragAxis.horizontal) {
+            final playbackState = ref.read(playbackProvider);
+            final queue = playbackState.queue;
+            final currentPath = playbackState.currentSong?.path;
+            final currentIndex = queue.indexWhere((s) => s.path == currentPath);
+            final bool hasNext =
+                playbackState.repeatMode == RepeatMode.all ||
+                (currentIndex >= 0 && currentIndex < queue.length - 1);
+            final bool hasPrev =
+                playbackState.repeatMode == RepeatMode.all || currentIndex > 0;
+
+            if (isCollapsed) {
+              final double finger = _miniHorizontalOffset + details.delta.dx;
+              final bool isBlocked =
+                  (finger < 0 && !hasNext) || (finger > 0 && !hasPrev);
+              final double travelLimit = _geometry(windowSize).miniWidth * 0.25;
+
+              _miniHorizontalOffset = FluidHorizontalSwipe.computeOffset(
+                fingerDx: finger,
+                isBlocked: isBlocked,
+                limit: travelLimit,
+              );
+              _miniHorizontalController.value = _miniHorizontalOffset;
+
+              final double threshold = FluidHorizontalSwipe.threshold(
+                _geometry(windowSize).miniWidth,
+              );
+              if (_miniHorizontalOffset.abs() >= threshold &&
+                  !_hapticTriggered) {
+                _hapticTriggered = true;
+                AppHaptics.light();
+              }
+            } else if (isExpanded) {
+              final PlayerLayoutStyle style = PlayerLayoutStyle.fromSetting(
+                ref.read(settingsProvider.select((s) => s.playerStyle)),
+              );
+              if (style == PlayerLayoutStyle.classic) {
+                _expandedHorizontalDx += details.delta.dx;
+                const double threshold = 70.0;
+                if (_expandedHorizontalDx.abs() >= threshold &&
+                    !_hapticTriggered) {
+                  _hapticTriggered = true;
+                  AppHaptics.light();
+                }
+              }
+            }
+          }
         },
         onPanEnd: (details) {
           _isDragging = false;
           final FluidPlayerGeometry geometry = _geometry(windowSize);
+          final double vx = details.velocity.pixelsPerSecond.dx;
           final double dy = details.velocity.pixelsPerSecond.dy;
+
+          if (_dragAxis == _FluidDragAxis.horizontal) {
+            final double r = _dragController.value;
+            final bool isCollapsed = r <= 0.05;
+            final bool isExpanded = r >= 0.95;
+
+            final playbackState = ref.read(playbackProvider);
+            final queue = playbackState.queue;
+            final currentPath = playbackState.currentSong?.path;
+            final currentIndex = queue.indexWhere((s) => s.path == currentPath);
+            final bool hasNext =
+                playbackState.repeatMode == RepeatMode.all ||
+                (currentIndex >= 0 && currentIndex < queue.length - 1);
+            final bool hasPrev =
+                playbackState.repeatMode == RepeatMode.all || currentIndex > 0;
+
+            if (isCollapsed) {
+              final double threshold = FluidHorizontalSwipe.threshold(
+                geometry.miniWidth,
+              );
+              final double projected = FluidHorizontalSwipe.projectedOffset(
+                offset: _miniHorizontalOffset,
+                velocityX: vx,
+              );
+
+              if (projected < -threshold && hasNext) {
+                _commitMiniSwipe(
+                  direction: -1,
+                  geometry: geometry,
+                  velocityX: vx,
+                );
+              } else if (projected > threshold && hasPrev) {
+                _commitMiniSwipe(
+                  direction: 1,
+                  geometry: geometry,
+                  velocityX: vx,
+                );
+              } else {
+                _settleMiniHorizontal(velocityX: vx);
+              }
+              return;
+            } else if (isExpanded) {
+              final PlayerLayoutStyle style = PlayerLayoutStyle.fromSetting(
+                ref.read(settingsProvider.select((s) => s.playerStyle)),
+              );
+              if (style == PlayerLayoutStyle.classic) {
+                const double threshold = 70.0;
+                final double projected = FluidHorizontalSwipe.projectedOffset(
+                  offset: _expandedHorizontalDx,
+                  velocityX: vx,
+                );
+                if (projected < -threshold && hasNext) {
+                  AppHaptics.medium();
+                  ref.read(playbackProvider.notifier).skipNext();
+                } else if (projected > threshold && hasPrev) {
+                  AppHaptics.medium();
+                  ref.read(playbackProvider.notifier).skipPrevious(force: true);
+                }
+              }
+              _expandedHorizontalDx = 0.0;
+              return;
+            }
+          }
+
           // Pushed down past the collapsed bar: far enough (finger 70 px,
           // like the classic bar) or flicked down -> dismiss the player.
           final double r = _dragController.value;
@@ -580,6 +849,11 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
         onPanCancel: () {
           if (!_isDragging) return;
           _isDragging = false;
+          if (_dragAxis == _FluidDragAxis.horizontal) {
+            _settleMiniHorizontal();
+            _expandedHorizontalDx = 0.0;
+            return;
+          }
           _settle(_releaseTarget(0.0), allowBounce: false);
         },
         child: AnimatedBuilder(
@@ -597,6 +871,7 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
               _dragController,
               _restController,
               _dismissController,
+              _miniHorizontalController,
             ]),
             builder: (context, _) {
               final double r = _dragController.value;
@@ -609,10 +884,16 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
                   ? -lerpDouble(_dismissFrom, geometry.dismissTravel, dismissT)!
                   : geometry.stretchOf(r);
               final double lift = stretch > 0 ? stretch : 0.0;
-              final Rect panel = geometry.panelRect(p, stretch: stretch);
+              final double hOffset = _miniHorizontalOffset * (1.0 - p);
+              final Rect panel = geometry.panelRect(
+                p,
+                stretch: stretch,
+                horizontalOffset: hOffset,
+              );
+              final double cornerRadius = FluidPlayerGeometry.panelRadiusAt(p);
               final RRect panelRRect = RRect.fromRectAndRadius(
                 panel,
-                const Radius.circular(FluidPlayerGeometry.panelRadius),
+                Radius.circular(cornerRadius),
               );
               final double shadowAlpha = 0.3 * (1.0 - p * 5.0).clamp(0.0, 1.0);
 
@@ -628,9 +909,7 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
                       child: IgnorePointer(
                         child: DecoratedBox(
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(
-                              FluidPlayerGeometry.panelRadius,
-                            ),
+                            borderRadius: BorderRadius.circular(cornerRadius),
                             border: Border.all(
                               color: Colors.white.withValues(
                                 alpha: 0.05 * (1.0 - p),
@@ -725,6 +1004,7 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
                                     offset: geometry.miniOrigin(
                                       p,
                                       stretch: stretch,
+                                      horizontalOffset: hOffset,
                                     ),
                                     child: _fluidLayer(
                                       visible: p < 0.34,
@@ -765,13 +1045,84 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
                                 // 5. Morphing album art (flying/scaling between layouts).
                                 if (morphImage != null && p < kFluidHandoff)
                                   () {
+                                    if (isImmersive) {
+                                      // Styled layouts draw their own full art, so no
+                                      // morphing rounded rectangle or drop shadow.
+                                      // The mini-bar thumbnail simply fades out with
+                                      // the mini-bar content (p < 0.34) riding the panel.
+                                      if (p >= 0.34) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      final double miniFade = (1.0 - p * 3.0)
+                                          .clamp(0.0, 1.0);
+                                      final double miniSize = isCompact
+                                          ? 40.0
+                                          : 50.0;
+                                      final double miniTop = isCompact
+                                          ? 8.0
+                                          : 11.0;
+                                      final Offset origin = geometry.miniOrigin(
+                                        p,
+                                        stretch: stretch,
+                                        horizontalOffset: hOffset,
+                                      );
+                                      return Positioned(
+                                        key: const ValueKey('fluid_morph_art'),
+                                        left: origin.dx + 12.0,
+                                        top: origin.dy + miniTop,
+                                        width: miniSize,
+                                        height: miniSize,
+                                        child: IgnorePointer(
+                                          child: Opacity(
+                                            opacity: miniFade,
+                                            child: ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                    isCompact ? 26.0 : 32.0,
+                                                  ),
+                                              child: Stack(
+                                                fit: StackFit.expand,
+                                                children: [
+                                                  morphImage!,
+                                                  if (morphPlayingIcon !=
+                                                          null &&
+                                                      p < 0.25)
+                                                    Positioned.fill(
+                                                      child: Opacity(
+                                                        opacity: (1.0 - p * 4.0)
+                                                            .clamp(0.0, 1.0),
+                                                        child: ColoredBox(
+                                                          color: Colors.black
+                                                              .withValues(
+                                                                alpha:
+                                                                    SongPlaybackOverlay
+                                                                        .dimAlpha,
+                                                              ),
+                                                          child: Center(
+                                                            child:
+                                                                morphPlayingIcon,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }
                                     final Rect art = geometry.morphArtRect(
                                       p,
                                       expandedArtRect,
                                       stretch: stretch,
+                                      horizontalOffset: hOffset,
+                                      compact: isCompact,
                                     );
+                                    final double artDimension =
+                                        expandedArtRect.width;
                                     final double scale =
-                                        art.width / expandedArtRect.width;
+                                        art.width / artDimension;
                                     // The real artwork's drop shadow, faded in over the
                                     // last stretch so it doesn't pop in at the handoff.
                                     // In the unscaled box, like the radius.
@@ -782,8 +1133,8 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
                                       key: const ValueKey('fluid_morph_art'),
                                       left: 0,
                                       top: 0,
-                                      width: expandedArtRect.width,
-                                      height: expandedArtRect.height,
+                                      width: artDimension,
+                                      height: artDimension,
                                       child: IgnorePointer(
                                         child: Transform(
                                           transform:
@@ -802,6 +1153,7 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
                                               borderRadius: BorderRadius.circular(
                                                 FluidPlayerGeometry.morphArtRadius(
                                                       p,
+                                                      compact: isCompact,
                                                     ) /
                                                     scale,
                                               ),
@@ -830,6 +1182,7 @@ class _PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
                                               borderRadius: BorderRadius.circular(
                                                 FluidPlayerGeometry.morphArtRadius(
                                                       p,
+                                                      compact: isCompact,
                                                     ) /
                                                     scale,
                                               ),

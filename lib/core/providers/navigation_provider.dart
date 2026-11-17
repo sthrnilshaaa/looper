@@ -25,6 +25,7 @@ enum NavItem {
   library,
   analyze,
   settingsCategory,
+  account,
 }
 
 class NavigationState {

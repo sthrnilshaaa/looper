@@ -79,7 +79,7 @@ class _QualityBadgeSheet extends ConsumerWidget {
             children: [
               Text(
                 l10n.qualityBadgeStyle,
-                style: AppFonts.jostStyle(
+                style: AppFonts.settingsStyle(
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -88,7 +88,10 @@ class _QualityBadgeSheet extends ConsumerWidget {
               const SizedBox(height: 4),
               Text(
                 l10n.qualityBadgeStyleDesc,
-                style: AppFonts.jostStyle(color: Colors.white54, fontSize: 13),
+                style: AppFonts.settingsStyle(
+                  color: Colors.white54,
+                  fontSize: 13,
+                ),
               ),
               const SizedBox(height: 20),
               // Preview, on a dark strip like the player's top bar.

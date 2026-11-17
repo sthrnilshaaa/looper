@@ -84,10 +84,10 @@ class AndroidLibraryTab extends ConsumerWidget {
                     AppHaptics.light();
                     ref
                         .read(appNavigationProvider.notifier)
-                        .setItem(NavItem.settings);
+                        .setItem(NavItem.account);
                   },
                   child: const Icon(
-                    LucideIcons.settings,
+                    LucideIcons.user,
                     color: Colors.white,
                     size: 20,
                   ),

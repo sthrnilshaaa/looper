@@ -77,21 +77,28 @@ class UpdateService {
     } catch (e) {}
   }
 
-  /// The latest GitHub release when it is newer than this build, null when
-  /// this build is up to date. Throws when GitHub can't be reached.
-  static Future<GithubRelease?> fetchNewerRelease() async {
-    final PackageInfo packageInfo = await PackageInfo.fromPlatform();
+  /// The latest GitHub release, without version comparison. Throws when
+  /// GitHub can't be reached.
+  static Future<GithubRelease> fetchLatestRelease() async {
     final response = await http
         .get(Uri.parse(repoUrl))
         .timeout(const Duration(seconds: 20));
     if (response.statusCode != 200) {
       throw HttpException('GitHub answered ${response.statusCode}');
     }
-    final release = GithubRelease.fromJson(
+    return GithubRelease.fromJson(
       json.decode(response.body) as Map<String, dynamic>,
       fallbackHtmlUrl: fallbackHtmlUrl,
     );
+  }
+
+  /// The latest GitHub release when it is newer than this build, null when
+  /// this build is up to date. Throws when GitHub can't be reached.
+  static Future<GithubRelease?> fetchNewerRelease() async {
+    final PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    final release = await fetchLatestRelease();
     if (release.tag.isEmpty ||
+        release.waitingForMyApk ||
         !isNewerVersion(packageInfo.version, release.tag)) {
       return null;
     }

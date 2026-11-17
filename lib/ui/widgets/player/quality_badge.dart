@@ -144,28 +144,45 @@ class QualityBadge extends StatelessWidget {
         QualityTier.standard => context.l10n.qualityStandard,
       };
 
-  String _tierLabel(BuildContext context) => tierLabel(context, info.tier);
+  /// The tier's compact badge name ("HI-RES", "LOSSLESS", "HQ", ...).
+  static String tierShortLabel(QualityTier tier) => switch (tier) {
+    QualityTier.dsd => 'DSD',
+    QualityTier.hiRes => 'HI-RES',
+    QualityTier.lossless => 'LOSSLESS',
+    QualityTier.high => 'HQ',
+    QualityTier.standard => 'SQ',
+  };
 
   /// DSD rates read as multiples of 44.1 kHz (DSD64 = 2.8224 MHz).
-  String get _sampleRateLabel => info.tier == QualityTier.dsd
+  static String sampleRateLabel(QualityInfo info) =>
+      info.tier == QualityTier.dsd
       ? 'DSD${(info.sampleRate / 44100).round()}'
       : '${(info.sampleRate / 1000).toStringAsFixed(1)} kHz';
 
-  String? _channelsLabel(BuildContext context) => switch (info.channels) {
-    <= 0 => null,
-    1 => context.l10n.qualityMono,
-    2 => context.l10n.qualityStereo,
-    6 => '5.1',
-    8 => '7.1',
-    final n => '$n ch',
-  };
+  static String? channelsLabel(BuildContext context, int channels) =>
+      switch (channels) {
+        <= 0 => null,
+        1 => context.l10n.qualityMono,
+        2 => context.l10n.qualityStereo,
+        6 => '5.1',
+        8 => '7.1',
+        final n => '$n ch',
+      };
 
-  String _text(BuildContext context) {
-    if (style.layout == QualityBadgeLayout.name) return _tierLabel(context);
+  static String textFor(
+    BuildContext context,
+    QualityInfo info,
+    QualityBadgeStyle style, {
+    bool shortTier = false,
+  }) {
+    final String tierName = shortTier
+        ? tierShortLabel(info.tier)
+        : tierLabel(context, info.tier);
+    if (style.layout == QualityBadgeLayout.name) return tierName;
     final l10n = context.l10n;
-    final String? channels = _channelsLabel(context);
+    final String? channels = channelsLabel(context, info.channels);
     final parts = <String>[
-      if (style.shows(QualityBadgeField.tier)) _tierLabel(context),
+      if (style.shows(QualityBadgeField.tier)) tierName,
       if (style.shows(QualityBadgeField.codec)) info.codec ?? l10n.qualityAudio,
       // DSD is always 1-bit; its rate label already says it.
       if (style.shows(QualityBadgeField.bitDepth) &&
@@ -173,7 +190,7 @@ class QualityBadge extends StatelessWidget {
           info.tier != QualityTier.dsd)
         '${info.bitsPerSample}-bit',
       if (style.shows(QualityBadgeField.sampleRate) && info.sampleRate > 0)
-        _sampleRateLabel,
+        sampleRateLabel(info),
       if (style.shows(QualityBadgeField.channels) && channels != null) channels,
       // Bitrate says little about lossless files, so it's left off them.
       if (style.shows(QualityBadgeField.bitrate) &&
@@ -186,6 +203,15 @@ class QualityBadge extends StatelessWidget {
     if (parts.isEmpty) parts.add(info.codec ?? l10n.qualityAudio);
     return parts.join(style.separatorGlyph).trim();
   }
+
+  String _tierLabel(BuildContext context) => tierLabel(context, info.tier);
+
+  String get _sampleRateLabel => sampleRateLabel(info);
+
+  String? _channelsLabel(BuildContext context) =>
+      channelsLabel(context, info.channels);
+
+  String _text(BuildContext context) => textFor(context, info, style);
 
   /// The badge's leading icon, or null for [QualityBadgeIcon.none].
   static Widget? iconWidget(QualityBadgeIcon icon, double size, Color color) {

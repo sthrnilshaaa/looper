@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
 import 'package:looper_player/features/playback/presentation/providers/playback/playback_notifier.dart';
+import 'package:looper_player/features/playback/presentation/providers/equalizer/equalizer_notifier.dart';
 import '../../utils/logger_helper.dart';
 
 final androidAudioFocusManagerProvider = Provider<AndroidAudioFocusManager>((
@@ -38,6 +39,12 @@ class AndroidAudioFocusManager {
       case 'onBecomingNoisy':
         LoggerHelper.write('AndroidAudioFocusManager: onBecomingNoisy');
         playback.onBecomingNoisy();
+        break;
+
+      case 'onOutputDevicesChanged':
+        // The route settles a moment after the device appears.
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+        await _ref.read(equalizerProvider.notifier).applyDeviceProfile();
         break;
 
       case 'onBluetoothConnected':

@@ -1,8 +1,11 @@
 import 'dart:io';
+import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:isar_community/isar.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/services/haptics/app_haptics.dart';
+import '../../../../core/services/screen_awake.dart';
 import '../../../../core/services/storage/db_service.dart';
+import '../../../../core/services/storage/local_json_store.dart';
 
 import '../../../library/data/services/artwork_downloader_service.dart';
 import '../../../../core/theme/app_fonts.dart';
@@ -11,17 +14,19 @@ import '../../../playback/presentation/widgets/lyrics/lyrics_scale.dart';
 import '../../domain/artwork_visualizer_style.dart';
 import '../../domain/quality_badge_style.dart';
 import '../../domain/progress_bar_style.dart';
+import '../../domain/app_defaults.dart';
 
 import 'package:flutter/painting.dart' show Color;
 import 'package:looper_player/core/utils/artwork_colors.dart' show boostChroma;
 import 'package:looper_player/core/utils/ui_utils.dart' show UiUtils;
+import '../../domain/home_order.dart' show withHomeRowIds;
 
 part 'settings_notifier.g.dart';
 
 /// The app accent as drawn: the saved colour made more vibrant by the
 /// "Accent Vibrancy" slider. Use [accent] wherever the accent is painted.
 extension AppAccent on AppSettings {
-  static const double defaultVibrancy = 0.05;
+  static const double defaultVibrancy = 1.0;
 
   /// 0..1. Desktop has no slider, so it draws the saved colour as is.
   double get accentVibrancyValue {
@@ -42,6 +47,19 @@ extension AppAccent on AppSettings {
   }
 }
 
+/// Whether bottom sheets and popup sheets should render with frosted blur.
+///
+/// Also drives the scrolled page-header blur (HeaderBackdrop).
+///
+/// In the settings UI, either "Always Blur Sheets & Headers" or "Disable Blur Effects"
+/// is shown to the user at a time, depending on Dynamic Theming:
+/// - When Dynamic Theming is ON: blur follows `!disableBlur`.
+/// - When Dynamic Theming is OFF: blur follows `alwaysBlurSheets`.
+extension SheetBlur on AppSettings {
+  bool get sheetShouldBlur =>
+      enableDynamicTheming ? !disableBlur : alwaysBlurSheets;
+}
+
 // One-entry memo: the same accent is asked for by every tile in a build.
 (int, double)? _lastKey;
 Color? _last;
@@ -60,26 +78,8 @@ class Settings extends _$Settings {
     return AppSettings();
   }
 
-  List<double> _createDefaultGains() {
-    final list = List<double>.filled(48, 0.0);
-    list[20] = -50.0; // Silence remove threshold dB
-    list[22] = 0.2; // Crossfeed strength
-    list[24] = -20.0; // Compressor threshold dB
-    list[25] = 2.0; // Compressor ratio
-    list[26] = 20.0; // Compressor attack ms
-    list[27] = 250.0; // Compressor release ms
-    list[29] = -24.0; // Loudnorm target
-    list[31] = 2.5; // Stereo width factor
-    list[34] = 1.0; // Pitch shift
-    list[35] = 1.0; // Tempo shift
-    list[36] = 0.0; // ReplayGain mode
-    list[37] = 0.0; // ReplayGain preamp
-    list[39] = 150.0; // Speech highpass
-    list[40] = 4000.0; // Speech lowpass
-    list[44] = 1.0; // Tone shelving enabled
-    list[45] = 1.0; // Pitch/tempo enabled
-    return list;
-  }
+  List<double> _createDefaultGains() =>
+      AppDefaults.createDefaultEqualizerGains();
 
   Future<void> _loadSettings() async {
     final settings = await DbService.isar.appSettings.get(0);
@@ -100,6 +100,17 @@ class Settings extends _$Settings {
           settings.libraryFolders = recoveredFolders;
           needsSave = true;
         }
+      }
+      // Home redesign, once: the new ▶▶ avatar replaces the old default
+      // wordmark (a picked avatar stays), and the kept background gradient
+      // starts off. Both stay user-changeable in Settings afterwards.
+      if (!settings.homeRedesignV1) {
+        if (settings.selectedAvatarAsset == 'logo_full.svg') {
+          settings.selectedAvatarAsset = AppDefaults.selectedAvatarAsset;
+        }
+        settings.keepBackgroundGradient = AppDefaults.keepBackgroundGradient;
+        settings.homeRedesignV1 = true;
+        needsSave = true;
       }
       // Only run legacy defaults migration ONCE if settingsV3 is not yet set
       if (!settings.settingsV3) {
@@ -133,6 +144,7 @@ class Settings extends _$Settings {
         }
         settings.showQualityBadge = true;
         settings.enablePlayerGradient = true;
+        settings.enableLyricsGradient = true;
         settings.settingsV2 = true;
         settings.dynamicLyrics = false;
         settings.blurredArtworkForLyrics = true;
@@ -181,7 +193,7 @@ class Settings extends _$Settings {
       }
       if (!settings.activeLyricsIntensityDefaultMigrated) {
         final double v = settings.activeLyricsIntensity;
-        if (v.isNaN || v == 0.0) settings.activeLyricsIntensity = 0.35;
+        if (v.isNaN || v == 0.0) settings.activeLyricsIntensity = 0.7;
         settings.activeLyricsIntensityDefaultMigrated = true;
         needsSave = true;
       }
@@ -192,16 +204,25 @@ class Settings extends _$Settings {
         settings.lyricsProviderWordSyncMigrated = true;
         needsSave = true;
       }
-      if (settings.homeSectionOrder.isEmpty) {
-        settings.homeSectionOrder = [
-          'quick_picks',
-          'playlists',
-          'songs',
-          'albums',
-          'artists',
-          'genres',
-          'recent',
+      // Every lyrics service is on now; switch back on the ones that used to
+      // start off. One time, so a later deliberate switch-off sticks.
+      if (await LocalJsonStore.read('lyrics_all_on_v1') != true) {
+        const formerlyOff = {
+          'PAXSENIX',
+          'BINILYRICS',
+          'UNISON',
+          'BETTERLYRICS_QQ',
+          'YT_CAPTIONS',
+        };
+        settings.lyricsProvidersOff = [
+          for (final id in settings.lyricsProvidersOff)
+            if (!formerlyOff.contains(id.toUpperCase())) id,
         ];
+        await LocalJsonStore.write('lyrics_all_on_v1', true);
+        needsSave = true;
+      }
+      if (settings.homeSectionOrder.isEmpty) {
+        settings.homeSectionOrder = [...AppSettings.defaultHomeSectionOrder];
         needsSave = true;
       } else if (!settings.homeSectionOrder.contains('recent')) {
         // Migration: append the newly added Recent section to existing
@@ -211,6 +232,12 @@ class Settings extends _$Settings {
       }
       if (!settings.homeSectionOrder.contains('playlists')) {
         settings.homeSectionOrder = [...settings.homeSectionOrder, 'playlists'];
+        needsSave = true;
+      }
+      // Quick picks and the online rows joined the order (docs/online/27).
+      final withRows = withHomeRowIds(settings.homeSectionOrder);
+      if (withRows.length != settings.homeSectionOrder.length) {
+        settings.homeSectionOrder = withRows;
         needsSave = true;
       }
       if (settings.globalEqualizerGains.length < 48) {
@@ -232,47 +259,54 @@ class Settings extends _$Settings {
         ..stackSansDefaultMigrated = true
         ..activeLyricsIntensityDefaultMigrated = true
         ..enableDynamicTheming = !Platform.isAndroid
-        ..bgBrightness = 0.5
-        ..bgOpacity = 0.3
-        ..showHomeArtists = true
-        ..showHomeAlbums = false
-        ..showHomeGenres = true
-        ..showHomeRecent = true
-        ..showHomePlaylists = true
-        ..homeSectionOrder = [
-          'quick_picks',
-          'playlists',
-          'songs',
-          'albums',
-          'artists',
-          'genres',
-          'recent',
-        ]
-        ..homeDarkness = 0.72
+        ..bgBrightness = AppDefaults.bgBrightness
+        ..bgOpacity = AppDefaults.bgOpacity
+        ..showHomeArtists = AppDefaults.showHomeArtists
+        ..showHomeAlbums = AppDefaults.showHomeAlbums
+        ..showHomeGenres = AppDefaults.showHomeGenres
+        ..showHomeRecent = AppDefaults.showHomeRecent
+        ..showHomePlaylists = AppDefaults.showHomePlaylists
+        ..homeSectionOrder = [...AppDefaults.defaultHomeSectionOrder]
+        ..homeDarkness = AppDefaults.homeDarkness
         ..desktopBackgroundDarkness =
-            AppSettings.defaultDesktopBackgroundDarkness
-        ..songsDarkness = 0.72
-        ..libraryDarkness = 0.72
-        ..musicDarkness = 0.62
-        ..lyricsDarkness = 0.35
-        ..showQualityBadge = true
-        ..enablePlayerGradient = true
+            AppDefaults.defaultDesktopBackgroundDarkness
+        ..songsDarkness = AppDefaults.songsDarkness
+        ..libraryDarkness = AppDefaults.libraryDarkness
+        ..musicDarkness = AppDefaults.musicDarkness
+        ..lyricsDarkness = AppDefaults.lyricsDarkness
+        ..showQualityBadge = AppDefaults.showQualityBadge
+        ..enablePlayerGradient = AppDefaults.enablePlayerGradient
+        ..enableLyricsGradient = AppDefaults.enableLyricsGradient
         ..settingsV2 = true
         ..settingsV3 = true
-        ..dynamicLyrics = false
-        ..blurredArtworkForLyrics = true
-        ..showPerformanceOptimizer = false
-        ..equalizerEnabled = false
-        ..enableAudioCache = true
-        ..audioCacheSizeMB = 200
-        ..audioCacheSecs = 120
-        ..audioBackCacheSizeMB = 100
-        ..persistQueue = false
+        ..homeRedesignV1 = true
+        ..dynamicLyrics = AppDefaults.dynamicLyrics
+        ..blurredArtworkForLyrics = AppDefaults.blurredArtworkForLyrics
+        ..showPerformanceOptimizer = AppDefaults.showPerformanceOptimizer
+        ..equalizerEnabled = AppDefaults.equalizerEnabled
+        ..enableAudioCache = AppDefaults.enableAudioCache
+        ..audioCacheSizeMB = AppDefaults.audioCacheSizeMB
+        ..audioCacheSecs = AppDefaults.audioCacheSecs
+        ..audioBackCacheSizeMB = AppDefaults.audioBackCacheSizeMB
+        ..persistQueue = AppDefaults.persistQueue
+        ..keepScreenAwake = AppDefaults.keepScreenAwake
+        ..forceHighRefreshRate = AppDefaults.forceHighRefreshRate
         ..globalEqualizerGains = _createDefaultGains();
       await DbService.isar.writeTxn(() async {
         await DbService.isar.appSettings.put(defaultSettings);
       });
       state = defaultSettings;
+    }
+
+    ScreenAwake.setEnabled(state.keepScreenAwake ?? true);
+    if (Platform.isAndroid) {
+      try {
+        if (state.forceHighRefreshRate ?? true) {
+          await FlutterDisplayMode.setHighRefreshRate();
+        } else {
+          await FlutterDisplayMode.setPreferredMode(DisplayMode.auto);
+        }
+      } catch (_) {}
     }
 
     _updateActiveFont();
@@ -286,12 +320,15 @@ class Settings extends _$Settings {
     final activeState = customState ?? state;
     AppFonts.activeFontFamily = activeState.useNewFont
         ? (activeState.customFontFamily.isEmpty
-              ? AppFonts.stackSansText
+              ? AppDefaults.customFontFamily
               : activeState.customFontFamily)
         : 'Stack Sans Text';
     AppFonts.appFontWeightDelta = activeState.useNewFont
         ? activeState.customFontWeightDelta
         : 0;
+    AppFonts.appLetterSpacingPercent = activeState.letterSpacingPercent.isNaN
+        ? AppDefaults.letterSpacingPercent
+        : activeState.letterSpacingPercent;
     AppFonts.lyricsFontWeightDelta = activeState.useNewFontLyrics
         ? activeState.customFontWeightLyricsDelta
         : 0;
@@ -360,6 +397,7 @@ class Settings extends _$Settings {
       ..artworkVisualizerSyncMs = s.artworkVisualizerSyncMs
       ..disableBlur = s.disableBlur
       ..alwaysBlurSheets = s.alwaysBlurSheets
+      ..playerDynamicBackground = s.playerDynamicBackground
       ..enableInternet = s.enableInternet
       ..downloadArtwork = s.downloadArtwork
       ..includeSystemAndMessagingAudio = s.includeSystemAndMessagingAudio
@@ -378,6 +416,12 @@ class Settings extends _$Settings {
       ..playerLyricLine = s.playerLyricLine
       ..accentVibrancy = s.accentVibrancy
       ..playerLyricLineTransition = s.playerLyricLineTransition
+      ..playerStyle = s.playerStyle
+      ..playerStyleAccent = s.playerStyleAccent
+      ..cardBlackBackground = s.cardBlackBackground
+      ..cardAccentBackground = s.cardAccentBackground
+      ..cardAccentColors = s.cardAccentColors
+      ..playerStyleBlur = s.playerStyleBlur
       ..showAlbumNextToArtist = s.showAlbumNextToArtist
       ..showAlbumInQuickPicks = s.showAlbumInQuickPicks
       ..disableHaptics = s.disableHaptics
@@ -385,6 +429,7 @@ class Settings extends _$Settings {
       ..animateBackgroundGradient = s.animateBackgroundGradient
       ..settingsV2 = s.settingsV2
       ..settingsV3 = s.settingsV3
+      ..homeRedesignV1 = s.homeRedesignV1
       ..blurredArtworkForLyrics = s.blurredArtworkForLyrics
       ..customBackgroundImagePath = s.customBackgroundImagePath
       ..bgBrightness = s.bgBrightness
@@ -396,15 +441,7 @@ class Settings extends _$Settings {
       ..showHomePlaylists = s.showHomePlaylists
       ..homeSectionOrder = List.from(
         s.homeSectionOrder.isEmpty
-            ? [
-                'quick_picks',
-                'playlists',
-                'songs',
-                'albums',
-                'artists',
-                'genres',
-                'recent',
-              ]
+            ? AppSettings.defaultHomeSectionOrder
             : s.homeSectionOrder,
       )
       ..enableSlideGesture = s.enableSlideGesture
@@ -423,6 +460,7 @@ class Settings extends _$Settings {
       ..inactiveLyricsOpacity = s.inactiveLyricsOpacity
       ..activeLyricsSoftColor = s.activeLyricsSoftColor
       ..lyricsNoLineGrouping = s.lyricsNoLineGrouping
+      ..enableLyricsGradient = s.enableLyricsGradient
       ..ambientColorBackground = s.ambientColorBackground
       ..lyricsAlignment = s.lyricsAlignment
       ..dynamicAccentColor = s.dynamicAccentColor
@@ -440,12 +478,15 @@ class Settings extends _$Settings {
       ..musicDarkness = s.musicDarkness
       ..lyricsDarkness = s.lyricsDarkness
       ..selectedAvatarAsset = s.selectedAvatarAsset
+      ..userName = s.userName
+      ..userPhotoPath = s.userPhotoPath
       ..avatarDynamicColor = s.avatarDynamicColor
       ..showPerformanceOptimizer = s.showPerformanceOptimizer
       ..useNewFont = s.useNewFont
       ..customFontFamily = s.customFontFamily
       ..customFontWeight = s.customFontWeight
       ..customFontWeightDelta = s.customFontWeightDelta
+      ..letterSpacingPercent = s.letterSpacingPercent
       ..useNewFontLyrics = s.useNewFontLyrics
       ..customFontFamilyLyrics = s.customFontFamilyLyrics
       ..customFontWeightLyrics = s.customFontWeightLyrics
@@ -478,7 +519,9 @@ class Settings extends _$Settings {
       ..firstTimeEqualizer = s.firstTimeEqualizer
       ..lyricsGestureTutorialSeen = s.lyricsGestureTutorialSeen
       ..desktopUiScale = s.desktopUiScale
-      ..lyricsFontScale = s.lyricsFontScale;
+      ..lyricsFontScale = s.lyricsFontScale
+      ..keepScreenAwake = s.keepScreenAwake
+      ..forceHighRefreshRate = s.forceHighRefreshRate;
   }
 
   Future<void> updateLibraryFolders(List<String> folders) =>
@@ -517,11 +560,19 @@ class Settings extends _$Settings {
   Future<void> updateLyricsSyncStyle(String value) =>
       _update((s) => s..lyricsSyncStyle = value);
 
-  Future<void> updateBlurredArtworkForLyrics(bool value) =>
-      _update((s) => s..blurredArtworkForLyrics = value);
+  // Lyrics background is one of: blurred artwork, ambient colour, or
+  // neither; turning one on turns the other off.
+  Future<void> updateBlurredArtworkForLyrics(bool value) => _update(
+    (s) => s
+      ..blurredArtworkForLyrics = value
+      ..ambientColorBackground = value ? false : s.ambientColorBackground,
+  );
 
-  Future<void> updateAmbientColorBackground(bool value) =>
-      _update((s) => s..ambientColorBackground = value);
+  Future<void> updateAmbientColorBackground(bool value) => _update(
+    (s) => s
+      ..ambientColorBackground = value
+      ..blurredArtworkForLyrics = value ? false : s.blurredArtworkForLyrics,
+  );
 
   Future<void> updateShowQualityBadge(bool value) =>
       _update((s) => s..showQualityBadge = value);
@@ -537,6 +588,30 @@ class Settings extends _$Settings {
 
   Future<void> updatePlayerLyricLineTransition(String value) =>
       _update((s) => s..playerLyricLineTransition = value);
+
+  Future<void> updatePlayerStyle(String value) =>
+      _update((s) => s..playerStyle = value);
+
+  Future<void> updatePlayerStyleAccent(bool value) => _update(
+    (s) => s
+      ..playerStyleAccent = value
+      ..cardAccentColors = value,
+  );
+
+  Future<void> updateCardBlackBackground(bool value) =>
+      _update((s) => s..cardBlackBackground = value);
+
+  Future<void> updateCardAccentBackground(bool value) =>
+      _update((s) => s..cardAccentBackground = value);
+
+  Future<void> updateCardAccentColors(bool value) => _update(
+    (s) => s
+      ..cardAccentColors = value
+      ..playerStyleAccent = value,
+  );
+
+  Future<void> updatePlayerStyleBlur(bool value) =>
+      _update((s) => s..playerStyleBlur = value);
 
   Future<void> updateShowAlbumNextToArtist(bool value) =>
       _update((s) => s..showAlbumNextToArtist = value);
@@ -558,6 +633,9 @@ class Settings extends _$Settings {
     }
     return s;
   });
+
+  Future<void> updateEnableLyricsGradient(bool value) =>
+      _update((s) => s..enableLyricsGradient = value);
 
   Future<void> updateAnimatePlayerGradient(bool value) =>
       _update((s) => s..animatePlayerGradient = value);
@@ -704,6 +782,9 @@ class Settings extends _$Settings {
   Future<void> updateAlwaysBlurSheets(bool value) =>
       _update((s) => s..alwaysBlurSheets = value);
 
+  Future<void> updatePlayerDynamicBackground(bool value) =>
+      _update((s) => s..playerDynamicBackground = value);
+
   Future<void> updateEnableInternet(bool enabled) =>
       _update((s) => s..enableInternet = enabled);
 
@@ -760,14 +841,13 @@ class Settings extends _$Settings {
     });
   }
 
-  /// Saves the resume position quietly. It runs every few seconds while
-  /// playing, and nothing on screen shows it, so it updates the live object
-  /// and the database without a state change - going through [_update]
-  /// cloned the whole settings object (queue list included) and rebuilt
-  /// every widget watching settings each time.
-  Future<void> updateLastPosition(int positionMs) async {
+  /// Saves the resume position quietly. When [persist] is true, writes to
+  /// the database; when false, updates in memory without triggering a disk
+  /// write transaction.
+  Future<void> updateLastPosition(int positionMs, {bool persist = true}) async {
     if (state.lastPositionMs == positionMs) return;
     state.lastPositionMs = positionMs;
+    if (!persist) return;
     final AppSettings current = state;
     await DbService.isar.writeTxn(() async {
       await DbService.isar.appSettings.put(current);
@@ -846,6 +926,12 @@ class Settings extends _$Settings {
   Future<void> updateSelectedAvatar(String assetFileName) =>
       _update((s) => s..selectedAvatarAsset = assetFileName);
 
+  Future<void> updateUserName(String value) =>
+      _update((s) => s..userName = value.trim());
+
+  Future<void> updateUserPhotoPath(String value) =>
+      _update((s) => s..userPhotoPath = value);
+
   Future<void> updateAvatarDynamicColor(bool value) =>
       _update((s) => s..avatarDynamicColor = value);
 
@@ -861,6 +947,11 @@ class Settings extends _$Settings {
 
   Future<void> updateCustomFontWeightDelta(int value) async {
     await _update((s) => s..customFontWeightDelta = value);
+    _updateActiveFont();
+  }
+
+  Future<void> updateLetterSpacingPercent(double value) async {
+    await _update((s) => s..letterSpacingPercent = value);
     _updateActiveFont();
   }
 
@@ -893,4 +984,22 @@ class Settings extends _$Settings {
 
   Future<void> updateLyricsGestureTutorialSeen(bool value) =>
       _update((s) => s..lyricsGestureTutorialSeen = value);
+
+  Future<void> updateKeepScreenAwake(bool value) async {
+    ScreenAwake.setEnabled(value);
+    await _update((s) => s..keepScreenAwake = value);
+  }
+
+  Future<void> updateForceHighRefreshRate(bool value) async {
+    if (Platform.isAndroid) {
+      try {
+        if (value) {
+          await FlutterDisplayMode.setHighRefreshRate();
+        } else {
+          await FlutterDisplayMode.setPreferredMode(DisplayMode.auto);
+        }
+      } catch (_) {}
+    }
+    await _update((s) => s..forceHighRefreshRate = value);
+  }
 }

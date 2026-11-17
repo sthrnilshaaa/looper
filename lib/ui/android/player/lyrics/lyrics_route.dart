@@ -167,6 +167,14 @@ Widget artworkFlightShuttle(
 /// Corner radius of the first ClipRRect inside a hero (its artwork's
 /// on-screen rounding), or 12 - the player artwork's - when it has none.
 double _clipRadius(BuildContext heroContext) {
+  final RenderObject? box = heroContext.findRenderObject();
+  if (box is RenderBox && box.hasSize) {
+    if (box.size.width <= 60 && box.size.height <= 60) {
+      return box.size.height <= 48 ? 26.0 : 32.0;
+    }
+    return 12.0;
+  }
+
   double? found;
   void visit(Element element) {
     if (found != null) return;

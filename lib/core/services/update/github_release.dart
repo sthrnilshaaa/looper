@@ -1,3 +1,7 @@
+/// Which APK set this app updates from: `offline` here, `online` in the
+/// online Looper Music build. Must match the release asset names.
+const apkEdition = 'offline';
+
 /// One APK attached to a GitHub release.
 class ApkAsset {
   final String name;
@@ -19,14 +23,18 @@ class ApkAsset {
 /// The parts of a GitHub `releases/latest` response the updater uses.
 class GithubRelease {
   final String tag;
+  final String name;
   final String htmlUrl;
   final String notes;
+  final String? publishedAt;
   final List<ApkAsset> apks;
 
   const GithubRelease({
     required this.tag,
+    this.name = '',
     required this.htmlUrl,
     required this.notes,
+    this.publishedAt,
     required this.apks,
   });
 
@@ -56,8 +64,10 @@ class GithubRelease {
     }
     return GithubRelease(
       tag: (json['tag_name'] as String?) ?? '',
+      name: (json['name'] as String?) ?? '',
       htmlUrl: (json['html_url'] as String?) ?? fallbackHtmlUrl,
       notes: ((json['body'] as String?) ?? '').trim(),
+      publishedAt: json['published_at'] as String?,
       apks: apks,
     );
   }
@@ -65,14 +75,34 @@ class GithubRelease {
   /// The APK to install on a device whose ABIs are [abis], most preferred
   /// first (Android's `Build.SUPPORTED_ABIS`): the first per-ABI split that
   /// matches, else the universal APK, else null.
+  ///
+  /// Releases carry both editions (`...-arm64-v8a-online-release.apk` and
+  /// `...-offline-release.apk`); only [apkEdition]'s APKs are considered.
+  /// A release with no labelled APKs (before the split) uses its unlabelled ones.
+  static bool _labelled(ApkAsset a, String edition) =>
+      a.name.toLowerCase().contains('-$edition-');
+
+  /// The release carries the other edition's APKs but not ours yet: the
+  /// online APKs are uploaded by hand after the release workflow finishes.
+  bool get waitingForMyApk =>
+      apks.any((a) => _labelled(a, 'online') || _labelled(a, 'offline')) &&
+      !apks.any((a) => _labelled(a, apkEdition));
+
   ApkAsset? apkFor(List<String> abis) {
+    const labelled = _labelled;
+    final mine = apks.where((a) => labelled(a, apkEdition)).toList();
+    final pool = mine.isNotEmpty
+        ? mine
+        : apks
+              .where((a) => !labelled(a, 'online') && !labelled(a, 'offline'))
+              .toList();
     for (final abi in abis) {
       final marker = '-${abi.toLowerCase()}-';
-      for (final apk in apks) {
+      for (final apk in pool) {
         if (apk.name.toLowerCase().contains(marker)) return apk;
       }
     }
-    for (final apk in apks) {
+    for (final apk in pool) {
       if (apk.name.toLowerCase().contains('universal')) return apk;
     }
     return null;

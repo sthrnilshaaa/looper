@@ -38,7 +38,7 @@ class _AvatarPickerSheetContent extends ConsumerWidget {
         children: [
           Text(
             l10n.selectAvatars,
-            style: AppFonts.jostStyle(
+            style: AppFonts.settingsStyle(
               color: Colors.white,
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -81,14 +81,17 @@ class _AvatarPickerSheetContent extends ConsumerWidget {
             contentPadding: EdgeInsets.zero,
             title: Text(
               l10n.dynamicAvatarColor,
-              style: AppFonts.jostStyle(
+              style: AppFonts.settingsStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
               ),
             ),
             subtitle: Text(
               l10n.dynamicAvatarColorDesc,
-              style: AppFonts.jostStyle(color: Colors.white54, fontSize: 12),
+              style: AppFonts.settingsStyle(
+                color: Colors.white54,
+                fontSize: 12,
+              ),
             ),
             activeThumbColor: accentColor,
             value: dynamicColor,

@@ -16,6 +16,8 @@ class ExpressiveSlider extends ConsumerStatefulWidget {
   final VoidCallback? onSeekEnd;
   final Color color;
   final bool showTimestamps;
+  final Duration? buffer;
+  final bool isStreaming;
 
   /// Overrides the style from settings - used by the settings preview to
   /// show unsaved changes live. Ignored on Linux, which keeps its own look.
@@ -31,6 +33,8 @@ class ExpressiveSlider extends ConsumerStatefulWidget {
     this.onSeekEnd,
     required this.color,
     this.showTimestamps = true,
+    this.buffer,
+    this.isStreaming = false,
     this.style,
   });
 
@@ -126,19 +130,26 @@ class _ExpressiveSliderState extends ConsumerState<ExpressiveSlider> {
     widget.onSeekEnd?.call();
   }
 
+  /// Flat for the first 12% of the song (the "wave from start" setting being
+  /// off), then grows in over the next 6% instead of popping in at 12%.
+  static double _startRamp(double progress) =>
+      Curves.easeInOut.transform(((progress - 0.12) / 0.06).clamp(0.0, 1.0));
+
   /// The desktop (Linux) bar: fixed look, not affected by the progress bar
   /// style settings apart from the flat-bar toggle.
-  Widget _buildLinuxSlider(double displayValue) {
+  Widget _buildLinuxSlider(double displayValue, double? secondaryTrackValue) {
     final disableSquiggle = ref.watch(
       settingsProvider.select((s) => s.disableSquiggle),
     );
-    final bool enableWave = widget.isPlaying && displayValue > 0.12;
-    final targetAmplitude = disableSquiggle ? 0.0 : (enableWave ? 2.0 : 0.0);
+    final targetAmplitude = disableSquiggle || !widget.isPlaying
+        ? 0.0
+        : 2.0 * _startRamp(displayValue);
     return SliderTheme(
       data: SliderTheme.of(context).copyWith(
         trackHeight: 3.0,
         activeTrackColor: widget.color,
         inactiveTrackColor: Colors.white10,
+        secondaryActiveTrackColor: Colors.white.withValues(alpha: 0.2),
         thumbShape: const LineThumbShape(thumbHeight: 12, thumbWidth: 3),
         overlayShape: SliderComponentShape.noOverlay,
       ),
@@ -149,11 +160,13 @@ class _ExpressiveSliderState extends ConsumerState<ExpressiveSlider> {
         builder: (context, amplitude, child) {
           return SquigglySlider(
             value: displayValue,
+            secondaryTrackValue: secondaryTrackValue,
             onChanged: _onChanged,
             onChangeStart: _onChangeStart,
             onChangeEnd: _onChangeEnd,
             activeColor: widget.color,
             inactiveColor: Colors.white10,
+            secondaryActiveColor: Colors.white.withValues(alpha: 0.2),
             squiggleAmplitude: amplitude,
             squiggleWavelength: 4.5,
             squiggleSpeed: 0.08,
@@ -164,13 +177,22 @@ class _ExpressiveSliderState extends ConsumerState<ExpressiveSlider> {
     );
   }
 
-  Widget _buildStyledSlider(double displayValue, ProgressBarStyle style) {
-    final bool pastStart = style.waveFromStart || displayValue > 0.12;
+  Widget _buildStyledSlider(
+    double displayValue,
+    double? secondaryTrackValue,
+    ProgressBarStyle style,
+  ) {
     final bool showWave =
-        style.wave && pastStart && (widget.isPlaying || style.freezeWhenPaused);
-    final double targetAmplitude = showWave ? style.waveHeight : 0.0;
+        style.wave && (widget.isPlaying || style.freezeWhenPaused);
+    final double targetAmplitude = showWave
+        ? style.waveHeight *
+              (style.waveFromStart ? 1.0 : _startRamp(displayValue))
+        : 0.0;
     final Color inactive = Colors.white.withValues(
       alpha: style.inactiveOpacity,
+    );
+    final Color secondaryColor = Colors.white.withValues(
+      alpha: (style.inactiveOpacity * 2).clamp(0.0, 1.0),
     );
     final double thumbWidth = switch (style.thumbStyle) {
       ProgressThumbStyle.pill => style.thumbWidth,
@@ -191,6 +213,7 @@ class _ExpressiveSliderState extends ConsumerState<ExpressiveSlider> {
           trackHeight: style.thickness,
           activeTrackColor: widget.color,
           inactiveTrackColor: inactive,
+          secondaryActiveTrackColor: secondaryColor,
           thumbShape: LineThumbShape(
             thumbHeight: thumbHeight,
             thumbWidth: thumbWidth,
@@ -205,11 +228,13 @@ class _ExpressiveSliderState extends ConsumerState<ExpressiveSlider> {
           builder: (context, amplitude, child) {
             return SquigglySlider(
               value: displayValue,
+              secondaryTrackValue: secondaryTrackValue,
               onChanged: _onChanged,
               onChangeStart: _onChangeStart,
               onChangeEnd: _onChangeEnd,
               activeColor: widget.color,
               inactiveColor: inactive,
+              secondaryActiveColor: secondaryColor,
               squiggleAmplitude: amplitude,
               squiggleWavelength: style.squiggleWavelength,
               squiggleSpeed: style.waveSpeed,
@@ -235,10 +260,19 @@ class _ExpressiveSliderState extends ConsumerState<ExpressiveSlider> {
         ? widget.duration * _dragValue!
         : widget.position;
 
+    final double? secondaryTrackValue =
+        widget.isStreaming &&
+            widget.duration > Duration.zero &&
+            widget.buffer != null
+        ? (widget.buffer!.inMilliseconds / widget.duration.inMilliseconds)
+              .clamp(0.0, 1.0)
+        : null;
+
     final sliderWidget = ExpressiveSlider.useDesktopLayout
-        ? _buildLinuxSlider(displayValue)
+        ? _buildLinuxSlider(displayValue, secondaryTrackValue)
         : _buildStyledSlider(
             displayValue,
+            secondaryTrackValue,
             widget.style ??
                 ref.watch(
                   settingsProvider.select(ProgressBarStyle.fromSettings),

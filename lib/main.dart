@@ -1,3 +1,4 @@
+import 'package:looper_player/features/settings/domain/app_defaults.dart';
 import 'package:looper_player/core/services/memory_manager.dart';
 import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'dart:io';
@@ -12,10 +13,10 @@ import 'package:window_manager/window_manager.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
-import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:looper_player/core/providers/providers.dart';
 import 'core/services/storage/db_service.dart';
+import 'package:looper_player/core/services/storage/local_json_store.dart';
 import 'core/theme/app_fonts.dart';
 import 'core/services/appambit_reporter.dart';
 import 'ui/home_screen/home_screen.dart';
@@ -165,9 +166,6 @@ void main(List<String> args) async {
     } catch (e, s) {
       LoggerHelper.write('Failed to initialize MpvAudioKit', e, s);
     }
-    try {
-      await FlutterDisplayMode.setHighRefreshRate();
-    } catch (_) {}
   }();
 
   // Check permissions in parallel (status check only - no automatic permission prompt dialogs on startup)
@@ -188,6 +186,11 @@ void main(List<String> args) async {
     }
   }();
 
+  // Preload local JSON cache in parallel for instant, stable startup views
+  final Future<void> storeInit = LocalJsonStore.init().catchError((e, s) {
+    LoggerHelper.write('LocalJsonStore init error', e, s);
+  });
+
   // Wait for all boot-up stages concurrently
   await Future.wait([
     timed('logs', logsInit),
@@ -195,6 +198,7 @@ void main(List<String> args) async {
     timed('db', dbInit),
     timed('plugins', nativePluginsInit),
     timed('permissions', permissionCheck),
+    timed('store', storeInit),
     if (AppAmbitReporter.mustStartBeforeUi) reporterInit,
   ]);
   final beforeRunApp = startup.elapsedMilliseconds;
@@ -263,6 +267,10 @@ class MyApp extends ConsumerWidget {
     final bool useNewFont = settings?.useNewFont ?? false;
     final String customFontFamily = settings?.customFontFamily ?? '';
     final int customFontWeightDelta = settings?.customFontWeightDelta ?? 0;
+    final double spacing = settings?.letterSpacingPercent ?? double.nan;
+    final double letterSpacingPercent = spacing.isNaN
+        ? AppDefaults.letterSpacingPercent
+        : spacing;
     final String language = settings?.language ?? '';
 
     final String fontFamily = useNewFont
@@ -278,6 +286,7 @@ class MyApp extends ConsumerWidget {
         bodyColor: Colors.white70,
       ),
       useNewFont ? customFontWeightDelta : 0,
+      letterSpacingPercent: letterSpacingPercent,
     );
 
     Widget buildMaterialApp(ColorScheme colorScheme) {

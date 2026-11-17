@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -30,6 +31,9 @@ enum ApkUpdatePhase {
   /// Handed to the system installer, waiting for its answer.
   installing,
   failed,
+
+  /// The app is running the latest release.
+  upToDate,
 }
 
 enum ApkUpdateError { network, checksum, storage, install }
@@ -57,7 +61,13 @@ class ApkUpdateState {
     this.errorDetail,
   });
 
-  bool get hasUpdate => release != null && asset != null;
+  bool get hasUpdate =>
+      release != null &&
+      asset != null &&
+      phase != ApkUpdatePhase.upToDate &&
+      phase != ApkUpdatePhase.idle;
+
+  bool get isUpToDate => phase == ApkUpdatePhase.upToDate;
 
   bool get isBusy =>
       phase == ApkUpdatePhase.downloading ||
@@ -105,34 +115,46 @@ class ApkUpdate extends _$ApkUpdate {
         state.release?.tag;
   }
 
-  /// Looks for a newer release with an APK this device can install.
+  /// Looks for the newest release and checks if an update is available.
   Future<ApkCheckResult> check() async {
-    if (!ApkInstaller.supported) return ApkCheckResult.upToDate;
     // A download or install is already under way for the release we know.
     if (state.isBusy) return ApkCheckResult.available;
 
-    final GithubRelease? release;
+    final GithubRelease release;
     try {
-      release = await UpdateService.fetchNewerRelease();
+      release = await UpdateService.fetchLatestRelease();
     } catch (_) {
       return state.hasUpdate ? ApkCheckResult.available : ApkCheckResult.failed;
     }
     if (state.isBusy) return ApkCheckResult.available;
 
-    if (release == null) {
+    final PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    final bool isNewer =
+        release.tag.isNotEmpty &&
+        isNewerVersion(packageInfo.version, release.tag);
+
+    final abis = await ApkInstaller.supportedAbis();
+    final asset = release.apkFor(
+      abis.isNotEmpty ? abis : const ['arm64-v8a', 'universal'],
+    );
+
+    // Our APK isn't on the release yet: say nothing until it is.
+    if (!isNewer || release.waitingForMyApk) {
       await _clearDownloads(keep: null);
-      state = const ApkUpdateState();
+      state = ApkUpdateState(
+        phase: ApkUpdatePhase.upToDate,
+        release: release,
+        asset: asset,
+      );
       return ApkCheckResult.upToDate;
     }
 
-    final asset = release.apkFor(await ApkInstaller.supportedAbis());
     if (asset == null) {
       // A release without an APK for this device: link to it instead.
       await UpdateService.announceRelease(release);
-      state = const ApkUpdateState();
-      return ApkCheckResult.upToDate;
+      state = ApkUpdateState(phase: ApkUpdatePhase.available, release: release);
+      return ApkCheckResult.available;
     }
-    if (state.isBusy) return ApkCheckResult.available;
 
     await _clearDownloads(keep: asset.name);
     // Keep "ready" when re-checking the release that is already downloaded.

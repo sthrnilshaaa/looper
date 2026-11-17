@@ -25,13 +25,20 @@ import 'package:looper_player/core/services/storage/db_service.dart';
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
 import 'package:looper_player/features/playback/presentation/providers/lyrics/lyrics_notifier.dart';
 import 'package:looper_player/features/playback/presentation/providers/equalizer/equalizer_notifier.dart';
+import 'package:looper_player/core/services/audio/audio_normalization.dart';
 import 'package:metadata_god/metadata_god.dart';
 import 'package:isar_community/isar.dart';
 import 'dart:io';
+import 'package:looper_player/core/services/storage/storage_access.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:looper_player/core/utils/l10n.dart';
+import 'package:looper_player/features/playback/domain/crossmix_models.dart';
+import 'package:looper_player/features/playback/data/crossmix/crossmix_settings.dart';
+import 'package:looper_player/features/playback/data/crossmix/cue_analyzer.dart';
+import 'package:looper_player/features/playback/data/crossmix/transition_planner.dart';
+import 'package:looper_player/core/services/audio/transition_director.dart';
 
 part 'playback_notifier.g.dart';
 part 'playback_state.dart';
@@ -40,20 +47,29 @@ part 'maintenance.dart';
 
 @Riverpod(keepAlive: true)
 class Playback extends _$Playback {
-  late final Player player;
+  Player get player => ref.read(audioServiceProvider).player;
   List<Song> _playlist = [];
   List<Song> _originalPlaylist = [];
   int _currentIndex = -1;
   bool _isTransitioning = false;
-  int _activeCrossfadeId = 0;
+  int _loadGeneration = 0;
+  bool _isTransitionArming = false;
+  Duration? _pendingSeek;
+  Timer? _bufferingDebounceTimer;
+  Timer? _bufferingStallTimer;
+  bool _rawBuffering = false;
+  bool _eofCached = false;
+
+  void _publishQueue() => state = state.copyWith(queue: List.from(_playlist));
   Timer? _silenceTimer;
   Timer? _songCompletionTimer;
   int _lastWidgetPositionUpdate = 0;
+  int _lastDbPositionCheckpoint = 0;
   // Separate, much coarser throttle for the isar.songs.put() progress
   // write - see the position-stream listener in _init() for why this is
   // decoupled from _lastWidgetPositionUpdate.
   int _lastProgressSaveCheckpoint = 0;
-  static const int _progressSaveIntervalMs = 20000;
+  static const int _progressSaveIntervalMs = 60000;
   int _manualQueueCount = 0;
   DateTime _lastSeekTime = DateTime.fromMillisecondsSinceEpoch(0);
   // A track end that arrived while play() was still loading a song. mpv
@@ -87,13 +103,14 @@ class Playback extends _$Playback {
   String? _activeListenSongPath;
   DateTime _lastListenCheckpoint = DateTime.fromMillisecondsSinceEpoch(0);
 
+  PlaybackState get playbackState => state;
+
   @override
   PlaybackState build() {
     ref.onDispose(_disposePlayback);
     if (Platform.isAndroid) {
       ref.read(androidAudioFocusManagerProvider);
     }
-    player = ref.read(audioServiceProvider).player;
     final audioSvc = ref.read(audioServiceProvider);
     audioSvc.onNext = skipNext;
     audioSvc.onPrevious = skipPrevious;
@@ -180,33 +197,38 @@ class Playback extends _$Playback {
     _updateWidgetState();
   }
 
-  Future<void> _init() async {
+  void _bindPlayerSubscriptions(Player p) {
+    for (final sub in _subscriptions) {
+      sub.cancel();
+    }
+    _subscriptions.clear();
+
     _subscriptions.add(
-      player.stream.error.listen((err) {
+      p.stream.error.listen((err) {
         LoggerHelper.write('Mpv Player Error: $err');
       }),
     );
 
     _subscriptions.add(
-      player.stream.log.listen((entry) {
+      p.stream.log.listen((entry) {
         LoggerHelper.write('Mpv Player Log: $entry');
       }),
     );
 
     _subscriptions.add(
-      player.stream.internalLog.listen((entry) {
+      p.stream.internalLog.listen((entry) {
         LoggerHelper.write('Mpv Player InternalLog: $entry');
       }),
     );
 
     _subscriptions.add(
-      player.stream.playing.listen((playing) {
+      p.stream.playing.listen((playing) {
         // Safety net: a faded pause leaves the fade gain at 0, so if mpv
         // starts playing through any path that didn't fade back in
         // (plugin auto-resume, repeat-one, ...) it would play silently.
         // Only while the fader is idle - a running fade owns the gain.
         if (playing &&
-            player.state.playWhenReady &&
+            p.state.playWhenReady &&
             !_fader.isFading &&
             _fader.factor < 1.0) {
           _fadeIn();
@@ -217,15 +239,13 @@ class Playback extends _$Playback {
         if (DateTime.now().difference(_lastSeekTime).inMilliseconds < 400) {
           return;
         }
-        // While a track switch is in flight, the native player briefly
-        // reports `playing: false` as it stops the old track and loads the
-        // new one, before `_playDirect` explicitly sets isPlaying back to
-        // true. Letting that transient `false` through made the play/pause
-        // button's background (bound directly to isPlaying) flash on every
-        // song change. `_isTransitioning` already tracks this window, so
-        // just ignore spurious pauses inside it - a real `true` still comes
-        // through once the new track actually starts.
-        if (_isTransitioning && !playing) {
+        // While a track switch or buffering is in flight, the native player
+        // briefly reports `playing: false`. While buffering, ignore `false`
+        // so isPlaying preserves user intent (button stays Pause, notification
+        // stays playing).
+        if ((_isTransitioning || state.isBuffering) && !playing) {
+          _pauseListenSegment();
+          unawaited(_flushListenedTime());
           return;
         }
 
@@ -260,7 +280,7 @@ class Playback extends _$Playback {
     );
 
     _subscriptions.add(
-      player.stream.position.listen((position) {
+      p.stream.position.listen((position) {
         if (!state.isScrubbing) {
           // seek() already set state.position to the seek target the
           // instant it was called, before the native player actually
@@ -279,7 +299,12 @@ class Playback extends _$Playback {
           final isStaleAfterSeek =
               withinSeekWindow && position <= state.position;
           if (!isStaleAfterSeek) {
-            state = state.copyWith(position: position);
+            final diff = (position - state.position).abs();
+            if (position != state.position &&
+                (diff >= const Duration(milliseconds: 50) ||
+                    position == Duration.zero)) {
+              state = state.copyWith(position: position);
+            }
           }
         }
         _checkAndUpdateLyrics();
@@ -292,9 +317,17 @@ class Playback extends _$Playback {
           _lastWidgetPositionUpdate = now;
           _updateWidgetState();
           if (ref.read(settingsProvider).persistQueue) {
+            // Keep memory in sync quietly every 5s; flush to disk only
+            // once a minute during active playback (pause, seek, and track
+            // change already flush immediately to disk).
+            final shouldPersist = now - _lastDbPositionCheckpoint > 60000;
+            if (shouldPersist) _lastDbPositionCheckpoint = now;
             ref
                 .read(settingsProvider.notifier)
-                .updateLastPosition(position.inMilliseconds);
+                .updateLastPosition(
+                  position.inMilliseconds,
+                  persist: shouldPersist,
+                );
           }
         }
         // Deliberately on its own, coarser (20s) throttle rather than
@@ -314,24 +347,63 @@ class Playback extends _$Playback {
           );
         }
         unawaited(_checkpointListenedTimeIfDue());
+        _checkCrossmixTransition(position);
       }),
     );
 
+    _subscriptions.add(p.stream.buffering.listen((_) => _updateBuffering()));
+
+    _subscriptions.add(p.stream.seeking.listen((_) => _updateBuffering()));
+
     _subscriptions.add(
-      player.stream.duration.listen((duration) {
-        if (duration != Duration.zero) {
-          state = state.copyWith(duration: duration);
+      p.stream.demuxerCacheState.listen((cacheState) {
+        if (!state.isStreaming) return;
+        if (cacheState.eofCached && !_eofCached) {
+          _eofCached = true;
+          if (state.duration > Duration.zero &&
+              state.buffer != state.duration) {
+            state = state.copyWith(buffer: state.duration);
+          }
         }
       }),
     );
 
     _subscriptions.add(
-      player.stream.completed.listen((completed) {
+      p.stream.buffer.listen((buf) {
+        if (!state.isStreaming || _eofCached) return;
+        final dur = state.duration;
+        if (dur <= Duration.zero) return;
+        final stepMs = (dur.inMilliseconds / 100)
+            .clamp(1, double.infinity)
+            .toInt();
+        final roundedMs = (buf.inMilliseconds ~/ stepMs) * stepMs;
+        final rounded = Duration(
+          milliseconds: roundedMs.clamp(0, dur.inMilliseconds),
+        );
+        if (rounded != state.buffer) {
+          state = state.copyWith(buffer: rounded);
+        }
+      }),
+    );
+
+    _subscriptions.add(
+      p.stream.duration.listen((duration) {
+        if (duration != Duration.zero) {
+          state = state.copyWith(
+            duration: duration,
+            buffer: _eofCached && state.isStreaming ? duration : state.buffer,
+          );
+        }
+      }),
+    );
+
+    _subscriptions.add(
+      p.stream.completed.listen((completed) {
         debugPrint("======== COMPLETED ========");
         debugPrint("completed = $completed");
-        debugPrint("position  = ${player.state.position}");
-        debugPrint("duration  = ${player.state.duration}");
-        debugPrint("playlist completed = ${player.state.completed}");
+        debugPrint("position  = ${p.state.position}");
+        debugPrint("duration  = ${p.state.duration}");
+        debugPrint("playlist completed = ${p.state.completed}");
 
         if (!completed) {
           _completedResetSinceLoad = true;
@@ -348,6 +420,10 @@ class Playback extends _$Playback {
         _onTrackCompleted();
       }),
     );
+  }
+
+  Future<void> _init() async {
+    _bindPlayerSubscriptions(player);
 
     // Wait for settings to load
     await ref.read(settingsProvider.notifier).initialization;
@@ -379,20 +455,26 @@ class Playback extends _$Playback {
     final savedSongIds = settings.lastQueueSongIds;
     final savedIndex = settings.lastQueueIndex;
 
-    if (settings.persistQueue && savedSongIds.isNotEmpty) {
-      final List<Song> loadedSongs = [];
-      for (final id in savedSongIds) {
-        final song = await DbService.isar.songs.get(id);
-        if (song != null) {
-          loadedSongs.add(song);
+    if (settings.persistQueue) {
+      List<Song> loadedSongs = [];
+      int targetIndex = 0;
+      if (savedSongIds.isNotEmpty) {
+        for (final id in savedSongIds) {
+          final song = await DbService.isar.songs.get(id);
+          if (song != null) loadedSongs.add(song);
         }
+        if (savedIndex >= 0 && savedIndex < loadedSongs.length) {
+          targetIndex = savedIndex;
+        }
+      } else if (settings.lastPlayedSongId != null) {
+        final song = await DbService.isar.songs.get(settings.lastPlayedSongId!);
+        if (song != null) loadedSongs = [song];
       }
+
       if (loadedSongs.isNotEmpty) {
         _playlist = loadedSongs;
         _originalPlaylist = List.from(loadedSongs);
-        _currentIndex = (savedIndex >= 0 && savedIndex < loadedSongs.length)
-            ? savedIndex
-            : 0;
+        _currentIndex = targetIndex;
         final song = _playlist[_currentIndex];
         state = state.copyWith(
           queue: List.from(_playlist),
@@ -407,33 +489,6 @@ class Playback extends _$Playback {
         ref.read(lyricsProvider.notifier).fetchForSong(song);
         ref.read(equalizerProvider.notifier).onSongChanged(song);
         _updateWidgetState();
-
-        final initialPos = Duration(milliseconds: settings.lastPositionMs);
-        Future.delayed(const Duration(milliseconds: 500), () async {
-          await play(
-            song,
-            forceDisableCrossfade: true,
-            play: settings.resumeOnStart,
-            initialPosition: initialPos,
-          );
-        });
-      }
-    } else if (settings.persistQueue && settings.lastPlayedSongId != null) {
-      final song = await DbService.isar.songs.get(settings.lastPlayedSongId!);
-      if (song != null) {
-        state = state.copyWith(
-          currentSong: song,
-          isRestoredSession: true,
-          position: Duration(milliseconds: settings.lastPositionMs),
-          duration: song.duration != null
-              ? Duration(milliseconds: song.duration!)
-              : Duration.zero,
-        );
-        ref.read(lyricsProvider.notifier).fetchForSong(song);
-        ref.read(equalizerProvider.notifier).onSongChanged(song);
-        _playlist = [song];
-        _currentIndex = 0;
-        _updateWidgetState(); // Sync initial song data with home screen widgets on launch
 
         final initialPos = Duration(milliseconds: settings.lastPositionMs);
         Future.delayed(const Duration(milliseconds: 500), () async {
@@ -461,6 +516,34 @@ class Playback extends _$Playback {
       _manualQueueCount = (index < endOfManual) ? endOfManual - index : 0;
       _currentIndex = index;
       await play(_playlist[_currentIndex]);
+    }
+  }
+
+  void _updateBuffering() {
+    final raw =
+        player.state.buffering || (state.isStreaming && player.state.seeking);
+    if (raw == _rawBuffering) return;
+    _rawBuffering = raw;
+
+    _bufferingDebounceTimer?.cancel();
+    if (raw) {
+      _bufferingDebounceTimer = Timer(const Duration(milliseconds: 300), () {
+        if (_rawBuffering) {
+          state = state.copyWith(isBuffering: true);
+        }
+      });
+      _bufferingStallTimer?.cancel();
+      _bufferingStallTimer = Timer(const Duration(seconds: 15), () {
+        if (_rawBuffering && state.isStreaming) {
+          _bufferingDebounceTimer?.cancel();
+          state = state.copyWith(isBuffering: false);
+        }
+      });
+    } else {
+      _bufferingStallTimer?.cancel();
+      if (state.isBuffering) {
+        state = state.copyWith(isBuffering: false);
+      }
     }
   }
 
@@ -599,9 +682,213 @@ class Playback extends _$Playback {
     });
   }
 
+  void _checkCrossmixTransition(Duration position) {
+    if (!state.isPlaying || state.isScrubbing) return;
+    final crossmixSettings = ref.read(crossmixSettingsProvider);
+    if (!crossmixSettings.crossfadeEnabled) return;
+
+    final director = ref.read(audioServiceProvider).transitionDirector;
+    if (director.isRunning) return;
+
+    final dur = state.duration;
+    if (dur <= Duration.zero) return;
+    final remaining = dur - position;
+
+    final crossfadeDuration = crossmixSettings.duration;
+    // Arming window: at [duration - crossfadeLength - 9s]
+    final armingThreshold = crossfadeDuration + const Duration(seconds: 9);
+
+    if (remaining <= armingThreshold && remaining > crossfadeDuration) {
+      if (!director.isArmed && !_isTransitionArming) {
+        unawaited(_armTransition(crossmixSettings, position));
+      }
+    }
+
+    if (director.isArmed && !director.isRunning) {
+      // Go/no-go at [crossfadeLength + 1.2s]
+      final goNoGoThreshold =
+          crossfadeDuration + const Duration(milliseconds: 1200);
+      if (remaining <= goNoGoThreshold) {
+        if (!director.checkGoNoGo()) {
+          LoggerHelper.write(
+            'Playback: Go/No-Go check failed. Cancelling crossmix.',
+          );
+          director.cancelArming();
+          return;
+        }
+      }
+
+      // Check if trigger point reached
+      final plan = director.currentPlan;
+      final triggerOffset =
+          plan?.outgoingTriggerOffset ?? (dur - crossfadeDuration);
+      if (position >= triggerOffset || remaining <= crossfadeDuration) {
+        _startCrossmix(director, plan);
+      }
+    }
+  }
+
+  Future<void> _armTransition(
+    CrossmixSettings settings,
+    Duration position,
+  ) async {
+    final nextIndex = _currentIndex + 1;
+    if (nextIndex >= _playlist.length && state.repeatMode != RepeatMode.all) {
+      return;
+    }
+    final nextSong = nextIndex < _playlist.length
+        ? _playlist[nextIndex]
+        : (_playlist.isNotEmpty ? _playlist.first : null);
+    if (nextSong == null || state.currentSong == null) return;
+
+    final isSleepTimerAtEnd =
+        state.isSleepTimerActive &&
+        state.sleepTimerSongsRemaining != null &&
+        state.sleepTimerSongsRemaining! <= 1;
+
+    if (TransitionPlanner.shouldSkipCrossfade(
+      settings: settings,
+      currentSong: state.currentSong,
+      nextSong: nextSong,
+      isRepeatOne: state.repeatMode == RepeatMode.one,
+      isSleepTimerAtEnd: isSleepTimerAtEnd,
+    )) {
+      return;
+    }
+
+    _isTransitionArming = true;
+    final generation = _loadGeneration;
+
+    try {
+      CrossmixAnalysis? outAnalysis;
+      CrossmixAnalysis? inAnalysis;
+      if (settings.smartTransitions) {
+        outAnalysis = await CueAnalyzer.getOrAnalyze(state.currentSong!);
+        inAnalysis = await CueAnalyzer.getOrAnalyze(nextSong);
+      }
+
+      final lyrics = ref.read(lyricsProvider).parsedLines;
+      final plan = TransitionPlanner.planTransition(
+        outgoingSong: state.currentSong!,
+        incomingSong: nextSong,
+        settings: settings,
+        outgoingAnalysis: outAnalysis,
+        incomingAnalysis: inAnalysis,
+        outgoingLyrics: lyrics,
+      );
+
+      final director = ref.read(audioServiceProvider).transitionDirector;
+      await director.arm(
+        plan: plan,
+        generation: generation,
+        loadMedia: (idlePlayer) async {
+          if (generation != _loadGeneration) return;
+
+          final metadata = {
+            'title': nextSong.title,
+            'artist': nextSong.artist ?? currentL10n().unknownArtist,
+            'album': nextSong.album ?? currentL10n().unknownAlbum,
+            if (nextSong.artPath != null) 'artPath': nextSong.artPath!,
+            if (nextSong.duration != null) 'duration': nextSong.duration!,
+          };
+
+          final media = Media(
+            nextSong.path,
+            extras: {
+              'title': metadata['title']!,
+              'artist': metadata['artist']!,
+              'album': metadata['album']!,
+              if (metadata['artPath'] != null) 'artPath': metadata['artPath']!,
+              if (metadata['duration'] != null)
+                'duration': metadata['duration']!,
+            },
+          );
+
+          await idlePlayer.open(media, play: false);
+          if (plan.incomingStartOffset > Duration.zero) {
+            await idlePlayer.seek(plan.incomingStartOffset);
+          }
+        },
+      );
+    } catch (e) {
+      LoggerHelper.write('Playback: Failed to arm transition: $e');
+    } finally {
+      _isTransitionArming = false;
+    }
+  }
+
+  void _startCrossmix(TransitionDirector director, TransitionPlan? plan) {
+    final nextIndex = _currentIndex + 1;
+    final nextSong = (nextIndex < _playlist.length)
+        ? _playlist[nextIndex]
+        : (_playlist.isNotEmpty ? _playlist.first : null);
+    if (nextSong == null) return;
+
+    director.startTransition(
+      generation: _loadGeneration,
+      customDuration: plan?.overlapDuration,
+      onSwapCallback: () {
+        _currentIndex = nextIndex < _playlist.length ? nextIndex : 0;
+        if (_manualQueueCount > 0) _manualQueueCount--;
+
+        _pauseListenSegment();
+        unawaited(_flushListenedTime());
+
+        state = state.copyWith(
+          currentSong: nextSong,
+          duration: nextSong.duration != null
+              ? Duration(milliseconds: nextSong.duration!)
+              : Duration.zero,
+          position: plan?.incomingStartOffset ?? Duration.zero,
+        );
+
+        _updateNotification(forceFresh: true);
+        ref.read(lyricsProvider.notifier).fetchForSong(nextSong);
+        ref.read(equalizerProvider.notifier).onSongChanged(nextSong);
+        final audio = ref.read(audioServiceProvider);
+        unawaited(_applyNormalization(nextSong));
+
+        // The director flipped roles before this callback: `player` is now
+        // the incoming song's player.
+        _bindPlayerSubscriptions(audio.player);
+      },
+      onCompleteCallback: () {
+        _isTransitioning = false;
+        _saveQueueState();
+      },
+    );
+  }
+
+  /// Per-song volume normalization (doc 25 §3.2): ReplayGain.
+  Future<void> _applyNormalization(Song song) async {
+    final eqState = ref.read(equalizerProvider);
+    final audio = ref.read(audioServiceProvider);
+    if (eqState.replayGainMode != 0) {
+      final albumMode = AudioNormalization.isAlbumInOrder(
+        song: song,
+        playlist: _playlist,
+        currentIndex: _currentIndex,
+        isShuffle: state.isShuffle,
+      );
+      await audio.configureReplayGain(
+        mode: albumMode ? 2 : 1,
+        preamp: eqState.replayGainPreamp,
+      );
+    } else {
+      await audio.configureReplayGain(mode: 0, preamp: 0.0);
+    }
+  }
+
   /// [immediate] skips the wait for the UI position to catch up with the
   /// end - used when the end was deferred past a load and is long settled.
   void _onTrackCompleted({bool immediate = false}) {
+    // The outgoing song ran out before the fade's swap: finish the hand-over
+    // instead of loading the next song a second time.
+    final director = ref.read(audioServiceProvider).transitionDirector;
+    if (director.isRunning) {
+      director.completeHandoverImmediately();
+      return;
+    }
     _isTransitioning = true;
     _songCompletionTimer?.cancel();
 
@@ -683,7 +970,7 @@ class Playback extends _$Playback {
       }
     }
 
-    final crossfadeId = ++_activeCrossfadeId;
+    final loadId = ++_loadGeneration;
     _isTransitioning = true;
     _pendingCompletion = false;
     _completedResetSinceLoad = !player.state.completed;
@@ -691,17 +978,17 @@ class Playback extends _$Playback {
     try {
       await _playDirect(
         song,
-        crossfadeId,
+        loadId,
         play: play,
         initialPosition: initialPosition,
         sourcePlaylistId: sourcePlaylistId,
       );
     } catch (e) {
-      if (crossfadeId == _activeCrossfadeId) {
+      if (loadId == _loadGeneration) {
         try {
           await _playDirect(
             song,
-            crossfadeId,
+            loadId,
             play: play,
             initialPosition: initialPosition,
             sourcePlaylistId: sourcePlaylistId,
@@ -718,9 +1005,9 @@ class Playback extends _$Playback {
           );
           rethrow;
         }
-      } else {}
+      }
     } finally {
-      if (crossfadeId == _activeCrossfadeId) {
+      if (loadId == _loadGeneration) {
         int attempts = 0;
 
         while (!_pendingCompletion &&
@@ -793,6 +1080,21 @@ class Playback extends _$Playback {
     _resumePositionAfterStop = null;
     _fader.set(shouldFade ? 0.0 : 1.0);
 
+    if (crossfadeId != _loadGeneration) return;
+
+    _eofCached = false;
+    _pendingSeek = null;
+    _rawBuffering = false;
+    _bufferingDebounceTimer?.cancel();
+    _bufferingStallTimer?.cancel();
+    state = state.copyWith(
+      isStreaming: isUrlPath(song.path),
+      isBuffering: false,
+      buffer: Duration.zero,
+    );
+
+    await _applyNormalization(song);
+
     await ref
         .read(audioServiceProvider)
         .play(
@@ -817,11 +1119,11 @@ class Playback extends _$Playback {
       // and pause playback right after it started.
     }
 
-    if (shouldFade && crossfadeId == _activeCrossfadeId) {
+    if (shouldFade && crossfadeId == _loadGeneration) {
       unawaited(_fader.fadeTo(1.0, Duration(milliseconds: fadeLength)));
     }
 
-    if (crossfadeId != _activeCrossfadeId) return;
+    if (crossfadeId != _loadGeneration) return;
 
     _updateWidgetState(); // Update home screen widgets instantly with the new song metadata
 
@@ -1147,6 +1449,10 @@ class Playback extends _$Playback {
   }
 
   Future<void> stop() async {
+    final director = ref.read(audioServiceProvider).transitionDirector;
+    if (director.isArmed || director.isRunning) {
+      director.cancelArming();
+    }
     _silenceTimer?.cancel();
     _songCompletionTimer?.cancel();
     _pauseListenSegment();
@@ -1180,10 +1486,14 @@ class Playback extends _$Playback {
   /// In-app pause (button, widget, sleep-timer-free paths): fade out, then
   /// pause mpv - unless a play tap superseded the fade in the meantime.
   Future<void> _pauseFromUser() async {
+    ref.read(audioServiceProvider).transitionDirector.pauseTransition();
     _silenceTimer?.cancel();
     _songCompletionTimer?.cancel();
+    _bufferingDebounceTimer?.cancel();
+    _bufferingStallTimer?.cancel();
+    _rawBuffering = false;
     _pausedForRouteChange = false;
-    state = state.copyWith(isPlaying: false);
+    state = state.copyWith(isPlaying: false, isBuffering: false);
     _updateNotification();
 
     final settings = ref.read(settingsProvider);
@@ -1239,6 +1549,7 @@ class Playback extends _$Playback {
   /// [mpvAlreadyPlaying] is true when mpv_audio_kit already un-paused mpv
   /// on the OS's behalf, in which case only the volume needs restoring.
   Future<void> _resumeCurrent({required bool mpvAlreadyPlaying}) async {
+    ref.read(audioServiceProvider).transitionDirector.resumeTransition();
     _pausedForRouteChange = false;
     // About to (re)start playback: restore whatever interruption policy the
     // settings actually dictate, undoing any disarm from a previous manual
@@ -1394,6 +1705,26 @@ class Playback extends _$Playback {
   Future<void> skipNext({bool isManual = true}) async {
     if (_playlist.isEmpty) return;
 
+    final director = ref.read(audioServiceProvider).transitionDirector;
+    if (director.isRunning) {
+      director.completeHandoverImmediately();
+      return;
+    }
+
+    if (isManual && state.isPlaying) {
+      final crossmixSettings = ref.read(crossmixSettingsProvider);
+      if (crossmixSettings.crossfadeEnabled) {
+        director.handleUserSkip(executeSkip: _executeSkipNext);
+        return;
+      }
+    }
+
+    await _executeSkipNext();
+  }
+
+  Future<void> _executeSkipNext() async {
+    if (_playlist.isEmpty) return;
+
     final nextIndex = _currentIndex + 1;
     if (nextIndex >= _playlist.length) {
       if (state.repeatMode != RepeatMode.all) {
@@ -1435,6 +1766,12 @@ class Playback extends _$Playback {
 
   Future<void> skipPrevious({bool force = false}) async {
     if (_playlist.isEmpty) return;
+    final director = ref.read(audioServiceProvider).transitionDirector;
+    if (director.isRunning) {
+      director.completeHandoverImmediately();
+    } else if (director.isArmed) {
+      director.cancelArming();
+    }
     if (!force && state.position.inSeconds > 3) {
       await seek(Duration.zero);
       return;
@@ -1531,17 +1868,38 @@ class Playback extends _$Playback {
     ref.read(settingsProvider.notifier).updateVolume(volume);
   }
 
-  /// The one place mpv's volume is written: user volume x fade gain, or
+  /// The one place mpv's volume is written: user volume (quadratic curve v^2
+  /// for natural human ear loudness perception, doc 25 §3.8) x fade gain, or
   /// silence while scrubbing.
   void _applyVolume() {
-    player.setVolume(
-      state.isScrubbing ? 0 : state.volume * _fader.factor * 100,
-    );
+    final double curvedVolume = state.volume * state.volume;
+    final effective = state.isScrubbing ? 0.0 : curvedVolume * _fader.factor;
+    ref
+        .read(audioServiceProvider)
+        .transitionDirector
+        .setMasterVolume(effective);
   }
 
   Future<void> seek(Duration position) async {
+    final director = ref.read(audioServiceProvider).transitionDirector;
+    if (director.isRunning) {
+      // Before the swap the UI still shows the old song, so its position
+      // means nothing for the new one: finish the hand-over only.
+      final swapped = director.hasSwapped;
+      director.completeHandoverImmediately();
+      if (!swapped) return;
+    } else if (director.isArmed) {
+      director.cancelArming();
+    }
+
     _songCompletionTimer?.cancel();
     _lastSeekTime = DateTime.now();
+
+    if (state.isScrubbing && state.isStreaming) {
+      _pendingSeek = position;
+      state = state.copyWith(position: position);
+      return;
+    }
 
     try {
       await player.seek(position);
@@ -1555,20 +1913,106 @@ class Playback extends _$Playback {
     } catch (e) {
       debugPrint('Seek failed: $e');
       state = state.copyWith(position: position);
+      // Scrubbing muted the player; a failed seek must not leave it silent.
+      if (!state.isScrubbing) _applyVolume();
     }
   }
 
   void startScrubbing() {
     _lastSeekTime = DateTime.now();
+    _pendingSeek = null;
     state = state.copyWith(isScrubbing: true);
     _applyVolume();
   }
 
-  void stopScrubbing() {
+  Future<void> stopScrubbing() async {
     _lastSeekTime = DateTime.now();
-    state = state.copyWith(isScrubbing: false, position: player.state.position);
-    _applyVolume();
+    final target = _pendingSeek;
+    _pendingSeek = null;
+    if (target != null) {
+      state = state.copyWith(isScrubbing: false, position: target);
+      await seek(target);
+    } else {
+      state = state.copyWith(
+        isScrubbing: false,
+        position: player.state.position,
+      );
+      _applyVolume();
+    }
   }
+
+  /// Reshuffles upcoming songs in the queue following the current track,
+  /// preserving playback continuity without stopping or restarting the active song.
+  Future<void> shuffleUpcomingQueue({String? rotationSongPath}) async {
+    if (_playlist.length <= 1) return;
+
+    final targetSongPath = rotationSongPath ?? state.currentSong?.path;
+    final rotationIdx = targetSongPath != null
+        ? _playlist.indexWhere((s) => s.path == targetSongPath)
+        : -1;
+
+    if (rotationIdx == -1) {
+      if (_currentIndex < 0 || _currentIndex >= _playlist.length - 1) return;
+      final past = _playlist.sublist(0, _currentIndex + 1);
+      final upcoming = List<Song>.from(_playlist.sublist(_currentIndex + 1));
+      if (upcoming.length <= 1) return;
+      upcoming.shuffle();
+      _playlist = [...past, ...upcoming];
+    } else {
+      final List<Song> displayedQueue = [
+        ..._playlist.sublist(rotationIdx),
+        ..._playlist.sublist(0, rotationIdx),
+      ];
+
+      if (displayedQueue.length <= 2) return;
+
+      final currentSong = displayedQueue[0];
+      final upcoming = List<Song>.from(displayedQueue.sublist(1));
+      upcoming.shuffle();
+      final List<Song> shuffledDisplayed = [currentSong, ...upcoming];
+
+      final n = shuffledDisplayed.length;
+      final k = (n - rotationIdx) % n;
+
+      _playlist = [
+        ...shuffledDisplayed.sublist(k),
+        ...shuffledDisplayed.sublist(0, k),
+      ];
+    }
+
+    if (!state.isShuffle) {
+      _originalPlaylist = List.from(_playlist);
+    }
+
+    state = state.copyWith(queue: List.from(_playlist));
+    if (state.currentSong != null) {
+      _currentIndex = _playlist.indexWhere(
+        (s) => s.path == state.currentSong!.path,
+      );
+    }
+    try {
+      await _saveQueueState();
+    } catch (_) {
+      // Best-effort in headless tests
+    }
+  }
+
+  @visibleForTesting
+  void setQueueForTesting(List<Song> queue, {int currentIndex = 0}) {
+    _playlist = List.from(queue);
+    _originalPlaylist = List.from(queue);
+    _currentIndex = currentIndex;
+    state = state.copyWith(
+      queue: List.unmodifiable(_playlist),
+      currentSong:
+          queue.isNotEmpty && currentIndex >= 0 && currentIndex < queue.length
+          ? queue[currentIndex]
+          : null,
+    );
+  }
+
+  @visibleForTesting
+  List<Song> get playlistForTesting => _playlist;
 
   Future<void> reorderQueue(
     int oldIndex,
@@ -1671,24 +2115,39 @@ class Playback extends _$Playback {
     final song = state.currentSong;
     if (song == null) return;
 
-    // Toggle and persist
     final newFavoriteState = !song.isFavorite;
-    await DbService.isar.writeTxn(() async {
-      song.isFavorite = newFavoriteState;
-      await DbService.isar.songs.put(song);
-    });
 
-    // Read a fresh instance back from DB to guarantee a new object reference
-    // so Riverpod's select((s) => s.currentSong) detects the identity change
-    // and rebuilds widgets (the like button, notification etc.)
-    final freshSong = await DbService.isar.songs.get(song.id) ?? song;
-
-    // Sync the in-memory playlist entry too
-    final idx = _playlist.indexWhere((s) => s.id == freshSong.id);
-    if (idx != -1) _playlist[idx] = freshSong;
-
-    state = state.copyWith(currentSong: freshSong, queue: List.from(_playlist));
+    // Optimistically update in-memory state immediately so UI reacts with 0ms latency
+    song.isFavorite = newFavoriteState;
+    final path = song.path;
+    final idx = _playlist.indexWhere((s) => s.path == path);
+    if (idx != -1) {
+      _playlist[idx].isFavorite = newFavoriteState;
+    }
+    state = state.copyWith(currentSong: song, queue: List.from(_playlist));
     _updateNotification();
+
+    // Persist to database safely
+    try {
+      await DbService.isar.writeTxn(() async {
+        final dbSong =
+            await DbService.isar.songs.getByPath(path) ??
+            await DbService.isar.songs.get(song.id);
+        if (dbSong != null) {
+          dbSong.isFavorite = newFavoriteState;
+          await DbService.isar.songs.put(dbSong);
+          song.id = dbSong.id;
+        } else {
+          song.isFavorite = newFavoriteState;
+          try {
+            song.dateAdded;
+          } catch (_) {
+            song.dateAdded = DateTime.now();
+          }
+          await DbService.isar.songs.put(song);
+        }
+      });
+    } catch (_) {}
   }
 
   double _lastVolume = 1.0;
@@ -1767,6 +2226,12 @@ class Playback extends _$Playback {
     }
   }
 
+  Future<void> _stopPlayerForFileModification() async {
+    // Completely stop player and yield time for the OS to release file handle locks
+    await player.stop();
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
   /// Edits song metadata (title, artist, album, year, genre, artPath,
   /// lyrics). If [title] actually changes the song's title, the physical
   /// file is renamed to match (this is the only place a song's title can be
@@ -1819,9 +2284,7 @@ class Playback extends _$Playback {
       if (!collides) {
         try {
           if (isCurrent) {
-            // Completely stop player to release file handle locks
-            await player.stop();
-            await Future.delayed(const Duration(milliseconds: 500));
+            await _stopPlayerForFileModification();
           }
           if (await file.exists()) {
             if (Platform.isAndroid) {
@@ -1939,10 +2402,7 @@ class Playback extends _$Playback {
     final wasPlaying = state.isPlaying;
 
     if (isCurrent) {
-      // Completely stop player to release file handle locks
-      await player.stop();
-      // Wait for player to completely release the file handle
-      await Future.delayed(const Duration(milliseconds: 500));
+      await _stopPlayerForFileModification();
     }
 
     final file = File(song.path);
@@ -2036,6 +2496,7 @@ class Playback extends _$Playback {
 
   void _checkAndUpdateLyrics() {
     if (!Platform.isAndroid) return;
+    if (_hasHomeWidgetsPinned == false) return;
     try {
       final lyricsState = ref.read(lyricsProvider);
       final currentPosition = state.position;
@@ -2240,6 +2701,8 @@ class Playback extends _$Playback {
       sub.cancel();
     }
     _subscriptions.clear();
+    _bufferingDebounceTimer?.cancel();
+    _bufferingStallTimer?.cancel();
     _silenceTimer?.cancel();
     _sleepTimer?.cancel();
     _fader.cancel();
@@ -2487,3 +2950,7 @@ class Playback extends _$Playback {
     unawaited(_fader.fadeTo(1.0, _fadeLength()));
   }
 }
+
+/// http(s) sources stream; everything else is a local file.
+bool isUrlPath(String path) =>
+    path.startsWith('http://') || path.startsWith('https://');

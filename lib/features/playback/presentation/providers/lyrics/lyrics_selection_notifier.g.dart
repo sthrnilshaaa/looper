@@ -68,7 +68,7 @@ abstract class _$LyricsSelection extends $Notifier<LyricsSelectionState> {
   LyricsSelectionState build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<LyricsSelectionState, LyricsSelectionState>;
     final element =
         ref.element
@@ -78,6 +78,6 @@ abstract class _$LyricsSelection extends $Notifier<LyricsSelectionState> {
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }

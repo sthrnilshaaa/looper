@@ -154,8 +154,11 @@ class SquigglySliderTrackShape extends SliderTrackShape
         leftTrackPaint,
       );
     } else {
+      // An animated phase counts whole wave cycles, so its wrap from 1 to 0
+      // is seamless at any wavelength (scaling it by the wavelength made the
+      // wave jump at each wrap unless the wavelength was a whole number).
       final phase =
-          squiggleWavelength * (this.phase?.value ?? squigglePhaseFactor);
+          this.phase?.value ?? squiggleWavelength * squigglePhaseFactor;
       final double heightCenter = (lt + lb) / 2;
       final double startX = ll + radius;
       final double endX = lr - radius;
@@ -227,29 +230,37 @@ class SquigglySliderTrackShape extends SliderTrackShape
       final Paint secondaryTrackPaint = Paint()
         ..color = secondaryTrackColorTween.evaluate(enableAnimation)!;
       if (textDirection == TextDirection.ltr) {
-        context.canvas.drawRRect(
-          RRect.fromLTRBAndCorners(
-            thumbCenter.dx,
-            trackRect.top,
-            secondaryOffset.dx,
-            trackRect.bottom,
-            topRight: trackRadius,
-            bottomRight: trackRadius,
-          ),
-          secondaryTrackPaint,
-        );
+        final startX = min(trackRect.right, thumbCenter.dx + thumbGap);
+        final endX = min(trackRect.right, secondaryOffset.dx);
+        if (endX > startX) {
+          context.canvas.drawRRect(
+            RRect.fromLTRBAndCorners(
+              startX,
+              trackRect.top,
+              endX,
+              trackRect.bottom,
+              topRight: trackRadius,
+              bottomRight: trackRadius,
+            ),
+            secondaryTrackPaint,
+          );
+        }
       } else {
-        context.canvas.drawRRect(
-          RRect.fromLTRBAndCorners(
-            secondaryOffset.dx,
-            trackRect.top,
-            thumbCenter.dx,
-            trackRect.bottom,
-            topLeft: trackRadius,
-            bottomLeft: trackRadius,
-          ),
-          secondaryTrackPaint,
-        );
+        final startX = max(trackRect.left, secondaryOffset.dx);
+        final endX = max(trackRect.left, thumbCenter.dx - thumbGap);
+        if (endX > startX) {
+          context.canvas.drawRRect(
+            RRect.fromLTRBAndCorners(
+              startX,
+              trackRect.top,
+              endX,
+              trackRect.bottom,
+              topLeft: trackRadius,
+              bottomLeft: trackRadius,
+            ),
+            secondaryTrackPaint,
+          );
+        }
       }
     }
   }

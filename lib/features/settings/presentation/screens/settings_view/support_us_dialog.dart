@@ -31,18 +31,17 @@ extension _SettingsSupportUsDialog on _SettingsViewState {
                 const SizedBox(height: 16),
                 Text(
                   l10n.supportDevelopment,
-                  style: AppFonts.jostStyle(
+                  style: AppFonts.settingsStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
-                    letterSpacing: 0.5,
                   ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   l10n.supportDevelopmentDesc,
                   textAlign: TextAlign.center,
-                  style: AppFonts.jostStyle(
+                  style: AppFonts.settingsStyle(
                     fontSize: 13,
                     height: 1.5,
                     color: Colors.white.withValues(alpha: 0.6),
@@ -88,7 +87,7 @@ extension _SettingsSupportUsDialog on _SettingsViewState {
                             const SizedBox(width: 10),
                             Text(
                               l10n.supportOnKofi,
-                              style: AppFonts.jostStyle(
+                              style: AppFonts.settingsStyle(
                                 color: Colors.black,
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,

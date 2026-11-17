@@ -16,6 +16,9 @@ import 'package:looper_player/core/utils/l10n.dart';
 import 'package:looper_player/features/library/domain/models/models.dart';
 import 'package:looper_player/features/playback/data/audio_analyzer.dart';
 import 'package:looper_player/features/playback/data/device_audio_info.dart';
+import 'package:looper_player/features/playback/data/crossmix/crossmix_settings.dart';
+import 'package:looper_player/core/services/audio/bit_perfect_manager.dart';
+import 'package:looper_player/core/services/audio/audio_service.dart';
 import 'package:looper_player/features/playback/presentation/providers/equalizer/equalizer_notifier.dart';
 import 'package:looper_player/features/settings/domain/quality_badge_style.dart';
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
@@ -102,8 +105,7 @@ Future<void> pushQualityHeroDialog(
 /// "Always blur sheets" (or Dynamic Theming's blur) is on, otherwise the
 /// solid sheet color.
 ({bool blur, Color color}) _surface(AppSettings s) {
-  final bool blur =
-      s.alwaysBlurSheets || (!s.disableBlur && s.enableDynamicTheming);
+  final bool blur = s.sheetShouldBlur;
   return (
     blur: blur,
     color: blur
@@ -302,10 +304,32 @@ class _QualityDetailsSheetState extends ConsumerState<_QualityDetailsSheet>
   late DeviceAudioInfo? _device = widget.device;
   late bool _deviceLoaded = widget.deviceFresh || !Platform.isAndroid;
   late int? _fileSize = widget.fileSize;
+  Timer? _recheckTimer;
+  bool _hasBlockerBackup = false;
+
+  void _refreshDevice() {
+    DeviceAudioInfo.fetch().then((info) {
+      if (mounted && info != null) {
+        setState(() => _device = info);
+      }
+    });
+  }
 
   @override
   void initState() {
     super.initState();
+    // Periodic route & device recheck (doc 25 §3.7: 600ms, then every 2.5s)
+    _recheckTimer = Timer(const Duration(milliseconds: 600), () {
+      if (!mounted) return;
+      _refreshDevice();
+      _recheckTimer = Timer.periodic(const Duration(milliseconds: 2500), (_) {
+        if (mounted) _refreshDevice();
+      });
+    });
+    BitPerfectManager.loadBlockersBackup().then((backup) {
+      if (mounted && backup != null) setState(() => _hasBlockerBackup = true);
+    });
+
     // The engine values change as mpv (re)configures the output; rebuild
     // from player.state whenever one of them moves.
     void refresh(Object? _) {
@@ -344,6 +368,7 @@ class _QualityDetailsSheetState extends ConsumerState<_QualityDetailsSheet>
 
   @override
   void dispose() {
+    _recheckTimer?.cancel();
     for (final s in _subs) {
       s.cancel();
     }
@@ -386,6 +411,13 @@ class _QualityDetailsSheetState extends ConsumerState<_QualityDetailsSheet>
       settingsProvider.select((s) => QualityBadgeStyle.fromSettings(s).icon),
     );
     final bool eqOn = ref.watch(equalizerProvider.select((s) => s.enabled));
+    final bool exclusiveMode = ref.watch(
+      settingsProvider.select((s) => s.exclusiveHardwareMode),
+    );
+    final EqualizerState eqState = ref.watch(equalizerProvider);
+    final bool crossfadeActive = ref.watch(
+      crossmixSettingsProvider.select((s) => s.crossfadeEnabled),
+    );
 
     final PlayerState ps = _player.state;
     final AudioParams dec = ps.audioParams;
@@ -404,6 +436,23 @@ class _QualityDetailsSheetState extends ConsumerState<_QualityDetailsSheet>
         finalRate != null &&
         info.tier != QualityTier.dsd &&
         sourceRate != finalRate;
+
+    final activeBlockers = BitPerfectManager.getActiveBlockers(
+      eqState: eqState,
+      playbackRate: ps.rate,
+      playbackPitch: ps.pitch,
+      crossfadeActive: crossfadeActive,
+    );
+    final bool isBitPerfect = BitPerfectManager.isBitPerfect(
+      exclusiveMode: exclusiveMode,
+      activeBlockers: activeBlockers,
+      sourceRate: sourceRate,
+      outRate: outRate,
+      sourceFormat: dec.format?.name,
+      outFormat: out.format?.name,
+      sourceChannels: dec.channelCount,
+      outChannels: out.channelCount,
+    );
 
     final details = <String>[
       info.codec ?? l10n.qualityAudio,
@@ -437,6 +486,40 @@ class _QualityDetailsSheetState extends ConsumerState<_QualityDetailsSheet>
                 song: song.title,
               ),
             ),
+            if (isBitPerfect) ...[
+              const SizedBox(height: 8),
+              _stagger(
+                block++,
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: tint.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: tint.withValues(alpha: 0.4)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(LucideIcons.sparkles, size: 14, color: tint),
+                        const SizedBox(width: 6),
+                        Text(
+                          l10n.qualityBitPerfect,
+                          style: AppFonts.jostStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: tint,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             _stagger(block++, _SectionTitle(l10n.qualitySignalPath)),
             _stagger(
@@ -552,9 +635,108 @@ class _QualityDetailsSheetState extends ConsumerState<_QualityDetailsSheet>
                   (l10n.equalizer, eqOn ? l10n.on : l10n.off),
                   if (ps.rate != 1.0)
                     (l10n.qualitySpeed, '${ps.rate.toStringAsFixed(2)}×'),
+                  (
+                    l10n.qualityBlockersTitle,
+                    activeBlockers.isEmpty
+                        ? l10n.off
+                        : '${activeBlockers.length} active',
+                  ),
                 ],
               ),
             ),
+            if (activeBlockers.isNotEmpty || _hasBlockerBackup)
+              _stagger(
+                block++,
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Row(
+                    children: [
+                      if (activeBlockers.isNotEmpty)
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            icon: const Icon(LucideIcons.powerOff, size: 16),
+                            label: Text(l10n.qualityTurnBlockersOff),
+                            onPressed: () async {
+                              await BitPerfectManager.saveBlockersBackup(
+                                activeBlockers,
+                              );
+                              final eq = ref.read(equalizerProvider.notifier);
+                              await eq.toggleEqualizer(false);
+                              await eq.setMonoEnabled(false);
+                              await eq.setAutoEqEnabled(false);
+                              await eq.setReplayGainMode(0);
+                              await _player.setRate(1.0);
+                              await _player.setPitch(1.0);
+                              await ref
+                                  .read(crossmixSettingsProvider.notifier)
+                                  .setCrossfadeEnabled(false);
+                              if (mounted) {
+                                setState(() => _hasBlockerBackup = true);
+                              }
+                            },
+                          ),
+                        ),
+                      if (activeBlockers.isNotEmpty && _hasBlockerBackup)
+                        const SizedBox(width: 8),
+                      if (_hasBlockerBackup)
+                        Expanded(
+                          child: FilledButton.tonalIcon(
+                            icon: const Icon(LucideIcons.undo, size: 16),
+                            label: Text(l10n.qualityTurnBlockersOn),
+                            onPressed: () async {
+                              final backup =
+                                  await BitPerfectManager.loadBlockersBackup();
+                              if (backup != null) {
+                                final eq = ref.read(equalizerProvider.notifier);
+                                if (backup.containsKey('eq_enabled')) {
+                                  await eq.toggleEqualizer(
+                                    backup['eq_enabled'] as bool,
+                                  );
+                                }
+                                if (backup.containsKey('mono')) {
+                                  await eq.setMonoEnabled(
+                                    backup['mono'] as bool,
+                                  );
+                                }
+                                if (backup.containsKey('auto_eq')) {
+                                  await eq.setAutoEqEnabled(
+                                    backup['auto_eq'] as bool,
+                                  );
+                                }
+                                if (backup.containsKey('replay_gain')) {
+                                  await eq.setReplayGainMode(
+                                    backup['replay_gain'] as int,
+                                  );
+                                }
+                                if (backup.containsKey('speed')) {
+                                  await _player.setRate(
+                                    (backup['speed'] as num).toDouble(),
+                                  );
+                                }
+                                if (backup.containsKey('pitch')) {
+                                  await _player.setPitch(
+                                    (backup['pitch'] as num).toDouble(),
+                                  );
+                                }
+                                if (backup.containsKey('crossfade')) {
+                                  await ref
+                                      .read(crossmixSettingsProvider.notifier)
+                                      .setCrossfadeEnabled(
+                                        backup['crossfade'] as bool,
+                                      );
+                                }
+                                await BitPerfectManager.clearBlockersBackup();
+                                if (mounted) {
+                                  setState(() => _hasBlockerBackup = false);
+                                }
+                              }
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
             if (device?.device != null)
               _stagger(
                 block++,
@@ -652,6 +834,7 @@ class _QualityDetailsSheetState extends ConsumerState<_QualityDetailsSheet>
         ),
       if (d.maxChannels > 0)
         (l10n.qualityMaxChannels, _channelLabel(l10n, d.maxChannels)),
+      if (d.bluetoothCodec != null) (l10n.bluetoothCodec, d.bluetoothCodec!),
       (
         l10n.qualityBitPerfect,
         d.bitPerfect ? l10n.qualitySupported : l10n.qualityNotSupported,

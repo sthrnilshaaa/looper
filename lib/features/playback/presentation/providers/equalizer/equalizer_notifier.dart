@@ -6,6 +6,8 @@ import 'package:looper_player/features/playback/presentation/providers/playback/
 import 'package:looper_player/core/providers/providers.dart';
 import 'package:looper_player/core/services/audio/audio_service.dart';
 import 'package:looper_player/core/services/storage/local_json_store.dart';
+import 'package:looper_player/features/playback/data/auto_eq_service.dart';
+import 'package:looper_player/features/playback/data/device_audio_info.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'equalizer_state.dart';
 export 'equalizer_state.dart';
@@ -23,12 +25,40 @@ class Equalizer extends _$Equalizer {
   EqualizerState build() {
     ref.onDispose(_flushPendingSaveSync);
     final settings = ref.read(settingsProvider);
+    Future.microtask(_loadAudioLabSettings);
     return EqualizerState(
       enabled: settings.equalizerEnabled,
       globalGains: _ensureLength(settings.globalEqualizerGains, 48),
       currentSongGains: _ensureLength(settings.globalEqualizerGains, 48),
       currentSongHasCustom: false,
     );
+  }
+
+  Future<void> _loadAudioLabSettings() async {
+    final data = await LocalJsonStore.read('audio_lab_settings_v1');
+    if (data is Map<String, dynamic>) {
+      state = state.copyWith(
+        monoEnabled: data['monoEnabled'] as bool? ?? false,
+        autoEqEnabled: data['autoEqEnabled'] as bool? ?? false,
+        autoEqBass: (data['autoEqBass'] as num?)?.toDouble() ?? 0.0,
+        autoEqTilt: (data['autoEqTilt'] as num?)?.toDouble() ?? 0.0,
+        autoEqSelectedProfile: data['autoEqSelectedProfile'] as String?,
+        autoEqProfileText: data['autoEqProfileText'] as String?,
+      );
+      applyEqualizerInstant();
+    }
+    unawaited(applyDeviceProfile());
+  }
+
+  Future<void> _persistAudioLabSettings() async {
+    await LocalJsonStore.write('audio_lab_settings_v1', {
+      'monoEnabled': state.monoEnabled,
+      'autoEqEnabled': state.autoEqEnabled,
+      'autoEqBass': state.autoEqBass,
+      'autoEqTilt': state.autoEqTilt,
+      'autoEqSelectedProfile': state.autoEqSelectedProfile,
+      'autoEqProfileText': state.autoEqProfileText,
+    });
   }
 
   List<double> _ensureLength(List<double> list, int targetLength) {
@@ -133,12 +163,33 @@ class Equalizer extends _$Equalizer {
   }
 
   void applyEqualizerInstant() {
+    List<String> autoEqFilters = const [];
+    if (state.autoEqEnabled &&
+        state.autoEqProfileText != null &&
+        state.autoEqProfileText!.isNotEmpty) {
+      final isSpeaker =
+          DeviceAudioInfo.cached?.device?.kind == OutputDeviceKind.speaker;
+      final parsed = AutoEqService.parseParametricEq(
+        id: state.autoEqSelectedProfile ?? 'custom',
+        name: state.autoEqSelectedProfile ?? 'custom',
+        source: 'AutoEQ',
+        content: state.autoEqProfileText!,
+      );
+      autoEqFilters = AutoEqService.buildLavfiFilters(
+        parsed,
+        bass: state.autoEqBass,
+        tilt: state.autoEqTilt,
+        isSpeaker: isSpeaker,
+      );
+    }
     ref
         .read(audioServiceProvider)
         .setEqualizerGains(
           state.currentSongGains,
           state.enabled,
           customFilter: state.customFilterString,
+          monoEnabled: state.monoEnabled,
+          autoEqFilters: autoEqFilters,
         );
   }
 
@@ -233,11 +284,94 @@ class Equalizer extends _$Equalizer {
       setBandGain(27, release, applyInstant: false);
 
   Future<void> setLoudnormEnabled(bool enabled) async {
-    final gains = {28: enabled ? 1.0 : 0.0};
+    final gains = <int, double>{28: enabled ? 1.0 : 0.0};
     if (!enabled) {
       gains[29] = -24.0;
+    } else {
+      // ReplayGain and loudnorm are mutually exclusive (doc 25 §3.2)
+      gains[36] = 0.0;
     }
     await _setMultipleBands(gains, applyInstant: true);
+  }
+
+  Future<void> setReplayGainMode(int mode) async {
+    final gains = <int, double>{36: mode.toDouble()};
+    if (mode != 0) {
+      // ReplayGain and loudnorm are mutually exclusive (doc 25 §3.2)
+      gains[28] = 0.0;
+    }
+    await _setMultipleBands(gains, applyInstant: true);
+  }
+
+  Future<void> setReplayGainPreamp(double preamp) async =>
+      setBandGain(37, preamp, applyInstant: false);
+
+  Future<void> setMonoEnabled(bool enabled) async {
+    state = state.copyWith(monoEnabled: enabled);
+    await _persistAudioLabSettings();
+    applyEqualizerInstant();
+  }
+
+  // The device whose saved headphone profile is applied now, if any.
+  String? _autoAppliedDeviceKey;
+
+  /// Applies the headphone profile saved for the current output device
+  /// (called on start and whenever an output device connects or leaves).
+  /// A profile that was applied for another device is turned off on a
+  /// device without one, so headphone correction never stays on the speaker.
+  Future<void> applyDeviceProfile() async {
+    final info = await DeviceAudioInfo.fetch();
+    if (info == null) return;
+    final key = AutoEqService.deviceKey(info.device);
+    final saved = await AutoEqService.instance.getSavedDevices();
+    final name = saved[key];
+    if (name == null) {
+      if (_autoAppliedDeviceKey != null) {
+        _autoAppliedDeviceKey = null;
+        await setAutoEqEnabled(false);
+      }
+      return;
+    }
+    if (state.autoEqSelectedProfile != name ||
+        (state.autoEqProfileText?.isEmpty ?? true)) {
+      final index = await AutoEqService.instance.loadIndex();
+      final entry = index.where((e) => e.name == name).firstOrNull;
+      if (entry == null) return;
+      final profile = await AutoEqService.instance.fetchProfile(entry);
+      if (profile == null) return;
+      await setAutoEqProfile(profile);
+    }
+    _autoAppliedDeviceKey = key;
+    if (!state.autoEqEnabled) await setAutoEqEnabled(true);
+  }
+
+  Future<void> setAutoEqEnabled(bool enabled) async {
+    state = state.copyWith(autoEqEnabled: enabled);
+    await _persistAudioLabSettings();
+    applyEqualizerInstant();
+  }
+
+  Future<void> setAutoEqBass(double bass) async {
+    final clamped = bass.clamp(-12.0, 12.0);
+    state = state.copyWith(autoEqBass: clamped);
+    await _persistAudioLabSettings();
+    applyEqualizerInstant();
+  }
+
+  Future<void> setAutoEqTilt(double tilt) async {
+    final clamped = tilt.clamp(-1.5, 1.5);
+    state = state.copyWith(autoEqTilt: clamped);
+    await _persistAudioLabSettings();
+    applyEqualizerInstant();
+  }
+
+  Future<void> setAutoEqProfile(AutoEqProfile? profile) async {
+    state = state.copyWith(
+      autoEqSelectedProfile: profile?.name,
+      autoEqProfileText: profile?.rawText,
+    );
+    await _persistAudioLabSettings();
+    applyEqualizerInstant();
   }
 
   Future<void> setLoudnormTarget(double target) async =>

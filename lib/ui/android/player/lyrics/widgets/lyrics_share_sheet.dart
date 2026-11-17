@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:looper_player/ui/widgets/common/optimized_image.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -31,10 +32,9 @@ Future<void> showLyricsShareSheet(
   final artPath = song.artPath;
   if (artPath != null) {
     try {
-      final file = File(artPath);
-      if (await file.exists()) {
+      if (await artAvailable(artPath)) {
         if (!context.mounted) return;
-        await precacheImage(FileImage(file), context);
+        await precacheImage(artImage(artPath), context);
       }
     } catch (_) {}
   }

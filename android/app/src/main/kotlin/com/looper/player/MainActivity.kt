@@ -41,6 +41,7 @@ class MainActivity : FlutterActivity() {
     // screen does while its controls are hidden). Re-applied on resume since
     // the system brings the bars back when the app leaves the foreground.
     private var navBarHidden = false
+    private var statusBarHidden = false
     // Play In-App Updates in the play flavor, the APK installer in the github one.
     private var inAppUpdater: InAppUpdater? = null
     // Pending result for an in-flight pickSafFolder() call, bridged across
@@ -436,8 +437,9 @@ class MainActivity : FlutterActivity() {
         }
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SYSTEM_UI_CHANNEL).setMethodCallHandler { call, result ->
-            if (call.method == "setNavigationBarHidden") {
-                navBarHidden = call.argument<Boolean>("hidden") ?: false
+            if (call.method == "setSystemBarsHidden") {
+                navBarHidden = call.argument<Boolean>("navigation") ?: false
+                statusBarHidden = call.argument<Boolean>("status") ?: false
                 applyNavigationBarVisibility()
                 result.success(null)
             } else {
@@ -736,20 +738,21 @@ class MainActivity : FlutterActivity() {
     override fun onResume() {
         super.onResume()
         inAppUpdater?.onResume()
-        if (navBarHidden) applyNavigationBarVisibility()
+        if (navBarHidden || statusBarHidden) applyNavigationBarVisibility()
     }
 
-    // Hides/shows only the navigation bar (3-button bar or gesture pill),
-    // leaving the status bar and edge-to-edge layout alone. While hidden, a
-    // swipe from the edge shows it briefly over the app.
+    // Hides/shows the navigation bar (3-button bar or gesture pill) and the
+    // status bar, leaving edge-to-edge layout alone. While hidden, a swipe
+    // from the edge shows them briefly over the app.
     private fun applyNavigationBarVisibility() {
         val controller = WindowCompat.getInsetsController(window, window.decorView)
-        if (navBarHidden) {
-            controller.systemBarsBehavior =
-                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            controller.hide(WindowInsetsCompat.Type.navigationBars())
-        } else {
-            controller.show(WindowInsetsCompat.Type.navigationBars())
+        controller.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        for ((type, hidden) in listOf(
+            WindowInsetsCompat.Type.navigationBars() to navBarHidden,
+            WindowInsetsCompat.Type.statusBars() to statusBarHidden,
+        )) {
+            if (hidden) controller.hide(type) else controller.show(type)
         }
     }
 

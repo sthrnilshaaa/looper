@@ -95,7 +95,7 @@ abstract class _$PlayerArtworkRect extends $Notifier<Rect?> {
   Rect? build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<Rect?, Rect?>;
     final element =
         ref.element
@@ -105,7 +105,7 @@ abstract class _$PlayerArtworkRect extends $Notifier<Rect?> {
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }
 
@@ -148,7 +148,7 @@ abstract class _$PlayerCollapseTrigger extends $Notifier<int> {
   int build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<int, int>;
     final element =
         ref.element
@@ -158,6 +158,6 @@ abstract class _$PlayerCollapseTrigger extends $Notifier<int> {
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }

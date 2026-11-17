@@ -1,0 +1,3 @@
+# Downloaded by the build scripts (android/build.gradle.kts, linux/CMakeLists.txt).
+android/src/main/jniLibs/
+linux/libs/

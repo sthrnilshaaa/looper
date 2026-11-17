@@ -96,7 +96,7 @@ class _ArtworkVisualizerSheetState
             children: [
               Text(
                 l10n.artworkVisualizer,
-                style: AppFonts.jostStyle(
+                style: AppFonts.settingsStyle(
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -105,7 +105,10 @@ class _ArtworkVisualizerSheetState
               const SizedBox(height: 4),
               Text(
                 l10n.artworkVisualizerDesc,
-                style: AppFonts.jostStyle(color: Colors.white54, fontSize: 13),
+                style: AppFonts.settingsStyle(
+                  color: Colors.white54,
+                  fontSize: 13,
+                ),
               ),
               // Room around the cover for the aura and the ring.
               Padding(
@@ -297,7 +300,7 @@ class _EffectOption extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              style: AppFonts.jostStyle(
+              style: AppFonts.settingsStyle(
                 color: selected ? Colors.white : Colors.white70,
                 fontSize: 12.5,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.w500,

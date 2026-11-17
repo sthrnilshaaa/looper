@@ -39,6 +39,12 @@
   "ascending": "Aufsteigend",
   "audioCrossfade": "Überblenden (Crossfade)",
   "audioCrossfadeDesc": "Titel beim Songwechsel sanft ineinander übergehen lassen",
+  "crossfadeDuration": "Überblendungsdauer",
+  "crossfadeDurationDesc": "Dauer der überlappenden Audio-Überblendung zwischen Titeln",
+  "smartTransitions": "Intelligente Übergänge",
+  "smartTransitionsDesc": "Richtet Übergänge an Cues aus, überspringt Stille und schneidet Liedtexte nicht ab",
+  "beatMixing": "Beat-Mixing (Experimentell)",
+  "beatMixingDesc": "Passt das Tempo an und richtet Beats für nahtlose DJ-Übergänge aus",
   "audioFocusDenied": "Wiedergabe angehalten: Audio-Fokus vom System verweigert",
   "audioPlayback": "Audio & Wiedergabe",
   "audioPlaybackDesc": "Einstellungen für Überblenden, Stille und Ein-/Ausblenden",
@@ -104,6 +110,8 @@
   "enableNetworkLyricsArt": "Aktivieren Sie die Netzwerknutzung für Online-Liedtexte und Künstlerkunst",
   "enablePlayerGradient": "Musik-Bildschirmverlauf",
   "enablePlayerGradientDesc": "Aktivieren Sie den Hintergrund mit radialem Akzentverlauf auf dem aktuellen Bildschirm",
+  "enableLyricsGradient": "Songtext-Bildschirmverlauf",
+  "enableLyricsGradientDesc": "Aktivieren Sie den Hintergrund mit radialem Akzentverlauf auf dem Songtext-Bildschirm",
   "fadeDuration": "Dauer des Ein-/Ausblendens",
   "fadeDurationDesc": "Dauer des Ein- und Ausblende-Effekts",
   "fadeOnSeek": "Ausblenden beim Spulen",
@@ -1008,6 +1016,11 @@
   "checkForUpdates": "Nach Updates suchen",
   "updateUpToDate": "Du hast die neueste Version.",
   "updateCheckFailed": "Suche nach Updates fehlgeschlagen.",
+  "updateAlreadyLatest": "Bereits auf dem neuesten Stand",
+  "updateWhatChangedOn": "Was ist neu in {version}",
+  "updateInstallHere": "Hier installieren.",
+  "updateOpenInWeb": "Im Web öffnen",
+  "updateNoThanks": "Nein danke",
   "uiScale": "Oberflächengröße",
   "uiScaleDesc": "Alles in der App kleiner oder größer darstellen",
   "lyricsSize": "Songtext-Größe",
@@ -1063,5 +1076,825 @@
   "desktopWelcomeInsightsTitle": "Hör-Statistiken",
   "desktopWelcomeInsightsDesc": "Sieh deine Top-Songs, Künstler und Hörzeit in Looper Analyze.",
   "groupByAlbum": "Nach Album gruppieren",
-  "groupByAlbumDesc": "Auf Künstlerseiten Songs unter ihren Alben anzeigen"
+  "groupByAlbumDesc": "Auf Künstlerseiten Songs unter ihren Alben anzeigen",
+  "onlineMusic": "Online-Musik",
+  "onlineSettingsDesc": "Streaming, Qualität, Cache und Vorschläge",
+  "onlineForYou": "Für dich",
+  "onlineDiscover": "Neues entdecken",
+  "onlineRefresh": "Aktualisieren",
+  "onlineRefreshDesc": "Online-Verbindung zurücksetzen, wenn Songs nicht mehr laden",
+  "onlineRefreshed": "Online-Musik aktualisiert",
+  "onlineLoadFailed": "Online-Musik konnte nicht geladen werden. Tippe auf Aktualisieren, um es erneut zu versuchen.",
+  "onlineNoResults": "Keine Online-Ergebnisse",
+  "onlineLoadMore": "Mehr laden",
+  "onlinePersonalizeTitle": "Mach es zu deinem",
+  "onlinePersonalizeBody": "Wähle Genres und Künstler, die du magst, für bessere Vorschläge.",
+  "onlineFollow": "Folgen",
+  "onlineFollowing": "Folge ich",
+  "artistsForYou": "Künstler für dich",
+  "tasteGenresTitle": "Was hörst du?",
+  "tasteArtistsTitle": "Wähle Künstler, die du magst",
+  "tasteSearchArtists": "Künstler suchen",
+  "tasteSkip": "Überspringen",
+  "onlineEnabledDesc": "Suchen, streamen und Vorschläge von YouTube Music erhalten",
+  "onlineNeedsInternet": "Benötigt den Internetmodus (Einstellungen > Allgemein)",
+  "onlineYourTaste": "Dein Geschmack",
+  "onlineYourTasteDesc": "Genres und Künstler für Vorschläge",
+  "onlinePreferLocal": "Lokale Dateien bevorzugen",
+  "onlinePreferLocalDesc": "Eigene Kopie eines Songs abspielen, wenn vorhanden",
+  "onlineStreaming": "Streaming",
+  "onlineQualityWifi": "Qualität im WLAN",
+  "onlineQualityMobile": "Qualität bei mobilen Daten",
+  "onlineQualityHigh": "Hoch",
+  "onlineQualityNormal": "Normal",
+  "onlineQualityLow": "Niedrig",
+  "onlinePreload": "Nächste Songs vorladen",
+  "onlinePreloadDesc": "Die nächsten Songs vorab herunterladen, damit sie beim Überspringen sofort starten und offline abspielbar sind",
+  "onlinePreloadMobile": "Auch über mobile Daten vorladen",
+  "onlineCache": "Cache",
+  "onlineCachePlayed": "Gespielte Songs speichern",
+  "onlineCachePlayedDesc": "Gestreamte Songs behalten, damit sie offline und ohne erneutes Laden wiederholt werden können",
+  "onlineCachePlayedMobile": "Auch über mobile Daten speichern",
+  "onlineCachePlayedMobileDesc": "Verbraucht beim ersten Abspielen zusätzliche mobile Daten, um den Song für Offline-Wiedergabe zu speichern",
+  "onlineCacheLimit": "Cache-Größenlimit",
+  "onlineCacheLimitDesc": "Am längsten nicht gespielte Songs werden zuerst entfernt",
+  "onlineClearCache": "Online-Cache leeren",
+  "onlineClearCacheDesc": "Nur Audio; Songtexte bleiben erhalten",
+  "onlineCacheUsed": "{size} belegt",
+  "onlineSongSkipped": "{title} übersprungen: {reason}",
+  "onlinePlaybackStopped": "Online-Wiedergabe gestoppt: {reason}",
+  "onlineDisclaimerTitle": "Online-Musik aktivieren?",
+  "onlineDisclaimerBody": "Online-Musik streamt und sucht Songs direkt über YouTube Music. Dabei werden Netzwerkdaten verbraucht, und es wird ein Drittanbieterdienst genutzt, der sich jederzeit ändern oder nicht mehr funktionieren kann.",
+  "onlineTurnOn": "Aktivieren",
+  "onlineNotNow": "Nicht jetzt",
+  "onlineStatusOn": "Online-Musik: an",
+  "onlineStatusLimited": "Online-Musik: eingeschränkt",
+  "onlineStatusOffline": "Online-Musik: offline",
+  "notInterested": "Kein Interesse",
+  "notInterestedSongHidden": "Song aus Empfehlungen ausgeblendet",
+  "blockArtist": "{artist} nicht empfehlen",
+  "artistBlocked": "Künstler aus Empfehlungen ausgeschlossen",
+  "detectedProfiles": "Erkannte Geschmacksmixe",
+  "detectedProfilesDesc": "Mixe, die automatisch aus deiner Mediathek und deinen Hörgewohnheiten erstellt werden",
+  "hiddenProfiles": "Ausgeblendete Mixe",
+  "hiddenSongs": "Ausgeblendete Songs",
+  "blockedArtists": "Blockierte Künstler",
+  "noHiddenItems": "Keine ausgeblendeten Songs oder blockierten Künstler",
+  "undo": "Rückgängig",
+  "download": "Herunterladen",
+  "downloaded": "Heruntergeladen",
+  "downloadAll": "Alle herunterladen",
+  "downloadingSong": "{title} wird heruntergeladen…",
+  "downloadQueued": "{count} Songs zum Herunterladen eingereiht",
+  "downloadFolder": "Download-Ordner",
+  "downloadQuality": "Download-Qualität",
+  "onlineDownloads": "Downloads",
+  "onlineCreditsTitle": "Online-Streaming",
+  "creditYouTubeMusicDesc": "Songs, Cover und Vorschläge stammen von YouTube Music. Looper ist nicht mit YouTube oder Google verbunden und wird nicht von ihnen unterstützt.",
+  "creditKodaDesc": "Sein dokumentiertes Design und seine Fixes für YouTube-Music-Streaming dienten hier als Vorbild (siehe README dieser Doku).",
+  "creditYtDlpDesc": "Wird auf dem Desktop, falls installiert, als Fallback zum Laden von Streams verwendet. Unlicense.",
+  "wrongLyrics": "Falscher Songtext",
+  "wrongLyricsDesc": "{provider} für diesen Song überspringen und anderen Songtext suchen",
+  "noOtherLyricsFound": "Kein anderer Songtext gefunden",
+  "downloads": "Downloads",
+  "accountTitle": "Google-Konto",
+  "accountSignedOutDesc": "Melde dich an für deine YouTube-Music-Mediathek und Mixe",
+  "accountSignedInAs": "Angemeldet als {name}",
+  "accountSignedIn": "Angemeldet",
+  "accountSignInMicrog": "Mit microG anmelden",
+  "accountSignInMicrogDesc": "Das Google-Konto aus GmsCore verwenden",
+  "accountSignInWeb": "Mit Google anmelden",
+  "accountSignInWebDesc": "Googles eigene Anmeldeseite",
+  "accountPasteCookies": "Cookies einfügen",
+  "accountPasteCookiesDesc": "Die Sitzung eines Browsers verwenden, in dem du angemeldet bist",
+  "accountPasteHelp": "Öffne music.youtube.com in einem privaten Browserfenster und melde dich an. Kopiere in den Entwicklertools (Tab Netzwerk) den Cookie-Header einer music.youtube.com-Anfrage, füge ihn hier ein und schließe dann das Fenster.",
+  "accountCookieHeader": "Cookie-Header",
+  "accountNoSapisid": "Kein SAPISID-Cookie in diesem Text. Kopiere ihn aus einer angemeldeten music.youtube.com-Anfrage.",
+  "accountSignOut": "Abmelden",
+  "accountSignOutDesc": "Dieses Konto auf diesem Gerät vergessen",
+  "accountExpired": "Deine Sitzung ist abgelaufen. Melde dich erneut an.",
+  "accountSignInFailed": "Anmeldung fehlgeschlagen: {error}",
+  "accountRisk": "Eine Drittanbieter-App bei YouTube anzumelden verstößt gegen die YouTube-Nutzungsbedingungen und kann zu einer Kontoprüfung führen. Ein Zweitkonto ist sicherer. Songs werden in jedem Fall ohne dein Konto gestreamt.",
+  "reorderHome": "Startseite anordnen",
+  "reorderHomeDragHint": "Zeile halten und ziehen",
+  "reorderHomeHint": "Oder halte eine freie Stelle auf der Startseite 5 Sekunden lang und ziehe dann die Zeilen.",
+  "onlineFeedRow": "Online-Tipps",
+  "onlineFeedRowDesc": "Stimmungen und die obersten Online-Regale",
+  "onlineMoreRow": "Mehr online",
+  "onlineMoreRowDesc": "Die übrigen Online-Regale",
+  "artistsForYouRowDesc": "Online-Künstler passend zu deinem Geschmack",
+  "reorderMoveUp": "Nach oben",
+  "reorderMoveDown": "Nach unten",
+  "reorderRowA11yHint": "Doppeltippen und halten zum Verschieben",
+  "bluetoothCodec": "Bluetooth Codec",
+  "qualityBlockersTitle": "Active Blockers",
+  "qualityTurnBlockersOff": "Turn these off",
+  "qualityTurnBlockersOn": "Turn these back on",
+  "eqMono": "Mono Audio (Single Earbud)",
+  "eqReplayGainTitle": "Volume Normalization (ReplayGain)",
+  "eqReplayGainPreamp": "Normalization Preamp",
+  "@hapticStrength": {
+    "description": "Label of the haptic strength slider under the Haptic feedback switch"
+  },
+  "@activeFont": {
+    "placeholders": {
+      "fontName": {
+        "type": "String"
+      }
+    }
+  },
+  "@activeLyricsFont": {
+    "placeholders": {
+      "fontName": {
+        "type": "String"
+      }
+    }
+  },
+  "@sleepTimerStoppingIn": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "@sleepTimerStoppingAfter": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "@enrichingSongs": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@analyzePlaysAndSongs": {
+    "placeholders": {
+      "plays": {
+        "type": "int"
+      },
+      "songs": {
+        "type": "int"
+      }
+    }
+  },
+  "@playsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@songsPlayedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@errorWithDetails": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@songsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@lyricsProvidedBy": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "@failedToImportLyrics": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@lyricsEditorLineNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "@lyricsEditorSelectedLine": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "@fileNotFoundOrInaccessible": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "@playbackFailedCorrupted": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "@shareSongText": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "@shareSongsText": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@noSettingsFoundFor": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "@lyricsFontWeightValue": {
+    "placeholders": {
+      "weight": {
+        "type": "int"
+      }
+    }
+  },
+  "@versionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "@foldersSkippedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@deletePresetConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@lyricsSourceLabel": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "@fetchingLyricsFrom": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "@lyricsUpdatedFrom": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "@noLyricsFoundOn": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "@lyricsExportedTo": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "@failedToExportLyrics": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@linesSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@playCountTimes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@channelShort": {
+    "placeholders": {
+      "channel": {
+        "type": "int"
+      }
+    }
+  },
+  "@sampleRateHz": {
+    "placeholders": {
+      "rate": {
+        "type": "int"
+      }
+    }
+  },
+  "@nyquistKhz": {
+    "placeholders": {
+      "khz": {
+        "type": "String"
+      }
+    }
+  },
+  "@qualityResampledBy": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "@welcomeStep": {
+    "placeholders": {
+      "step": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "@minutesShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@minuteChip": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@songsCountTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@songsLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@sleepTimerWithRemaining": {
+    "placeholders": {
+      "remaining": {
+        "type": "String"
+      }
+    }
+  },
+  "@addedSongsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@updateAvailableOnGithub": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "@backupImportedSummary": {
+    "placeholders": {
+      "favorites": {
+        "type": "int"
+      },
+      "stats": {
+        "type": "int"
+      },
+      "playlists": {
+        "type": "int"
+      }
+    }
+  },
+  "@analyzeSongsOfTotal": {
+    "placeholders": {
+      "played": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "@daysCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@durationHoursMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "@durationMinutesOnly": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "@analyzeAvgPerDay": {
+    "placeholders": {
+      "avg": {
+        "type": "String"
+      }
+    }
+  },
+  "@m3uImportedSummary": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "found": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "@m3uImportedMany": {
+    "placeholders": {
+      "playlists": {
+        "type": "int"
+      },
+      "found": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "@noResultsFor": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "@selectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@desktopWelcomeScanningFolder": {
+    "placeholders": {
+      "folder": {
+        "type": "String"
+      }
+    }
+  },
+  "@desktopWelcomeNoSongsDesc": {
+    "placeholders": {
+      "folder": {
+        "type": "String"
+      }
+    }
+  },
+  "@onlineCacheUsed": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "@onlineSongSkipped": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "@onlinePlaybackStopped": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "@blockArtist": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "@downloadingSong": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "@downloadQueued": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@wrongLyricsDesc": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "@accountSignedInAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@accountSignInFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "animatedArtworks": "Animated artworks",
+  "animatedArtworksDesc": "Motion album covers, playlist motion, and artist banners",
+  "animatedArtworksAlways": "Always",
+  "animatedArtworksWifiOnly": "Wi-Fi only",
+  "animatedArtworksNever": "Never",
+  "immersivePlayerBackground": "Immersive motion background",
+  "immersivePlayerBackgroundDesc": "Use motion artwork as full player backdrop",
+  "customArtworkServer": "Motion artwork server",
+  "customArtworkServerDesc": "Self-hosted m8tec server URL or direct Apple Music",
+  "animatedArtworkCacheLimit": "Motion artwork cache limit",
+  "clearAnimatedArtworkCache": "Clear motion artwork cache",
+  "animatedArtworkCacheCleared": "Motion artwork cache cleared",
+  "linkAnimatedArtwork": "Link animated artwork",
+  "linkAnimatedArtworkPrompt": "Enter Apple Music album or playlist URL",
+  "onlineRadioStation": "Radio station",
+  "onlineMixSongRadio": "Radio based on this song",
+  "onlineMixArtistRadio": "Artist radio",
+  "onlineMixPersonal": "Made for you",
+  "onlineMixPlaylistRadio": "Radio based on this playlist",
+  "onlineGuestPrivacyNote": "Guest mode uses a few of your most played song names to search YouTube Music. Nothing else leaves your phone.",
+  "onlineGuestQuickPicks": "Quick picks from your library",
+  "onlineGuestRadio": "Radio: based on {song}",
+  "@onlineGuestRadio": {
+    "placeholders": {
+      "song": {
+        "type": "String"
+      }
+    }
+  },
+  "onlineGuestBecause": "Because you listen to {artist}",
+  "@onlineGuestBecause": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "onlineGuestSimilar": "Similar to {artist}",
+  "@onlineGuestSimilar": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "onlineGuestMoreFrom": "More from {artist}",
+  "@onlineGuestMoreFrom": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "onlineGuestTrending": "Trending in {genre}",
+  "@onlineGuestTrending": {
+    "placeholders": {
+      "genre": {
+        "type": "String"
+      }
+    }
+  },
+  "onlineContentRegion": "Content region",
+  "onlineContentRegionDesc": "Changes charts, trending and suggestions. Song availability still depends on where you are.",
+  "onlineContentRegionAuto": "Auto ({country})",
+  "@onlineContentRegionAuto": {
+    "placeholders": {
+      "country": {
+        "type": "String"
+      }
+    }
+  },
+  "onlineContentRegionSearch": "Search country or region",
+  "ambientGlow": "Ambient glow",
+  "ambientGlowDesc": "Soft moving reflection of the cover around the player",
+  "headphoneCorrection": "Headphone correction",
+  "headphoneCorrectionDesc": "AutoEQ parametric headphone correction profiles",
+  "autoEqBass": "Bass",
+  "autoEqTilt": "Tilt",
+  "autoEqChooseHeadphones": "Choose headphones…",
+  "autoEqUseForDevice": "Use for this device",
+  "autoEqSavedDevices": "Saved devices",
+  "autoEqSearchHeadphones": "Search headphone models",
+  "autoEqDownloadIndex": "Download headphone profiles index",
+  "autoEqNoProfile": "None",
+  "autoEqSpeakerDisabled": "Disabled on phone speaker",
+  "autoEqForget": "Forget",
+  "autoEqCredit": "Profiles: AutoEQ by Jaakko Pasanen (MIT)",
+  "autoEqNoSavedDevices": "No saved devices",
+  "autoEqIndexDownloading": "Downloading index…",
+  "account": "Konto",
+  "accountDefaultName": "Hörer",
+  "accountEditName": "Dein Name",
+  "accountEditNameDesc": "Wird auf deinem Kontobildschirm angezeigt",
+  "accountHello": "Hallo,",
+  "accountLooperTag": "Looper von {name}",
+  "@accountLooperTag": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "accountNameHint": "Gib deinen Namen ein",
+  "accountOpenSettings": "Einstellungen öffnen",
+  "accountPhoto": "Profilfoto",
+  "accountPhotoDesc": "Wähle ein beliebiges Bild von deinem Gerät",
+  "accountPhotoRemove": "Foto entfernen",
+  "accountProfile": "Profil",
+  "accountSettings": "Kontoeinstellungen",
+  "accountSettingsDesc": "Name, Avatar und verknüpfte Konten",
+  "accountTodayListening": "Heutige Hörzeit",
+  "accountVersionAbout": "Version & über die App",
+  "accountViewStats": "Statistiken ansehen",
+  "catAbout": "Über",
+  "catAboutDesc": "App-Info, Version und Mitwirkende",
+  "catBehavior": "Verhalten",
+  "catBehaviorDesc": "Gesten, Haptik, Sprache",
+  "catMisc": "Verschiedenes",
+  "catMiscDesc": "Speicher, Haptik, Sichern und Wiederherstellen",
+  "catMusicManagement": "Musikverwaltung",
+  "catMusicManagementDesc": "Downloads, Ordner und Bibliothek",
+  "catNetwork": "Netzwerk & Internet",
+  "catNetworkDesc": "Internetmodus, Online-Musik, Songtext-Quellen",
+  "catPlayerInterface": "Player-Oberfläche",
+  "catPlayerInterfaceDesc": "Design, Layout und visuelle Stile",
+  "nowPlayingArtworkMotion": "Cover-Animation bei Wiedergabe",
+  "nowPlayingArtworkMotionDesc": "Das Albumcover auf dem Wiedergabebildschirm animieren, falls verfügbar",
+  "onlineSetupDoneTitle": "Alles bereit",
+  "onlineSetupLastOneDesc": "Deaktiviere alles, was dir nicht gefällt. Du kannst dies später in den Einstellungen ändern.",
+  "onlineSetupLastOneTitle": "Letzter Schritt",
+  "onlineSetupNext": "WEITER",
+  "onlineSetupNoSongsTitle": "Keine Musik gefunden? Streame stattdessen online",
+  "onlineSetupSkip": "VORERST ÜBERSPRINGEN",
+  "onlineSetupStreamInstead": "MUSIK ONLINE STREAMEN",
+  "onlineSetupTitle": "Auch Musik online streamen?",
+  "onlineSetupYes": "JA, AKTIVIEREN",
+  "otherMenu": "Weitere Optionen",
+  "playerDynamicBackground": "Dynamischer Player-Hintergrund",
+  "playerDynamicBackgroundDesc": "Den weichgezeichneten Albumcover-Hintergrund nur auf dem Player-Bildschirm verwenden",
+  "playerStyle": "Player-Stil",
+  "playerStyleAccent": "Akzentfarbe verwenden",
+  "playerStyleAccentDesc": "Die aktive Textzeile und den Fortschrittsbalken mit der Akzentfarbe färben",
+  "playerStyleArc": "Bogen",
+  "playerStyleClassic": "Klassisch",
+  "playerStyleDesc": "Layout des Wiedergabebildschirms im Hochformat",
+  "playerStyleLinear": "Linear",
+  "playerStyleCard": "Karte",
+  "cardBlackBackground": "Black Background",
+  "cardBlackBackgroundDesc": "Plain black behind the player",
+  "cardAccentBackground": "Accent Background Color",
+  "cardAccentBackgroundDesc": "A dark shade of the accent color behind the player",
+  "playerStyleBlurBackground": "Blur Background",
+  "playerStyleBlurBackgroundDesc": "Show blurred album artwork as background",
+  "cardAccentColors": "Accent Colors",
+  "cardAccentColorsDesc": "Color the active lyric line and progress bar with the accent color",
+  "playerStyleTitle": "{name}-Stil",
+  "@playerStyleTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sectionBackupRestore": "Sichern & Wiederherstellen",
+  "sectionClassicLayout": "Klassisches Layout",
+  "sectionPlayerBackground": "Player-Hintergrund",
+  "sectionStorage": "Speicher",
+  "settingsGroupTitle": "Einstellungen",
+  "settingsSearchShort": "Einstellung suchen",
+  "showPreview": "Vorschau anzeigen",
+  "keepScreenAwake": "Bildschirm eingeschaltet lassen",
+  "keepScreenAwakeDesc": "Verhindert, dass der Bildschirm im Player oder bei Songtexten ausgeht",
+  "highRefreshRate": "Hohe Bildwiederholrate",
+  "highRefreshRateDesc": "Läuft mit 90/120 Hz für flüssige Animationen; für 60 Hz Akkusparmodus ausschalten",
+  "reshuffleQueue": "Warteschlange neu mischen",
+  "reorderQueue": "Neu anordnen",
+  "nextInQueue": "Als Nächstes in der Warteschlange",
+  "relatedLabel": "Ähnlich",
+  "noRelatedTracks": "Keine ähnlichen Titel gefunden",
+  "setupStep": "Schritt {step} von 4",
+  "setupBegin": "Einrichtung starten",
+  "setupContinue": "Weiter",
+  "setupPermissionsTitle": "Benötigte\nBerechtigungen",
+  "setupPermissionsDesc": "Looper Player braucht diese Berechtigungen, um richtig zu funktionieren. Bitte erteile sie, um fortzufahren.",
+  "setupNotifications": "Benachrichtigungen",
+  "setupMusicAudio": "Musik & Audio",
+  "setupAllFiles": "Zugriff auf alle Dateien (EMPFOHLEN)",
+  "setupCommunityTitle": "Werde Teil unserer\nCommunity",
+  "setupCommunityDesc": "Looper Player ist Open Source und wächst durch die Unterstützung der Community. Deine Hilfe macht den Unterschied!",
+  "setupStarGithub": "Stern auf GitHub geben",
+  "setupStarGithubDesc": "Hilf uns, mehr Menschen zu erreichen, indem du das Repository mit einem Stern markierst",
+  "setupTelegram": "Telegram",
+  "setupTelegramDesc": "Erhalte die neuesten Updates und chatte mit der Community.",
+  "setupUpi": "Per UPI unterstützen",
+  "setupUpiDesc": "Unterstütze die Entwicklung direkt per UPI.",
+  "setupKofi": "Spendier uns einen Kaffee",
+  "setupKofiDesc": "Unterstütze das Projekt über Ko-fi.",
+  "setupDoneTitle": "Alles bereit!",
+  "setupDoneDesc": "Deine Bibliothek wird im Hintergrund gescannt. Leg los und hör rein.",
+  "setupStartListening": "Jetzt hören",
+  "homeTodayMix": "Mix des Tages",
+  "homeTodayMixDesc": "Der perfekte Mix für deinen Tag",
+  "homeSurpriseMe": "Überrasch mich!",
+  "homeSurpriseMeDesc": "Unsicher, was du hören willst? Lass den Zufall entscheiden.",
+  "homeArtistPick": "Künstler-Tipp für dich",
+  "homeWeeklyMix": "Wochenmix",
+  "homeWeeklyMixDesc": "Deine meistgehörten Songs dieser Woche",
+  "homePicksLabel": "Auswahl",
+  "homeForYou": "Für dich",
+  "homeYourOwn": "Deine eigene",
+  "letterSpacing": "Zeichenabstand",
+  "letterSpacingDesc": "Text in der ganzen App enger oder weiter setzen",
+  "homeHeroEmptyDesc": "Deine Mixe erscheinen hier, sobald du anfängst zu hören",
+  "notificationPermissionRequired": "Erlaube Benachrichtigungen, um fortzufahren. Looper braucht sie für die Wiedergabesteuerung."
 }

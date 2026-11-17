@@ -24,7 +24,7 @@ extension _SettingsSearch on _SettingsViewState {
             const SizedBox(height: 16),
             Text(
               l10n.typeToSearchSettings,
-              style: AppFonts.jostStyle(
+              style: AppFonts.settingsStyle(
                 color: Colors.white38,
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
@@ -48,7 +48,7 @@ extension _SettingsSearch on _SettingsViewState {
             const SizedBox(height: 16),
             Text(
               l10n.noSettingsFoundFor(query),
-              style: AppFonts.jostStyle(
+              style: AppFonts.settingsStyle(
                 color: Colors.white38,
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
@@ -86,11 +86,10 @@ extension _SettingsSearch on _SettingsViewState {
                   ),
                   child: Text(
                     item.category.toUpperCase(),
-                    style: AppFonts.jostStyle(
+                    style: AppFonts.settingsStyle(
                       color: settings.accent.withValues(alpha: 0.8),
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
                     ),
                   ),
                 ),
@@ -114,70 +113,78 @@ extension _SettingsSearch on _SettingsViewState {
       SettingsSearchItem(
         title: l10n.dynamicTheming,
         subtitle: l10n.adaptColorsArtwork,
-        category: '${l10n.appearance} · ${l10n.themeGroupColors}',
+        category: '${l10n.catPlayerInterface} · ${l10n.themeGroupColors}',
         widget: const DynamicThemingTile(),
       ),
       SettingsSearchItem(
         title: l10n.selectAvatars,
         subtitle: l10n.selectAvatarsDesc,
-        category: '${l10n.general} · ${l10n.themeGroupProfile}',
+        category: '${l10n.account} · ${l10n.accountProfile}',
         widget: const SelectAvatarsTile(),
       ),
       if (settings.enableDynamicTheming)
         SettingsSearchItem(
           title: l10n.disableBlurEffects,
           subtitle: l10n.turnOffBlursOptimize,
-          category: '${l10n.appearance} · ${l10n.themeGroupBlurBackgrounds}',
+          category:
+              '${l10n.catPlayerInterface} · ${l10n.themeGroupBlurBackgrounds}',
           widget: const DisableBlurTile(),
         ),
       if (!settings.enableDynamicTheming) ...[
         SettingsSearchItem(
           title: l10n.dynamicAccentColor,
           subtitle: l10n.dynamicAccentColorDesc,
-          category: '${l10n.appearance} · ${l10n.themeGroupColors}',
+          category: '${l10n.catPlayerInterface} · ${l10n.themeGroupColors}',
           widget: const DynamicAccentColorTile(),
         ),
         SettingsSearchItem(
           title: l10n.pureBlackOled,
           subtitle: l10n.useAbsoluteBlackBg,
-          category: '${l10n.appearance} · ${l10n.themeGroupColors}',
+          category: '${l10n.catPlayerInterface} · ${l10n.themeGroupColors}',
           widget: const PureBlackOledTile(),
         ),
         SettingsSearchItem(
           title: l10n.alwaysBlurSheets,
           subtitle: l10n.alwaysBlurSheetsDesc,
-          category: '${l10n.appearance} · ${l10n.themeGroupBlurBackgrounds}',
+          category:
+              '${l10n.catPlayerInterface} · ${l10n.themeGroupBlurBackgrounds}',
           widget: const AlwaysBlurSheetsTile(),
         ),
         if (!settings.dynamicAccentColor) ...[
           SettingsSearchItem(
             title: l10n.accentColor,
             subtitle: l10n.chooseQuickAccentColors,
-            category: '${l10n.appearance} · ${l10n.themeGroupColors}',
+            category: '${l10n.catPlayerInterface} · ${l10n.themeGroupColors}',
             widget: const AccentColorTile(),
           ),
           SettingsSearchItem(
             title: l10n.customAccentColor,
             subtitle: l10n.selectCustomColor,
-            category: '${l10n.appearance} · ${l10n.themeGroupColors}',
+            category: '${l10n.catPlayerInterface} · ${l10n.themeGroupColors}',
             widget: const CustomAccentColorTile(),
           ),
         ],
       ],
       //if (!settings.enableDynamicTheming)
       SettingsSearchItem(
-        title: l10n.ambientColorBackground,
-        subtitle: l10n.ambientColorBackgroundDesc,
+        title: l10n.enableLyricsGradient,
+        subtitle: l10n.enableLyricsGradientDesc,
         category: '${l10n.lyrics} · ${l10n.sectionBackground}',
-        widget: const AmbientLyricsBgTile(),
+        widget: const EnableLyricsGradientTile(),
       ),
-      if (!settings.ambientColorBackground)
+      if (settings.enableLyricsGradient)
         SettingsSearchItem(
-          title: l10n.blurredArtworkForLyrics,
-          subtitle: l10n.blurredArtworkForLyricsDesc,
+          title: l10n.ambientColorBackground,
+          subtitle: l10n.ambientColorBackgroundDesc,
           category: '${l10n.lyrics} · ${l10n.sectionBackground}',
-          widget: const BlurredArtworkLyricsTile(),
+          widget: const AmbientLyricsBgTile(),
         ),
+      SettingsSearchItem(
+        title: l10n.blurredArtworkForLyrics,
+        subtitle: l10n.blurredArtworkForLyricsDesc,
+        category: '${l10n.lyrics} · ${l10n.sectionBackground}',
+        widget: const BlurredArtworkLyricsTile(),
+      ),
       SettingsSearchItem(
         title: l10n.dynamicColorActiveLyrics,
         subtitle: l10n.dynamicColorActiveLyricsDesc,
@@ -224,136 +231,164 @@ extension _SettingsSearch on _SettingsViewState {
             '${l10n.progressBarStyleDesc} · ${l10n.flatProgressBar} · '
             '${l10n.progressWaveHeight} · ${l10n.progressWaveLength} · '
             '${l10n.progressBarThickness} · ${l10n.progressThumb}',
-        category: '${l10n.nowPlaying} · ${l10n.sectionSeekBarVisuals}',
+        category: '${l10n.nowPlaying} · ${l10n.sectionClassicLayout}',
         widget: const ProgressBarStyleTile(),
       ),
       SettingsSearchItem(
         title: l10n.artworkVisualizer,
         subtitle: l10n.artworkVisualizerDesc,
-        category: '${l10n.nowPlaying} · ${l10n.sectionSeekBarVisuals}',
+        category: '${l10n.nowPlaying} · ${l10n.sectionClassicLayout}',
         widget: const ArtworkVisualizerTile(),
       ),
       SettingsSearchItem(
         title: l10n.plainTimestamps,
         subtitle: l10n.useStaticTextTimestamps,
-        category: '${l10n.nowPlaying} · ${l10n.sectionSeekBarVisuals}',
+        category: '${l10n.nowPlaying} · ${l10n.sectionClassicLayout}',
         widget: const PlainTimestampsTile(),
       ),
       SettingsSearchItem(
         title: l10n.showQualityBadge,
         subtitle: l10n.showQualityBadgeDesc,
-        category: '${l10n.nowPlaying} · ${l10n.sectionTrackInfo}',
+        category: '${l10n.nowPlaying} · ${l10n.sectionClassicLayout}',
         widget: const ShowQualityBadgeTile(),
       ),
       if (settings.showQualityBadge)
         SettingsSearchItem(
           title: l10n.qualityBadgeStyle,
           subtitle: l10n.qualityBadgeStyleDesc,
-          category: '${l10n.nowPlaying} · ${l10n.sectionTrackInfo}',
+          category: '${l10n.nowPlaying} · ${l10n.sectionClassicLayout}',
           widget: const QualityBadgeStyleTile(),
         ),
       SettingsSearchItem(
+        title: l10n.playerStyle,
+        subtitle: l10n.playerStyleDesc,
+        category: '${l10n.nowPlaying} · ${l10n.sectionPlayer}',
+        widget: const PlayerStyleTile(),
+      ),
+      SettingsSearchItem(
         title: l10n.segmentedUtilityButtons,
         subtitle: l10n.segmentedUtilityButtonsDesc,
-        category: '${l10n.nowPlaying} · ${l10n.sectionPlayer}',
+        category: '${l10n.nowPlaying} · ${l10n.sectionClassicLayout}',
         widget: const SegmentedUtilityButtonsTile(),
       ),
       SettingsSearchItem(
         title: l10n.playerLyricLine,
         subtitle: l10n.playerLyricLineDesc,
-        category: '${l10n.nowPlaying} · ${l10n.sectionLyricLine}',
+        category: '${l10n.nowPlaying} · ${l10n.sectionPlayer}',
         widget: const PlayerLyricLineTile(),
       ),
+      if (!UiUtils.isDesktop)
+        SettingsSearchItem(
+          title: l10n.keepScreenAwake,
+          subtitle: l10n.keepScreenAwakeDesc,
+          category: '${l10n.nowPlaying} · ${l10n.sectionPlayer}',
+          widget: const KeepScreenAwakeTile(),
+        ),
       SettingsSearchItem(
         title: l10n.accentVibrancy,
         subtitle: l10n.accentVibrancyDesc,
-        category: '${l10n.appearance} · ${l10n.themeGroupColors}',
+        category: '${l10n.catPlayerInterface} · ${l10n.themeGroupColors}',
         widget: const AccentVibrancyTile(),
       ),
+      if (Platform.isAndroid)
+        SettingsSearchItem(
+          title: l10n.highRefreshRate,
+          subtitle: l10n.highRefreshRateDesc,
+          category: '${l10n.catPlayerInterface} · ${l10n.sectionDisplay}',
+          widget: const HighRefreshRateTile(),
+        ),
       SettingsSearchItem(
         title: l10n.groupByAlbum,
         subtitle: l10n.groupByAlbumDesc,
-        category: '${l10n.homeAndLibrary} · ${l10n.sectionDisplay}',
+        category: '${l10n.catPlayerInterface} · ${l10n.sectionDisplay}',
         widget: const GroupArtistByAlbumTile(),
       ),
       SettingsSearchItem(
         title: l10n.showAlbumNextToArtist,
         subtitle: l10n.showAlbumNextToArtistDesc,
-        category: '${l10n.homeAndLibrary} · ${l10n.sectionDisplay}',
+        category: '${l10n.catPlayerInterface} · ${l10n.sectionDisplay}',
         widget: const ShowAlbumNextToArtistTile(),
       ),
       if (settings.showAlbumNextToArtist)
         SettingsSearchItem(
           title: l10n.showAlbumInQuickPicks,
           subtitle: l10n.showAlbumInQuickPicksDesc,
-          category: '${l10n.homeAndLibrary} · ${l10n.sectionDisplay}',
+          category: '${l10n.catPlayerInterface} · ${l10n.sectionDisplay}',
           widget: const ShowAlbumInQuickPicksTile(),
         ),
       SettingsSearchItem(
         title: l10n.enablePlayerGradient,
         subtitle: l10n.enablePlayerGradientDesc,
-        category: '${l10n.appearance} · ${l10n.themeGroupBlurBackgrounds}',
+        category: '${l10n.nowPlaying} · ${l10n.sectionPlayerBackground}',
         widget: const EnablePlayerGradientTile(),
       ),
       if (settings.enablePlayerGradient)
         SettingsSearchItem(
           title: l10n.animatePlayerGradient,
           subtitle: l10n.animatePlayerGradientDesc,
-          category: '${l10n.appearance} · ${l10n.themeGroupBlurBackgrounds}',
+          category: '${l10n.nowPlaying} · ${l10n.sectionPlayerBackground}',
           widget: const AnimatePlayerGradientTile(),
         ),
       if (settings.enablePlayerGradient)
         SettingsSearchItem(
           title: l10n.keepBackgroundGradient,
           subtitle: l10n.keepBackgroundGradientDesc,
-          category: '${l10n.appearance} · ${l10n.themeGroupBlurBackgrounds}',
+          category:
+              '${l10n.catPlayerInterface} · ${l10n.themeGroupBlurBackgrounds}',
           widget: const KeepBackgroundGradientTile(),
         ),
       if (settings.enablePlayerGradient && settings.keepBackgroundGradient)
         SettingsSearchItem(
           title: l10n.animateBackgroundGradient,
           subtitle: l10n.animateBackgroundGradientDesc,
-          category: '${l10n.appearance} · ${l10n.themeGroupBlurBackgrounds}',
+          category:
+              '${l10n.catPlayerInterface} · ${l10n.themeGroupBlurBackgrounds}',
           widget: const AnimateBackgroundGradientTile(),
         ),
       if (!UiUtils.isDesktop)
         SettingsSearchItem(
           title: l10n.uiScale,
           subtitle: l10n.uiScaleDesc,
-          category: '${l10n.appearance} · ${l10n.themeGroupFonts}',
+          category: '${l10n.catPlayerInterface} · ${l10n.themeGroupFonts}',
           widget: const UiScaleTile(),
         ),
       SettingsSearchItem(
         title: l10n.useCustomFont,
         subtitle: l10n.useCustomFontDesc,
-        category: '${l10n.appearance} · ${l10n.themeGroupFonts}',
+        category: '${l10n.catPlayerInterface} · ${l10n.themeGroupFonts}',
         widget: const UseNewFontTile(),
       ),
       if (settings.useNewFont) ...[
         SettingsSearchItem(
           title: l10n.selectFontFamily,
           subtitle: l10n.activeFont(settings.customFontFamily),
-          category: '${l10n.appearance} · ${l10n.themeGroupFonts}',
+          category: '${l10n.catPlayerInterface} · ${l10n.themeGroupFonts}',
           widget: const FontFamilySelectionTile(),
+        ),
+        SettingsSearchItem(
+          title: l10n.letterSpacing,
+          subtitle: l10n.letterSpacingDesc,
+          category: '${l10n.catPlayerInterface} · ${l10n.themeGroupFonts}',
+          widget: const LetterSpacingTile(),
         ),
         SettingsSearchItem(
           title: l10n.fontWeight,
           subtitle: l10n.changeBaseFontWeight,
-          category: '${l10n.appearance} · ${l10n.themeGroupFonts}',
+          category: '${l10n.catPlayerInterface} · ${l10n.themeGroupFonts}',
           widget: const FontWeightSelectionTile(),
         ),
       ],
       SettingsSearchItem(
         title: l10n.useCustomFontLyrics,
         subtitle: l10n.useCustomFontLyricsDesc,
-        category: '${l10n.appearance} · ${l10n.themeGroupFonts}',
+        category: '${l10n.catPlayerInterface} · ${l10n.themeGroupFonts}',
         widget: const UseNewFontLyricsTile(),
       ),
       if (settings.useNewFontLyrics) ...[
         SettingsSearchItem(
           title: l10n.lyricsFontFamily,
           subtitle: l10n.activeLyricsFont(settings.customFontFamilyLyrics),
-          category: '${l10n.appearance} · ${l10n.themeGroupFonts}',
+          category: '${l10n.catPlayerInterface} · ${l10n.themeGroupFonts}',
           widget: const LyricsFontFamilySelectionTile(),
         ),
         SettingsSearchItem(
@@ -361,7 +396,7 @@ extension _SettingsSearch on _SettingsViewState {
           subtitle: l10n.lyricsFontWeightValue(
             700 + settings.activeLyricsFontWeightDelta * 100,
           ),
-          category: '${l10n.appearance} · ${l10n.themeGroupFonts}',
+          category: '${l10n.catPlayerInterface} · ${l10n.themeGroupFonts}',
           widget: const LyricsFontWeightSelectionTile(),
         ),
       ],
@@ -370,37 +405,37 @@ extension _SettingsSearch on _SettingsViewState {
       SettingsSearchItem(
         title: l10n.showArtistsRow,
         subtitle: l10n.showArtistsRowDesc,
-        category: '${l10n.homeAndLibrary} · ${l10n.sectionHomeRows}',
+        category: '${l10n.catPlayerInterface} · ${l10n.sectionHomeRows}',
         widget: const ShowArtistsRowTile(),
       ),
       SettingsSearchItem(
         title: l10n.showAlbumsRow,
         subtitle: l10n.showAlbumsRowDesc,
-        category: '${l10n.homeAndLibrary} · ${l10n.sectionHomeRows}',
+        category: '${l10n.catPlayerInterface} · ${l10n.sectionHomeRows}',
         widget: const ShowAlbumsRowTile(),
       ),
       SettingsSearchItem(
         title: l10n.showGenresRow,
         subtitle: l10n.showGenresRowDesc,
-        category: '${l10n.homeAndLibrary} · ${l10n.sectionHomeRows}',
+        category: '${l10n.catPlayerInterface} · ${l10n.sectionHomeRows}',
         widget: const ShowGenresRowTile(),
       ),
       SettingsSearchItem(
         title: l10n.showRecentRow,
         subtitle: l10n.showRecentRowDesc,
-        category: '${l10n.homeAndLibrary} · ${l10n.sectionHomeRows}',
+        category: '${l10n.catPlayerInterface} · ${l10n.sectionHomeRows}',
         widget: const ShowRecentRowTile(),
       ),
       SettingsSearchItem(
         title: l10n.reorderDashboardSections,
         subtitle: l10n.reorderDashboardSectionsDesc,
-        category: '${l10n.homeAndLibrary} · ${l10n.sectionHomeRows}',
+        category: '${l10n.catPlayerInterface} · ${l10n.sectionHomeRows}',
         widget: const ReorderDashboardSectionsTile(),
       ),
       SettingsSearchItem(
         title: l10n.showPlaylistsRow,
         subtitle: l10n.showPlaylistsRowDesc,
-        category: '${l10n.homeAndLibrary} · ${l10n.sectionHomeRows}',
+        category: '${l10n.catPlayerInterface} · ${l10n.sectionHomeRows}',
         widget: const ShowPlaylistsRowTile(),
       ),
 
@@ -408,7 +443,7 @@ extension _SettingsSearch on _SettingsViewState {
       SettingsSearchItem(
         title: l10n.language,
         subtitle: l10n.selectAppLanguage,
-        category: '${l10n.general} · ${l10n.sectionApp}',
+        category: '${l10n.catMisc} · ${l10n.sectionApp}',
         widget: const LanguageTile(),
       ),
       if (!UiUtils.isDesktop)
@@ -418,11 +453,18 @@ extension _SettingsSearch on _SettingsViewState {
           category: '${l10n.nowPlaying} · ${l10n.sectionPlayer}',
           widget: const FluidPlayerTile(),
         ),
+      if (!settings.enableDynamicTheming)
+        SettingsSearchItem(
+          title: l10n.playerDynamicBackground,
+          subtitle: l10n.playerDynamicBackgroundDesc,
+          category: '${l10n.nowPlaying} · ${l10n.sectionPlayer}',
+          widget: const PlayerDynamicBackgroundTile(),
+        ),
       if (Platform.isAndroid)
         SettingsSearchItem(
           title: l10n.hapticFeedback,
           subtitle: l10n.hapticFeedbackDesc,
-          category: '${l10n.general} · ${l10n.sectionApp}',
+          category: '${l10n.catMisc} · ${l10n.sectionApp}',
           widget: const HapticFeedbackTile(),
         ),
       SettingsSearchItem(
@@ -435,19 +477,19 @@ extension _SettingsSearch on _SettingsViewState {
         SettingsSearchItem(
           title: l10n.stopServiceOnAppDismissal,
           subtitle: l10n.stopServiceSearchDesc,
-          category: '${l10n.general} · ${l10n.sectionApp}',
+          category: '${l10n.catMisc} · ${l10n.sectionApp}',
           widget: const StopServiceTile(),
         ),
       SettingsSearchItem(
         title: l10n.internetMode,
         subtitle: l10n.enableNetworkLyricsArt,
-        category: '${l10n.general} · ${l10n.sectionInternet}',
+        category: '${l10n.catNetwork} · ${l10n.sectionInternet}',
         widget: const InternetModeTile(),
       ),
       SettingsSearchItem(
         title: l10n.downloadMissingArtwork,
         subtitle: l10n.downloadMissingArtworkDesc,
-        category: '${l10n.general} · ${l10n.sectionInternet}',
+        category: '${l10n.catNetwork} · ${l10n.sectionInternet}',
         widget: const DownloadMissingArtworkTile(),
       ),
 
@@ -465,6 +507,31 @@ extension _SettingsSearch on _SettingsViewState {
           category: '${l10n.playbackAndAudio} · ${l10n.sectionSound}',
           widget: const FadeDurationSlider(),
         ),
+
+      SettingsSearchItem(
+        title: l10n.audioCrossfade,
+        subtitle: l10n.audioCrossfadeDesc,
+        category: '${l10n.playbackAndAudio} · ${l10n.sectionSound}',
+        widget: const CrossfadeTile(),
+      ),
+      SettingsSearchItem(
+        title: l10n.crossfadeDuration,
+        subtitle: l10n.crossfadeDurationDesc,
+        category: '${l10n.playbackAndAudio} · ${l10n.sectionSound}',
+        widget: const CrossfadeDurationSlider(),
+      ),
+      SettingsSearchItem(
+        title: l10n.smartTransitions,
+        subtitle: l10n.smartTransitionsDesc,
+        category: '${l10n.playbackAndAudio} · ${l10n.sectionSound}',
+        widget: const SmartTransitionsTile(),
+      ),
+      SettingsSearchItem(
+        title: l10n.beatMixing,
+        subtitle: l10n.beatMixingDesc,
+        category: '${l10n.playbackAndAudio} · ${l10n.sectionSound}',
+        widget: const BeatMixingTile(),
+      ),
 
       if (Platform.isAndroid) ...[
         SettingsSearchItem(
@@ -517,43 +584,43 @@ extension _SettingsSearch on _SettingsViewState {
       SettingsSearchItem(
         title: l10n.addFolder,
         subtitle: l10n.scanNewFolderDesc,
-        category: '${l10n.homeAndLibrary} · ${l10n.sectionFolders}',
+        category: '${l10n.catMusicManagement} · ${l10n.sectionFolders}',
         widget: const AddFolderTile(),
       ),
       SettingsSearchItem(
         title: l10n.syncLyricsOffline,
         subtitle: l10n.downloadingLyricsOffline,
-        category: '${l10n.lyrics} · ${l10n.sectionSources}',
+        category: '${l10n.catNetwork} · ${l10n.sectionSources}',
         widget: const SyncLyricsOfflineTile(),
       ),
       SettingsSearchItem(
         title: l10n.clearLyricsCache,
         subtitle: l10n.clearLyricsCacheDesc,
-        category: '${l10n.lyrics} · ${l10n.sectionSources}',
+        category: '${l10n.catMisc} · ${l10n.sectionStorage}',
         widget: const ClearLyricsCacheTile(),
       ),
       SettingsSearchItem(
         title: l10n.rescanLibrary,
         subtitle: l10n.scanningLibrary,
-        category: '${l10n.homeAndLibrary} · ${l10n.sectionFolders}',
+        category: '${l10n.catMusicManagement} · ${l10n.sectionFolders}',
         widget: const RescanLibraryTile(),
       ),
       SettingsSearchItem(
         title: l10n.includeOtherDeviceAudioTitle,
         subtitle: l10n.includeOtherDeviceAudioShortDesc,
-        category: '${l10n.homeAndLibrary} · ${l10n.sectionFolders}',
+        category: '${l10n.catMusicManagement} · ${l10n.sectionFolders}',
         widget: const IncludeSystemAndMessagingAudioTile(),
       ),
       SettingsSearchItem(
         title: l10n.excludedFolders,
         subtitle: l10n.excludedFoldersSearchDesc,
-        category: '${l10n.homeAndLibrary} · ${l10n.sectionFolders}',
+        category: '${l10n.catMusicManagement} · ${l10n.sectionFolders}',
         widget: const ExcludedFoldersTile(),
       ),
       SettingsSearchItem(
         title: l10n.resetLibrary,
         subtitle: l10n.clearLibraryData,
-        category: '${l10n.homeAndLibrary} · ${l10n.sectionFolders}',
+        category: '${l10n.catMusicManagement} · ${l10n.sectionFolders}',
         widget: const ResetLibraryTile(),
       ),
 
@@ -576,7 +643,7 @@ extension _SettingsSearch on _SettingsViewState {
       SettingsSearchItem(
         title: l10n.lyricsServices,
         subtitle: lyricsServiceChain(settings),
-        category: '${l10n.lyrics} · ${l10n.sectionSources}',
+        category: '${l10n.catNetwork} · ${l10n.sectionSources}',
         widget: const LyricsProviderTile(),
       ),
       SettingsSearchItem(

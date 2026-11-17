@@ -44,11 +44,15 @@ class SongPlaybackIndicator extends StatelessWidget {
     // way to the dots while tickers are off (e.g. the mini bar under the
     // classic player), and that swap must be instant - cross-fading it made
     // the mini bar art flicker right as the closing player's artwork landed.
-    return AnimatedSwitcher(
-      duration: Duration(milliseconds: Motion.reducedOf(context) ? 0 : 250),
-      child: KeyedSubtree(
-        key: ValueKey<bool>(isPlaying),
-        child: _content(context),
+    // Isolated in a RepaintBoundary so animated GIF frame ticks and fade
+    // transitions never dirty parent cards or backdrop blur layers.
+    return RepaintBoundary(
+      child: AnimatedSwitcher(
+        duration: Duration(milliseconds: Motion.reducedOf(context) ? 0 : 250),
+        child: KeyedSubtree(
+          key: ValueKey<bool>(isPlaying),
+          child: _content(context),
+        ),
       ),
     );
   }

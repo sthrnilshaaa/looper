@@ -63,6 +63,21 @@ class SongsList extends ConsumerStatefulWidget {
   /// is the arrival animation, so the rows don't wave in on top of it.
   final bool wave;
 
+  /// Called when the user scrolls within 20 rows of the end (for paging).
+  final VoidCallback? onEndReached;
+
+  /// Custom refresh callback (e.g. for re-querying smart views without
+  /// a full folder disk scan). Defaults to [LibraryNotifier.refreshLibrary].
+  final Future<void> Function()? onRefresh;
+
+  /// Callback to resolve the complete queue for playback when a song is tapped,
+  /// instead of only the currently loaded page.
+  final Future<List<Song>> Function()? resolveQueue;
+
+  /// A last row after the songs (e.g. a page switcher). The header then
+  /// counts [totalCount] instead of the rows shown.
+  final Widget? footer;
+
   const SongsList({
     super.key,
     required this.songs,
@@ -75,6 +90,10 @@ class SongsList extends ConsumerStatefulWidget {
     this.loading = false,
     this.totalCount,
     this.wave = true,
+    this.onEndReached,
+    this.onRefresh,
+    this.resolveQueue,
+    this.footer,
   });
 
   @override
@@ -95,7 +114,23 @@ class _SongsListState extends ConsumerState<SongsList> {
       widget.controller ?? (_ownController ??= MomentumScrollController());
 
   @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_checkEndReached);
+  }
+
+  void _checkEndReached() {
+    if (widget.onEndReached == null) return;
+    if (!_scrollController.hasClients) return;
+    final pos = _scrollController.position;
+    if (pos.extentAfter < 1280) {
+      widget.onEndReached!();
+    }
+  }
+
+  @override
   void dispose() {
+    _scrollController.removeListener(_checkEndReached);
     _ownController?.dispose();
     super.dispose();
   }
@@ -106,7 +141,11 @@ class _SongsListState extends ConsumerState<SongsList> {
   static const int _skeletonRows = 6;
 
   int get _rowCount =>
-      widget.songs.length + (widget.loading ? _skeletonRows : 0);
+      widget.songs.length +
+      (widget.loading ? _skeletonRows : 0) +
+      (_hasFooter ? 1 : 0);
+
+  bool get _hasFooter => widget.footer != null && !widget.loading;
 
   // Rows from this index on were skeletons until the last part arrived and
   // fade in when they are built.
@@ -277,7 +316,7 @@ class _SongsListState extends ConsumerState<SongsList> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            '${widget.loading ? (widget.totalCount ?? widget.songs.length) : widget.songs.length} ${l10n.songs}',
+            '${widget.loading || widget.footer != null ? (widget.totalCount ?? widget.songs.length) : widget.songs.length} ${l10n.songs}',
             style: AppFonts.jostStyle(color: Colors.grey, fontSize: 13),
           ),
           if (widget.showEnrichmentIndicator)
@@ -368,7 +407,8 @@ class _SongsListState extends ConsumerState<SongsList> {
       // sliver one real instance to measure once instead of
       // re-measuring each row as it scrolls into view - this is
       // the list a fast fling scroll actually has to keep up with.
-      prototypeItem: _buildPrototypeRow(l10n),
+      // A footer row has its own height, so it opts out.
+      prototypeItem: _hasFooter ? null : _buildPrototypeRow(l10n),
       itemBuilder: (context, index) => _buildRow(index, l10n),
     );
   }
@@ -388,6 +428,12 @@ class _SongsListState extends ConsumerState<SongsList> {
   );
 
   Widget _buildRow(int index, AppLocalizations l10n) {
+    if (widget.onEndReached != null && index >= widget.songs.length - 20) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) widget.onEndReached?.call();
+      });
+    }
+    if (_hasFooter && index == widget.songs.length) return widget.footer!;
     if (index >= widget.songs.length) {
       return AppSkeleton(child: SongRowSkeleton(index: index));
     }
@@ -405,9 +451,11 @@ class _SongsListState extends ConsumerState<SongsList> {
         selected: _selectedPaths.contains(song.path),
         onToggleSelect: () => _toggleSelected(song),
         onEnterSelection: widget.loading ? null : () => _enterSelection(song),
-        resolveQueue: widget.loading
-            ? ref.read(libraryProvider.notifier).loadedSongs
-            : null,
+        resolveQueue:
+            widget.resolveQueue ??
+            (widget.loading
+                ? ref.read(libraryProvider.notifier).loadedSongs
+                : null),
       ),
     );
     return _RowReveal(
@@ -431,7 +479,7 @@ class _SongsListState extends ConsumerState<SongsList> {
         mainAxisExtent: 64,
         crossAxisSpacing: 24,
       ),
-      itemCount: widget.songs.length,
+      itemCount: widget.songs.length + (_hasFooter ? 1 : 0),
       itemBuilder: (context, index) => _buildRow(index, l10n),
     );
   }
@@ -458,9 +506,11 @@ class _SongsListState extends ConsumerState<SongsList> {
         else
           Expanded(
             child: AppRefreshIndicator(
-              onRefresh: () => ref
-                  .read(libraryProvider.notifier)
-                  .refreshLibrary(showVisualIndicator: false),
+              onRefresh:
+                  widget.onRefresh ??
+                  () => ref
+                      .read(libraryProvider.notifier)
+                      .refreshLibrary(showVisualIndicator: false),
               child: UiUtils.isDesktop
                   ? LayoutBuilder(
                       builder: (context, constraints) =>

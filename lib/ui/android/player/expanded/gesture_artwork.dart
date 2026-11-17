@@ -256,72 +256,78 @@ class _GestureArtworkWithFeedbackState
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: AnimatedSwitcher(
-          duration: animate ? const Duration(milliseconds: 320) : Duration.zero,
-          switchInCurve: Curves.easeOutCubic,
-          switchOutCurve: Curves.easeInCubic,
-          layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
-            return Stack(
-              alignment: Alignment.center,
-              children: <Widget>[
-                ...previousChildren,
-                if (currentChild != null) currentChild,
-              ],
-            );
-          },
-          transitionBuilder: (Widget child, Animation<double> animation) {
-            final keyVal = child.key is ValueKey<String>
-                ? (child.key as ValueKey<String>).value
-                : '';
-            final isIncoming = keyVal == widget.song.path;
+        child: Hero(
+          tag: 'album_art',
+          flightShuttleBuilder: artworkFlightShuttle,
+          child: AnimatedSwitcher(
+            duration: animate
+                ? const Duration(milliseconds: 320)
+                : Duration.zero,
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            layoutBuilder:
+                (Widget? currentChild, List<Widget> previousChildren) {
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: <Widget>[...previousChildren, ?currentChild],
+                  );
+                },
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              final keyVal = child.key is ValueKey<String>
+                  ? (child.key as ValueKey<String>).value
+                  : '';
+              final isIncoming = keyVal == widget.song.path;
 
-            if (_skipSlideTransition) {
-              if (isIncoming) {
-                return SlideTransition(
-                  position: const AlwaysStoppedAnimation<Offset>(Offset.zero),
-                  child: child,
-                );
-              } else {
-                final double offset = _isNext ? -1.1 : 1.1;
-                return SlideTransition(
-                  position: AlwaysStoppedAnimation<Offset>(Offset(offset, 0.0)),
-                  child: FadeTransition(
-                    opacity: Tween<double>(
-                      begin: 1.0,
-                      end: 0.0,
-                    ).animate(animation),
+              if (_skipSlideTransition) {
+                if (isIncoming) {
+                  return SlideTransition(
+                    position: const AlwaysStoppedAnimation<Offset>(Offset.zero),
                     child: child,
-                  ),
-                );
+                  );
+                } else {
+                  final double offset = _isNext ? -1.1 : 1.1;
+                  return SlideTransition(
+                    position: AlwaysStoppedAnimation<Offset>(
+                      Offset(offset, 0.0),
+                    ),
+                    child: FadeTransition(
+                      opacity: Tween<double>(
+                        begin: 1.0,
+                        end: 0.0,
+                      ).animate(animation),
+                      child: child,
+                    ),
+                  );
+                }
               }
-            }
 
-            Offset beginOffset;
-            Offset endOffset;
+              Offset beginOffset;
+              Offset endOffset;
 
-            if (_isNext) {
-              beginOffset = isIncoming
-                  ? const Offset(1.1, 0.0)
-                  : const Offset(-1.1, 0.0);
-              endOffset = Offset.zero;
-            } else {
-              beginOffset = isIncoming
-                  ? const Offset(-1.1, 0.0)
-                  : const Offset(1.1, 0.0);
-              endOffset = Offset.zero;
-            }
+              if (_isNext) {
+                beginOffset = isIncoming
+                    ? const Offset(1.1, 0.0)
+                    : const Offset(-1.1, 0.0);
+                endOffset = Offset.zero;
+              } else {
+                beginOffset = isIncoming
+                    ? const Offset(-1.1, 0.0)
+                    : const Offset(1.1, 0.0);
+                endOffset = Offset.zero;
+              }
 
-            return SlideTransition(
-              position: Tween<Offset>(
-                begin: beginOffset,
-                end: endOffset,
-              ).animate(animation),
-              child: child,
-            );
-          },
-          child: ForegroundAlbumArt(
-            key: ValueKey<String>(widget.song.path),
-            song: widget.song,
+              return SlideTransition(
+                position: Tween<Offset>(
+                  begin: beginOffset,
+                  end: endOffset,
+                ).animate(animation),
+                child: child,
+              );
+            },
+            child: ForegroundAlbumArt(
+              key: ValueKey<String>(widget.song.path),
+              song: widget.song,
+            ),
           ),
         ),
       ),
@@ -330,12 +336,10 @@ class _GestureArtworkWithFeedbackState
     if (nextSong?.artPath != null &&
         nextSong!.artPath != _precachedNextArtPath) {
       _precachedNextArtPath = nextSong.artPath;
-      if (File(nextSong.artPath!).existsSync()) {
+      if (nextSong.artPath!.startsWith('http') ||
+          File(nextSong.artPath!).existsSync()) {
         precacheImage(
-          ResizeImage(
-            FileImage(File(nextSong.artPath!)),
-            width: computedCacheWidth,
-          ),
+          ResizeImage(artImage(nextSong.artPath!), width: computedCacheWidth),
           context,
         );
       }
@@ -343,12 +347,10 @@ class _GestureArtworkWithFeedbackState
     if (prevSong?.artPath != null &&
         prevSong!.artPath != _precachedPrevArtPath) {
       _precachedPrevArtPath = prevSong.artPath;
-      if (File(prevSong.artPath!).existsSync()) {
+      if (prevSong.artPath!.startsWith('http') ||
+          File(prevSong.artPath!).existsSync()) {
         precacheImage(
-          ResizeImage(
-            FileImage(File(prevSong.artPath!)),
-            width: computedCacheWidth,
-          ),
+          ResizeImage(artImage(prevSong.artPath!), width: computedCacheWidth),
           context,
         );
       }
@@ -442,12 +444,10 @@ class _GestureArtworkWithFeedbackState
       child: ValueListenableBuilder<double>(
         valueListenable: ref.watch(playerExpandProgressProvider),
         builder: (context, expandProgress, child) {
-          return Opacity(
-            opacity: !enableSlide || expandProgress >= kFluidHandoff
-                ? 1.0
-                : 0.0,
-            child: child,
-          );
+          final double opacity = !enableSlide || expandProgress >= kFluidHandoff
+              ? 1.0
+              : 0.0;
+          return Opacity(opacity: opacity, child: child);
         },
         child: AnimatedPadding(
           duration: animate ? const Duration(milliseconds: 350) : Duration.zero,
@@ -507,11 +507,7 @@ class _GestureArtworkWithFeedbackState
                           child: child,
                         ),
                       ),
-                      child: Hero(
-                        tag: 'album_art',
-                        flightShuttleBuilder: artworkFlightShuttle,
-                        child: artworkSwitcher,
-                      ),
+                      child: artworkSwitcher,
                     ),
                   ),
                   // Feedback Overlay
