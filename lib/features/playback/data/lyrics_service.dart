@@ -54,7 +54,9 @@ class LyricsService {
         (r['syncedLyrics']?.toString() ?? '').isNotEmpty;
     if (rows.isEmpty) return null;
     if (durationSeconds <= 0) {
-      return LyricsResponse.fromJson(rows.firstWhere(synced, orElse: () => rows.first));
+      return LyricsResponse.fromJson(
+        rows.firstWhere(synced, orElse: () => rows.first),
+      );
     }
     final sameLength = rows.where((r) {
       final d = (r['duration'] as num?)?.toDouble();

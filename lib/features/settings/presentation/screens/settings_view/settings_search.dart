@@ -366,6 +366,12 @@ extension _SettingsSearch on _SettingsViewState {
           widget: const FontFamilySelectionTile(),
         ),
         SettingsSearchItem(
+          title: l10n.letterSpacing,
+          subtitle: l10n.letterSpacingDesc,
+          category: '${l10n.catPlayerInterface} · ${l10n.themeGroupFonts}',
+          widget: const LetterSpacingTile(),
+        ),
+        SettingsSearchItem(
           title: l10n.fontWeight,
           subtitle: l10n.changeBaseFontWeight,
           category: '${l10n.catPlayerInterface} · ${l10n.themeGroupFonts}',

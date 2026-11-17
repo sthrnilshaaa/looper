@@ -62,7 +62,8 @@ class ProgressBarStyle {
   static const double defaultThumbWidth = AppDefaults.progressThumbWidth;
   static const double defaultThumbHeight = AppDefaults.progressThumbHeight;
   static const double defaultThumbGap = AppDefaults.progressThumbGap;
-  static const double defaultInactiveOpacity = AppDefaults.progressInactiveOpacity;
+  static const double defaultInactiveOpacity =
+      AppDefaults.progressInactiveOpacity;
 
   static const ProgressBarStyle defaults = ProgressBarStyle();
 

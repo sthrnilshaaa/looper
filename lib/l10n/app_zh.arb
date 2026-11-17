@@ -1882,5 +1882,19 @@
   "setupKofiDesc": "通过 Ko-fi 支持本项目。",
   "setupDoneTitle": "一切就绪！",
   "setupDoneDesc": "你的音乐库正在后台扫描。开始聆听吧。",
-  "setupStartListening": "开始聆听"
+  "setupStartListening": "开始聆听",
+  "homeTodayMix": "今日混音",
+  "homeTodayMixDesc": "为你的一天定下基调的完美混音",
+  "homeSurpriseMe": "给我惊喜！",
+  "homeSurpriseMeDesc": "不知道听什么？交给命运吧。",
+  "homeArtistPick": "为你精选的艺人",
+  "homeWeeklyMix": "每周混音",
+  "homeWeeklyMixDesc": "本周你最常听的歌曲",
+  "homePicksLabel": "精选",
+  "homeForYou": "为你推荐",
+  "homeYourOwn": "你的",
+  "letterSpacing": "字间距",
+  "letterSpacingDesc": "调整整个应用文字的紧密程度",
+  "homeHeroEmptyDesc": "开始收听后，你的混音会显示在这里",
+  "notificationPermissionRequired": "请允许通知以继续。Looper 需要通知来显示播放控制。"
 }

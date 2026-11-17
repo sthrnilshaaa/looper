@@ -31,7 +31,6 @@ import 'package:looper_player/ui/widgets/sheets/song_options_bottom_sheet.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../widgets/empty_library_view.dart';
-import '../../widgets/enrichment_indicator.dart';
 import '../../widgets/library_skeletons.dart';
 import '../../widgets/premium_loading_view.dart';
 import '../../widgets/premium_section.dart';
@@ -42,6 +41,8 @@ import '../../widgets/recent_song_pills.dart';
 import 'package:looper_player/core/services/haptics/app_haptics.dart';
 import 'package:looper_player/features/settings/domain/home_order.dart';
 import 'hold_bloom.dart';
+import 'home_hero.dart';
+import 'package:looper_player/ui/widgets/common/home_design_kit.dart';
 
 part 'home_sections.dart';
 part 'home_reorder.dart';
@@ -55,9 +56,7 @@ class AndroidHomeTab extends ConsumerStatefulWidget {
 
 class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab>
     with TickerProviderStateMixin {
-  int _currentQuickPickPage = 0;
-
-  // Reorder mode. Nothing is saved until Done.
+  // Reorder mode (docs/online/27). Nothing is saved until Done.
   bool _reordering = false;
   List<String> _draftOrder = const [];
   // Set each build: the rows on screen, and whether the 5 s hold may start.
@@ -85,9 +84,15 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab>
   // Where the finger went down, local to Home: the drop's center.
   Offset _dropAt = Offset.zero;
   int _pointers = 0;
+  // How far Home is pulled past its top; the hero artwork stretches to fill it.
+  final _overscroll = ValueNotifier<double>(0);
+  // How far Home is scrolled down; the pinned buttons tuck up with it.
+  final _scrolled = ValueNotifier<double>(0);
 
   @override
   void dispose() {
+    _overscroll.dispose();
+    _scrolled.dispose();
     _holdTimer?.cancel();
     if (homeReorderCancel == _cancelReorder) homeReorderCancel = null;
     _hold.dispose();
@@ -226,250 +231,8 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab>
     );
   }
 
-  void _buildQuickPicksSlivers(
-    BuildContext context,
-    List<Widget> orderedSlivers,
-    List<Song> allQuickPicks,
-    AppLocalizations l10n,
-    bool useBlur,
-    bool showArtistInQuickPicks,
-    bool showAlbumInQuickPicks,
-  ) {
-    orderedSlivers.add(
-      SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.quickPicks,
-                    style: AppFonts.jostStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    l10n.todayMixForYou,
-                    style: AppFonts.jostStyle(
-                      color: Colors.white.withValues(alpha: 0.4),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-              PremiumSection(
-                borderRadius: BorderRadius.circular(32),
-                padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-                height: 40,
-                useExpanded: false,
-                useBlur: useBlur,
-                backgroundColor: Colors.white.withValues(alpha: 0.04),
-                forceNoBlur: true,
-                onTap: () {
-                  if (allQuickPicks.isNotEmpty) {
-                    AppHaptics.medium();
-                    final shuffledPicks = List<Song>.from(allQuickPicks)
-                      ..shuffle();
-                    ref
-                        .read(playbackProvider.notifier)
-                        .setPlaylist(shuffledPicks, initialIndex: 0);
-                  }
-                },
-                child: SvgPicture.asset(AppIcons.shuffleHome, width: 40),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    orderedSlivers.add(
-      SliverToBoxAdapter(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final availableWidth = (constraints.maxWidth - 32).clamp(
-              0.0,
-              double.infinity,
-            );
-            final isLandscape = Responsive.isLandscape(
-              MediaQuery.sizeOf(context),
-            );
-            final crossAxisCount = isLandscape
-                ? math.max(3, ((availableWidth + 8) / (110 + 8)).floor())
-                : 3;
-            final itemWidth =
-                ((availableWidth - 8 * (crossAxisCount - 1)) / crossAxisCount)
-                    .clamp(0.0, double.infinity);
-            final gridHeight = ((itemWidth * 2) + 8).clamp(
-              8.0,
-              double.infinity,
-            );
-            final itemsPerPage = crossAxisCount * 2;
-
-            final pageCount = (allQuickPicks.length / itemsPerPage).ceil();
-            final validPageCount = pageCount == 0 ? 1 : pageCount;
-
-            return Column(
-              children: [
-                SizedBox(
-                  height: gridHeight,
-                  child: PageView.builder(
-                    onPageChanged: (index) {
-                      setState(() {
-                        _currentQuickPickPage = index;
-                      });
-                    },
-                    itemCount: validPageCount,
-                    itemBuilder: (context, pageIndex) {
-                      final startIndex = pageIndex * itemsPerPage;
-                      if (startIndex >= allQuickPicks.length &&
-                          allQuickPicks.isNotEmpty) {
-                        return const SizedBox();
-                      }
-
-                      final pageItems = allQuickPicks
-                          .skip(startIndex)
-                          .take(itemsPerPage)
-                          .toList();
-
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: GridView.builder(
-                          padding: EdgeInsets.zero,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: crossAxisCount,
-                                childAspectRatio: 1.0,
-                                crossAxisSpacing: 8,
-                                mainAxisSpacing: 8,
-                              ),
-                          itemCount: pageItems.length,
-                          itemBuilder: (context, index) {
-                            final song = pageItems[index];
-
-                            return GestureDetector(
-                              onTap: () {
-                                ref
-                                    .read(playbackProvider.notifier)
-                                    .setPlaylist(
-                                      allQuickPicks,
-                                      initialIndex: startIndex + index,
-                                    );
-                              },
-                              onLongPress: () {
-                                AppHaptics.medium();
-                                _showSongOptions(context, song);
-                              },
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Stack(
-                                  children: [
-                                    Positioned.fill(
-                                      child: SongArtwork(
-                                        song: song,
-                                        size: itemWidth,
-                                        indicatorSize: 32,
-                                      ),
-                                    ),
-                                    Positioned.fill(
-                                      child: Container(
-                                        decoration: const BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.bottomCenter,
-                                            colors: [
-                                              Colors.transparent,
-                                              Colors.black54,
-                                            ],
-                                            stops: [0.5, 1.0],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    Positioned(
-                                      left: 8,
-                                      bottom: 8,
-                                      right: 8,
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            song.title,
-                                            style: AppFonts.jostStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w500,
-                                              fontSize: 13,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          if (showArtistInQuickPicks)
-                                            Text(
-                                              artistAlbumLabel(
-                                                song,
-                                                l10n,
-                                                showAlbum:
-                                                    showAlbumInQuickPicks,
-                                              ),
-                                              style: AppFonts.jostStyle(
-                                                color: Colors.white.withValues(
-                                                  alpha: 0.6,
-                                                ),
-                                                fontSize: 10,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(validPageCount, (index) {
-                    final isActive = _currentQuickPickPage == index;
-                    return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 3),
-                      width: isActive ? 16 : 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: isActive ? Colors.white : Colors.white24,
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    );
-                  }),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-    orderedSlivers.add(const SliverToBoxAdapter(child: SizedBox(height: 16)));
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Quick Picks show the title only until "Show Album Next to Artist" is on.
-    final showArtistInQuickPicks = watchShowAlbum(ref);
     final showAlbumInQuickPicks = watchShowAlbumInQuickPicks(ref);
     // This tab is now permanently mounted alongside Songs/Library (see
     // AndroidMainScreen) instead of being torn down on every tab switch, so
@@ -657,106 +420,45 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab>
     final allQuickPicks = ref.watch(homeQuickPicksProvider);
     final dateAddedSongs = ref.watch(homeRecentlyAddedProvider);
 
-    final useBlur = enableDynamicTheming && !disableBlur;
+    // Same rule as sheets: Dynamic Theming's blur toggle, else
+    // "Always Blur Sheets & Headers".
+    final useBlur = ref.watch(
+      settingsProvider.select((s) => s.sheetShouldBlur),
+    );
 
     // Switching tabs cancels reorder mode.
     ref.listen(appNavigationProvider.select((s) => s.activeItem), (_, item) {
       if (item != NavItem.home) _cancelReorder();
     });
 
-    final header = Padding(
+    final header = HomeHero(
       key: const ValueKey('header'),
-      padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Row(
-            children: [
-              // Square avatars sit centered in a 40dp slot as before; a
-              // wide logo keeps the 38dp height and grows to the right
-              // (capped so it stays clear of the centered indicator).
-              SizedBox(
-                height: 38,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(minWidth: 40),
-                  child: const Center(
-                    child: SelectedAvatar(size: 38, maxWidth: 130),
-                  ),
-                ),
-              ),
-              // The enriching pill takes only the space between the
-              // avatar and the buttons (shrinking to fit instead of
-              // sliding under them on narrow screens / long languages).
-              const Expanded(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Center(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: EnrichmentIndicator(),
-                    ),
-                  ),
-                ),
-              ),
-              Row(
-                children: [
-                  PremiumSection(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(32),
-                      bottomLeft: Radius.circular(32),
-                      topRight: Radius.circular(10),
-                      bottomRight: Radius.circular(10),
-                    ),
-                    width: 48,
-                    height: 48,
-                    useExpanded: false,
-                    useBlur: useBlur,
-                    forceNoBlur: true,
-                    backgroundColor: Colors.white.withValues(alpha: 0.04),
-                    onTap: () {
-                      AppHaptics.light();
-                      ref
-                          .read(appNavigationProvider.notifier)
-                          .setItem(NavItem.search);
-                    },
-                    child: const Icon(
-                      LucideIcons.search,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 5),
-                  PremiumSection(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(10),
-                      bottomLeft: Radius.circular(10),
-                      topRight: Radius.circular(32),
-                      bottomRight: Radius.circular(32),
-                    ),
-                    width: 48,
-                    height: 48,
-                    useExpanded: false,
-                    useBlur: useBlur,
-                    backgroundColor: Colors.white.withValues(alpha: 0.04),
-                    forceNoBlur: true,
-                    onTap: () {
-                      AppHaptics.light();
-                      ref
-                          .read(appNavigationProvider.notifier)
-                          .setItem(NavItem.account);
-                    },
-                    child: const Icon(
-                      LucideIcons.user,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
+      mix: allQuickPicks,
+      library: songs,
+      artists: rawArtists,
+      stretch: _overscroll,
+      onPlayMix: () {
+        AppHaptics.medium();
+        ref
+            .read(playbackProvider.notifier)
+            .setPlaylist(List<Song>.from(allQuickPicks)..shuffle());
+      },
+      onPlayCover: (queue, index) {
+        AppHaptics.light();
+        ref
+            .read(playbackProvider.notifier)
+            .setPlaylist(queue, initialIndex: index);
+      },
+      onSurprise: (pick) {
+        AppHaptics.medium();
+        final queue = List<Song>.from(songs)..shuffle();
+        if (pick != null) {
+          queue
+            ..removeWhere((s) => s.path == pick.path)
+            ..insert(0, pick);
+        }
+        ref.read(playbackProvider.notifier).setPlaylist(queue);
+      },
     );
 
     // Every row follows homeSectionOrder. Rows with nothing to show keep
@@ -767,70 +469,65 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab>
       final slivers = <Widget>[];
       if (section == 'quick_picks') {
         if (allQuickPicks.isNotEmpty) {
-          _buildQuickPicksSlivers(
-            context,
-            slivers,
-            allQuickPicks,
-            l10n,
-            useBlur,
-            showArtistInQuickPicks,
-            showAlbumInQuickPicks,
+          slivers.add(
+            SliverToBoxAdapter(
+              child: HomeSectionHeader(
+                label: l10n.homePicksLabel,
+                title: l10n.homeForYou,
+                // Right under the hero when it is the first row.
+                padding: EdgeInsets.fromLTRB(
+                  23,
+                  visibleRows.isEmpty ? 0 : 36,
+                  16,
+                  19,
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    HomeRoundButton(
+                      semanticLabel: l10n.playAll,
+                      onTap: () {
+                        AppHaptics.medium();
+                        ref
+                            .read(playbackProvider.notifier)
+                            .setPlaylist(allQuickPicks);
+                      },
+                      child: homeSectionPlayIcon,
+                    ),
+                    const SizedBox(width: 6),
+                    HomeViewAllPill(
+                      label: l10n.viewAll,
+                      onTap: () {
+                        AppHaptics.light();
+                        ref
+                            .read(appNavigationProvider.notifier)
+                            .setItem(NavItem.songs);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+          slivers.add(
+            SliverToBoxAdapter(
+              child: _buildPicksPager(
+                allQuickPicks,
+                l10n,
+                showAlbum: showAlbumInQuickPicks,
+              ),
+            ),
           );
         }
       } else if (section == 'songs' && dateAddedSongs.isNotEmpty) {
         slivers.add(
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    l10n.songs,
-                    style: AppFonts.jostStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  PremiumSection(
-                    borderRadius: BorderRadius.circular(32),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    height: 40,
-                    useExpanded: false,
-                    useBlur: useBlur,
-                    forceNoBlur: true,
-                    backgroundColor: Colors.white.withValues(alpha: 0.04),
-                    onTap: () {
-                      AppHaptics.light();
-                      ref
-                          .read(appNavigationProvider.notifier)
-                          .setItem(NavItem.songs);
-                    },
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          l10n.viewAll,
-                          style: AppFonts.jostStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Icon(
-                          LucideIcons.arrowRight,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            child: _homeSectionHeader(
+              title: l10n.songs,
+              onViewAll: () {
+                AppHaptics.light();
+                ref.read(appNavigationProvider.notifier).setItem(NavItem.songs);
+              },
             ),
           ),
         );
@@ -871,7 +568,8 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab>
           final hasMore = playlists.length > 15;
           slivers.add(
             _buildHorizontalSection(
-              title: l10n.playlists,
+              title: l10n.library,
+              label: l10n.homeYourOwn,
               actionText: l10n.viewAll,
               onActionTap: () {
                 AppHaptics.medium();
@@ -890,14 +588,18 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab>
                         .read(appNavigationProvider.notifier)
                         .setItem(NavItem.playlists),
                     l10n: l10n,
-                    width: 120,
+                    width: 128,
                   );
                 }
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 8.5),
                   child: SizedBox(
-                    width: 120,
-                    child: PlaylistCard(playlist: playlists[index]),
+                    width: 128,
+                    child: PlaylistCard(
+                      playlist: playlists[index],
+                      titleStyle: homeCardTitle(),
+                      subtitleStyle: homeCardSub(size: 15),
+                    ),
                   ),
                 );
               },
@@ -923,6 +625,7 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab>
                   : displayCount + (hasMore ? 1 : 0),
               loading: loadingInParts && artists.isEmpty,
               circleSkeleton: true,
+              arrows: true,
               itemBuilder: (context, index) {
                 if (index >= displayCount) {
                   return _buildViewAllEndCard(
@@ -930,12 +633,13 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab>
                         .read(appNavigationProvider.notifier)
                         .setItem(NavItem.artists),
                     l10n: l10n,
-                    width: 110,
+                    width: 90,
                     circle: true,
                   );
                 }
                 return _buildArtistItem(artists[index], l10n);
               },
+              listHeight: 108,
             ),
           );
         }
@@ -964,11 +668,12 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab>
                         .read(appNavigationProvider.notifier)
                         .setItem(NavItem.albums),
                     l10n: l10n,
-                    width: 120,
+                    width: 128,
                   );
                 }
                 return _buildAlbumItem(albums[index], l10n);
               },
+              listHeight: 190,
             ),
           );
         }
@@ -1012,57 +717,14 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab>
         if (showHomeRecent && recentSongs.isNotEmpty) {
           slivers.add(
             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      l10n.recentPlayed,
-                      style: AppFonts.jostStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    PremiumSection(
-                      borderRadius: BorderRadius.circular(32),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      height: 40,
-                      useExpanded: false,
-                      useBlur: useBlur,
-                      forceNoBlur: true,
-                      backgroundColor: Colors.white.withValues(alpha: 0.04),
-                      onTap: () {
-                        AppHaptics.light();
-                        ref
-                            .read(appNavigationProvider.notifier)
-                            .setItem(NavItem.history);
-                      },
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            l10n.viewAll,
-                            style: AppFonts.jostStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(
-                            LucideIcons.arrowRight,
-                            size: 16,
-                            color: Colors.white,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+              child: _homeSectionHeader(
+                title: l10n.recentPlayed,
+                onViewAll: () {
+                  AppHaptics.light();
+                  ref
+                      .read(appNavigationProvider.notifier)
+                      .setItem(NavItem.history);
+                },
               ),
             ),
           );
@@ -1088,7 +750,14 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab>
       SliverToBoxAdapter(
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 220),
-          child: _reordering ? _buildReorderBar(l10n, useBlur, accent) : header,
+          child: _reordering
+              ? Padding(
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.paddingOf(context).top,
+                  ),
+                  child: _buildReorderBar(l10n, useBlur, accent),
+                )
+              : header,
         ),
       ),
       SliverFadeTransition(
@@ -1117,6 +786,7 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab>
     return LoadStateSwitcher(
       state: 'content',
       child: SafeArea(
+        top: false,
         child: _wrapHold(
           accent: accent,
           child: AppRefreshIndicator(
@@ -1127,11 +797,49 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab>
                   .refreshLibrary(showVisualIndicator: true)
                   .ignore();
             },
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(
-                parent: LooperScrollPhysics(),
-              ),
-              slivers: orderedSlivers,
+            child: Stack(
+              children: [
+                NotificationListener<ScrollUpdateNotification>(
+                  onNotification: (n) {
+                    if (n.depth == 0) {
+                      final m = n.metrics;
+                      _overscroll.value = math.max(
+                        0.0,
+                        m.minScrollExtent - m.pixels,
+                      );
+                      _scrolled.value = math.max(
+                        0.0,
+                        m.pixels - m.minScrollExtent,
+                      );
+                    }
+                    return false;
+                  },
+                  child: CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: LooperScrollPhysics(),
+                    ),
+                    slivers: orderedSlivers,
+                  ),
+                ),
+                // Pinned over the page; the reorder bar takes its place.
+                if (!_reordering)
+                  HomeTopBar(
+                    blur: useBlur,
+                    scrolled: _scrolled,
+                    onSearch: () {
+                      AppHaptics.light();
+                      ref
+                          .read(appNavigationProvider.notifier)
+                          .setItem(NavItem.search);
+                    },
+                    onProfile: () {
+                      AppHaptics.light();
+                      ref
+                          .read(appNavigationProvider.notifier)
+                          .setItem(NavItem.account);
+                    },
+                  ),
+              ],
             ),
           ),
         ),

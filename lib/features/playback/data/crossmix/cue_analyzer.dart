@@ -24,8 +24,9 @@ class CueAnalyzer {
     final cached = await LocalJsonStore.read(cacheKey);
     if (cached is Map) {
       try {
-        final analysis =
-            CrossmixAnalysis.fromJson(Map<String, dynamic>.from(cached));
+        final analysis = CrossmixAnalysis.fromJson(
+          Map<String, dynamic>.from(cached),
+        );
         return analysis;
       } catch (_) {}
     }
@@ -77,8 +78,10 @@ class CueAnalyzer {
 
     final channels = bytes.buffer.asByteData().getUint16(22, Endian.little);
     final sampleRate = bytes.buffer.asByteData().getUint32(24, Endian.little);
-    final bitsPerSample =
-        bytes.buffer.asByteData().getUint16(34, Endian.little);
+    final bitsPerSample = bytes.buffer.asByteData().getUint16(
+      34,
+      Endian.little,
+    );
 
     if (sampleRate == 0 || channels == 0 || bitsPerSample != 16) return null;
 

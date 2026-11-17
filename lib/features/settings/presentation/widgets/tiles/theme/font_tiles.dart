@@ -56,6 +56,32 @@ class FontWeightSelectionTile extends ConsumerWidget {
   }
 }
 
+/// Letter spacing for all app text, -10% to +10% of the font size.
+class LetterSpacingTile extends ConsumerWidget {
+  const LetterSpacingTile({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final value = ref.watch(
+      settingsProvider.select((s) => s.letterSpacingPercent),
+    );
+    return SettingsSliderTile(
+      icon: LucideIcons.letterText,
+      title: l10n.letterSpacing,
+      subtitle: l10n.letterSpacingDesc,
+      value: value.isNaN ? AppDefaults.letterSpacingPercent : value,
+      min: -10,
+      max: 10,
+      divisions: 20,
+      suffix: '%',
+      onChanged: (v) => ref
+          .read(settingsProvider.notifier)
+          .updateLetterSpacingPercent(v.roundToDouble()),
+    );
+  }
+}
+
 class UseNewFontLyricsTile extends ConsumerWidget {
   const UseNewFontLyricsTile({super.key});
 

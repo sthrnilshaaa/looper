@@ -361,10 +361,7 @@ class _HeroCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final name = accountDisplayName(
-      ref.watch(settingsProvider),
-      l10n,
-    );
+    final name = accountDisplayName(ref.watch(settingsProvider), l10n);
     final tag = '${l10n.accountLooperTag(name)} • ';
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),

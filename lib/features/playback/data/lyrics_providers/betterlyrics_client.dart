@@ -23,7 +23,8 @@ class BetterLyricsClient {
   }) async {
     final baseUrl = isQq ? _qqBase : _defaultBase;
     final cleanT = LyricsQuery.cleanTitle(title);
-    final cleanA = LyricsQuery.artistVariants(artist, max: 1).firstOrNull ?? artist.trim();
+    final cleanA =
+        LyricsQuery.artistVariants(artist, max: 1).firstOrNull ?? artist.trim();
 
     // Inzx retries: exact -> cleaned -> cleaned without duration -> title only
     final attempts = <Map<String, String>>[
@@ -45,15 +46,15 @@ class BetterLyricsClient {
         if (cleanA.isNotEmpty) 'a': cleanA,
         if (album.trim().isNotEmpty) 'al': album.trim(),
       },
-      {
-        's': cleanT,
-      },
+      {'s': cleanT},
     ];
 
     try {
       for (final params in attempts) {
         if (params['s'] == null || params['s']!.isEmpty) continue;
-        final uri = Uri.parse('$baseUrl/getLyrics').replace(queryParameters: params);
+        final uri = Uri.parse(
+          '$baseUrl/getLyrics',
+        ).replace(queryParameters: params);
         final response = await http
             .get(uri, headers: LyricsHttp.headers)
             .timeout(_timeout);
@@ -67,7 +68,8 @@ class BetterLyricsClient {
         try {
           final decoded = jsonDecode(bodyText);
           if (decoded is Map) {
-            ttmlContent = decoded['ttml']?.toString() ??
+            ttmlContent =
+                decoded['ttml']?.toString() ??
                 decoded['lyrics']?.toString() ??
                 decoded['data']?['ttml']?.toString();
             final dur = decoded['duration'] ?? decoded['d'];

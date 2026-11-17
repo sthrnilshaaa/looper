@@ -1882,5 +1882,19 @@
   "setupKofiDesc": "Ko-fi でプロジェクトを支援できます。",
   "setupDoneTitle": "準備完了！",
   "setupDoneDesc": "ライブラリはバックグラウンドでスキャン中です。さっそく聴き始めましょう。",
-  "setupStartListening": "聴き始める"
+  "setupStartListening": "聴き始める",
+  "homeTodayMix": "今日のミックス",
+  "homeTodayMixDesc": "1日のムードを決める最高のミックス",
+  "homeSurpriseMe": "おまかせ！",
+  "homeSurpriseMeDesc": "何を聴くか迷ったら、運に任せよう。",
+  "homeArtistPick": "あなたへのおすすめアーティスト",
+  "homeWeeklyMix": "ウィークリーミックス",
+  "homeWeeklyMixDesc": "今週よく聴いた曲",
+  "homePicksLabel": "ピック",
+  "homeForYou": "あなたへ",
+  "homeYourOwn": "あなたの",
+  "letterSpacing": "文字間隔",
+  "letterSpacingDesc": "アプリ全体の文字の詰め具合を調整",
+  "homeHeroEmptyDesc": "聴き始めると、ここにあなたのミックスが表示されます",
+  "notificationPermissionRequired": "続行するには通知を許可してください。Looper は再生コントロールに通知を使用します。"
 }

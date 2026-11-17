@@ -81,7 +81,7 @@ class RecentSongPills extends ConsumerWidget {
             SongArtwork(
               song: song,
               size: 24,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(5),
               indicatorSize: 16,
             ),
             const SizedBox(width: 6),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
+import 'package:looper_player/features/settings/domain/app_defaults.dart';
 import 'package:looper_player/core/theme/theme_provider.dart';
 import 'package:looper_player/core/utils/ui_scale_steps.dart';
 import 'package:looper_player/core/utils/artwork_colors.dart' show boostChroma;
@@ -19,6 +20,7 @@ import '../../progress_bar_style_sheet.dart';
 import '../../quality_badge_sheet.dart';
 import 'package:looper_player/features/settings/domain/artwork_visualizer_style.dart';
 import 'package:looper_player/core/services/haptics/app_haptics.dart';
+import 'package:looper_player/ui/android/player/expanded/player_style_picker.dart';
 export 'darkness_sliders.dart';
 export 'package:looper_player/features/playback/presentation/widgets/lyrics/advanced_lyric_line/advanced_lyric_line.dart'
     show activeLyricsIsWhite, AdvancedLyricLine, inactiveLyricsOpacity;

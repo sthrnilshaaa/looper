@@ -270,7 +270,9 @@ class _StyledPlayerLayoutState extends ConsumerState<StyledPlayerLayout>
               Positioned(
                 left: 30 * sx,
                 right: (_designW - 320) * sx,
-                bottom: fromBottom(widget.style == PlayerLayoutStyle.card ? 63 : 51),
+                bottom: fromBottom(
+                  widget.style == PlayerLayoutStyle.card ? 63 : 51,
+                ),
                 child: fade(
                   _SmallTitle(
                     song: song,
@@ -1174,7 +1176,9 @@ final _activeColorProvider = Provider<Color>(
     settingsProvider.select((s) {
       final style = PlayerLayoutStyle.fromSetting(s.playerStyle);
       if (style == PlayerLayoutStyle.classic) return s.accent;
-      return (s.cardAccentColors || s.playerStyleAccent) ? s.accent : Colors.white;
+      return (s.cardAccentColors || s.playerStyleAccent)
+          ? s.accent
+          : Colors.white;
     }),
   ),
 );
@@ -1266,9 +1270,7 @@ class _LyricsBlockState extends ConsumerState<_LyricsBlock> {
     final isPlaying = ref.watch(playbackProvider.select((p) => p.isPlaying));
     ScreenAwake.set(
       this,
-      lines.isNotEmpty &&
-          TickerMode.valuesOf(context).enabled &&
-          isPlaying,
+      lines.isNotEmpty && TickerMode.valuesOf(context).enabled && isPlaying,
     );
     if (lines.isEmpty) return const SizedBox.shrink();
     final index = synced
@@ -1433,16 +1435,19 @@ class _StyledQualityBadge extends ConsumerWidget {
       path = '';
     }
 
-    final cachedAnalysis =
-        path.isNotEmpty ? AudioAnalyzer.getCachedAnalysis(path) : null;
+    final cachedAnalysis = path.isNotEmpty
+        ? AudioAnalyzer.getCachedAnalysis(path)
+        : null;
     final QualityInfo qualityInfo = cachedAnalysis != null
         ? QualityInfo.fromAnalysis(cachedAnalysis)
-        : ref.watch(currentSongAnalysisProvider).whenOrNull(
-              data: (a) => a == null ? null : QualityInfo.fromAnalysis(a),
-            ) ??
-            (path.isNotEmpty
-                ? QualityInfo.fromPath(path)
-                : const QualityInfo(tier: QualityTier.high));
+        : ref
+                  .watch(currentSongAnalysisProvider)
+                  .whenOrNull(
+                    data: (a) => a == null ? null : QualityInfo.fromAnalysis(a),
+                  ) ??
+              (path.isNotEmpty
+                  ? QualityInfo.fromPath(path)
+                  : const QualityInfo(tier: QualityTier.high));
 
     final settings = ref.watch(settingsProvider);
     final style = QualityBadgeStyle.fromSettings(settings);
@@ -1480,10 +1485,7 @@ class _StyledQualityBadge extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          if (icon != null) ...[
-            icon,
-            SizedBox(width: 3 * scale),
-          ],
+          if (icon != null) ...[icon, SizedBox(width: 3 * scale)],
           Text(
             text,
             maxLines: 1,
@@ -2140,7 +2142,8 @@ class _StyledLandscapeLayoutState extends ConsumerState<StyledLandscapeLayout>
         final Offset chevron = switch (style) {
           PlayerLayoutStyle.arc => const Offset(39, 37),
           PlayerLayoutStyle.linear => const Offset(39, 39),
-          PlayerLayoutStyle.card || PlayerLayoutStyle.classic => const Offset(54, 45),
+          PlayerLayoutStyle.card ||
+          PlayerLayoutStyle.classic => const Offset(54, 45),
         };
         final double textLeft = arc ? 526 : 437;
         final double lyricsTop = arc ? 27 : 46;

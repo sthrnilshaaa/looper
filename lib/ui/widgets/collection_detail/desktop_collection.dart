@@ -23,7 +23,8 @@ extension _DesktopCollection on CollectionDetailView {
     List<Object>? groupedItems,
   }) {
     final l10n = AppLocalizations.of(context)!;
-    final isArtist = reactivePlaylist == null &&
+    final isArtist =
+        reactivePlaylist == null &&
         reactiveAlbum == null &&
         (reactiveArtist != null ||
             subtitle == l10n.artist ||

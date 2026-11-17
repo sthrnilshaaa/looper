@@ -351,20 +351,17 @@ class Playback extends _$Playback {
       }),
     );
 
-    _subscriptions.add(
-      p.stream.buffering.listen((_) => _updateBuffering()),
-    );
+    _subscriptions.add(p.stream.buffering.listen((_) => _updateBuffering()));
 
-    _subscriptions.add(
-      p.stream.seeking.listen((_) => _updateBuffering()),
-    );
+    _subscriptions.add(p.stream.seeking.listen((_) => _updateBuffering()));
 
     _subscriptions.add(
       p.stream.demuxerCacheState.listen((cacheState) {
         if (!state.isStreaming) return;
         if (cacheState.eofCached && !_eofCached) {
           _eofCached = true;
-          if (state.duration > Duration.zero && state.buffer != state.duration) {
+          if (state.duration > Duration.zero &&
+              state.buffer != state.duration) {
             state = state.copyWith(buffer: state.duration);
           }
         }
@@ -376,8 +373,9 @@ class Playback extends _$Playback {
         if (!state.isStreaming || _eofCached) return;
         final dur = state.duration;
         if (dur <= Duration.zero) return;
-        final stepMs =
-            (dur.inMilliseconds / 100).clamp(1, double.infinity).toInt();
+        final stepMs = (dur.inMilliseconds / 100)
+            .clamp(1, double.infinity)
+            .toInt();
         final roundedMs = (buf.inMilliseconds ~/ stepMs) * stepMs;
         final rounded = Duration(
           milliseconds: roundedMs.clamp(0, dur.inMilliseconds),
@@ -743,7 +741,8 @@ class Playback extends _$Playback {
         : (_playlist.isNotEmpty ? _playlist.first : null);
     if (nextSong == null || state.currentSong == null) return;
 
-    final isSleepTimerAtEnd = state.isSleepTimerActive &&
+    final isSleepTimerAtEnd =
+        state.isSleepTimerActive &&
         state.sleepTimerSongsRemaining != null &&
         state.sleepTimerSongsRemaining! <= 1;
 
@@ -1875,9 +1874,10 @@ class Playback extends _$Playback {
   void _applyVolume() {
     final double curvedVolume = state.volume * state.volume;
     final effective = state.isScrubbing ? 0.0 : curvedVolume * _fader.factor;
-    ref.read(audioServiceProvider).transitionDirector.setMasterVolume(
-      effective,
-    );
+    ref
+        .read(audioServiceProvider)
+        .transitionDirector
+        .setMasterVolume(effective);
   }
 
   Future<void> seek(Duration position) async {
@@ -2004,7 +2004,8 @@ class Playback extends _$Playback {
     _currentIndex = currentIndex;
     state = state.copyWith(
       queue: List.unmodifiable(_playlist),
-      currentSong: queue.isNotEmpty && currentIndex >= 0 && currentIndex < queue.length
+      currentSong:
+          queue.isNotEmpty && currentIndex >= 0 && currentIndex < queue.length
           ? queue[currentIndex]
           : null,
     );
@@ -2123,16 +2124,14 @@ class Playback extends _$Playback {
     if (idx != -1) {
       _playlist[idx].isFavorite = newFavoriteState;
     }
-    state = state.copyWith(
-      currentSong: song,
-      queue: List.from(_playlist),
-    );
+    state = state.copyWith(currentSong: song, queue: List.from(_playlist));
     _updateNotification();
 
     // Persist to database safely
     try {
       await DbService.isar.writeTxn(() async {
-        final dbSong = await DbService.isar.songs.getByPath(path) ??
+        final dbSong =
+            await DbService.isar.songs.getByPath(path) ??
             await DbService.isar.songs.get(song.id);
         if (dbSong != null) {
           dbSong.isFavorite = newFavoriteState;

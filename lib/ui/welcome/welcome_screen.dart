@@ -11,6 +11,7 @@ import 'package:looper_player/core/providers/providers.dart';
 import 'package:looper_player/core/services/storage/storage_access.dart';
 import 'package:looper_player/core/utils/app_links.dart';
 import 'package:looper_player/core/utils/desktop_paths.dart';
+import 'package:looper_player/core/utils/motion.dart';
 import 'package:looper_player/features/settings/presentation/widgets/tiles/about_settings_tiles.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
 import 'package:looper_player/ui/widgets/common/setup_kit.dart';
@@ -82,7 +83,19 @@ class WelcomeScreen extends ConsumerStatefulWidget {
 enum _Page { welcome, permissions, community, done }
 
 class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+  // "Start listening": the page eases toward you and fades into the dark.
+  late final _exit = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 380),
+  );
+  late final _exitCurve = CurvedAnimation(
+    parent: _exit,
+    curve: Curves.easeInCubic,
+  );
+  late final _exitFade = Tween(begin: 1.0, end: 0.0).animate(_exitCurve);
+  late final _exitZoom = Tween(begin: 1.0, end: 1.04).animate(_exitCurve);
+  bool _leaving = false;
   _Page _page = _Page.welcome;
   bool _reverse = false;
 
@@ -106,6 +119,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _exitCurve.dispose();
+    _exit.dispose();
     super.dispose();
   }
 
@@ -143,7 +158,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   Future<void> _requestNotificationPermission() async {
     if (!Platform.isAndroid) return;
     try {
-      await Permission.notification.request();
+      final status = await Permission.notification.request();
+      // No dialog shows once permanently denied; send them to system settings.
+      if (status.isPermanentlyDenied) await openAppSettings();
     } catch (_) {}
     await _checkPermissionStatus();
     ref.read(playbackProvider.notifier).updateNotification();
@@ -172,6 +189,20 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           SnackBar(
             content: Text(
               AppLocalizations.of(context)!.storagePermissionRequired,
+            ),
+          ),
+        );
+        return;
+      }
+    }
+    if (Platform.isAndroid && !_notificationGranted) {
+      await _requestNotificationPermission();
+      if (!mounted) return;
+      if (!_notificationGranted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.notificationPermissionRequired,
             ),
           ),
         );
@@ -244,6 +275,10 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   }
 
   Future<void> _finish() async {
+    if (_leaving) return; // already on the way out
+    _leaving = true;
+    if (!Motion.reducedOf(context)) await _exit.forward();
+    if (!mounted) return;
     ref.read(forceWelcomeProvider.notifier).set(false);
     ref.read(welcomeBypassedProvider.notifier).set(true);
   }
@@ -262,19 +297,28 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         if (didPop) return;
         _go(_Page.values[_page.index - 1]);
       },
-      child: Scaffold(
-        backgroundColor: kSetupBg,
-        body: SetupBackground(
-          child: SetupSwitcher(
-            reverse: _reverse,
-            child: KeyedSubtree(
-              key: ValueKey(_page),
-              child: switch (_page) {
-                _Page.welcome => _welcome(l10n),
-                _Page.permissions => _permissions(l10n),
-                _Page.community => _community(l10n),
-                _Page.done => _done(l10n),
-              },
+      child: ColoredBox(
+        color: kSetupBg,
+        child: FadeTransition(
+          opacity: _exitFade,
+          child: ScaleTransition(
+            scale: _exitZoom,
+            child: Scaffold(
+              backgroundColor: kSetupBg,
+              body: SetupBackground(
+                child: SetupSwitcher(
+                  reverse: _reverse,
+                  child: KeyedSubtree(
+                    key: ValueKey(_page),
+                    child: switch (_page) {
+                      _Page.welcome => _welcome(l10n),
+                      _Page.permissions => _permissions(l10n),
+                      _Page.community => _community(l10n),
+                      _Page.done => _done(l10n),
+                    },
+                  ),
+                ),
+              ),
             ),
           ),
         ),

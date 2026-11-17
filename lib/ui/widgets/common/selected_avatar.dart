@@ -18,7 +18,7 @@ const String avatarAssetDir = AppAssets.avatarDir;
 /// kept as a plain literal in both places rather than a shared import,
 /// since a domain model importing a UI widget file would be a worse
 /// trade-off than duplicating one stable filename.
-const String defaultAvatarAsset = 'looper_player_logo.svg';
+const String defaultAvatarAsset = 'looper_mark.svg';
 
 /// Hex of the default avatar's built-in accent (looper_player_logo.svg's
 /// leaf shape) - swapped for the live theme color the same way the plain

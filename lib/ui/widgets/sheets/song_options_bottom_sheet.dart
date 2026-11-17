@@ -669,19 +669,15 @@ class _PlayerSongOptionsSheet extends _SongOptionsSheetContent {
 
     // Play next takes the grid slot.
     final playNext = _gridTile(
-            const Icon(
-              Icons.playlist_play_rounded,
-              size: 16,
-              color: Colors.white,
-            ),
-            l10n.playNext,
-            () {
-              AppHaptics.light();
-              playback.addNext(song);
-              Navigator.pop(context);
-              snack(l10n.willPlayNext);
-            },
-          );
+      const Icon(Icons.playlist_play_rounded, size: 16, color: Colors.white),
+      l10n.playNext,
+      () {
+        AppHaptics.light();
+        playback.addNext(song);
+        Navigator.pop(context);
+        snack(l10n.willPlayNext);
+      },
+    );
 
     final rows = <Widget>[
       _rowTile(_svg('menu_queue'), l10n.addToQueue, () {

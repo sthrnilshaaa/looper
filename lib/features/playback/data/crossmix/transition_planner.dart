@@ -73,7 +73,9 @@ class TransitionPlanner {
         outgoingSong: outgoingSong,
         incomingSong: incomingSong,
         style: TransitionStyle.equalPower,
-        outgoingTriggerOffset: outDur > skipFade ? outDur - skipFade : Duration.zero,
+        outgoingTriggerOffset: outDur > skipFade
+            ? outDur - skipFade
+            : Duration.zero,
         incomingStartOffset: Duration.zero,
         overlapDuration: skipFade,
         swapProgress: 0.5,
@@ -132,7 +134,9 @@ class TransitionPlanner {
     }
 
     // Calculate transition trigger point
-    var triggerOffset = realMusicEnd - Duration(milliseconds: (targetOverlapSecs * 1000).round());
+    var triggerOffset =
+        realMusicEnd -
+        Duration(milliseconds: (targetOverlapSecs * 1000).round());
     if (triggerOffset < Duration.zero) triggerOffset = Duration.zero;
 
     // Stage 2: Respect lyrics line boundaries

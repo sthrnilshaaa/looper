@@ -19,8 +19,7 @@ import '../../domain/app_defaults.dart';
 import 'package:flutter/painting.dart' show Color;
 import 'package:looper_player/core/utils/artwork_colors.dart' show boostChroma;
 import 'package:looper_player/core/utils/ui_utils.dart' show UiUtils;
-import '../../domain/home_order.dart'
-    show withHomeRowIds;
+import '../../domain/home_order.dart' show withHomeRowIds;
 
 part 'settings_notifier.g.dart';
 
@@ -50,7 +49,9 @@ extension AppAccent on AppSettings {
 
 /// Whether bottom sheets and popup sheets should render with frosted blur.
 ///
-/// In the settings UI, either "Always Blur Sheets" or "Disable Blur Effects"
+/// Also drives the scrolled page-header blur (HeaderBackdrop).
+///
+/// In the settings UI, either "Always Blur Sheets & Headers" or "Disable Blur Effects"
 /// is shown to the user at a time, depending on Dynamic Theming:
 /// - When Dynamic Theming is ON: blur follows `!disableBlur`.
 /// - When Dynamic Theming is OFF: blur follows `alwaysBlurSheets`.
@@ -99,6 +100,17 @@ class Settings extends _$Settings {
           settings.libraryFolders = recoveredFolders;
           needsSave = true;
         }
+      }
+      // Home redesign, once: the new ▶▶ avatar replaces the old default
+      // wordmark (a picked avatar stays), and the kept background gradient
+      // starts off. Both stay user-changeable in Settings afterwards.
+      if (!settings.homeRedesignV1) {
+        if (settings.selectedAvatarAsset == 'logo_full.svg') {
+          settings.selectedAvatarAsset = AppDefaults.selectedAvatarAsset;
+        }
+        settings.keepBackgroundGradient = AppDefaults.keepBackgroundGradient;
+        settings.homeRedesignV1 = true;
+        needsSave = true;
       }
       // Only run legacy defaults migration ONCE if settingsV3 is not yet set
       if (!settings.settingsV3) {
@@ -267,6 +279,7 @@ class Settings extends _$Settings {
         ..enableLyricsGradient = AppDefaults.enableLyricsGradient
         ..settingsV2 = true
         ..settingsV3 = true
+        ..homeRedesignV1 = true
         ..dynamicLyrics = AppDefaults.dynamicLyrics
         ..blurredArtworkForLyrics = AppDefaults.blurredArtworkForLyrics
         ..showPerformanceOptimizer = AppDefaults.showPerformanceOptimizer
@@ -307,12 +320,15 @@ class Settings extends _$Settings {
     final activeState = customState ?? state;
     AppFonts.activeFontFamily = activeState.useNewFont
         ? (activeState.customFontFamily.isEmpty
-              ? AppFonts.stackSansText
+              ? AppDefaults.customFontFamily
               : activeState.customFontFamily)
         : 'Stack Sans Text';
     AppFonts.appFontWeightDelta = activeState.useNewFont
         ? activeState.customFontWeightDelta
         : 0;
+    AppFonts.appLetterSpacingPercent = activeState.letterSpacingPercent.isNaN
+        ? AppDefaults.letterSpacingPercent
+        : activeState.letterSpacingPercent;
     AppFonts.lyricsFontWeightDelta = activeState.useNewFontLyrics
         ? activeState.customFontWeightLyricsDelta
         : 0;
@@ -413,6 +429,7 @@ class Settings extends _$Settings {
       ..animateBackgroundGradient = s.animateBackgroundGradient
       ..settingsV2 = s.settingsV2
       ..settingsV3 = s.settingsV3
+      ..homeRedesignV1 = s.homeRedesignV1
       ..blurredArtworkForLyrics = s.blurredArtworkForLyrics
       ..customBackgroundImagePath = s.customBackgroundImagePath
       ..bgBrightness = s.bgBrightness
@@ -469,6 +486,7 @@ class Settings extends _$Settings {
       ..customFontFamily = s.customFontFamily
       ..customFontWeight = s.customFontWeight
       ..customFontWeightDelta = s.customFontWeightDelta
+      ..letterSpacingPercent = s.letterSpacingPercent
       ..useNewFontLyrics = s.useNewFontLyrics
       ..customFontFamilyLyrics = s.customFontFamilyLyrics
       ..customFontWeightLyrics = s.customFontWeightLyrics
@@ -574,8 +592,11 @@ class Settings extends _$Settings {
   Future<void> updatePlayerStyle(String value) =>
       _update((s) => s..playerStyle = value);
 
-  Future<void> updatePlayerStyleAccent(bool value) =>
-      _update((s) => s..playerStyleAccent = value..cardAccentColors = value);
+  Future<void> updatePlayerStyleAccent(bool value) => _update(
+    (s) => s
+      ..playerStyleAccent = value
+      ..cardAccentColors = value,
+  );
 
   Future<void> updateCardBlackBackground(bool value) =>
       _update((s) => s..cardBlackBackground = value);
@@ -583,8 +604,11 @@ class Settings extends _$Settings {
   Future<void> updateCardAccentBackground(bool value) =>
       _update((s) => s..cardAccentBackground = value);
 
-  Future<void> updateCardAccentColors(bool value) =>
-      _update((s) => s..cardAccentColors = value..playerStyleAccent = value);
+  Future<void> updateCardAccentColors(bool value) => _update(
+    (s) => s
+      ..cardAccentColors = value
+      ..playerStyleAccent = value,
+  );
 
   Future<void> updatePlayerStyleBlur(bool value) =>
       _update((s) => s..playerStyleBlur = value);
@@ -923,6 +947,11 @@ class Settings extends _$Settings {
 
   Future<void> updateCustomFontWeightDelta(int value) async {
     await _update((s) => s..customFontWeightDelta = value);
+    _updateActiveFont();
+  }
+
+  Future<void> updateLetterSpacingPercent(double value) async {
+    await _update((s) => s..letterSpacingPercent = value);
     _updateActiveFont();
   }
 

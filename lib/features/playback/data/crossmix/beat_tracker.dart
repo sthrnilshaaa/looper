@@ -51,7 +51,10 @@ class BeatTracker {
 
     for (int frame = 0; frame < totalFrames; frame++) {
       final sampleStart = frame * hopSize * channels;
-      final sampleEnd = math.min(samples.length, (frame + 1) * hopSize * channels);
+      final sampleEnd = math.min(
+        samples.length,
+        (frame + 1) * hopSize * channels,
+      );
       double frameSumSq = 0.0;
       int count = 0;
 
@@ -87,7 +90,7 @@ class BeatTracker {
     // 60 BPM -> 1 beat = 1.0s = 100 frames
     // 180 BPM -> 1 beat = 0.333s = 33 frames
     final minLag = (100 * 60 / 180).round(); // ~33
-    final maxLag = (100 * 60 / 60).round();  // ~100
+    final maxLag = (100 * 60 / 60).round(); // ~100
 
     double bestCorr = 0.0;
     int bestLag = 50; // default 120 BPM (50 frames = 0.5s)
@@ -158,7 +161,11 @@ class BeatTracker {
       // Backtrack from best end frame
       int bestEnd = 0;
       double maxFinal = -double.infinity;
-      for (int i = math.max(0, totalFrames - periodFrames); i < totalFrames; i++) {
+      for (
+        int i = math.max(0, totalFrames - periodFrames);
+        i < totalFrames;
+        i++
+      ) {
         if (dpScore[i] > maxFinal) {
           maxFinal = dpScore[i];
           bestEnd = i;

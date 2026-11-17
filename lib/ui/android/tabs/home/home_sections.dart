@@ -8,6 +8,9 @@ extension _HomeTabSections on _AndroidHomeTabState {
     required int itemCount,
     required Widget Function(BuildContext, int) itemBuilder,
     double listHeight = 170,
+    String? label,
+    // Artist rows page with ← → instead of a View All pill.
+    bool arrows = false,
     // App start: the section's data isn't in yet, so it shows card bones
     // (circles for artists) and cross-fades to the cards when it arrives.
     bool loading = false,
@@ -38,6 +41,8 @@ extension _HomeTabSections on _AndroidHomeTabState {
                 itemCount: itemCount,
                 itemBuilder: itemBuilder,
                 listHeight: listHeight,
+                label: label,
+                arrows: arrows,
               ),
       ),
     );
@@ -50,79 +55,100 @@ extension _HomeTabSections on _AndroidHomeTabState {
     required int itemCount,
     required Widget Function(BuildContext, int) itemBuilder,
     required double listHeight,
+    String? label,
+    bool arrows = false,
   }) {
     return KeyedSubtree(
       key: const ValueKey('content'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  title,
-                  style: AppFonts.jostStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                PremiumSection(
-                  borderRadius: BorderRadius.circular(32),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  height: 36,
-                  useExpanded: false,
-                  onTap: onActionTap,
-                  useBlur: true,
-                  forceNoBlur: true,
-                  backgroundColor: Colors.white.withValues(alpha: 0.04),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        actionText,
-                        style: AppFonts.jostStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(
-                        LucideIcons.arrowRight,
-                        size: 14,
-                        color: Colors.white,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+      child: ScrollControllerScope(
+        builder: (context, controller) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            HomeSectionHeader(
+              title: title,
+              label: label,
+              trailing: arrows
+                  ? HomeRowArrows(controller: controller)
+                  : HomeViewAllPill(label: actionText, onTap: onActionTap),
             ),
-          ),
-          SizedBox(
-            height: listHeight,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              physics: const LooperScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              itemCount: itemCount,
-              itemBuilder: itemBuilder,
+            SizedBox(
+              height: listHeight,
+              child: ListView.builder(
+                controller: controller,
+                scrollDirection: Axis.horizontal,
+                physics: const LooperScrollPhysics(),
+                // Cards' own margins bring the first one to x = 23.
+                padding: const EdgeInsets.symmetric(horizontal: 14.5),
+                itemCount: itemCount,
+                itemBuilder: itemBuilder,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _homeSectionHeader({
+    required String title,
+    required VoidCallback onViewAll,
+  }) => HomeSectionHeader(
+    title: title,
+    trailing: HomeViewAllPill(
+      label: AppLocalizations.of(context)!.viewAll,
+      onTap: onViewAll,
+    ),
+  );
+
+  /// "For You": the mix in columns of 4 rows (42px cover, title, artist,
+  /// menu), paged sideways like the design.
+  Widget _buildPicksPager(
+    List<Song> picks,
+    AppLocalizations l10n, {
+    required bool showAlbum,
+  }) {
+    const rows = 4, rowHeight = 56.0, columnWidth = 312.0;
+    final columns = (picks.length / rows).ceil();
+    return SizedBox(
+      height: rows * rowHeight,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        physics: const LooperScrollPhysics(),
+        padding: const EdgeInsets.only(left: 25, right: 8),
+        itemCount: columns,
+        itemExtent: columnWidth,
+        itemBuilder: (context, c) => Column(
+          children: [
+            for (
+              var i = c * rows;
+              i < math.min((c + 1) * rows, picks.length);
+              i++
+            )
+              SizedBox(
+                height: rowHeight,
+                child: _PickRow(
+                  song: picks[i],
+                  subtitle: artistAlbumLabel(
+                    picks[i],
+                    l10n,
+                    showAlbum: showAlbum,
+                  ),
+                  onTap: () => ref
+                      .read(playbackProvider.notifier)
+                      .setPlaylist(picks, initialIndex: i),
+                  onMore: () => _showSongOptions(context, picks[i]),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildArtistItem(Artist artist, AppLocalizations l10n) {
     return Container(
-      width: 110,
-      margin: const EdgeInsets.symmetric(horizontal: 6),
+      width: 90,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
       child: InkWell(
         onTap: () async {
           AppHaptics.light();
@@ -130,13 +156,13 @@ extension _HomeTabSections on _AndroidHomeTabState {
               .read(appNavigationProvider.notifier)
               .showArtist(artist, subtitle: l10n.artist);
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(30),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(
-              width: 92,
-              height: 92,
+              width: 60,
+              height: 60,
               child: ClipOval(
                 child: OptimizedImage(
                   imageUrl:
@@ -155,7 +181,7 @@ extension _HomeTabSections on _AndroidHomeTabState {
                     child: const Center(
                       child: Icon(
                         LucideIcons.user,
-                        size: 28,
+                        size: 22,
                         color: Colors.white38,
                       ),
                     ),
@@ -163,14 +189,10 @@ extension _HomeTabSections on _AndroidHomeTabState {
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               artist.name,
-              style: AppFonts.jostStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
+              style: AppFonts.jostStyle(color: Colors.white, fontSize: 14),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
@@ -183,8 +205,8 @@ extension _HomeTabSections on _AndroidHomeTabState {
 
   Widget _buildAlbumItem(Album album, AppLocalizations l10n) {
     return Container(
-      width: 120,
-      margin: const EdgeInsets.symmetric(horizontal: 6),
+      width: 128,
+      margin: const EdgeInsets.symmetric(horizontal: 8.5),
       child: InkWell(
         onTap: () async {
           AppHaptics.light();
@@ -192,7 +214,7 @@ extension _HomeTabSections on _AndroidHomeTabState {
               .read(appNavigationProvider.notifier)
               .showAlbum(album, unknownArtist: l10n.unknownArtist);
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(5),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -200,7 +222,7 @@ extension _HomeTabSections on _AndroidHomeTabState {
             AspectRatio(
               aspectRatio: 1.0,
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(5),
                 child: OptimizedImage(
                   imagePath: album.artPath,
                   fit: BoxFit.cover,
@@ -208,21 +230,24 @@ extension _HomeTabSections on _AndroidHomeTabState {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              album.name,
-              style: AppFonts.jostStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+            Padding(
+              padding: const EdgeInsets.only(left: 3),
+              child: Text(
+                album.name,
+                style: homeCardTitle(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
-            Text(
-              album.artist ?? l10n.unknownArtist,
-              style: AppFonts.jostStyle(color: Colors.white38, fontSize: 11),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            Padding(
+              padding: const EdgeInsets.only(left: 3),
+              child: Text(
+                // The design's album cards show the year under the name.
+                album.year?.toString() ?? album.artist ?? l10n.unknownArtist,
+                style: homeCardSub(size: 15),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -250,17 +275,17 @@ extension _HomeTabSections on _AndroidHomeTabState {
           AppHaptics.light();
           onTap();
         },
-        borderRadius: BorderRadius.circular(circle ? 46 : 16),
+        borderRadius: BorderRadius.circular(circle ? 30 : 5),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: circle ? 92 : width,
-              height: circle ? 92 : (width > 140 ? _genreCardHeight : width),
+              width: circle ? 60 : width,
+              height: circle ? 60 : (width > 140 ? _genreCardHeight : width),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.05),
                 shape: circle ? BoxShape.circle : BoxShape.rectangle,
-                borderRadius: circle ? null : BorderRadius.circular(16),
+                borderRadius: circle ? null : BorderRadius.circular(5),
                 border: Border.all(color: Colors.white12),
               ),
               child: const Center(
@@ -292,6 +317,73 @@ extension _HomeTabSections on _AndroidHomeTabState {
       width: _genreCardWidth,
       margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
       child: GenreCard(genre: genre, songs: genreSongs, hapticOnTap: true),
+    );
+  }
+}
+
+class _PickRow extends StatelessWidget {
+  const _PickRow({
+    required this.song,
+    required this.subtitle,
+    required this.onTap,
+    required this.onMore,
+  });
+
+  final Song song;
+  final String subtitle;
+  final VoidCallback onTap;
+  final VoidCallback onMore;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      onLongPress: () {
+        AppHaptics.medium();
+        onMore();
+      },
+      borderRadius: BorderRadius.circular(5),
+      child: Row(
+        children: [
+          SongArtwork(
+            song: song,
+            size: 42,
+            borderRadius: BorderRadius.circular(5),
+            indicatorSize: 18,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  song.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: homeCardTitle(),
+                ),
+                if (subtitle.isNotEmpty)
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: homeCardSub(),
+                  ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: onMore,
+            tooltip: MaterialLocalizations.of(context).showMenuTooltip,
+            icon: const Icon(
+              Icons.more_vert_rounded,
+              size: 22,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

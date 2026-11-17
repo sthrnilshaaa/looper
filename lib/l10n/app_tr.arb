@@ -1882,5 +1882,19 @@
   "setupKofiDesc": "Projeyi Ko-fi üzerinden destekleyin.",
   "setupDoneTitle": "Her şey hazır!",
   "setupDoneDesc": "Kitaplığınız arka planda taranıyor. Hemen dinlemeye başlayın.",
-  "setupStartListening": "Dinlemeye başla"
+  "setupStartListening": "Dinlemeye başla",
+  "homeTodayMix": "Günün Mixi",
+  "homeTodayMixDesc": "Gününün havasını belirleyecek mükemmel mix",
+  "homeSurpriseMe": "Şaşırt Beni!",
+  "homeSurpriseMeDesc": "Ne dinleyeceğinden emin değil misin? Bırak şans karar versin.",
+  "homeArtistPick": "Senin İçin Seçilen Sanatçı",
+  "homeWeeklyMix": "Haftalık Mix",
+  "homeWeeklyMixDesc": "Bu hafta en çok dinlediğin şarkılar",
+  "homePicksLabel": "Seçimler",
+  "homeForYou": "Senin İçin",
+  "homeYourOwn": "Kendi",
+  "letterSpacing": "Harf aralığı",
+  "letterSpacingDesc": "Uygulamadaki metni sıkılaştırın veya açın",
+  "homeHeroEmptyDesc": "Dinlemeye başladığında karışımların burada görünecek",
+  "notificationPermissionRequired": "Devam etmek için bildirimlere izin ver. Looper bunlara oynatma kontrolleri için ihtiyaç duyar."
 }

@@ -23,19 +23,18 @@ extension _CollectionPlaylistOptions on CollectionDetailView {
           required VoidCallback onTap,
           required Widget child,
           BoxBorder? border,
-        }) =>
-            Material(
-              color: Colors.white.withValues(alpha: 0.05),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-                side: border is Border ? border.top : BorderSide.none,
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: onTap,
-                child: SizedBox(height: height, child: child),
-              ),
-            );
+        }) => Material(
+          color: Colors.white.withValues(alpha: 0.05),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: border is Border ? border.top : BorderSide.none,
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: SizedBox(height: height, child: child),
+          ),
+        );
 
         Widget gridTile(Widget icon, String label, VoidCallback onTap) =>
             surface(
@@ -70,33 +69,32 @@ extension _CollectionPlaylistOptions on CollectionDetailView {
           String label,
           VoidCallback onTap, {
           BoxBorder? border,
-        }) =>
-            surface(
-              height: 62,
-              onTap: onTap,
-              border: border,
-              child: Row(
-                children: [
-                  const SizedBox(width: 20),
-                  SizedBox.square(dimension: 18, child: Center(child: icon)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: 'Stack Sans Text',
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14,
-                        letterSpacing: -0.28,
-                        color: Colors.white,
-                      ),
-                    ),
+        }) => surface(
+          height: 62,
+          onTap: onTap,
+          border: border,
+          child: Row(
+            children: [
+              const SizedBox(width: 20),
+              SizedBox.square(dimension: 18, child: Center(child: icon)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: 'Stack Sans Text',
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                    letterSpacing: -0.28,
+                    color: Colors.white,
                   ),
-                ],
+                ),
               ),
-            );
+            ],
+          ),
+        );
 
         Widget body = Container(
           decoration: const BoxDecoration(
@@ -244,9 +242,7 @@ extension _CollectionPlaylistOptions on CollectionDetailView {
                             Navigator.pop(context);
                             _showDeleteDialog(context, ref, playlist);
                           },
-                          border: Border.all(
-                            color: const Color(0x05FFAAAA),
-                          ),
+                          border: Border.all(color: const Color(0x05FFAAAA)),
                         ),
                       ],
                     ),

@@ -196,7 +196,9 @@ class ExpandedPlayer extends ConsumerWidget {
                             trackHeight: 2,
                             activeTrackColor: colorScheme.primary,
                             inactiveTrackColor: Colors.white10,
-                            secondaryActiveTrackColor: Colors.white.withValues(alpha: 0.2),
+                            secondaryActiveTrackColor: Colors.white.withValues(
+                              alpha: 0.2,
+                            ),
                             thumbShape: const RoundSliderThumbShape(
                               enabledThumbRadius: 6,
                             ),
@@ -208,12 +210,21 @@ class ExpandedPlayer extends ConsumerWidget {
                                           duration.inMilliseconds)
                                       .clamp(0.0, 1.0)
                                 : 0.0,
-                            secondaryTrackValue: isStreaming && duration > Duration.zero
-                                ? (buffer.inMilliseconds / duration.inMilliseconds).clamp(0.0, 1.0)
+                            secondaryTrackValue:
+                                isStreaming && duration > Duration.zero
+                                ? (buffer.inMilliseconds /
+                                          duration.inMilliseconds)
+                                      .clamp(0.0, 1.0)
                                 : null,
-                            secondaryActiveColor: Colors.white.withValues(alpha: 0.2),
-                            onChangeStart: (_) => ref.read(playbackProvider.notifier).startScrubbing(),
-                            onChangeEnd: (_) => ref.read(playbackProvider.notifier).stopScrubbing(),
+                            secondaryActiveColor: Colors.white.withValues(
+                              alpha: 0.2,
+                            ),
+                            onChangeStart: (_) => ref
+                                .read(playbackProvider.notifier)
+                                .startScrubbing(),
+                            onChangeEnd: (_) => ref
+                                .read(playbackProvider.notifier)
+                                .stopScrubbing(),
                             onChanged: (val) {
                               ref
                                   .read(playbackProvider.notifier)
@@ -300,7 +311,9 @@ class ExpandedPlayer extends ConsumerWidget {
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: colorScheme.primary.withValues(alpha: 0.4),
+                                      color: colorScheme.primary.withValues(
+                                        alpha: 0.4,
+                                      ),
                                       blurRadius: 20,
                                       offset: const Offset(0, 8),
                                     ),

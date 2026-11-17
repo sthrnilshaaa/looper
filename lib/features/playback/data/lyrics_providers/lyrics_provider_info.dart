@@ -39,7 +39,8 @@ class LyricsProviderInfo {
       : 2;
 
   /// The default lookup order IDs, defined in [AppDefaults.defaultLyricsProviderOrder].
-  static const List<String> defaultOrder = AppDefaults.defaultLyricsProviderOrder;
+  static const List<String> defaultOrder =
+      AppDefaults.defaultLyricsProviderOrder;
 
   /// Every service, in the default lookup order: word-synced sources first
   /// (the two Apple-quality ones, then the catalogues that are searched by
@@ -146,7 +147,6 @@ class LyricsProviderInfo {
       plainOnly: true,
     ),
   ];
-
 
   /// By [id], a `[source:]` tag or a [label] - any letter case.
   static LyricsProviderInfo? of(String? name) {

@@ -91,7 +91,10 @@ class LyricsCache {
 
   /// Forgets every provider's "no lyrics" answer for this artist/title,
   /// so they are asked again. Found lyrics are kept.
-  static Future<void> clearProviderMissesFor(String artist, String title) async {
+  static Future<void> clearProviderMissesFor(
+    String artist,
+    String title,
+  ) async {
     try {
       final dir = Directory(p.join((await _getCacheDir()).path, 'by_provider'));
       if (!await dir.exists()) return;

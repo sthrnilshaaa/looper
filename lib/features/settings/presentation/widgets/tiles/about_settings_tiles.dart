@@ -596,10 +596,7 @@ class AboutHeroCard extends ConsumerWidget {
                     maxHeight: boxH,
                     child: Transform.rotate(
                       angle: -rad,
-                      child: _AboutScrollingPattern(
-                        width: boxW,
-                        height: boxH,
-                      ),
+                      child: _AboutScrollingPattern(width: boxW, height: boxH),
                     ),
                   );
                 },
@@ -689,10 +686,7 @@ class _AboutScrollingPattern extends StatefulWidget {
   final double width;
   final double height;
 
-  const _AboutScrollingPattern({
-    required this.width,
-    required this.height,
-  });
+  const _AboutScrollingPattern({required this.width, required this.height});
 
   @override
   State<_AboutScrollingPattern> createState() => _AboutScrollingPatternState();
@@ -726,8 +720,9 @@ class _AboutScrollingPatternState extends State<_AboutScrollingPattern>
   }
 
   void _resolveImage() {
-    final stream = const AssetImage(AppAssets.aboutPattern)
-        .resolve(createLocalImageConfiguration(context));
+    final stream = const AssetImage(
+      AppAssets.aboutPattern,
+    ).resolve(createLocalImageConfiguration(context));
     if (stream.key == _imageStream?.key) return;
 
     if (_imageStream != null && _listener != null) {
@@ -760,10 +755,7 @@ class _AboutScrollingPatternState extends State<_AboutScrollingPattern>
       child: RepaintBoundary(
         child: CustomPaint(
           size: Size(widget.width, widget.height),
-          painter: _AboutPatternPainter(
-            image: image,
-            animation: _controller,
-          ),
+          painter: _AboutPatternPainter(image: image, animation: _controller),
         ),
       ),
     );
@@ -788,10 +780,8 @@ class _AboutPatternPainter extends CustomPainter {
     ..isAntiAlias = true
     ..filterQuality = FilterQuality.medium;
 
-  _AboutPatternPainter({
-    required this.image,
-    required this.animation,
-  }) : super(repaint: animation);
+  _AboutPatternPainter({required this.image, required this.animation})
+    : super(repaint: animation);
 
   @override
   void paint(Canvas canvas, Size size) {

@@ -129,6 +129,7 @@ class SettingsCategoryScreen extends ConsumerWidget {
           tiles: [
             // Desktop has its own UI scale row in its settings view.
             if (!UiUtils.isDesktop) const UiScaleTile(),
+            const LetterSpacingTile(),
             const UseNewFontTile(),
             sub(settings.useNewFont, const [
               FontFamilySelectionTile(),
@@ -312,12 +313,7 @@ class SettingsCategoryScreen extends ConsumerWidget {
             ],
           ],
         ),
-        (
-          title: l10n.sectionStorage,
-          tiles: [
-            const ClearLyricsCacheTile(),
-          ],
-        ),
+        (title: l10n.sectionStorage, tiles: [const ClearLyricsCacheTile()]),
         (
           title: l10n.sectionBackupRestore,
           tiles: const [

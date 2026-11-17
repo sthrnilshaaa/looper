@@ -14,7 +14,7 @@ import 'package:looper_player/ui/widgets/common/song_favorite_button.dart';
 import 'package:looper_player/ui/widgets/common/playlist_reorderable_listener.dart';
 import 'package:looper_player/ui/widgets/common/song_playback_overlay.dart';
 import 'package:looper_player/ui/widgets/common/collection_scroll_to_end.dart';
-import 'package:looper_player/ui/widgets/collection_detail/collection_pinned_bar.dart';
+import 'package:looper_player/ui/widgets/collection_detail/collection_hero.dart';
 import 'package:looper_player/ui/widgets/sheets/app_bottom_sheet.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:looper_player/features/library/presentation/widgets/songs/songs_list.dart';
@@ -39,10 +39,6 @@ part 'desktop_collection.dart';
 part 'sort_sheet.dart';
 part 'playlist_options.dart';
 part 'album_groups.dart';
-
-/// The big title of each open collection, which [CollectionPinnedBar]
-/// watches to know when to show its own small one.
-final _collectionTitleKeys = Expando<GlobalKey>();
 
 // Persistent collection sorting is stored in settings.collectionSortOptionIndex
 
@@ -101,6 +97,16 @@ class CollectionDetailView extends ConsumerWidget {
         : l10n.minutesShort(minutes);
   }
 
+  String _metaText(
+    String? label,
+    List<Song> songs,
+    AppLocalizations l10n, {
+    bool songsLoading = false,
+  }) {
+    final hasLabel = label?.trim().isNotEmpty == true;
+    return '${hasLabel ? '$label • ' : ''}${l10n.songsCount(songs.length)} • ${songsLoading ? l10n.unknown : _durationLabel(songs, l10n)}';
+  }
+
   Widget _buildCollectionSubtitle(
     String? label,
     List<Song> songs,
@@ -109,13 +115,11 @@ class CollectionDetailView extends ConsumerWidget {
     required double fontSize,
     required Color color,
   }) {
-    final hasLabel = label?.trim().isNotEmpty == true;
-    final style = AppFonts.jostStyle(fontSize: fontSize, color: color);
     // Keep all of the metadata readable when the header is narrow or text is
     // enlarged. A single Text wraps within the column's available width.
     return Text(
-      '${hasLabel ? '$label • ' : ''}${l10n.songsCount(songs.length)} • ${songsLoading ? l10n.unknown : _durationLabel(songs, l10n)}',
-      style: style,
+      _metaText(label, songs, l10n, songsLoading: songsLoading),
+      style: AppFonts.jostStyle(fontSize: fontSize, color: color),
     );
   }
 
@@ -296,25 +300,32 @@ class CollectionDetailView extends ConsumerWidget {
       );
     }
 
-    // One key per screen: the scroll controller lives as long as it does.
-    GlobalKey titleKey(ScrollController controller) =>
-        _collectionTitleKeys[controller] ??= GlobalKey();
+    final l10n = AppLocalizations.of(context)!;
+    final isArtist = _isArtistPage(l10n);
+    final meta = _metaText(
+      reactivePlaylist != null ? l10n.playlist : subtitleToRender,
+      sortedSongs,
+      l10n,
+      songsLoading: songsLoading,
+    );
+    final thumbnail = imageUrlToRender ?? artToRender;
 
     return Scaffold(
       // Not Colors.transparent - see the comment on CategoryDetailWrapper's
       // Scaffold in library_categories_views.dart for why.
       backgroundColor: Theme.of(context).colorScheme.surface,
+      // The hero runs under the status bar.
       body: SafeArea(
+        top: false,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final isNarrow = constraints.maxWidth < 450;
             final isLandscape = Responsive.isLandscape(
               MediaQuery.sizeOf(context),
             );
             Widget songRow(int index, {int? reorderIndex}) => SongTile(
               key: ValueKey((sortedSongs[index].path, index)),
               song: sortedSongs[index],
-              l10n: AppLocalizations.of(context)!,
+              l10n: l10n,
               songs: sortedSongs,
               playlist: reactivePlaylist,
               collectionIndex: index,
@@ -324,203 +335,124 @@ class CollectionDetailView extends ConsumerWidget {
               waveItems((context, index) => songRow(index)),
               childCount: sortedSongs.length,
             );
-            Widget buildScrollView(ScrollController controller) => ListWave(
-              child: CustomScrollView(
-                controller: controller,
-                physics: const LooperScrollPhysics(),
-                slivers: [
-                  SliverPersistentHeader(
-                    pinned: true,
-                    delegate: CollectionPinnedBar(
-                      controller: controller,
-                      titleKey: titleKey(controller),
-                      title: titleToRender,
-                      art: artToRender,
-                      imageUrl: imageUrlToRender,
-                      playlist: reactivePlaylist,
-                      onBack: () =>
-                          ref.read(appNavigationProvider.notifier).goBack(),
-                      onAdd: reactivePlaylist != null
-                          ? () => _showAddSongsHint(context)
-                          : null,
-                    ),
-                  ),
-                  if (_isArtistPage(AppLocalizations.of(context)!))
-                    SliverToBoxAdapter(
-                      child: _buildArtistHero(
-                        context,
-                        ref,
-                        art: artToRender,
-                        imageUrl: imageUrlToRender,
-                        info: _buildInfo(
-                          context,
-                          ref,
-                          true,
-                          activeSong?.artPath,
-                          null,
-                          null,
-                          titleToRender,
-                          subtitleToRender,
-                          sortedSongs,
-                          songsLoading: songsLoading,
-                          titleKey: titleKey(controller),
-                          reactiveArtist: reactiveArtist,
-                        ),
-                      ),
-                    )
-                  else
-                    SliverToBoxAdapter(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Header - Now always a Row for cover and name
-                          Container(
-                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                            child: isNarrow
-                                ? Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Center(
-                                        // The cover stays on stage as the
-                                        // list scrolls, then shrinks and fades.
-                                        child: ScrollStage(
-                                          controller: controller,
-                                          length: 220,
-                                          child: _buildArt(
-                                            context,
-                                            true,
-                                            artToRender,
-                                            playlist: reactivePlaylist,
-                                            imageUrl: imageUrlToRender,
-                                            album: reactiveAlbum,
-                                            artist: reactiveArtist,
-                                            ref: ref,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 20),
-                                      _buildInfo(
-                                        context,
-                                        ref,
-                                        true,
-                                        activeSong?.artPath,
-                                        reactivePlaylist,
-                                        reactiveAlbum,
-                                        titleToRender,
-                                        subtitleToRender,
-                                        sortedSongs,
-                                        songsLoading: songsLoading,
-                                        canReorder:
-                                            canReorderPlaylist &&
-                                            sortedSongs.length > 1,
-                                        titleKey: titleKey(controller),
-                                        reactiveArtist: reactiveArtist,
-                                      ),
-                                    ],
-                                  )
-                                : Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      ScrollStage(
-                                        controller: controller,
-                                        length: 220,
-                                        child: _buildArt(
-                                          context,
-                                          true,
-                                          artToRender,
-                                          playlist: reactivePlaylist,
-                                          imageUrl: imageUrlToRender,
-                                          album: reactiveAlbum,
-                                          artist: reactiveArtist,
-                                          ref: ref,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 20),
-                                      Expanded(
-                                        child: _buildInfo(
-                                          context,
-                                          ref,
-                                          true,
-                                          activeSong?.artPath,
-                                          reactivePlaylist,
-                                          reactiveAlbum,
-                                          titleToRender,
-                                          subtitleToRender,
-                                          sortedSongs,
-                                          songsLoading: songsLoading,
-                                          canReorder:
-                                              canReorderPlaylist &&
-                                              sortedSongs.length > 1,
-                                          titleKey: titleKey(controller),
-                                          reactiveArtist: reactiveArtist,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (groupedItems != null)
-                    SliverList(
-                      delegate: SliverChildBuilderDelegate((context, i) {
-                        final item = groupedItems[i];
-                        return item is _AlbumGroup
-                            ? _AlbumGroupHeader(
-                                group: item,
-                                padding: const EdgeInsets.fromLTRB(
-                                  16,
-                                  20,
-                                  8,
-                                  8,
-                                ),
-                              )
-                            : songRow(item as int);
-                      }, childCount: groupedItems.length),
-                    )
-                  else if (sortedSongs.isNotEmpty)
-                    // Dragging to reorder only makes sense while sortedSongs is
-                    // actually the playlist's own saved order - once a sort
-                    // option (title/artist/duration/...) is applied, a row's
-                    // on-screen position no longer corresponds to a slot in
-                    // playlist.songPaths that dragging could sensibly write to.
-                    if (canReorderPlaylist)
-                      SliverReorderableList(
-                        // Equal-height rows let Flutter jump without laying out
-                        // every intervening song. Measure one for text scaling.
-                        prototypeItem: TickerMode(
-                          enabled: false,
-                          child: songRow(0),
-                        ),
-                        itemBuilder: (context, index) =>
-                            songRow(index, reorderIndex: index),
-                        itemCount: sortedSongs.length,
-                        onReorderStart: (_) => AppHaptics.medium(),
-                        onReorder: (oldIndex, newIndex) {
-                          PlaylistService.reorderSong(
+            Widget buildScrollView(ScrollController controller) => Stack(
+              children: [
+                ListWave(
+                  child: CustomScrollView(
+                    controller: controller,
+                    physics: const LooperScrollPhysics(),
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: CollectionHero(
+                          isArtist: isArtist,
+                          title: titleToRender,
+                          meta: meta,
+                          albumArtist: reactiveAlbum?.artist,
+                          album: reactiveAlbum?.name,
+                          still: _heroStill(
                             reactivePlaylist,
-                            oldIndex,
-                            newIndex,
-                          );
-                        },
-                      )
-                    else
-                      SliverPrototypeExtentList(
-                        prototypeItem: TickerMode(
-                          enabled: false,
-                          child: songRow(0),
+                            artToRender,
+                            imageUrlToRender,
+                          ),
+                          actions: _heroActions(
+                            context,
+                            ref,
+                            isArtist: isArtist,
+                            title: titleToRender,
+                            songs: sortedSongs,
+                            thumbnail: thumbnail,
+                            playlist: reactivePlaylist,
+                            album: reactiveAlbum,
+                            artist: reactiveArtist,
+                            canReorder:
+                                canReorderPlaylist && sortedSongs.length > 1,
+                          ),
                         ),
-                        delegate: songDelegate,
                       ),
-                  const SliverToBoxAdapter(
-                    child: SizedBox(
-                      height: 200,
-                    ), // Added padding to fix navbar overlap
+                      if (groupedItems != null)
+                        SliverList(
+                          delegate: SliverChildBuilderDelegate((context, i) {
+                            final item = groupedItems[i];
+                            return item is _AlbumGroup
+                                ? _AlbumGroupHeader(
+                                    group: item,
+                                    padding: const EdgeInsets.fromLTRB(
+                                      16,
+                                      20,
+                                      8,
+                                      8,
+                                    ),
+                                  )
+                                : songRow(item as int);
+                          }, childCount: groupedItems.length),
+                        )
+                      else if (sortedSongs.isNotEmpty)
+                        // Dragging to reorder only makes sense while sortedSongs is
+                        // actually the playlist's own saved order - once a sort
+                        // option (title/artist/duration/...) is applied, a row's
+                        // on-screen position no longer corresponds to a slot in
+                        // playlist.songPaths that dragging could sensibly write to.
+                        if (canReorderPlaylist)
+                          SliverReorderableList(
+                            // Equal-height rows let Flutter jump without laying out
+                            // every intervening song. Measure one for text scaling.
+                            prototypeItem: TickerMode(
+                              enabled: false,
+                              child: songRow(0),
+                            ),
+                            itemBuilder: (context, index) =>
+                                songRow(index, reorderIndex: index),
+                            itemCount: sortedSongs.length,
+                            onReorderStart: (_) => AppHaptics.medium(),
+                            onReorder: (oldIndex, newIndex) {
+                              PlaylistService.reorderSong(
+                                reactivePlaylist,
+                                oldIndex,
+                                newIndex,
+                              );
+                            },
+                          )
+                        else
+                          SliverPrototypeExtentList(
+                            prototypeItem: TickerMode(
+                              enabled: false,
+                              child: songRow(0),
+                            ),
+                            delegate: songDelegate,
+                          ),
+                      const SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: 200,
+                        ), // Added padding to fix navbar overlap
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: CollectionHeroBar(
+                    controller: controller,
+                    title: titleToRender,
+                    meta: meta,
+                    cover: _miniCover(
+                      reactivePlaylist,
+                      artToRender,
+                      imageUrlToRender,
+                    ),
+                    onBack: () =>
+                        ref.read(appNavigationProvider.notifier).goBack(),
+                    action: reactivePlaylist != null
+                        ? HeroRoundButton(
+                            icon: LucideIcons.plus,
+                            size: 40,
+                            onTap: () => _showAddSongsHint(context),
+                          )
+                        : null,
+                  ),
+                ),
+              ],
             );
             // In landscape, cap the reading width and center it instead of
             // stretching the song list edge-to-edge across the whole window.
@@ -541,4 +473,3 @@ class CollectionDetailView extends ConsumerWidget {
     );
   }
 }
-

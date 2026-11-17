@@ -208,8 +208,13 @@ class AppSettings {
   bool playerDynamicBackground = AppDefaults.playerDynamicBackground;
   bool enableInternet = AppDefaults.enableInternet;
   bool downloadArtwork = AppDefaults.downloadArtwork;
-  bool includeSystemAndMessagingAudio = AppDefaults.includeSystemAndMessagingAudio;
+  bool includeSystemAndMessagingAudio =
+      AppDefaults.includeSystemAndMessagingAudio;
   bool keepBackgroundGradient = AppDefaults.keepBackgroundGradient;
+
+  /// Set once the Home redesign's new defaults (▶▶ avatar, no kept
+  /// background gradient) were applied to settings saved before it.
+  bool homeRedesignV1 = false;
   bool showQualityBadge = AppDefaults.showQualityBadge;
   // Quality badge style (see QualityBadgeStyle); enum indices, null = default.
   int? qualityBadgeLook;
@@ -290,12 +295,15 @@ class AppSettings {
   bool keepSongProgress = AppDefaults.keepSongProgress;
 
   bool fadePlayPauseStop = AppDefaults.fadePlayPauseStop;
-  int playPauseStopFadeLength = AppDefaults.playPauseStopFadeLength; // ms (10ms-1000ms)
+  int playPauseStopFadeLength =
+      AppDefaults.playPauseStopFadeLength; // ms (10ms-1000ms)
   bool resumeAfterCall = AppDefaults.resumeAfterCall;
-  bool pauseOnDuck = AppDefaults.pauseOnDuck; // Unused, see audioFocusRequestOnPlay.
+  bool pauseOnDuck =
+      AppDefaults.pauseOnDuck; // Unused, see audioFocusRequestOnPlay.
   bool resumeOnBluetoothConnect = AppDefaults.resumeOnBluetoothConnect;
   bool resumeOnStart = AppDefaults.resumeOnStart;
-  bool permanentAudioFocusChange = AppDefaults.permanentAudioFocusChange; // Unused, see above.
+  bool permanentAudioFocusChange =
+      AppDefaults.permanentAudioFocusChange; // Unused, see above.
   bool dynamicColorActiveLyrics = AppDefaults.dynamicColorActiveLyrics;
   // 0..1, makes the active lyric line's color more vibrant (0 = as is).
   // Default 35 %. Rows saved before this field existed come back as NaN -
@@ -314,7 +322,8 @@ class AppSettings {
   bool lyricsNoLineGrouping = AppDefaults.lyricsNoLineGrouping;
   bool enableLyricsGradient = AppDefaults.enableLyricsGradient;
   bool ambientColorBackground = AppDefaults.ambientColorBackground;
-  String lyricsAlignment = AppDefaults.lyricsAlignment; // 'left', 'center', 'right'
+  String lyricsAlignment =
+      AppDefaults.lyricsAlignment; // 'left', 'center', 'right'
   bool dynamicAccentColor = AppDefaults.dynamicAccentColor;
   int sortStrategyIndex = AppDefaults.defaultSongSortStrategyIndex;
   bool sortAscending = AppDefaults.defaultSortAscending;
@@ -335,7 +344,8 @@ class AppSettings {
   /// Desktop only: darkness of the overlay on the window's artwork background.
   /// Rows saved before the setting existed read back as NaN (treated as the
   /// default).
-  static const double defaultDesktopBackgroundDarkness = AppDefaults.defaultDesktopBackgroundDarkness;
+  static const double defaultDesktopBackgroundDarkness =
+      AppDefaults.defaultDesktopBackgroundDarkness;
   double desktopBackgroundDarkness = defaultDesktopBackgroundDarkness;
 
   // Home screen app-bar avatar. Filename only (not a full path) - it's
@@ -354,6 +364,8 @@ class AppSettings {
   String customFontFamily = AppDefaults.customFontFamily;
   int customFontWeight = AppDefaults.customFontWeight;
   int customFontWeightDelta = AppDefaults.customFontWeightDelta;
+  // NaN on rows saved before this field existed; read through the getter.
+  double letterSpacingPercent = AppDefaults.letterSpacingPercent;
   bool useNewFontLyrics = AppDefaults.useNewFontLyrics;
   String customFontFamilyLyrics = AppDefaults.customFontFamilyLyrics;
   String customFontWeightLyrics = AppDefaults.customFontWeightLyrics;

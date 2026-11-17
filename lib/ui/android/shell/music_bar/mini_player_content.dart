@@ -62,14 +62,14 @@ extension _MiniPlayerContent on PremiumMusicBarState {
                                   OptimizedImage(
                                     imagePath:
                                         song.artPath != null &&
-                                                !song.artPath!.startsWith('http')
-                                            ? song.artPath
-                                            : null,
+                                            !song.artPath!.startsWith('http')
+                                        ? song.artPath
+                                        : null,
                                     imageUrl:
                                         song.artPath != null &&
-                                                song.artPath!.startsWith('http')
-                                            ? song.artPath
-                                            : null,
+                                            song.artPath!.startsWith('http')
+                                        ? song.artPath
+                                        : null,
                                     fit: BoxFit.cover,
                                   ),
                                   Positioned.fill(
@@ -158,7 +158,8 @@ extension _MiniPlayerContent on PremiumMusicBarState {
                           color: Colors.white,
                           size:
                               (compact
-                                      ? AppIcons.expandedPlayerPlayPauseIcon * 0.8
+                                      ? AppIcons.expandedPlayerPlayPauseIcon *
+                                            0.8
                                       : AppIcons.expandedPlayerPlayPauseIcon)
                                   .s,
                         ),

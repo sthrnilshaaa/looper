@@ -31,7 +31,8 @@ class SongFavoriteButton extends ConsumerWidget {
     final currentFav = isCurrent
         ? ref.watch(playbackProvider.select((s) => s.currentSong?.isFavorite))
         : null;
-    final favorite = currentFav ??
+    final favorite =
+        currentFav ??
         ref.watch(_favoriteByPathProvider(song.path)).value ??
         song.isFavorite;
     // Linux keeps its original red heart; Android uses a star.

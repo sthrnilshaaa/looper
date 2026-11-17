@@ -416,8 +416,17 @@ class _SungWord extends StatelessWidget {
 
   static final Map<int, double> _widthCache = {};
 
-  static double _measureWidth(String text, TextStyle style, TextDirection direction) {
-    final key = Object.hash(text, style.fontSize, style.fontWeight, style.fontFamily);
+  static double _measureWidth(
+    String text,
+    TextStyle style,
+    TextDirection direction,
+  ) {
+    final key = Object.hash(
+      text,
+      style.fontSize,
+      style.fontWeight,
+      style.fontFamily,
+    );
     final cached = _widthCache[key];
     if (cached != null) return cached;
     if (_widthCache.length > 500) _widthCache.clear();

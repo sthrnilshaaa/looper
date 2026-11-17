@@ -136,7 +136,9 @@ class _PlayerStylePickerScreenState
     final l10n = AppLocalizations.of(context)!;
     final mq = MediaQuery.of(context);
     final reduced = Motion.reducedOf(context);
-    final duration = reduced ? Duration.zero : const Duration(milliseconds: 240);
+    final duration = reduced
+        ? Duration.zero
+        : const Duration(milliseconds: 240);
     // Previews are always the portrait layout, at the phone's own shape.
     final Size frame = mq.size.width < mq.size.height
         ? mq.size

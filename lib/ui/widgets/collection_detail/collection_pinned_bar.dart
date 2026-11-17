@@ -3,6 +3,7 @@ import 'package:looper_player/core/services/storage/db_service.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/features/playlists/presentation/widgets/playlist_artwork.dart';
 import 'package:looper_player/ui/android/widgets/premium_section.dart';
+import 'package:looper_player/ui/widgets/collection_detail/collection_hero.dart';
 import 'package:looper_player/ui/widgets/common/optimized_image.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -150,84 +151,87 @@ class _PinnedBarState extends State<_PinnedBar> {
   @override
   Widget build(BuildContext context) {
     final d = widget.delegate;
-    final surface = Theme.of(context).colorScheme.surface;
     return ValueListenableBuilder<(double, double)>(
       valueListenable: _progress,
       builder: (context, progress, _) {
         final (background, reveal) = progress;
         final t = Curves.easeOutCubic.transform(reveal);
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            color: surface.withValues(alpha: background),
-            border: Border(
-              bottom: BorderSide(
-                color: Colors.white.withValues(alpha: 0.06 * t),
+        return HeaderBackdrop(
+          progress: background,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.06 * t),
+                ),
               ),
             ),
-          ),
-          child: BackdropGroup(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-              child: Row(
-                children: [
-                  PremiumSection(
-                    useExpanded: false,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(32),
-                      bottomLeft: Radius.circular(32),
-                      topRight: Radius.circular(10),
-                      bottomRight: Radius.circular(10),
-                    ),
-                    width: 48,
-                    height: 48,
-                    backgroundColor: Colors.white.withValues(alpha: 0.04),
-                    useBlur: true,
-                    onTap: d.onBack,
-                    child: const Icon(
-                      LucideIcons.chevronLeft,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  Expanded(
-                    child: IgnorePointer(
-                      ignoring: t == 0,
-                      child: Opacity(
-                        opacity: t,
-                        child: Transform.translate(
-                          offset: Offset(0, 10 * (1 - t)),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            child: _MiniTitle(delegate: d, scale: t),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (d.onAdd != null)
+            child: BackdropGroup(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                child: Row(
+                  children: [
                     PremiumSection(
                       useExpanded: false,
                       borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(10),
-                        bottomLeft: Radius.circular(10),
-                        topRight: Radius.circular(32),
-                        bottomRight: Radius.circular(32),
+                        topLeft: Radius.circular(32),
+                        bottomLeft: Radius.circular(32),
+                        topRight: Radius.circular(10),
+                        bottomRight: Radius.circular(10),
                       ),
                       width: 48,
                       height: 48,
                       backgroundColor: Colors.white.withValues(alpha: 0.04),
                       useBlur: true,
-                      onTap: d.onAdd,
-                      child: Icon(
-                        d.actionIcon ?? LucideIcons.plus,
+                      onTap: d.onBack,
+                      child: const Icon(
+                        LucideIcons.chevronLeft,
                         color: Colors.white,
                         size: 20,
                       ),
-                    )
-                  else
-                    // Keeps the cover and name centred between the edges.
-                    const SizedBox(width: 48),
-                ],
+                    ),
+                    Expanded(
+                      child: IgnorePointer(
+                        ignoring: t == 0,
+                        child: Opacity(
+                          opacity: t,
+                          child: Transform.translate(
+                            offset: Offset(0, 10 * (1 - t)),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              child: _MiniTitle(delegate: d, scale: t),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (d.onAdd != null)
+                      PremiumSection(
+                        useExpanded: false,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(10),
+                          bottomLeft: Radius.circular(10),
+                          topRight: Radius.circular(32),
+                          bottomRight: Radius.circular(32),
+                        ),
+                        width: 48,
+                        height: 48,
+                        backgroundColor: Colors.white.withValues(alpha: 0.04),
+                        useBlur: true,
+                        onTap: d.onAdd,
+                        child: Icon(
+                          d.actionIcon ?? LucideIcons.plus,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      )
+                    else
+                      // Keeps the cover and name centred between the edges.
+                      const SizedBox(width: 48),
+                  ],
+                ),
               ),
             ),
           ),

@@ -1882,5 +1882,19 @@
   "setupKofiDesc": "Ko-fi로 프로젝트를 후원하세요.",
   "setupDoneTitle": "준비 완료!",
   "setupDoneDesc": "라이브러리를 백그라운드에서 스캔하고 있습니다. 바로 감상을 시작하세요.",
-  "setupStartListening": "감상 시작"
+  "setupStartListening": "감상 시작",
+  "homeTodayMix": "오늘의 믹스",
+  "homeTodayMixDesc": "하루의 분위기를 정해 줄 완벽한 믹스",
+  "homeSurpriseMe": "놀라게 해 줘!",
+  "homeSurpriseMeDesc": "뭘 들을지 모르겠다면 운에 맡겨 보세요.",
+  "homeArtistPick": "당신을 위한 아티스트",
+  "homeWeeklyMix": "주간 믹스",
+  "homeWeeklyMixDesc": "이번 주 가장 많이 들은 곡",
+  "homePicksLabel": "추천",
+  "homeForYou": "당신을 위한",
+  "homeYourOwn": "나만의",
+  "letterSpacing": "자간",
+  "letterSpacingDesc": "앱 전체 글자 간격을 좁히거나 넓힙니다",
+  "homeHeroEmptyDesc": "듣기 시작하면 여기에 믹스가 표시됩니다",
+  "notificationPermissionRequired": "계속하려면 알림을 허용하세요. Looper는 재생 컨트롤에 알림이 필요합니다."
 }

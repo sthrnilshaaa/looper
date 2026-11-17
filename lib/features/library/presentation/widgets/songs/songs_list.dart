@@ -451,7 +451,8 @@ class _SongsListState extends ConsumerState<SongsList> {
         selected: _selectedPaths.contains(song.path),
         onToggleSelect: () => _toggleSelected(song),
         onEnterSelection: widget.loading ? null : () => _enterSelection(song),
-        resolveQueue: widget.resolveQueue ??
+        resolveQueue:
+            widget.resolveQueue ??
             (widget.loading
                 ? ref.read(libraryProvider.notifier).loadedSongs
                 : null),
@@ -505,7 +506,8 @@ class _SongsListState extends ConsumerState<SongsList> {
         else
           Expanded(
             child: AppRefreshIndicator(
-              onRefresh: widget.onRefresh ??
+              onRefresh:
+                  widget.onRefresh ??
                   () => ref
                       .read(libraryProvider.notifier)
                       .refreshLibrary(showVisualIndicator: false),

@@ -17,11 +17,15 @@ class CrossmixSettingsNotifier extends Notifier<CrossmixSettings> {
   Future<void> _load() async {
     final raw = await LocalJsonStore.read(_key);
     if (raw is Map) {
-      state = current = CrossmixSettings.fromJson(Map<String, dynamic>.from(raw));
+      state = current = CrossmixSettings.fromJson(
+        Map<String, dynamic>.from(raw),
+      );
     }
   }
 
-  Future<void> update(CrossmixSettings Function(CrossmixSettings) transform) async {
+  Future<void> update(
+    CrossmixSettings Function(CrossmixSettings) transform,
+  ) async {
     state = current = transform(state);
     await LocalJsonStore.write(_key, state.toJson());
   }
@@ -41,5 +45,5 @@ class CrossmixSettingsNotifier extends Notifier<CrossmixSettings> {
 
 final crossmixSettingsProvider =
     NotifierProvider<CrossmixSettingsNotifier, CrossmixSettings>(
-  CrossmixSettingsNotifier.new,
-);
+      CrossmixSettingsNotifier.new,
+    );

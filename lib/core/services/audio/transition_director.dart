@@ -306,18 +306,17 @@ class TransitionDirector {
     final bpm = (plan.incomingBpm ?? 120).clamp(60.0, 200.0);
     final target = _baseRate;
     var rate = target * plan.speedAdjustment;
-    _rateTimer = Timer.periodic(
-      Duration(milliseconds: (60000 / bpm).round()),
-      (t) {
-        rate = rate > target
-            ? (rate - target * 0.004).clamp(target, double.infinity)
-            : (rate + target * 0.004).clamp(0.0, target);
-        try {
-          p.setRate(rate);
-        } catch (_) {}
-        if ((rate - target).abs() < 1e-6) t.cancel();
-      },
-    );
+    _rateTimer = Timer.periodic(Duration(milliseconds: (60000 / bpm).round()), (
+      t,
+    ) {
+      rate = rate > target
+          ? (rate - target * 0.004).clamp(target, double.infinity)
+          : (rate + target * 0.004).clamp(0.0, target);
+      try {
+        p.setRate(rate);
+      } catch (_) {}
+      if ((rate - target).abs() < 1e-6) t.cancel();
+    });
   }
 
   /// Cancels an armed or running transition and resets the idle player.

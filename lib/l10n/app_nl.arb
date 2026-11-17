@@ -1882,5 +1882,19 @@
   "setupKofiDesc": "Steun het project via Ko-fi.",
   "setupDoneTitle": "Alles is klaar!",
   "setupDoneDesc": "Je bibliotheek wordt op de achtergrond gescand. Duik erin en begin met luisteren.",
-  "setupStartListening": "Begin met luisteren"
+  "setupStartListening": "Begin met luisteren",
+  "homeTodayMix": "Mix van vandaag",
+  "homeTodayMixDesc": "De perfecte mix om je dag te beginnen",
+  "homeSurpriseMe": "Verras me!",
+  "homeSurpriseMeDesc": "Weet je niet wat je wilt horen? Laat het toeval beslissen.",
+  "homeArtistPick": "Artiest voor jou",
+  "homeWeeklyMix": "Weekmix",
+  "homeWeeklyMixDesc": "Je meest beluisterde nummers van deze week",
+  "homePicksLabel": "Keuzes",
+  "homeForYou": "Voor jou",
+  "homeYourOwn": "Je eigen",
+  "letterSpacing": "Letterafstand",
+  "letterSpacingDesc": "Maak tekst in de hele app strakker of ruimer",
+  "homeHeroEmptyDesc": "Je mixen verschijnen hier zodra je begint met luisteren",
+  "notificationPermissionRequired": "Sta meldingen toe om door te gaan. Looper heeft ze nodig voor de afspeelbediening."
 }

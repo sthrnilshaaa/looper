@@ -1882,5 +1882,19 @@
   "setupKofiDesc": "Ko-fi के ज़रिए प्रोजेक्ट को सपोर्ट करें।",
   "setupDoneTitle": "सब तैयार है!",
   "setupDoneDesc": "आपकी लाइब्रेरी बैकग्राउंड में स्कैन हो रही है। अब सुनना शुरू करें।",
-  "setupStartListening": "सुनना शुरू करें"
+  "setupStartListening": "सुनना शुरू करें",
+  "homeTodayMix": "आज का मिक्स",
+  "homeTodayMixDesc": "आपके दिन का मूड बनाने के लिए परफ़ेक्ट मिक्स",
+  "homeSurpriseMe": "सरप्राइज़ करो!",
+  "homeSurpriseMeDesc": "समझ नहीं आ रहा क्या सुनें? किस्मत पर छोड़ दें।",
+  "homeArtistPick": "आपके लिए चुना कलाकार",
+  "homeWeeklyMix": "साप्ताहिक मिक्स",
+  "homeWeeklyMixDesc": "इस हफ़्ते आपके सबसे ज़्यादा सुने गाने",
+  "homePicksLabel": "चुनिंदा",
+  "homeForYou": "आपके लिए",
+  "homeYourOwn": "आपकी अपनी",
+  "letterSpacing": "अक्षर अंतर",
+  "letterSpacingDesc": "पूरे ऐप में टेक्स्ट को सघन या खुला करें",
+  "homeHeroEmptyDesc": "सुनना शुरू करते ही आपके मिक्स यहाँ दिखेंगे",
+  "notificationPermissionRequired": "जारी रखने के लिए सूचनाओं की अनुमति दें। प्लेबैक नियंत्रणों के लिए Looper को इनकी ज़रूरत है।"
 }

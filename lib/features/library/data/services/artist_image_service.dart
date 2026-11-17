@@ -35,7 +35,7 @@ class ArtistImageService {
                 results[match]['picture_xl'] ??
                 results[match]['picture_big'] ??
                 results[match]['picture_medium'];
-            if (imageUrl != null) {
+            if (imageUrl != null && !isPlaceholderUrl(imageUrl.toString())) {
               return await _downloadAndSaveImage(artistName, imageUrl);
             }
           }
@@ -43,6 +43,23 @@ class ArtistImageService {
       }
     } catch (e) {}
     return null;
+  }
+
+  /// Deezer gives artists without a photo an empty picture hash
+  /// (".../images/artist//1000x1000-...jpg"), which serves a grey silhouette.
+  static bool isPlaceholderUrl(String url) => url.contains('/artist//');
+
+  /// Whether [path] is a copy of that silhouette saved before
+  /// [isPlaceholderUrl] existed (byte sizes of its xl / big / medium JPEGs).
+  /// shortcut: matches by size only, switch to a hash if Deezer changes it.
+  static Future<bool> isSavedPlaceholder(String path) async {
+    try {
+      final file = File(path);
+      if (!await file.exists()) return false;
+      return const {16802, 5922, 2603}.contains(await file.length());
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Index of the search result that is actually [artistName], ignoring

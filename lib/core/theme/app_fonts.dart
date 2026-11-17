@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppFonts {
-  static String activeFontFamily = 'Stack Sans Text';
+  static String activeFontFamily = dmSans;
   static const String stackSansText = 'Stack Sans Text';
 
   static const String jost = 'Jost';
@@ -45,6 +45,14 @@ class AppFonts {
 
   // Centrally managed Font Weights (updated dynamically based on delta)
   static int appFontWeightDelta = 0;
+
+  /// App-wide letter spacing in percent of the font size (the Font settings
+  /// slider). Applied by [jostStyle] and [adjustTextTheme].
+  static double appLetterSpacingPercent = -2.0;
+
+  /// [base] plus the app-wide spacing for text of [fontSize].
+  static double spacingFor(double? fontSize, [double? base]) =>
+      (base ?? 0) + appLetterSpacingPercent / 100 * (fontSize ?? 14);
   static int lyricsFontWeightDelta = 0;
 
   static FontWeight getAdjustedWeight(FontWeight baseWeight, int delta) {
@@ -54,14 +62,21 @@ class AppFonts {
     return FontWeight.values[targetIndex];
   }
 
-  static TextTheme adjustTextTheme(TextTheme baseTheme, int delta) {
-    if (delta == 0) return baseTheme;
+  static TextTheme adjustTextTheme(
+    TextTheme baseTheme,
+    int delta, {
+    double letterSpacingPercent = 0,
+  }) {
+    if (delta == 0 && letterSpacingPercent == 0) return baseTheme;
 
     TextStyle? adjust(TextStyle? style) => style?.copyWith(
       fontWeight: getAdjustedWeight(
         style.fontWeight ?? FontWeight.normal,
         delta,
       ),
+      letterSpacing:
+          (style.letterSpacing ?? 0) +
+          letterSpacingPercent / 100 * (style.fontSize ?? 14),
     );
 
     return baseTheme.copyWith(
@@ -138,7 +153,7 @@ class AppFonts {
       fontSize: fontSize,
       fontWeight: fontWeight,
       fontStyle: fontStyle,
-      letterSpacing: letterSpacing,
+      letterSpacing: spacingFor(fontSize ?? textStyle?.fontSize, letterSpacing),
       wordSpacing: wordSpacing,
       textBaseline: textBaseline,
       height: height,

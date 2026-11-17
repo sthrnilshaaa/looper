@@ -56,7 +56,9 @@ class _SongInfoScreenState extends ConsumerState<SongInfoScreen> {
       body: Stack(
         children: [
           // Blurred Background
-          if (settings.enableDynamicTheming && !settings.disableBlur && widget.song.artPath != null)
+          if (settings.enableDynamicTheming &&
+              !settings.disableBlur &&
+              widget.song.artPath != null)
             Positioned.fill(
               child: RepaintBoundary(
                 child: Stack(
@@ -536,10 +538,7 @@ class _SongInfoScreenState extends ConsumerState<SongInfoScreen> {
                 const SizedBox(height: 4),
                 Text(
                   item.value,
-                  style: AppFonts.jostStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                  ),
+                  style: AppFonts.jostStyle(color: Colors.white, fontSize: 14),
                   maxLines: item.isLong ? 5 : 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -550,7 +549,9 @@ class _SongInfoScreenState extends ConsumerState<SongInfoScreen> {
       ],
     );
 
-    final useBlur = ref.watch(settingsProvider.select((s) => s.sheetShouldBlur));
+    final useBlur = ref.watch(
+      settingsProvider.select((s) => s.sheetShouldBlur),
+    );
     if (!useBlur) return card;
 
     return RepaintBoundary(

@@ -292,38 +292,13 @@ class PlayerStyleTile extends ConsumerWidget {
       ('linear', l10n.playerStyleLinear),
       ('card', l10n.playerStyleCard),
     ];
-    final styleTile = ListTile(
-      leading: const Icon(LucideIcons.layoutTemplate),
-      title: Text(l10n.playerStyle, style: _tileTitleStyle()),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            PlayerStylePreview(style: current, accent: settings.accent),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final (value, label) in options)
-                  ChoiceChip(
-                    label: Text(label),
-                    selected: current == value,
-                    showCheckmark: false,
-                    selectedColor: Colors.white.withValues(alpha: 0.15),
-                    onSelected: (_) {
-                      AppHaptics.selection();
-                      ref
-                          .read(settingsProvider.notifier)
-                          .updatePlayerStyle(value);
-                    },
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
+    final styleTile = _PlayerStylesCard(
+      current: current,
+      options: options,
+      onSelect: (value) {
+        AppHaptics.selection();
+        ref.read(settingsProvider.notifier).updatePlayerStyle(value);
+      },
     );
     if (current == 'classic') return styleTile;
     return Column(
@@ -348,10 +323,7 @@ class PlayerStyleTile extends ConsumerWidget {
         if (!settings.cardBlackBackground) ...[
           SwitchListTile(
             secondary: const Icon(LucideIcons.paintBucket),
-            title: Text(
-              l10n.cardAccentBackground,
-              style: _tileTitleStyle(),
-            ),
+            title: Text(l10n.cardAccentBackground, style: _tileTitleStyle()),
             subtitle: Text(
               l10n.cardAccentBackgroundDesc,
               style: _tileSubtitleStyle(),
@@ -400,9 +372,7 @@ class PlayerStyleTile extends ConsumerWidget {
           value: settings.cardAccentColors || settings.playerStyleAccent,
           onChanged: (value) {
             AppHaptics.selection();
-            ref
-                .read(settingsProvider.notifier)
-                .updateCardAccentColors(value);
+            ref.read(settingsProvider.notifier).updateCardAccentColors(value);
           },
         ),
       ],
@@ -545,4 +515,319 @@ class AnimateBackgroundGradientTile extends ConsumerWidget {
       },
     );
   }
+}
+
+/// "Player Styles > Classic" card (Figma "Frame 907"): the four styles as
+/// skeleton thumbnails, the picked one outlined with a tick. › opens the
+/// full-screen picker.
+class _PlayerStylesCard extends StatelessWidget {
+  const _PlayerStylesCard({
+    required this.current,
+    required this.options,
+    required this.onSelect,
+  });
+
+  final String current;
+  final List<(String, String)> options;
+  final ValueChanged<String> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final label = options
+        .firstWhere((o) => o.$1 == current, orElse: () => options.first)
+        .$2;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(21, 20, 20, 25),
+      decoration: BoxDecoration(
+        color: const Color(0xFF101010),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => Navigator.of(context, rootNavigator: true).push(
+              PageRouteBuilder<void>(
+                transitionDuration: const Duration(milliseconds: 320),
+                reverseTransitionDuration: const Duration(milliseconds: 240),
+                pageBuilder: (_, _, _) => const PlayerStylePickerScreen(),
+                transitionsBuilder: (_, a, _, child) =>
+                    FadeTransition(opacity: a, child: child),
+              ),
+            ),
+            child: SizedBox(
+              height: 20,
+              child: Row(
+                children: [
+                  const CustomPaint(
+                    size: Size(15, 20),
+                    painter: _PhoneIconPainter(),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(text: '${l10n.playerStyle} › '),
+                          TextSpan(
+                            text: label,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.2),
+                            ),
+                          ),
+                        ],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppFonts.jostStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(
+                    LucideIcons.chevronRight,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Container(height: 1, color: const Color(0x05FFFFFF)),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              for (var i = 0; i < options.length; i++) ...[
+                if (i > 0) const SizedBox(width: 15.6),
+                Expanded(
+                  child: _StyleThumb(
+                    index: i,
+                    label: options[i].$2,
+                    selected: options[i].$1 == current,
+                    onTap: () => onSelect(options[i].$1),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StyleThumb extends StatelessWidget {
+  const _StyleThumb({
+    required this.index,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final int index;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(10);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AspectRatio(
+          aspectRatio: 67.25 / 107,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            decoration: BoxDecoration(
+              color: selected ? Colors.transparent : const Color(0x0DD9D9D9),
+              borderRadius: radius,
+              border: Border.all(
+                color: selected ? Colors.white : Colors.transparent,
+                width: 2,
+              ),
+            ),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                CustomPaint(painter: _StyleThumbPainter(index)),
+                Center(
+                  child: AnimatedScale(
+                    scale: selected ? 1 : 0.6,
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutBack,
+                    child: AnimatedOpacity(
+                      opacity: selected ? 1 : 0,
+                      duration: const Duration(milliseconds: 180),
+                      child: Container(
+                        width: 15,
+                        height: 15,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check_rounded,
+                          size: 11,
+                          color: Color(0xFF101010),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The skeleton of each style, drawn in the design's 67.25 × 107 box.
+class _StyleThumbPainter extends CustomPainter {
+  const _StyleThumbPainter(this.index);
+
+  final int index;
+
+  static const _w = 67.25;
+  static const _fill = Color(0x1AD9D9D9);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final k = size.width / _w;
+    canvas.scale(k);
+    final p = Paint()..color = _fill;
+    void r(double x, double y, double w, double h, [double rad = 3]) =>
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromLTWH(x, y, w, h),
+            Radius.circular(rad),
+          ),
+          p,
+        );
+    // Centred title, artist and a pair of controls (Classic, Linear).
+    void centred() {
+      r(5.53, 72, 29.48, 6);
+      r(5.53, 82, 57.12, 6);
+      r(23.95, 93, 9.21, 6);
+      r(34.09, 93, 9.21, 6);
+    }
+
+    // Lines on the left and a column of buttons on the right (Arc, Card).
+    void sided() {
+      r(6.45, 65, 29.48, 6);
+      r(6.45, 73, 20.27, 6);
+      r(6.45, 82, 24.87, 6);
+      r(6.45, 95, 9.21, 6);
+      for (final y in [64.0, 73.0, 82.0, 95.0]) {
+        r(57.12, y, 5.53, 6, 2.76);
+      }
+    }
+
+    switch (index) {
+      case 0: // Classic: square cover.
+        r(5.53, 6, 57.12, 62);
+        centred();
+      case 1: // Arc: cover rounding into the arc seek bar under it.
+        final art = Path()
+          ..moveTo(3.68, 7)
+          ..arcToPoint(const Offset(6.68, 4), radius: const Radius.circular(3))
+          ..lineTo(60.57, 4)
+          ..arcToPoint(const Offset(63.57, 7), radius: const Radius.circular(3))
+          ..lineTo(63.57, 20.06)
+          ..arcToPoint(
+            const Offset(3.68, 20.06),
+            radius: const Radius.circular(29.94),
+          )
+          ..close();
+        canvas.drawPath(art, p);
+        canvas.drawPath(
+          Path()
+            ..moveTo(8.4, 46.3)
+            ..quadraticBezierTo(33.6, 72, 58.8, 46.3),
+          Paint()
+            ..color = _fill
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 4.2
+            ..strokeCap = StrokeCap.round,
+        );
+        sided();
+      case 2: // Linear: round cover.
+        canvas.drawCircle(const Offset(33.5, 35), 29.25, p);
+        centred();
+      default: // Card: cover fading out downward.
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            const Rect.fromLTWH(5.25, 6, 57, 54),
+            const Radius.circular(3),
+          ),
+          Paint()
+            ..shader = const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0x1AD9D9D9), Color(0x00737373)],
+            ).createShader(const Rect.fromLTWH(5.25, 6, 57, 54)),
+        );
+        sided();
+    }
+  }
+
+  @override
+  bool shouldRepaint(_StyleThumbPainter old) => old.index != index;
+}
+
+/// The phone outline with a tiny player inside, before "Player Styles".
+class _PhoneIconPainter extends CustomPainter {
+  const _PhoneIconPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        const Rect.fromLTWH(0.65, 0.65, 13.7, 18.7),
+        const Radius.circular(6.5),
+      ),
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.3,
+    );
+    final dim = Paint()..color = const Color(0x33D9D9D9);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        const Rect.fromLTWH(3, 3, 9, 8),
+        const Radius.circular(2),
+      ),
+      dim,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        const Rect.fromLTWH(3, 13, 5, 1),
+        const Radius.circular(0.5),
+      ),
+      dim,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        const Rect.fromLTWH(3, 15, 9, 1),
+        const Radius.circular(0.5),
+      ),
+      dim,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_PhoneIconPainter old) => false;
 }

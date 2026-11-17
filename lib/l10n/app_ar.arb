@@ -1882,5 +1882,19 @@
   "setupKofiDesc": "ادعم المشروع عبر Ko-fi.",
   "setupDoneTitle": "كل شيء جاهز!",
   "setupDoneDesc": "يجري فحص مكتبتك في الخلفية. ابدأ الاستماع الآن.",
-  "setupStartListening": "ابدأ الاستماع"
+  "setupStartListening": "ابدأ الاستماع",
+  "homeTodayMix": "مزيج اليوم",
+  "homeTodayMixDesc": "المزيج المثالي ليضبط إيقاع يومك",
+  "homeSurpriseMe": "فاجئني!",
+  "homeSurpriseMeDesc": "لا تعرف ماذا تسمع؟ دع القدر يقرر.",
+  "homeArtistPick": "فنان مختار لك",
+  "homeWeeklyMix": "مزيج الأسبوع",
+  "homeWeeklyMixDesc": "أكثر الأغاني التي استمعت إليها هذا الأسبوع",
+  "homePicksLabel": "اختيارات",
+  "homeForYou": "لك",
+  "homeYourOwn": "مكتبتك",
+  "letterSpacing": "تباعد الأحرف",
+  "letterSpacingDesc": "ضيّق أو وسّع النص في التطبيق بالكامل",
+  "homeHeroEmptyDesc": "ستظهر خلطاتك هنا بمجرد أن تبدأ الاستماع",
+  "notificationPermissionRequired": "اسمح بالإشعارات للمتابعة. يحتاجها Looper لعناصر التحكم في التشغيل."
 }

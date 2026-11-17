@@ -152,9 +152,9 @@ class _ReorderDashboardSectionsSheetState
     final savedOrder = currentSettings.homeSectionOrder.isEmpty
         ? AppSettings.defaultHomeSectionOrder
         : currentSettings.homeSectionOrder;
-    ref.read(settingsProvider.notifier).updateHomeSectionOrder(
-      mergeHomeOrder(savedOrder, _currentOrder),
-    );
+    ref
+        .read(settingsProvider.notifier)
+        .updateHomeSectionOrder(mergeHomeOrder(savedOrder, _currentOrder));
   }
 
   void _resetToDefault() {
@@ -358,12 +358,7 @@ class _ReorderDashboardSectionsSheetState
 
           // Pinned Footer (Done button)
           Padding(
-            padding: EdgeInsets.fromLTRB(
-              20,
-              12,
-              20,
-              12 + mq.padding.bottom,
-            ),
+            padding: EdgeInsets.fromLTRB(20, 12, 20, 12 + mq.padding.bottom),
             child: SizedBox(
               width: double.infinity,
               height: 48,
@@ -454,11 +449,7 @@ class _SectionReorderTile extends StatelessWidget {
                 color: accent.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(11),
               ),
-              child: Icon(
-                icon,
-                color: accent,
-                size: 19,
-              ),
+              child: Icon(icon, color: accent, size: 19),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -495,10 +486,7 @@ class _SectionReorderTile extends StatelessWidget {
             ReorderableDragStartListener(
               index: index,
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 6,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 child: const Icon(
                   LucideIcons.gripVertical,
                   color: Colors.white38,

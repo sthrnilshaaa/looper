@@ -57,6 +57,18 @@ We started it because we wanted one player that looks the same on a phone and on
 
 There is no account, no ads and no subscription. Your music stays on your device; the app goes online only for things like fetching lyrics and checking for updates.
 
+### Two editions
+
+Every Android release ships two sets of APKs. Pick one; they are the same app, so installing one replaces the other and keeps your library and settings.
+
+| | **Offline** (`...-offline-release.apk`) | **Online** (`...-online-release.apk`) |
+| :--- | :--- | :--- |
+| Plays your own music files | ✓ | ✓ |
+| Lyrics, themes, Analyze, widgets | ✓ | ✓ |
+| Streams from YouTube Music (search, mixes, your account, downloads) | | ✓, off until you switch it on |
+
+The in-app updater keeps you on the edition you installed. Google Play, Linux and Windows get the offline edition. YouTube Music is a trademark of Google LLC; Looper is not affiliated with Google.
+
 <a id="features"></a>
 ## Features
 
@@ -147,12 +159,13 @@ Thank you to everyone who has made a video about Looper. Made one too? Open an [
 <a id="installation"></a>
 ## Installation
 
-Android is on [Google Play](https://play.google.com/store/apps/details?id=com.looper.player). Everything else is on the [Releases](https://github.com/SthrNilshaaa/looper/releases) page.
+Android is on [Google Play](https://play.google.com/store/apps/details?id=com.looper.player) (offline edition). Everything else is on the [Releases](https://github.com/SthrNilshaaa/looper/releases) page.
 
 ### Android (`.apk`)
+- Choose an edition: files ending in `-offline-release.apk` play only your own music, files ending in `-online-release.apk` add YouTube Music streaming. See [Two editions](#two-editions).
 - Download the APK for your phone. `arm64-v8a` is right for almost every phone from the last several years; use `armeabi-v7a` for older ones and `x86_64` for emulators.
 - Open it and tap **Install**. Android will ask you to allow installs from your browser or file manager the first time.
-- The GitHub build can update itself from inside the app.
+- The GitHub build can update itself from inside the app, and stays on the edition you picked.
 
 ### Linux
 

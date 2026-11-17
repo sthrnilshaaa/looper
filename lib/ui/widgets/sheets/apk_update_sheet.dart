@@ -51,7 +51,9 @@ String parseChangelog(String rawNotes) {
     caseSensitive: false,
   ).firstMatch(rawNotes);
 
-  final textToParse = whatsNewMatch != null ? whatsNewMatch.group(1)! : rawNotes;
+  final textToParse = whatsNewMatch != null
+      ? whatsNewMatch.group(1)!
+      : rawNotes;
   final lines = textToParse.split('\n');
   final items = <String>[];
 
@@ -116,8 +118,12 @@ class ApkUpdateSheet extends ConsumerWidget {
     // When up to date: show the current app version (e.g. 3.0.0 or 2.7.5).
     // When update available: show the new version from release tag.
     final displayVersion = isUpToDate
-        ? (currentAppVersion.isNotEmpty ? currentAppVersion : cleanVersion(release?.tag))
-        : (cleanVersion(release?.tag).isNotEmpty ? cleanVersion(release?.tag) : currentAppVersion);
+        ? (currentAppVersion.isNotEmpty
+              ? currentAppVersion
+              : cleanVersion(release?.tag))
+        : (cleanVersion(release?.tag).isNotEmpty
+              ? cleanVersion(release?.tag)
+              : currentAppVersion);
 
     // Version to show in "What changed on <version>":
     final changelogVersion = cleanVersion(release?.tag).isNotEmpty
@@ -576,7 +582,9 @@ class ApkUpdateSheet extends ConsumerWidget {
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: const Color(0xFF161616),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Row(
             children: [
               const Icon(LucideIcons.info, color: Colors.white, size: 20),
@@ -647,7 +655,9 @@ class ApkUpdateSheet extends ConsumerWidget {
                             color: Colors.white70,
                           ),
                           onPressed: () {
-                            Clipboard.setData(ClipboardData(text: asset.sha256!));
+                            Clipboard.setData(
+                              ClipboardData(text: asset.sha256!),
+                            );
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Checksum copied to clipboard'),

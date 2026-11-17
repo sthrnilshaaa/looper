@@ -136,7 +136,7 @@ extension _HomeReorder on _AndroidHomeTabState {
     final rows = _draftOrder.where(visible.contains).toList();
 
     Widget song(Song s) =>
-        SongArtwork(song: s, size: 40, borderRadius: BorderRadius.circular(8));
+        SongArtwork(song: s, size: 40, borderRadius: BorderRadius.circular(5));
     Widget image({String? path, String? url, bool round = false}) => ClipRRect(
       borderRadius: BorderRadius.circular(round ? 20 : 8),
       child: OptimizedImage(

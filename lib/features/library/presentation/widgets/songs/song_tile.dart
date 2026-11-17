@@ -196,7 +196,7 @@ class SongTile extends ConsumerWidget {
                 const SizedBox(width: 12),
               ],
               ClipRRect(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(5),
                 child: Stack(
                   children: [
                     OptimizedImage(

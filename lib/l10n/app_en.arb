@@ -1870,7 +1870,13 @@
   "relatedLabel": "Related",
   "noRelatedTracks": "No related tracks found",
   "setupStep": "Step {step} of 4",
-  "@setupStep": {"placeholders": {"step": {"type": "int"}}},
+  "@setupStep": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      }
+    }
+  },
   "setupBegin": "Begin Setup",
   "setupContinue": "Continue",
   "setupPermissionsTitle": "Required\nPermissions",
@@ -1890,5 +1896,19 @@
   "setupKofiDesc": "Support the project through Ko-fi.",
   "setupDoneTitle": "You’re all set!",
   "setupDoneDesc": "Your library is being scanned in the background. Dive in and start listening.",
-  "setupStartListening": "Start Listening"
+  "setupStartListening": "Start Listening",
+  "homeTodayMix": "Today Mix",
+  "homeTodayMixDesc": "The Perfect Mix To Set The Tone For Your Day",
+  "homeHeroEmptyDesc": "Your mixes show up here once you start listening",
+  "homeSurpriseMe": "Surprise Me!",
+  "homeSurpriseMeDesc": "Not Sure What To Play? Let Fate Decide.",
+  "homeArtistPick": "Artist Pick For You",
+  "homeWeeklyMix": "Weekly Mix",
+  "homeWeeklyMixDesc": "Your Most Played Songs This Week",
+  "homePicksLabel": "Picks",
+  "homeForYou": "For You",
+  "homeYourOwn": "Your Own",
+  "notificationPermissionRequired": "Allow notifications to continue. Looper needs them for playback controls.",
+  "letterSpacing": "Letter spacing",
+  "letterSpacingDesc": "Tighten or loosen the text across the app"
 }

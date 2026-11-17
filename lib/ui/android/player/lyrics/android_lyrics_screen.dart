@@ -553,8 +553,10 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
         ? 0.55
         : settings.lyricsDarkness;
 
+    // The gradients show from the first frame as a still (cheap: one
+    // low-res paint), so entering from the gradient player never flashes
+    // black; only motion, artwork colors and the blur wait for the delay.
     final showAmbientBg =
-        _delayCompleted &&
         settings.enableLyricsGradient &&
         settings.ambientColorBackground &&
         song.artPath != null;
@@ -566,7 +568,6 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
         song.artPath != null;
 
     final showAccentGradientBg =
-        _delayCompleted &&
         settings.enableLyricsGradient &&
         !showAmbientBg &&
         !showBlurredArtworkBg;
@@ -617,10 +618,16 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                         // the motion.
                         ? AnimatedPlayerGradient(
                             key: const ValueKey('ambient_bg'),
-                            artwork: artImage(song.artPath!),
+                            // Theme colors first, cross-faded to the
+                            // artwork's once the delay is over.
+                            artwork: _delayCompleted
+                                ? artImage(song.artPath!)
+                                : null,
                             darkness: lyricsDarkness,
                             // Still unless Animated Gradient is on.
-                            animate: settings.animatePlayerGradient,
+                            animate:
+                                _delayCompleted &&
+                                settings.animatePlayerGradient,
                           )
                         : (showBlurredArtworkBg
                               ? RepaintBoundary(
@@ -665,7 +672,9 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                                     ? AnimatedPlayerGradient(
                                         key: const ValueKey('gradient_bg'),
                                         darkness: lyricsDarkness,
-                                        animate: settings.animatePlayerGradient,
+                                        animate:
+                                            _delayCompleted &&
+                                            settings.animatePlayerGradient,
                                       )
                                     : Container(
                                         key: const ValueKey('static_bg'),

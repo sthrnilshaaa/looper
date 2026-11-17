@@ -125,10 +125,7 @@ class _AnimatedDiceButtonState extends State<AnimatedDiceButton>
       child: AnimatedBuilder(
         animation: _pressAnimation,
         builder: (context, child) {
-          return Transform.scale(
-            scale: _pressAnimation.value,
-            child: child,
-          );
+          return Transform.scale(scale: _pressAnimation.value, child: child);
         },
         child: Container(
           padding: widget.padding,
@@ -142,15 +139,9 @@ class _AnimatedDiceButtonState extends State<AnimatedDiceButton>
     );
 
     if (widget.tooltip != null) {
-      button = Tooltip(
-        message: widget.tooltip!,
-        child: button,
-      );
+      button = Tooltip(message: widget.tooltip!, child: button);
     }
 
-    return Material(
-      color: Colors.transparent,
-      child: button,
-    );
+    return Material(color: Colors.transparent, child: button);
   }
 }

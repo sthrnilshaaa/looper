@@ -105,7 +105,8 @@ class AutoEqIndexEntry {
         name: json['name'] as String,
         path: json['path'] as String,
         source: json['source'] as String? ?? '',
-        foldedName: json['foldedName'] as String? ??
+        foldedName:
+            json['foldedName'] as String? ??
             AutoEqService.fold(json['name'] as String),
       );
 }
@@ -350,7 +351,11 @@ class AutoEqService {
           final items = cached['items'] as List<dynamic>?;
           if (items != null && items.isNotEmpty) {
             _cachedIndex = items
-                .map((i) => AutoEqIndexEntry.fromJson(Map<String, dynamic>.from(i as Map)))
+                .map(
+                  (i) => AutoEqIndexEntry.fromJson(
+                    Map<String, dynamic>.from(i as Map),
+                  ),
+                )
                 .toList();
             return _cachedIndex!;
           }

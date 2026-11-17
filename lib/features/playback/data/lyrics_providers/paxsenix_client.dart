@@ -12,7 +12,8 @@ import 'lyrics_query.dart';
 /// PaxSenix lyrics client: searches Apple Music catalog via official web token
 /// to find the Apple song ID, then fetches word-synced TTML or duets from PaxSenix.
 class PaxSenixClient {
-  static const String _paxBase = 'https://lyrics.paxsenix.org/apple-music/lyrics';
+  static const String _paxBase =
+      'https://lyrics.paxsenix.org/apple-music/lyrics';
   static const Duration _timeout = Duration(seconds: 10);
 
   static Future<String?> fetch({
@@ -34,25 +35,24 @@ class PaxSenixClient {
       final cleanT = LyricsQuery.cleanTitle(title);
       final query = '$cleanT $artist'.trim();
 
-      final searchUri = Uri.parse(
-        'https://amp-api.music.apple.com/v1/catalog/$storefront/search',
-      ).replace(
-        queryParameters: {
-          'term': query,
-          'types': 'songs',
-          'limit': '10',
-        },
-      );
+      final searchUri =
+          Uri.parse(
+            'https://amp-api.music.apple.com/v1/catalog/$storefront/search',
+          ).replace(
+            queryParameters: {'term': query, 'types': 'songs', 'limit': '10'},
+          );
 
-      final searchRes = await httpClient.get(
-        searchUri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Origin': 'https://music.apple.com',
-          'Referer': 'https://music.apple.com/',
-          'Accept': 'application/json',
-        },
-      ).timeout(_timeout);
+      final searchRes = await httpClient
+          .get(
+            searchUri,
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Origin': 'https://music.apple.com',
+              'Referer': 'https://music.apple.com/',
+              'Accept': 'application/json',
+            },
+          )
+          .timeout(_timeout);
 
       if (searchRes.statusCode == 401 || searchRes.statusCode == 403) {
         AppleWebToken.invalidate();
@@ -78,8 +78,9 @@ class PaxSenixClient {
         final id = s['id']?.toString();
         final attr = s['attributes'] as Map? ?? const {};
         final name = (attr['name']?.toString() ?? '').toLowerCase().trim();
-        final artistName =
-            (attr['artistName']?.toString() ?? '').toLowerCase().trim();
+        final artistName = (attr['artistName']?.toString() ?? '')
+            .toLowerCase()
+            .trim();
         final durMs = attr['durationInMillis'] as num?;
 
         if (id == null || id.isEmpty) continue;
@@ -95,7 +96,8 @@ class PaxSenixClient {
         int score = 0;
         if (name == normWantTitle) {
           score += 80;
-        } else if (name.contains(normWantTitle) || normWantTitle.contains(name)) {
+        } else if (name.contains(normWantTitle) ||
+            normWantTitle.contains(name)) {
           score += 40;
         }
 
@@ -113,9 +115,9 @@ class PaxSenixClient {
       if (bestAppleId == null) return null;
 
       // Call PaxSenix with Apple Song ID
-      final paxUri = Uri.parse(_paxBase).replace(
-        queryParameters: {'id': bestAppleId},
-      );
+      final paxUri = Uri.parse(
+        _paxBase,
+      ).replace(queryParameters: {'id': bestAppleId});
 
       final paxRes = await httpClient
           .get(paxUri, headers: LyricsHttp.headers)
@@ -127,12 +129,13 @@ class PaxSenixClient {
       if (paxJson is! Map) return null;
 
       // 1. TTML content
-      final ttml = paxJson['ttmlContent']?.toString() ??
-          paxJson['ttml']?.toString();
+      final ttml =
+          paxJson['ttmlContent']?.toString() ?? paxJson['ttml']?.toString();
       if (ttml != null && ttml.trim().isNotEmpty) {
         final lines = TtmlLyricsParser.parse(ttml);
         if (lines != null && lines.isNotEmpty) {
-          if (durationSeconds <= 0 || fitsDuration(lines, durationSeconds + 10)) {
+          if (durationSeconds <= 0 ||
+              fitsDuration(lines, durationSeconds + 10)) {
             final lrc = TimedLrcWriter.write(lines);
             if (lrc != null) return lrc;
           }

@@ -66,7 +66,8 @@ class _QueueBottomSheetState extends ConsumerState<QueueBottomSheet>
     final reduced = Motion.reducedOf(context);
     if (!reduced) {
       _previousIndices = {
-        for (int i = 0; i < currentUpcoming.length; i++) currentUpcoming[i].path: i,
+        for (int i = 0; i < currentUpcoming.length; i++)
+          currentUpcoming[i].path: i,
       };
       _shuffleController.forward(from: 0.0);
     }
@@ -78,7 +79,9 @@ class _QueueBottomSheetState extends ConsumerState<QueueBottomSheet>
   @override
   Widget build(BuildContext context) {
     final queue = ref.watch(playbackProvider.select((s) => s.queue));
-    final currentSong = ref.watch(playbackProvider.select((s) => s.currentSong));
+    final currentSong = ref.watch(
+      playbackProvider.select((s) => s.currentSong),
+    );
     final isPlaying = ref.watch(playbackProvider.select((s) => s.isPlaying));
     final settings = ref.watch(settingsProvider);
     final accentColor = settings.accent;
@@ -131,7 +134,9 @@ class _QueueBottomSheetState extends ConsumerState<QueueBottomSheet>
                       _onShuffleTap(upcomingQueue);
                     } else if (currentSong != null) {
                       ref.invalidate(
-                        relatedSongsProvider(RelatedSongQuery.fromSong(currentSong)),
+                        relatedSongsProvider(
+                          RelatedSongQuery.fromSong(currentSong),
+                        ),
                       );
                     }
                   },
@@ -149,7 +154,10 @@ class _QueueBottomSheetState extends ConsumerState<QueueBottomSheet>
                   color: const Color(0xFF282828),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 child: Row(
                   children: [
                     ClipRRect(
@@ -273,13 +281,17 @@ class _QueueBottomSheetState extends ConsumerState<QueueBottomSheet>
                           Icon(
                             LucideIcons.arrowUpDown,
                             size: 13,
-                            color: _isReorderMode ? accentColor : Colors.white70,
+                            color: _isReorderMode
+                                ? accentColor
+                                : Colors.white70,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             l10n.reorderQueue,
                             style: AppFonts.jostStyle(
-                              color: _isReorderMode ? accentColor : Colors.white70,
+                              color: _isReorderMode
+                                  ? accentColor
+                                  : Colors.white70,
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
@@ -313,7 +325,9 @@ class _QueueBottomSheetState extends ConsumerState<QueueBottomSheet>
                       onReorder: (oldIndex, newIndex) {
                         final oldAbs = hasPinnedCard ? oldIndex + 1 : oldIndex;
                         final newAbs = hasPinnedCard ? newIndex + 1 : newIndex;
-                        ref.read(playbackProvider.notifier).reorderQueue(
+                        ref
+                            .read(playbackProvider.notifier)
+                            .reorderQueue(
                               oldAbs,
                               newAbs,
                               rotationSongPath: _initialSongPath,
@@ -321,13 +335,17 @@ class _QueueBottomSheetState extends ConsumerState<QueueBottomSheet>
                       },
                       itemBuilder: (context, index) {
                         final song = upcomingQueue[index];
-                        final displayedIndex = hasPinnedCard ? index + 1 : index;
+                        final displayedIndex = hasPinnedCard
+                            ? index + 1
+                            : index;
                         final absoluteIndex = rotationIdx != -1
                             ? (rotationIdx + displayedIndex) % queue.length
                             : displayedIndex;
 
                         final oldIndex = _previousIndices[song.path];
-                        final int delta = oldIndex != null ? (oldIndex - index) : 0;
+                        final int delta = oldIndex != null
+                            ? (oldIndex - index)
+                            : 0;
 
                         Widget itemTile = Material(
                           color: Colors.transparent,
@@ -415,7 +433,9 @@ class _QueueBottomSheetState extends ConsumerState<QueueBottomSheet>
                         }
 
                         return Dismissible(
-                          key: ValueKey('queue_dismiss_${song.path}_$absoluteIndex'),
+                          key: ValueKey(
+                            'queue_dismiss_${song.path}_$absoluteIndex',
+                          ),
                           direction: DismissDirection.horizontal,
                           background: Container(
                             alignment: Alignment.centerLeft,
@@ -496,10 +516,7 @@ class _QueueBottomSheetState extends ConsumerState<QueueBottomSheet>
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.06),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.08),
-          width: 0.5,
-        ),
+        border: Border.all(color: Colors.white.withOpacity(0.08), width: 0.5),
       ),
       padding: const EdgeInsets.all(3),
       child: Row(
@@ -572,7 +589,10 @@ class _QueueBottomSheetState extends ConsumerState<QueueBottomSheet>
             if (badgeCount != null) ...[
               const SizedBox(width: 6),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 1.5,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? selectedTextColor.withOpacity(0.18)
@@ -607,10 +627,7 @@ class _QueueBottomSheetState extends ConsumerState<QueueBottomSheet>
           padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 32),
           child: Text(
             l10n.noRelatedTracks,
-            style: AppFonts.jostStyle(
-              color: Colors.white38,
-              fontSize: 13,
-            ),
+            style: AppFonts.jostStyle(color: Colors.white38, fontSize: 13),
             textAlign: TextAlign.center,
           ),
         ),
@@ -636,10 +653,7 @@ class _QueueBottomSheetState extends ConsumerState<QueueBottomSheet>
           padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 32),
           child: Text(
             l10n.noRelatedTracks,
-            style: AppFonts.jostStyle(
-              color: Colors.white38,
-              fontSize: 13,
-            ),
+            style: AppFonts.jostStyle(color: Colors.white38, fontSize: 13),
             textAlign: TextAlign.center,
           ),
         ),
@@ -651,10 +665,7 @@ class _QueueBottomSheetState extends ConsumerState<QueueBottomSheet>
               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 32),
               child: Text(
                 l10n.noRelatedTracks,
-                style: AppFonts.jostStyle(
-                  color: Colors.white38,
-                  fontSize: 13,
-                ),
+                style: AppFonts.jostStyle(color: Colors.white38, fontSize: 13),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -688,10 +699,7 @@ class _QueueBottomSheetState extends ConsumerState<QueueBottomSheet>
                 ),
                 subtitle: Text(
                   song.artist ?? context.l10n.unknownArtist,
-                  style: AppFonts.jostStyle(
-                    color: Colors.grey,
-                    fontSize: 12,
-                  ),
+                  style: AppFonts.jostStyle(color: Colors.grey, fontSize: 12),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

@@ -185,7 +185,8 @@ class _ExpressiveSliderState extends ConsumerState<ExpressiveSlider> {
     final bool showWave =
         style.wave && (widget.isPlaying || style.freezeWhenPaused);
     final double targetAmplitude = showWave
-        ? style.waveHeight * (style.waveFromStart ? 1.0 : _startRamp(displayValue))
+        ? style.waveHeight *
+              (style.waveFromStart ? 1.0 : _startRamp(displayValue))
         : 0.0;
     final Color inactive = Colors.white.withValues(
       alpha: style.inactiveOpacity,
@@ -261,11 +262,11 @@ class _ExpressiveSliderState extends ConsumerState<ExpressiveSlider> {
 
     final double? secondaryTrackValue =
         widget.isStreaming &&
-                widget.duration > Duration.zero &&
-                widget.buffer != null
-            ? (widget.buffer!.inMilliseconds / widget.duration.inMilliseconds)
-                .clamp(0.0, 1.0)
-            : null;
+            widget.duration > Duration.zero &&
+            widget.buffer != null
+        ? (widget.buffer!.inMilliseconds / widget.duration.inMilliseconds)
+              .clamp(0.0, 1.0)
+        : null;
 
     final sliderWidget = ExpressiveSlider.useDesktopLayout
         ? _buildLinuxSlider(displayValue, secondaryTrackValue)

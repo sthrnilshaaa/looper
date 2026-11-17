@@ -474,7 +474,8 @@ class Library extends _$Library {
 
     try {
       await DbService.isar.writeTxn(() async {
-        final dbSong = await DbService.isar.songs.getByPath(song.path) ??
+        final dbSong =
+            await DbService.isar.songs.getByPath(song.path) ??
             await DbService.isar.songs.get(song.id);
         if (dbSong != null) {
           dbSong.isFavorite = newFavorite;
@@ -684,6 +685,15 @@ class Library extends _$Library {
     _isFetchingArtistImages = true;
     try {
       final allArtists = await DbService.isar.artists.where().findAll();
+      // Drop Deezer's blank silhouette saved by older versions (the white box).
+      for (final artist in allArtists) {
+        final path = artist.artistImageUrl;
+        if (path == null || artist.artistImageLocked) continue;
+        if (path.startsWith('http')) continue;
+        if (!await ArtistImageService.isSavedPlaceholder(path)) continue;
+        await _replaceArtistImage(artist, null, locked: false);
+        artist.artistImageUrl = null;
+      }
       final artists = allArtists
           .where((a) => a.artistImageUrl == null && !a.artistImageLocked)
           .toList();
@@ -975,7 +985,8 @@ class Library extends _$Library {
     unawaited(_enrichPendingSongs());
   }
 
-  QueryBuilder<Song, Song, QWhere> _localSongs() => DbService.isar.songs.where();
+  QueryBuilder<Song, Song, QWhere> _localSongs() =>
+      DbService.isar.songs.where();
 
   QueryBuilder<Song, Song, QAfterSortBy> _buildSongsQuery() {
     final isAsc = state.isAscending;
@@ -991,9 +1002,7 @@ class Library extends _$Library {
       case SongSortStrategy.album:
         return isAsc
             ? _localSongs().sortByAlbum().thenByTrackNumber()
-            : _localSongs()
-                  .sortByAlbumDesc()
-                  .thenByTrackNumber();
+            : _localSongs().sortByAlbumDesc().thenByTrackNumber();
       case SongSortStrategy.duration:
         return isAsc
             ? _localSongs().sortByDuration()
@@ -1246,7 +1255,9 @@ Stream<List<Song>> topSongs(Ref ref) {
 @Riverpod(keepAlive: true)
 List<Song> homeQuickPicks(Ref ref) {
   final (songs, previewReady, previewQuickPicks) = ref.watch(
-    libraryProvider.select((s) => (s.songs, s.previewReady, s.previewQuickPicks)),
+    libraryProvider.select(
+      (s) => (s.songs, s.previewReady, s.previewQuickPicks),
+    ),
   );
   final source = (songs.isEmpty && previewReady) ? previewQuickPicks : songs;
   // Ties go newest first, then by path - the same order as the cold-start
@@ -1270,7 +1281,9 @@ List<Song> homeQuickPicks(Ref ref) {
 @Riverpod(keepAlive: true)
 List<Song> homeRecentlyAdded(Ref ref) {
   final (songs, previewReady, previewRecentlyAdded) = ref.watch(
-    libraryProvider.select((s) => (s.songs, s.previewReady, s.previewRecentlyAdded)),
+    libraryProvider.select(
+      (s) => (s.songs, s.previewReady, s.previewRecentlyAdded),
+    ),
   );
   final source = (songs.isEmpty && previewReady) ? previewRecentlyAdded : songs;
   // Ties by path, matching the cold-start preview query.

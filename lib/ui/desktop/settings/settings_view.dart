@@ -477,6 +477,8 @@ class SettingsView extends ConsumerWidget {
                   title: l10n.themeGroupFonts,
                   icon: LucideIcons.type,
                   children: [
+                    const LetterSpacingTile(),
+                    divider,
                     const UseNewFontTile(),
                     if (settings.useNewFont) ...[
                       divider,

@@ -19,9 +19,11 @@ class PagedSongs {
 }
 
 final pagedSongsProvider =
-    AsyncNotifierProvider.family<PagedSongsNotifier, PagedSongs, PagedQueryKind>(
-  PagedSongsNotifier.new,
-);
+    AsyncNotifierProvider.family<
+      PagedSongsNotifier,
+      PagedSongs,
+      PagedQueryKind
+    >(PagedSongsNotifier.new);
 
 class PagedSongsNotifier extends AsyncNotifier<PagedSongs> {
   PagedSongsNotifier(this.kind);
@@ -45,11 +47,11 @@ class PagedSongsNotifier extends AsyncNotifier<PagedSongs> {
     if (search != null && search.trim().isNotEmpty) {
       final term = search.trim();
       q = q.and().group(
-            (g) => g
-                .titleContains(term, caseSensitive: false)
-                .or()
-                .artistContains(term, caseSensitive: false),
-          );
+        (g) => g
+            .titleContains(term, caseSensitive: false)
+            .or()
+            .artistContains(term, caseSensitive: false),
+      );
     }
     return q;
   }
@@ -112,15 +114,15 @@ class PagedSongsNotifier extends AsyncNotifier<PagedSongs> {
 
 /// Backwards compatibility provider for [favorites].
 final favoritesProvider = Provider.autoDispose<AsyncValue<List<Song>>>((ref) {
-  return ref.watch(pagedSongsProvider(PagedQueryKind.favorites)).whenData(
-        (p) => p.items,
-      );
+  return ref
+      .watch(pagedSongsProvider(PagedQueryKind.favorites))
+      .whenData((p) => p.items);
 });
 
 /// Backwards compatibility provider for [recentlyPlayedScreen].
 final recentlyPlayedScreenProvider =
     Provider.autoDispose<AsyncValue<List<Song>>>((ref) {
-  return ref.watch(pagedSongsProvider(PagedQueryKind.history)).whenData(
-        (p) => p.items,
-      );
-});
+      return ref
+          .watch(pagedSongsProvider(PagedQueryKind.history))
+          .whenData((p) => p.items);
+    });

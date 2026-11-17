@@ -55,11 +55,7 @@ abstract final class AppDefaults {
   ];
 
   /// Default bottom navigation bar items order (Android).
-  static const List<String> defaultNavTabsOrder = [
-    'home',
-    'songs',
-    'library',
-  ];
+  static const List<String> defaultNavTabsOrder = ['home', 'songs', 'library'];
 
   /// Default settings categories order (Android).
   static const List<String> defaultSettingsCategoriesOrder = [
@@ -144,21 +140,21 @@ abstract final class AppDefaults {
   static const int accentColor = 0xFF41C25E; // Default Green
   static const double defaultAccentVibrancy = 0.3;
   static const bool disableBlur = true;
-  static const bool alwaysBlurSheets = true;
+  static const bool alwaysBlurSheets = false;
   static const bool playerDynamicBackground = false;
-  static const bool keepBackgroundGradient = true;
+  static const bool keepBackgroundGradient = false;
   static const bool animateBackgroundGradient = false;
   static const bool enablePlayerGradient = true;
-  static const bool animatePlayerGradient = false;
+  static const bool animatePlayerGradient = true;
   static const bool segmentedUtilityButtons = false;
   static const bool playerLyricLine = true;
   static const String playerLyricLineTransition = 'cube';
   static const String playerStyle = 'classic';
   static const bool playerStyleAccent = false;
   static const bool cardBlackBackground = false;
-  static const bool cardAccentBackground = false;
+  static const bool cardAccentBackground = true;
   static const bool cardAccentColors = false;
-  static const bool playerStyleBlur = true;
+  static const bool playerStyleBlur = false;
   static const bool showAlbumNextToArtist = true;
   static const bool showAlbumInQuickPicks = true;
   static const bool disableHaptics = false;
@@ -175,7 +171,9 @@ abstract final class AppDefaults {
   static const double lyricsFontScale = 1.0;
   static const bool keepScreenAwake = true;
   static const bool forceHighRefreshRate = true;
-  static const String selectedAvatarAsset = 'logo_full.svg';
+
+  /// The ▶▶ mark from the Home design, drawn in a round header button.
+  static const String selectedAvatarAsset = 'looper_mark.svg';
   static const bool avatarDynamicColor = false;
   static const bool showPerformanceOptimizer = false;
   static const bool showHomeArtists = true;
@@ -188,9 +186,13 @@ abstract final class AppDefaults {
 
   // Fonts
   static const bool useNewFont = true;
-  static const String customFontFamily = 'Stack Sans Text';
+  static const String customFontFamily = 'DM Sans';
   static const int customFontWeight = 400;
   static const int customFontWeightDelta = 0;
+
+  /// Letter spacing for all app text, in percent of the font size (Figma's
+  /// unit): -2 tightens every line by 2% of its size.
+  static const double letterSpacingPercent = -2.0;
   static const bool useNewFontLyrics = true;
   static const String customFontFamilyLyrics = 'Stack Sans Text';
   static const String customFontWeightLyrics = 'Normal';

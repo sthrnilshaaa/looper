@@ -1882,5 +1882,19 @@
   "setupKofiDesc": "Поддержите проект через Ko-fi.",
   "setupDoneTitle": "Всё готово!",
   "setupDoneDesc": "Ваша медиатека сканируется в фоне. Начинайте слушать.",
-  "setupStartListening": "Начать слушать"
+  "setupStartListening": "Начать слушать",
+  "homeTodayMix": "Микс дня",
+  "homeTodayMixDesc": "Идеальный микс, чтобы задать настроение дню",
+  "homeSurpriseMe": "Удиви меня!",
+  "homeSurpriseMeDesc": "Не знаете, что включить? Доверьтесь случаю.",
+  "homeArtistPick": "Исполнитель для вас",
+  "homeWeeklyMix": "Микс недели",
+  "homeWeeklyMixDesc": "Самые прослушиваемые треки за неделю",
+  "homePicksLabel": "Подборка",
+  "homeForYou": "Для вас",
+  "homeYourOwn": "Ваша",
+  "letterSpacing": "Межбуквенный интервал",
+  "letterSpacingDesc": "Сделать текст в приложении плотнее или свободнее",
+  "homeHeroEmptyDesc": "Ваши миксы появятся здесь, как только вы начнёте слушать",
+  "notificationPermissionRequired": "Разрешите уведомления, чтобы продолжить. Они нужны Looper для управления воспроизведением."
 }

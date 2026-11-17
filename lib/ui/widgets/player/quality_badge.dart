@@ -154,7 +154,8 @@ class QualityBadge extends StatelessWidget {
   };
 
   /// DSD rates read as multiples of 44.1 kHz (DSD64 = 2.8224 MHz).
-  static String sampleRateLabel(QualityInfo info) => info.tier == QualityTier.dsd
+  static String sampleRateLabel(QualityInfo info) =>
+      info.tier == QualityTier.dsd
       ? 'DSD${(info.sampleRate / 44100).round()}'
       : '${(info.sampleRate / 1000).toStringAsFixed(1)} kHz';
 

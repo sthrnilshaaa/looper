@@ -1,3 +1,4 @@
+import 'package:looper_player/features/settings/domain/app_defaults.dart';
 import 'package:looper_player/core/services/memory_manager.dart';
 import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'dart:io';
@@ -266,6 +267,10 @@ class MyApp extends ConsumerWidget {
     final bool useNewFont = settings?.useNewFont ?? false;
     final String customFontFamily = settings?.customFontFamily ?? '';
     final int customFontWeightDelta = settings?.customFontWeightDelta ?? 0;
+    final double spacing = settings?.letterSpacingPercent ?? double.nan;
+    final double letterSpacingPercent = spacing.isNaN
+        ? AppDefaults.letterSpacingPercent
+        : spacing;
     final String language = settings?.language ?? '';
 
     final String fontFamily = useNewFont
@@ -281,6 +286,7 @@ class MyApp extends ConsumerWidget {
         bodyColor: Colors.white70,
       ),
       useNewFont ? customFontWeightDelta : 0,
+      letterSpacingPercent: letterSpacingPercent,
     );
 
     Widget buildMaterialApp(ColorScheme colorScheme) {

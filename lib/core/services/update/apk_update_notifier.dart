@@ -138,7 +138,8 @@ class ApkUpdate extends _$ApkUpdate {
       abis.isNotEmpty ? abis : const ['arm64-v8a', 'universal'],
     );
 
-    if (!isNewer) {
+    // Our APK isn't on the release yet: say nothing until it is.
+    if (!isNewer || release.waitingForMyApk) {
       await _clearDownloads(keep: null);
       state = ApkUpdateState(
         phase: ApkUpdatePhase.upToDate,
@@ -151,10 +152,7 @@ class ApkUpdate extends _$ApkUpdate {
     if (asset == null) {
       // A release without an APK for this device: link to it instead.
       await UpdateService.announceRelease(release);
-      state = ApkUpdateState(
-        phase: ApkUpdatePhase.available,
-        release: release,
-      );
+      state = ApkUpdateState(phase: ApkUpdatePhase.available, release: release);
       return ApkCheckResult.available;
     }
 

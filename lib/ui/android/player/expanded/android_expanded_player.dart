@@ -197,8 +197,8 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
     final l10n = AppLocalizations.of(context)!;
 
     final isPlaying = ref.watch(playbackProvider.select((s) => s.isPlaying));
-    final isExpandedOpen = widget.previewStyle == null &&
-        TickerMode.valuesOf(context).enabled;
+    final isExpandedOpen =
+        widget.previewStyle == null && TickerMode.valuesOf(context).enabled;
     ScreenAwake.set(this, isExpandedOpen && isPlaying && song != null);
 
     if (song == null) {
@@ -1233,10 +1233,7 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                            BlurredBackgroundArt(
-                              song: song,
-                              zoom: 1.08,
-                            ),
+                            BlurredBackgroundArt(song: song, zoom: 1.08),
                             ColoredBox(
                               color: Colors.black.withValues(
                                 alpha: musicDarkness,
@@ -1424,9 +1421,9 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           fadeWithSlide(
-                              buildSongInfo(32),
-                              FluidSectionMotion.songInfo,
-                            ),
+                            buildSongInfo(32),
+                            FluidSectionMotion.songInfo,
+                          ),
                           const SizedBox(height: 32),
                           fadeWithSlide(
                             buildSeekBar(28),

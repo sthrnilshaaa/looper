@@ -53,7 +53,8 @@ class FluidPlayerGeometry {
     if (p <= panelCornerProgressThreshold) return panelRadius;
     if (p >= 1.0) return 0.0;
     final double t =
-        (p - panelCornerProgressThreshold) / (1.0 - panelCornerProgressThreshold);
+        (p - panelCornerProgressThreshold) /
+        (1.0 - panelCornerProgressThreshold);
     final double curved = Curves.easeInOut.transform(t);
     return lerpDouble(panelRadius, 0.0, curved)!;
   }
@@ -150,12 +151,11 @@ class FluidPlayerGeometry {
     double p, {
     double stretch = 0.0,
     double horizontalOffset = 0.0,
-  }) =>
-      panelRect(
-        p,
-        stretch: stretch,
-        horizontalOffset: horizontalOffset,
-      ).topLeft;
+  }) => panelRect(
+    p,
+    stretch: stretch,
+    horizontalOffset: horizontalOffset,
+  ).topLeft;
 }
 
 /// Staggered entrance of one expanded-player section: it fades in and rises

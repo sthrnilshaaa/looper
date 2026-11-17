@@ -1882,5 +1882,19 @@
   "setupKofiDesc": "Unterstütze das Projekt über Ko-fi.",
   "setupDoneTitle": "Alles bereit!",
   "setupDoneDesc": "Deine Bibliothek wird im Hintergrund gescannt. Leg los und hör rein.",
-  "setupStartListening": "Jetzt hören"
+  "setupStartListening": "Jetzt hören",
+  "homeTodayMix": "Mix des Tages",
+  "homeTodayMixDesc": "Der perfekte Mix für deinen Tag",
+  "homeSurpriseMe": "Überrasch mich!",
+  "homeSurpriseMeDesc": "Unsicher, was du hören willst? Lass den Zufall entscheiden.",
+  "homeArtistPick": "Künstler-Tipp für dich",
+  "homeWeeklyMix": "Wochenmix",
+  "homeWeeklyMixDesc": "Deine meistgehörten Songs dieser Woche",
+  "homePicksLabel": "Auswahl",
+  "homeForYou": "Für dich",
+  "homeYourOwn": "Deine eigene",
+  "letterSpacing": "Zeichenabstand",
+  "letterSpacingDesc": "Text in der ganzen App enger oder weiter setzen",
+  "homeHeroEmptyDesc": "Deine Mixe erscheinen hier, sobald du anfängst zu hören",
+  "notificationPermissionRequired": "Erlaube Benachrichtigungen, um fortzufahren. Looper braucht sie für die Wiedergabesteuerung."
 }

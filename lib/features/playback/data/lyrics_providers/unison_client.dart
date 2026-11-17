@@ -52,7 +52,8 @@ class UnisonClient {
       if (format.contains('ttml') || rawLyrics.contains('<tt')) {
         final lines = TtmlLyricsParser.parse(rawLyrics);
         if (lines != null && lines.isNotEmpty) {
-          if (durationSeconds <= 0 || fitsDuration(lines, durationSeconds + 10)) {
+          if (durationSeconds <= 0 ||
+              fitsDuration(lines, durationSeconds + 10)) {
             final lrc = TimedLrcWriter.write(lines);
             if (lrc != null) return lrc;
           }

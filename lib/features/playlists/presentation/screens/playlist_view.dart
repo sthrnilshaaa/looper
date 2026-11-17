@@ -201,7 +201,16 @@ class PlaylistView extends ConsumerWidget {
 
 class PlaylistCard extends ConsumerWidget {
   final Playlist playlist;
-  const PlaylistCard({super.key, required this.playlist});
+
+  /// Home sets the design's card text; elsewhere the app font.
+  final TextStyle? titleStyle;
+  final TextStyle? subtitleStyle;
+  const PlaylistCard({
+    super.key,
+    required this.playlist,
+    this.titleStyle,
+    this.subtitleStyle,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -240,13 +249,18 @@ class PlaylistCard extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             playlist.name,
-            style: AppFonts.jostStyle(fontWeight: FontWeight.normal),
+            style:
+                titleStyle ?? AppFonts.jostStyle(fontWeight: FontWeight.normal),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           Text(
             context.l10n.songsCount(playlist.songPaths.length),
-            style: AppFonts.jostStyle(color: Colors.grey, fontSize: 12),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style:
+                subtitleStyle ??
+                AppFonts.jostStyle(color: Colors.grey, fontSize: 12),
           ),
         ],
       ),

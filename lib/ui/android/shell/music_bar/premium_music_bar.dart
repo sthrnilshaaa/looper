@@ -97,12 +97,10 @@ class PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
       vsync: this,
       value: _expandProgress.value,
     )..addListener(_onExpandTick);
-    _miniHorizontalController = AnimationController.unbounded(
-      vsync: this,
-      value: 0.0,
-    )..addListener(() {
-        _miniHorizontalOffset = _miniHorizontalController.value;
-      });
+    _miniHorizontalController =
+        AnimationController.unbounded(vsync: this, value: 0.0)..addListener(() {
+          _miniHorizontalOffset = _miniHorizontalController.value;
+        });
     _barX = AnimationController.unbounded(vsync: this);
     _barY = AnimationController.unbounded(vsync: this);
     _restFrom = _restTo = widget.restingBottom;
@@ -228,8 +226,9 @@ class PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
       return;
     }
 
-    final double exitTarget =
-        direction < 0 ? -geometry.miniWidth : geometry.miniWidth;
+    final double exitTarget = direction < 0
+        ? -geometry.miniWidth
+        : geometry.miniWidth;
     final sim = SpringSimulation(
       fluidPlayerSpring,
       _miniHorizontalOffset,
@@ -245,8 +244,12 @@ class PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
       }
       _miniHorizontalOffset = -exitTarget;
       _miniHorizontalController.value = -exitTarget;
-      final enterSim =
-          SpringSimulation(fluidPlayerSpring, -exitTarget, 0.0, 0.0);
+      final enterSim = SpringSimulation(
+        fluidPlayerSpring,
+        -exitTarget,
+        0.0,
+        0.0,
+      );
       _miniHorizontalController.animateWith(enterSim).then((_) {
         if (mounted) {
           _miniHorizontalOffset = 0.0;
@@ -721,12 +724,12 @@ class PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
             final playbackState = ref.read(playbackProvider);
             final queue = playbackState.queue;
             final currentPath = playbackState.currentSong?.path;
-            final currentIndex =
-                queue.indexWhere((s) => s.path == currentPath);
-            final bool hasNext = playbackState.repeatMode == RepeatMode.all ||
+            final currentIndex = queue.indexWhere((s) => s.path == currentPath);
+            final bool hasNext =
+                playbackState.repeatMode == RepeatMode.all ||
                 (currentIndex >= 0 && currentIndex < queue.length - 1);
-            final bool hasPrev = playbackState.repeatMode == RepeatMode.all ||
-                currentIndex > 0;
+            final bool hasPrev =
+                playbackState.repeatMode == RepeatMode.all || currentIndex > 0;
 
             if (isCollapsed) {
               final double finger = _miniHorizontalOffset + details.delta.dx;
@@ -779,16 +782,17 @@ class PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
             final playbackState = ref.read(playbackProvider);
             final queue = playbackState.queue;
             final currentPath = playbackState.currentSong?.path;
-            final currentIndex =
-                queue.indexWhere((s) => s.path == currentPath);
-            final bool hasNext = playbackState.repeatMode == RepeatMode.all ||
+            final currentIndex = queue.indexWhere((s) => s.path == currentPath);
+            final bool hasNext =
+                playbackState.repeatMode == RepeatMode.all ||
                 (currentIndex >= 0 && currentIndex < queue.length - 1);
-            final bool hasPrev = playbackState.repeatMode == RepeatMode.all ||
-                currentIndex > 0;
+            final bool hasPrev =
+                playbackState.repeatMode == RepeatMode.all || currentIndex > 0;
 
             if (isCollapsed) {
-              final double threshold =
-                  FluidHorizontalSwipe.threshold(geometry.miniWidth);
+              final double threshold = FluidHorizontalSwipe.threshold(
+                geometry.miniWidth,
+              );
               final double projected = FluidHorizontalSwipe.projectedOffset(
                 offset: _miniHorizontalOffset,
                 velocityX: vx,
@@ -905,9 +909,7 @@ class PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
                       child: IgnorePointer(
                         child: DecoratedBox(
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(
-                              cornerRadius,
-                            ),
+                            borderRadius: BorderRadius.circular(cornerRadius),
                             border: Border.all(
                               color: Colors.white.withValues(
                                 alpha: 0.05 * (1.0 - p),
