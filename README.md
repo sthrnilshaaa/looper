@@ -47,12 +47,7 @@
 </p>
 
 <p align="center">
-  <img src="media/screenshots/fluid_player_playing.png" width="16%" alt="Now playing" />
-  <img src="media/screenshots/player_lyrics.png" width="16%" alt="Lyrics" />
-  <img src="media/screenshots/home_today_mix.png" width="16%" alt="Home" />
-  <img src="media/screenshots/library.png" width="16%" alt="Library" />
-  <img src="media/screenshots/analyze.png" width="16%" alt="Looper Analyze" />
-  <img src="media/screenshots/settings.png" width="16%" alt="Settings" />
+  <img src="media/showcase.gif" width="100%" alt="Looper Player showcase" />
 </p>
 
 ---
