@@ -30,7 +30,10 @@ class GenresGridView extends ConsumerWidget {
     );
     final sortOption = GenreSortOption
         .values[sortOptionIndex.clamp(0, GenreSortOption.values.length - 1)];
-    final genres = genresMap.keys.toList();
+    final q = CategorySearch.of(context);
+    final genres = genresMap.keys
+        .where((g) => CategorySearch.matches(q, [g]))
+        .toList();
     switch (sortOption) {
       case GenreSortOption.nameAsc:
         genres.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));

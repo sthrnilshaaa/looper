@@ -13,7 +13,15 @@ class PagedSongs {
   /// Favorites / History show one page at a time.
   final int page;
 
-  const PagedSongs({required this.items, required this.total, this.page = 0});
+  /// Summed duration of all [total] songs, in milliseconds.
+  final int totalMs;
+
+  const PagedSongs({
+    required this.items,
+    required this.total,
+    this.totalMs = 0,
+    this.page = 0,
+  });
 
   int get pageCount => (total / PagedSongsNotifier.pageSize).ceil();
 }
@@ -67,12 +75,19 @@ class PagedSongsNotifier extends AsyncNotifier<PagedSongs> {
   /// The current page.
   Future<PagedSongs> _load() async {
     final total = await _filterQuery().count();
+    final totalMs = (await _filterQuery().durationProperty().findAll())
+        .fold<int>(0, (sum, d) => sum + (d ?? 0));
     _page = _page.clamp(0, math.max(0, (total - 1) ~/ pageSize));
     final items = await _sortedQuery()
         .offset(_page * pageSize)
         .limit(pageSize)
         .findAll();
-    return PagedSongs(items: items, total: total, page: _page);
+    return PagedSongs(
+      items: items,
+      total: total,
+      totalMs: totalMs,
+      page: _page,
+    );
   }
 
   @override

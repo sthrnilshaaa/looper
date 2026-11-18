@@ -31,7 +31,11 @@ class AlbumsGridView extends ConsumerWidget {
     return Builder(
       builder: (context) {
         if (!albumsAsync.hasValue) return const AppLoadingIndicator();
-        final albums = albumsAsync.requireValue;
+        final q = CategorySearch.of(context);
+        final albums = [
+          for (final a in albumsAsync.requireValue)
+            if (CategorySearch.matches(q, [a.name, a.artist])) a,
+        ];
         if (albums.isEmpty) {
           return EmptyStateCard(
             icon: LucideIcons.disc,

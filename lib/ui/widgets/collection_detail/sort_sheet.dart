@@ -7,173 +7,78 @@ extension _CollectionSortSheet on CollectionDetailView {
       useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) {
-        final l10n = AppLocalizations.of(context)!;
-        final bool isArtistCollection =
-            _isArtistPage(l10n) ||
-            (songs.isNotEmpty &&
-                songs.every(
-                  (s) => s.artist?.toLowerCase() == title.toLowerCase(),
-                ));
+      builder: (context) => Consumer(
+        builder: (context, ref, _) {
+          final l10n = AppLocalizations.of(context)!;
+          final bool isArtistCollection =
+              _isArtistPage(l10n) ||
+              (songs.isNotEmpty &&
+                  songs.every(
+                    (s) => s.artist?.toLowerCase() == title.toLowerCase(),
+                  ));
+          final current = ref.watch(
+            settingsProvider.select((s) => s.collectionSortOptionIndex),
+          );
+          SortMenuItem item(
+            String label,
+            IconData icon,
+            CollectionSortOption value,
+          ) => SortMenuItem(
+            label: label,
+            icon: icon,
+            selected: current == value.index,
+            onTap: () => ref
+                .read(settingsProvider.notifier)
+                .updateCollectionSortOptionIndex(value.index),
+          );
 
-        return AppBottomSheetContainer(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                l10n.sortBy,
-                style: AppFonts.jostStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+          return SortMenuSheet(
+            title: l10n.sortBy,
+            items: [
+              item(
+                l10n.sortDefault,
+                LucideIcons.listOrdered,
+                CollectionSortOption.defaultOrder,
               ),
-              const SizedBox(height: 16),
-              PremiumSection(
-                borderRadius: BorderRadius.circular(20),
-                padding: EdgeInsets.zero,
-                useExpanded: false,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildSortItem(
-                      context,
-                      ref,
-                      l10n.sortDefault,
-                      CollectionSortOption.defaultOrder,
-                    ),
-                    const Divider(
-                      color: Colors.white10,
-                      height: 1,
-                      indent: 20,
-                      endIndent: 20,
-                    ),
-                    _buildSortItem(
-                      context,
-                      ref,
-                      l10n.sortAlphabeticalAZ,
-                      CollectionSortOption.titleAsc,
-                    ),
-                    const Divider(
-                      color: Colors.white10,
-                      height: 1,
-                      indent: 20,
-                      endIndent: 20,
-                    ),
-                    _buildSortItem(
-                      context,
-                      ref,
-                      l10n.sortAlphabeticalZA,
-                      CollectionSortOption.titleDesc,
-                    ),
-                    if (!isArtistCollection) ...[
-                      const Divider(
-                        color: Colors.white10,
-                        height: 1,
-                        indent: 20,
-                        endIndent: 20,
-                      ),
-                      _buildSortItem(
-                        context,
-                        ref,
-                        l10n.sortArtistAsc,
-                        CollectionSortOption.artistAsc,
-                      ),
-                    ],
-                    const Divider(
-                      color: Colors.white10,
-                      height: 1,
-                      indent: 20,
-                      endIndent: 20,
-                    ),
-                    _buildSortItem(
-                      context,
-                      ref,
-                      l10n.sortAlbumAsc,
-                      CollectionSortOption.albumAsc,
-                    ),
-                    const Divider(
-                      color: Colors.white10,
-                      height: 1,
-                      indent: 20,
-                      endIndent: 20,
-                    ),
-                    _buildSortItem(
-                      context,
-                      ref,
-                      l10n.sortDuration,
-                      CollectionSortOption.duration,
-                    ),
-                    const Divider(
-                      color: Colors.white10,
-                      height: 1,
-                      indent: 20,
-                      endIndent: 20,
-                    ),
-                    _buildSortItem(
-                      context,
-                      ref,
-                      l10n.sortYearNewest,
-                      CollectionSortOption.yearNewest,
-                    ),
-                    const Divider(
-                      color: Colors.white10,
-                      height: 1,
-                      indent: 20,
-                      endIndent: 20,
-                    ),
-                    _buildSortItem(
-                      context,
-                      ref,
-                      l10n.sortYearOldest,
-                      CollectionSortOption.yearOldest,
-                    ),
-                  ],
+              item(
+                l10n.sortAlphabeticalAZ,
+                LucideIcons.arrowDownAZ,
+                CollectionSortOption.titleAsc,
+              ),
+              item(
+                l10n.sortAlphabeticalZA,
+                LucideIcons.arrowUpZA,
+                CollectionSortOption.titleDesc,
+              ),
+              if (!isArtistCollection)
+                item(
+                  l10n.sortArtistAsc,
+                  LucideIcons.mic2,
+                  CollectionSortOption.artistAsc,
                 ),
+              item(
+                l10n.sortAlbumAsc,
+                LucideIcons.disc,
+                CollectionSortOption.albumAsc,
+              ),
+              item(
+                l10n.sortDuration,
+                LucideIcons.clock,
+                CollectionSortOption.duration,
+              ),
+              item(
+                l10n.sortYearNewest,
+                LucideIcons.calendarArrowDown,
+                CollectionSortOption.yearNewest,
+              ),
+              item(
+                l10n.sortYearOldest,
+                LucideIcons.calendarArrowUp,
+                CollectionSortOption.yearOldest,
               ),
             ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildSortItem(
-    BuildContext context,
-    WidgetRef ref,
-    String label,
-    CollectionSortOption value,
-  ) {
-    final settings = ref.watch(settingsProvider);
-    final isSelected = settings.collectionSortOptionIndex == value.index;
-    final accentColor = settings.accent;
-
-    return InkWell(
-      onTap: () {
-        AppHaptics.light();
-        ref
-            .read(settingsProvider.notifier)
-            .updateCollectionSortOptionIndex(value.index);
-        Navigator.pop(context);
-      },
-      borderRadius: BorderRadius.circular(20),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: AppFonts.jostStyle(
-                color: isSelected ? accentColor : Colors.white70,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 15,
-              ),
-            ),
-            if (isSelected)
-              Icon(LucideIcons.check, color: accentColor, size: 20),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

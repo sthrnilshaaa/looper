@@ -8,6 +8,7 @@ import 'package:looper_player/features/library/presentation/providers/library/li
 import 'package:looper_player/l10n/app_localizations.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
+import 'category_detail_wrapper.dart' show CategorySearch;
 
 class FoldersListView extends ConsumerWidget {
   const FoldersListView({super.key});
@@ -18,7 +19,10 @@ class FoldersListView extends ConsumerWidget {
     // Grouping is cached in songsByFolderProvider (memoized on the song
     // list, not this screen's build cycle) instead of redone here inline.
     final foldersMap = ref.watch(songsByFolderProvider);
-    final folders = foldersMap.keys.toList()..sort();
+    final q = CategorySearch.of(context);
+    final folders =
+        foldersMap.keys.where((f) => CategorySearch.matches(q, [f])).toList()
+          ..sort();
 
     return AppRefreshIndicator(
       onRefresh: () => ref

@@ -104,8 +104,8 @@ class SongTile extends ConsumerWidget {
           songSubtitle,
           style: AppFonts.jostStyle(
             color: Colors.white.withValues(alpha: 0.5),
-            fontSize: 12,
-            height: 1.15,
+            fontSize: 14,
+            height: 1.2,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -147,6 +147,7 @@ class SongTile extends ConsumerWidget {
             });
             return;
           }
+          final isCollection = collectionIndex != null || playlist != null;
           final index =
               collectionIndex ?? songs.indexWhere((s) => s.path == song.path);
           if (index != -1) {
@@ -169,7 +170,7 @@ class SongTile extends ConsumerWidget {
         onLongPress: selectionMode ? null : onEnterSelection,
         child: ListTile(
           contentPadding: EdgeInsets.only(
-            left: collectionIndex != null ? 8 : 16,
+            left: collectionIndex != null ? 8 : 24,
             right: 4,
             top: 0,
             bottom: 0,
@@ -252,6 +253,7 @@ class SongTile extends ConsumerWidget {
                     color: isCurrent
                         ? Theme.of(context).colorScheme.primary
                         : Colors.white,
+                    fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
                   maxLines: 1,

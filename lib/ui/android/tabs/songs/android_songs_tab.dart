@@ -4,16 +4,14 @@ import 'package:flutter_svg/svg.dart';
 import 'package:looper_player/core/theme/app_icons.dart';
 import 'package:looper_player/features/library/domain/models/models.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:looper_player/core/providers/navigation_provider.dart';
 import 'package:looper_player/features/library/presentation/providers/library/library_notifier.dart';
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
 import 'package:looper_player/features/library/presentation/widgets/songs/songs_list.dart';
 import 'package:looper_player/features/playback/presentation/providers/playback/playback_notifier.dart';
-import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/ui/widgets/common/momentum_scroll_controller.dart';
 
 import '../../widgets/premium_section.dart';
+import '../../widgets/large_tab_header.dart';
 import '../../widgets/empty_library_view.dart';
 import '../../widgets/premium_loading_view.dart';
 import '../../widgets/library_skeletons.dart';
@@ -153,83 +151,10 @@ class _AndroidSongsTabState extends ConsumerState<AndroidSongsTab> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              PremiumSection(
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(32),
-                                  bottomLeft: Radius.circular(32),
-                                  topRight: Radius.circular(10),
-                                  bottomRight: Radius.circular(10),
-                                ),
-                                width: 48,
-                                height: 48,
-                                backgroundColor: Colors.white.withValues(
-                                  alpha: 0.04,
-                                ),
-                                useBlur: true,
-                                useExpanded: false,
-                                onTap: () {
-                                  AppHaptics.light();
-                                  ref
-                                      .read(appNavigationProvider.notifier)
-                                      .setItem(NavItem.search);
-                                },
-                                child: const Icon(
-                                  LucideIcons.search,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                              Text(
-                                l10n.allSongs,
-                                style: AppFonts.jostStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              PremiumSection(
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(10),
-                                  bottomLeft: Radius.circular(10),
-                                  topRight: Radius.circular(32),
-                                  bottomRight: Radius.circular(32),
-                                ),
-                                width: 48,
-                                height: 48,
-                                useExpanded: false,
-                                useBlur: true,
-                                backgroundColor: Colors.white.withValues(
-                                  alpha: 0.04,
-                                ),
-                                forceNoBlur: true,
-                                onTap: () {
-                                  AppHaptics.light();
-                                  ref
-                                      .read(appNavigationProvider.notifier)
-                                      .setItem(NavItem.account);
-                                },
-                                child: const Icon(
-                                  LucideIcons.user,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                            ],
-                          ),
+                        LargeTabHeader(
+                          eyebrow: l10n.allSongsEyebrow,
+                          title: l10n.songs,
                         ),
-                        // Thin divider below the header
-                        Container(
-                          height: 0.5,
-                          width: double.infinity,
-                          margin: const EdgeInsets.symmetric(horizontal: 16),
-                          color: Colors.white.withValues(alpha: 0.15),
-                        ),
-                        const SizedBox(height: 8),
                         Expanded(
                           child: SongsList(
                             songs: songs,

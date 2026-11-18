@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/ui/widgets/common/app_skeleton.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
@@ -194,9 +195,6 @@ class OfflineHomeSkeleton extends StatelessWidget {
   }
 }
 
-/// Shown on the Home tab while launching or loading.
-/// Mirrors the real tab's layout (header, quick picks, card rows)
-/// so content smoothly drops into place.
 class HomeSkeleton extends StatelessWidget {
   const HomeSkeleton({super.key});
 

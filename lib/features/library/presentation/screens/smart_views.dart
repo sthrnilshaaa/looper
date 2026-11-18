@@ -16,6 +16,8 @@ import 'package:looper_player/ui/widgets/common/app_loading_indicator.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'package:looper_player/features/library/presentation/providers/library/paged_songs_notifier.dart';
+import 'package:looper_player/ui/android/tabs/library/categories/category_detail_wrapper.dart'
+    show CategorySearch;
 export 'package:looper_player/features/library/presentation/providers/library/paged_songs_notifier.dart';
 
 class FavoritesView extends StatelessWidget {
@@ -23,10 +25,10 @@ class FavoritesView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => _PagedSongsView(
-        kind: PagedQueryKind.favorites,
-        emptyIcon: LucideIcons.heart,
-        emptyText: AppLocalizations.of(context)!.noFavoritesYet,
-      );
+    kind: PagedQueryKind.favorites,
+    emptyIcon: LucideIcons.heart,
+    emptyText: AppLocalizations.of(context)!.noFavoritesYet,
+  );
 }
 
 class RecentlyPlayedView extends StatelessWidget {
@@ -34,10 +36,10 @@ class RecentlyPlayedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => _PagedSongsView(
-        kind: PagedQueryKind.history,
-        emptyIcon: LucideIcons.clock,
-        emptyText: AppLocalizations.of(context)!.noHistoryYet,
-      );
+    kind: PagedQueryKind.history,
+    emptyIcon: LucideIcons.clock,
+    emptyText: AppLocalizations.of(context)!.noHistoryYet,
+  );
 }
 
 /// Favorites / History: one page of songs, and a page switcher at the end of the list.
@@ -57,10 +59,13 @@ class _PagedSongsView extends ConsumerWidget {
     final provider = pagedSongsProvider(kind);
     final pagedAsync = ref.watch(provider);
     final notifier = ref.read(provider.notifier);
+    final q = CategorySearch.of(context);
 
     return pagedAsync.when(
       data: (paged) {
-        final list = paged.items.isEmpty
+        final list = q.isNotEmpty
+            ? _SearchedSongs(query: q, fetch: notifier.fetchAll)
+            : paged.items.isEmpty
             ? _buildEmpty(context, emptyIcon, emptyText)
             : SongsList(
                 // New page: fresh list scrolled to the top.
@@ -141,4 +146,50 @@ Widget _buildEmpty(BuildContext context, IconData icon, String text) {
       ],
     ),
   );
+}
+
+/// Every song of a paged list matching [query] (title or artist), not just
+/// the page on screen.
+class _SearchedSongs extends StatefulWidget {
+  const _SearchedSongs({required this.query, required this.fetch});
+
+  final String query;
+  final Future<List<Song>> Function({String? search}) fetch;
+
+  @override
+  State<_SearchedSongs> createState() => _SearchedSongsState();
+}
+
+class _SearchedSongsState extends State<_SearchedSongs> {
+  late Future<List<Song>> _results = _load();
+
+  Future<List<Song>> _load() async => [
+    for (final s in await widget.fetch(search: widget.query))
+      if (CategorySearch.matches(widget.query, [s.title, s.artist])) s,
+  ];
+
+  @override
+  void didUpdateWidget(_SearchedSongs old) {
+    super.didUpdateWidget(old);
+    if (old.query != widget.query) _results = _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<Song>>(
+      future: _results,
+      builder: (context, snap) {
+        final songs = snap.data;
+        if (songs == null) return const AppLoadingIndicator();
+        if (songs.isEmpty) {
+          return _buildEmpty(
+            context,
+            LucideIcons.searchX,
+            context.l10n.noSongsFound,
+          );
+        }
+        return SongsList(songs: songs, searchQuery: widget.query);
+      },
+    );
+  }
 }

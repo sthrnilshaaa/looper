@@ -24,7 +24,11 @@ class ArtistsGridView extends ConsumerWidget {
     );
     final sortOption = ArtistSortOption
         .values[sortOptionIndex.clamp(0, ArtistSortOption.values.length - 1)];
-    final sortedArtists = ref.watch(artistsSortedProvider(sortOption));
+    final q = CategorySearch.of(context);
+    final sortedArtists = [
+      for (final a in ref.watch(artistsSortedProvider(sortOption)))
+        if (CategorySearch.matches(q, [a.name])) a,
+    ];
 
     if (sortedArtists.isEmpty) {
       return EmptyStateCard(icon: LucideIcons.user, title: l10n.noArtistsFound);

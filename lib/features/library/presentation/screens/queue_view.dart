@@ -9,6 +9,8 @@ import 'package:looper_player/ui/widgets/common/optimized_image.dart';
 import 'package:looper_player/core/utils/ui_utils.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/core/utils/l10n.dart';
+import 'package:looper_player/ui/android/tabs/library/categories/category_detail_wrapper.dart'
+    show CategorySearch;
 
 class QueueView extends ConsumerWidget {
   const QueueView({super.key});
@@ -23,7 +25,8 @@ class QueueView extends ConsumerWidget {
 
     // Rotate the queue list so that the current song is at the top
     final currentIdx = queue.indexWhere((s) => s.path == currentSongPath);
-    final List<Song> displayedQueue;
+    final q = CategorySearch.of(context);
+    List<Song> displayedQueue;
     if (currentIdx != -1) {
       displayedQueue = [
         ...queue.sublist(currentIdx),
@@ -31,6 +34,15 @@ class QueueView extends ConsumerWidget {
       ];
     } else {
       displayedQueue = List.from(queue);
+    }
+    // Searching shows a filtered view: reorder indices would not match the
+    // real queue, so dragging is off until the search is cleared.
+    final searching = q.isNotEmpty;
+    if (searching) {
+      displayedQueue = [
+        for (final s in displayedQueue)
+          if (CategorySearch.matches(q, [s.title, s.artist, s.album])) s,
+      ];
     }
 
     return Column(
@@ -66,7 +78,7 @@ class QueueView extends ConsumerWidget {
           child: displayedQueue.isEmpty
               ? Center(
                   child: Text(
-                    l10n.queueIsEmpty,
+                    searching ? l10n.noSongsFound : l10n.queueIsEmpty,
                     style: AppFonts.jostStyle(color: Colors.grey, fontSize: 16),
                   ),
                 )
@@ -147,7 +159,9 @@ class QueueView extends ConsumerWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            trailing: isCurrent
+                            trailing: searching
+                                ? null
+                                : isCurrent
                                 ? const Padding(
                                     padding: EdgeInsets.only(right: 20.0),
                                     child: Icon(

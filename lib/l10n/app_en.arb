@@ -1,4 +1,8 @@
 {
+  "allSongsEyebrow": "All",
+  "@allSongsEyebrow": {"description": "Small first line above \"Songs\" in the Songs tab title"},
+  "yourLibraryEyebrow": "Your",
+  "@yourLibraryEyebrow": {"description": "Small first line above \"Library\" in the Library tab title"},
   "about": "About",
   "aboutAndMaintainers": "About & Maintainers",
   "aboutApp": "About App",

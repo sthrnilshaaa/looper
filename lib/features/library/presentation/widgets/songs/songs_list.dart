@@ -14,6 +14,7 @@ import 'package:looper_player/features/playback/presentation/providers/playback/
 import 'package:looper_player/features/library/presentation/providers/library/library_notifier.dart';
 import 'package:looper_player/ui/widgets/common/app_refresh_indicator.dart';
 import 'package:looper_player/ui/widgets/sheets/app_bottom_sheet.dart';
+import 'package:looper_player/ui/widgets/sheets/sort_menu_sheet.dart';
 
 import 'package:looper_player/core/services/storage/db_service.dart';
 import 'package:looper_player/core/services/storage/media_store_write_service.dart';
@@ -23,6 +24,9 @@ import 'package:looper_player/ui/android/widgets/enrichment_indicator.dart';
 import 'package:looper_player/ui/android/widgets/library_skeletons.dart';
 import 'package:looper_player/ui/widgets/common/app_skeleton.dart';
 import 'package:looper_player/ui/android/widgets/premium_section.dart';
+import 'package:looper_player/ui/android/widgets/large_tab_header.dart';
+import 'package:looper_player/ui/android/tabs/library/categories/category_detail_wrapper.dart'
+    show CategorySearch;
 import 'package:looper_player/features/playlists/data/services/playlist_service.dart';
 import 'package:looper_player/features/playlists/presentation/screens/playlist_view.dart'
     show playlistProvider;
@@ -310,14 +314,20 @@ class _SongsListState extends ConsumerState<SongsList> {
 
   Widget _buildHeader(BuildContext context, AppLocalizations l10n) {
     if (_isSelecting) return _buildSelectionBar(l10n);
+    // Category screens show the count and sort button in their hero.
+    if (CategorySearch.inScope(context)) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(24, 4, 20, 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             '${widget.loading || widget.footer != null ? (widget.totalCount ?? widget.songs.length) : widget.songs.length} ${l10n.songs}',
-            style: AppFonts.jostStyle(color: Colors.grey, fontSize: 13),
+            style: AppFonts.jostStyle(
+              color: Colors.white.withValues(alpha: 0.5),
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           if (widget.showEnrichmentIndicator)
             const Expanded(
@@ -331,17 +341,10 @@ class _SongsListState extends ConsumerState<SongsList> {
                 ),
               ),
             ),
-          Row(
-            children: [
-              IconButton(
-                onPressed: () => _showSortBottomSheet(context, ref, l10n),
-                icon: const Icon(LucideIcons.listFilter, size: 18),
-                tooltip: l10n.sortBy,
-                style: IconButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ],
+          RoundIconButton(
+            icon: Icons.filter_list_rounded,
+            tooltip: l10n.sortBy,
+            onTap: () => showSongSortSheet(context, ref, l10n),
           ),
         ],
       ),
@@ -505,26 +508,28 @@ class _SongsListState extends ConsumerState<SongsList> {
           )
         else
           Expanded(
-            child: AppRefreshIndicator(
-              onRefresh:
-                  widget.onRefresh ??
-                  () => ref
-                      .read(libraryProvider.notifier)
-                      .refreshLibrary(showVisualIndicator: false),
-              child: UiUtils.isDesktop
-                  ? LayoutBuilder(
-                      builder: (context, constraints) =>
-                          songColumnsFor(
-                                constraints.maxWidth,
-                                desktop: true,
-                                searching:
-                                    widget.searchQuery?.isNotEmpty ?? false,
-                              ) ==
-                              2
-                          ? _buildTwoColumnGrid(l10n)
-                          : _buildSingleColumnList(l10n),
-                    )
-                  : _buildSingleColumnList(l10n),
+            child: TabHeaderFade(
+              child: AppRefreshIndicator(
+                onRefresh:
+                    widget.onRefresh ??
+                    () => ref
+                        .read(libraryProvider.notifier)
+                        .refreshLibrary(showVisualIndicator: false),
+                child: UiUtils.isDesktop
+                    ? LayoutBuilder(
+                        builder: (context, constraints) =>
+                            songColumnsFor(
+                                  constraints.maxWidth,
+                                  desktop: true,
+                                  searching:
+                                      widget.searchQuery?.isNotEmpty ?? false,
+                                ) ==
+                                2
+                            ? _buildTwoColumnGrid(l10n)
+                            : _buildSingleColumnList(l10n),
+                      )
+                    : _buildSingleColumnList(l10n),
+              ),
             ),
           ),
       ],
