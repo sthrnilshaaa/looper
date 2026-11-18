@@ -9,6 +9,10 @@
 </p>
 
 <p align="center">
+  <img src="media/banner.png" width="100%" alt="Looper Player" />
+</p>
+
+<p align="center">
   <img height="20" src="https://img.shields.io/github/v/release/SthrNilshaaa/looper?style=flat-square&color=000000" />
   <img height="20" src="https://img.shields.io/github/downloads/SthrNilshaaa/looper/total?style=flat-square&label=Downloads&color=blue&labelColor=000000&logo=github" />
   <img height="20" src="https://img.shields.io/github/stars/SthrNilshaaa/looper?style=flat-square&color=000000" />
@@ -43,9 +47,9 @@
 </p>
 
 <p align="center">
-  <img src="media/screenshots/now_playing.png" width="16%" alt="Now playing" />
-  <img src="media/screenshots/lyrics.png" width="16%" alt="Lyrics" />
-  <img src="media/screenshots/home.png" width="16%" alt="Home" />
+  <img src="media/screenshots/fluid_player_playing.png" width="16%" alt="Now playing" />
+  <img src="media/screenshots/player_lyrics.png" width="16%" alt="Lyrics" />
+  <img src="media/screenshots/home_today_mix.png" width="16%" alt="Home" />
   <img src="media/screenshots/library.png" width="16%" alt="Library" />
   <img src="media/screenshots/analyze.png" width="16%" alt="Looper Analyze" />
   <img src="media/screenshots/settings.png" width="16%" alt="Settings" />
@@ -100,14 +104,44 @@ The in-app updater keeps you on the edition you installed. Google Play, Linux an
 ### Android
 
 <p align="center">
-  <img src="media/screenshots/now_playing.png" width="32%" alt="Now playing" />
-  <img src="media/screenshots/lyrics.png" width="32%" alt="Lyrics" />
-  <img src="media/screenshots/analyze.png" width="32%" alt="Looper Analyze" />
+  <img src="media/screenshots/fluid_player_playing.png" width="32%" alt="Now playing" />
+  <img src="media/screenshots/player_lyrics.png" width="32%" alt="Lyrics" />
+  <img src="media/screenshots/player_lyrics_blur.png" width="32%" alt="Lyrics with blur" />
 </p>
 <p align="center">
-  <img src="media/screenshots/home.png" width="32%" alt="Home" />
+  <img src="media/screenshots/home_today_mix.png" width="32%" alt="Home" />
+  <img src="media/screenshots/home_surprise_me.png" width="32%" alt="Surprise Me" />
+  <img src="media/screenshots/home_for_you.png" width="32%" alt="Artists and albums for you" />
+</p>
+<p align="center">
+  <img src="media/screenshots/home_artist_pick.png" width="32%" alt="Artist pick" />
+  <img src="media/screenshots/artist.png" width="32%" alt="Artist" />
+  <img src="media/screenshots/album.png" width="32%" alt="Album" />
+</p>
+<p align="center">
   <img src="media/screenshots/library.png" width="32%" alt="Library" />
+  <img src="media/screenshots/songs.png" width="32%" alt="Songs" />
+  <img src="media/screenshots/search.png" width="32%" alt="Search" />
+</p>
+<p align="center">
+  <img src="media/screenshots/favorites.png" width="32%" alt="Favorites" />
+  <img src="media/screenshots/albums.png" width="32%" alt="Albums" />
+  <img src="media/screenshots/recently_played.png" width="32%" alt="Recently played" />
+</p>
+<p align="center">
+  <img src="media/screenshots/analyze.png" width="32%" alt="Looper Analyze" />
+  <img src="media/screenshots/account.png" width="32%" alt="Account" />
+  <img src="media/screenshots/about.png" width="32%" alt="About" />
+</p>
+<p align="center">
   <img src="media/screenshots/settings.png" width="32%" alt="Settings" />
+  <img src="media/screenshots/settings_player_interface.png" width="32%" alt="Player interface settings" />
+  <img src="media/screenshots/settings_now_playing.png" width="32%" alt="Now playing settings" />
+</p>
+<p align="center">
+  <img src="media/screenshots/settings_miscellaneous.png" width="32%" alt="Miscellaneous settings" />
+  <img src="media/screenshots/card_style.png" width="32%" alt="Card style" />
+  <img src="media/screenshots/fluid_player.png" width="32%" alt="Fluid player" />
 </p>
 
 ### Desktop (Linux and Windows)
