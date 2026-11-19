@@ -9,10 +9,6 @@
 </p>
 
 <p align="center">
-  <img src="media/banner.png" width="100%" alt="Looper Player" />
-</p>
-
-<p align="center">
   <img height="20" src="https://img.shields.io/github/v/release/SthrNilshaaa/looper?style=flat-square&color=000000" />
   <img height="20" src="https://img.shields.io/github/downloads/SthrNilshaaa/looper/total?style=flat-square&label=Downloads&color=blue&labelColor=000000&logo=github" />
   <img height="20" src="https://img.shields.io/github/stars/SthrNilshaaa/looper?style=flat-square&color=000000" />
