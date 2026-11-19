@@ -21,11 +21,6 @@
 </p>
 
 <p align="center">
-  <a href="https://ko-fi.com/sthrnilshaaa">
-    <img src="https://raw.githubusercontent.com/icedman/dash2dock-lite/main/docs/support-kofi.png" alt="Ko-fi" />
-  </a>
-</p>
-<p align="center">
   <a href="https://play.google.com/store/apps/details?id=com.looper.player">
     <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="70">
   </a>
@@ -319,6 +314,7 @@ Online lyrics come from these services and projects. Lyrics belong to their arti
 ## Support
 
 Looper is free and open source. If you enjoy it, you can help by starring the repo, sharing it, or supporting us on Ko-fi:
+
 
 <a href="https://ko-fi.com/L2L124TL7L">
   <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support Looper on Ko-fi" />
