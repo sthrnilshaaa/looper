@@ -4,7 +4,7 @@ description: "Looper Player - A powerful music player."
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 3.0.1+2056
+version: 3.0.2+2057
 
 environment:
   sdk: ^3.11.0
@@ -55,7 +55,6 @@ dependencies:
   cached_network_image: ^3.4.1
   flutter_cache_manager: ^3.4.1
   share_plus: ^13.3.0
-  marqueer: ^2.5.0
   wakelock_plus: ^1.8.0
   flutter_hsvcolor_picker: ^1.5.1
   flutter_displaymode: ^0.7.0

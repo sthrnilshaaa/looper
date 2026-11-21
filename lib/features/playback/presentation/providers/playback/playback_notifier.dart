@@ -300,8 +300,15 @@ class Playback extends _$Playback {
               withinSeekWindow && position <= state.position;
           if (!isStaleAfterSeek) {
             final diff = (position - state.position).abs();
+            // Nothing draws position while the app isn't visible, so wake
+            // its listeners 4x a second instead of ~20x.
+            final minStep =
+                WidgetsBinding.instance.lifecycleState ==
+                    AppLifecycleState.resumed
+                ? const Duration(milliseconds: 50)
+                : const Duration(milliseconds: 250);
             if (position != state.position &&
-                (diff >= const Duration(milliseconds: 50) ||
+                (diff >= minStep ||
                     position == Duration.zero)) {
               state = state.copyWith(position: position);
             }
@@ -1294,6 +1301,19 @@ class Playback extends _$Playback {
     _manualQueueCount++;
 
     state = state.copyWith(queue: List.from(_playlist));
+  }
+
+  /// Adds [song] to the queue, or takes it out if it is already coming up.
+  void toggleInQueue(Song song) {
+    final at = _playlist.indexWhere(
+      (s) => s.path == song.path,
+      _currentIndex + 1,
+    );
+    if (at == -1) {
+      addToQueue(song);
+    } else {
+      unawaited(removeFromQueue(at));
+    }
   }
 
   void addNext(Song song) {

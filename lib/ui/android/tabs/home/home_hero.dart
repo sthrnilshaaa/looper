@@ -58,18 +58,42 @@ class HomeHero extends StatefulWidget {
   State<HomeHero> createState() => _HomeHeroState();
 }
 
-class _HomeHeroState extends State<HomeHero> {
+class _HomeHeroState extends State<HomeHero> with WidgetsBindingObserver {
+  static const _autoInterval = Duration(seconds: 8);
   // Cards repeat endlessly; start mid-way so either direction works.
   final _pages = PageController(initialPage: 12000);
   final _random = math.Random();
   Timer? _auto;
+  bool _onScreen = false;
   Song? _surprise;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _surprise = _pickSurprise();
-    _auto = Timer.periodic(const Duration(seconds: 8), (_) => _advance());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) => _syncAuto();
+
+  void _setOnScreen(bool onScreen) {
+    _onScreen = onScreen;
+    _syncAuto();
+  }
+
+  /// The countdown only runs while the hero is on screen, so it never wakes
+  /// the app for a card nobody can see.
+  void _syncAuto() {
+    final resumed =
+        (WidgetsBinding.instance.lifecycleState ?? AppLifecycleState.resumed) ==
+        AppLifecycleState.resumed;
+    if (_onScreen && resumed) {
+      _auto ??= Timer.periodic(_autoInterval, (_) => _advance());
+    } else {
+      _auto?.cancel();
+      _auto = null;
+    }
   }
 
   @override
@@ -83,7 +107,8 @@ class _HomeHeroState extends State<HomeHero> {
   /// A swipe of your own restarts the wait before the next auto-advance.
   void _restartAuto() {
     _auto?.cancel();
-    _auto = Timer.periodic(const Duration(seconds: 8), (_) => _advance());
+    _auto = null;
+    _syncAuto();
   }
 
   /// Signed distance from the scroll position to card [i] of [n], the short
@@ -101,6 +126,7 @@ class _HomeHeroState extends State<HomeHero> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _auto?.cancel();
     _pages.dispose();
     super.dispose();
@@ -115,9 +141,6 @@ class _HomeHeroState extends State<HomeHero> {
   void _advance() {
     if (!mounted || !_pages.hasClients || _pageCount < 2) return;
     if (Motion.reducedOf(context)) return;
-    // Off screen (scrolled away, hidden tab, covered route): each advance is
-    // ~40 frames of full-hero blur nobody sees.
-    if (!TickerMode.valuesOf(context).enabled) return;
     // Always forward: the loop has no last card to jump back from.
     final next = (_pages.page?.round() ?? 0) + 1;
     _pages.animateToPage(
@@ -333,122 +356,148 @@ class _HomeHeroState extends State<HomeHero> {
 
     // Off screen, its tickers stop (the carousel's swipe animation too).
     return PauseWhenOffscreen(
-      child: SizedBox(
-        height: top + _heroBelowStatusBar,
-        child: Stack(
-          fit: StackFit.expand,
-          clipBehavior: Clip.none,
-          children: [
-            if (backgrounds.isNotEmpty)
-              ValueListenableBuilder<double>(
-                valueListenable: widget.stretch ?? _noStretch,
-                builder: (context, pull, artwork) => Positioned(
-                  top: -pull,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: artwork!,
-                ),
-                // One fade for all artwork: it melts into the page below.
-                // Stops 2px short of the edge: on the device renderer the
-                // masked artwork otherwise leaks a 1px line there.
-                child: ClipRect(
-                  clipper: const _InsetBottomClipper(2),
-                  child: ShaderMask(
-                    blendMode: BlendMode.dstIn,
-                    shaderCallback: (r) => const LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      // Fully clear a little before the edge, so nothing draws a
-                      // line where the hero meets the next section.
-                      stops: [0, 0.45, 0.7, 0.86, 0.95],
-                      colors: [
-                        Colors.white,
-                        Color(0xE6FFFFFF),
-                        Color(0x80FFFFFF),
-                        Color(0x1FFFFFFF),
-                        Color(0x00FFFFFF),
-                      ],
-                    ).createShader(r),
-                    child: AnimatedBuilder(
-                      animation: _pages,
-                      builder: (context, _) {
-                        final page = _page;
-                        final width = MediaQuery.sizeOf(context).width;
-                        // Swiping: the leaving artwork blurs out as it drifts away
-                        // and the arriving one comes in blurred and sharpens, so
-                        // two pictures never meet at a hard edge.
-                        return Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            for (var i = 0; i < backgrounds.length; i++)
-                              _blurSlide(
-                                _loopDistance(
-                                  page,
-                                  i,
-                                  backgrounds.length,
-                                ).clamp(-1.0, 1.0),
-                                width,
-                                backgrounds[i],
-                                maxBlur: 26,
-                                drift: 0.18,
-                              ),
-                          ],
-                        );
-                      },
+      child: _TickerModeReporter(
+        onChanged: _setOnScreen,
+        child: SizedBox(
+          height: top + _heroBelowStatusBar,
+          child: Stack(
+            fit: StackFit.expand,
+            clipBehavior: Clip.none,
+            children: [
+              if (backgrounds.isNotEmpty)
+                ValueListenableBuilder<double>(
+                  valueListenable: widget.stretch ?? _noStretch,
+                  builder: (context, pull, artwork) => Positioned(
+                    top: -pull,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: artwork!,
+                  ),
+                  // One fade for all artwork: it melts into the page below.
+                  // Stops 2px short of the edge: on the device renderer the
+                  // masked artwork otherwise leaks a 1px line there.
+                  child: ClipRect(
+                    clipper: const _InsetBottomClipper(2),
+                    child: ShaderMask(
+                      blendMode: BlendMode.dstIn,
+                      shaderCallback: (r) => const LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        // Fully clear a little before the edge, so nothing draws a
+                        // line where the hero meets the next section.
+                        stops: [0, 0.45, 0.7, 0.86, 0.95],
+                        colors: [
+                          Colors.white,
+                          Color(0xE6FFFFFF),
+                          Color(0x80FFFFFF),
+                          Color(0x1FFFFFFF),
+                          Color(0x00FFFFFF),
+                        ],
+                      ).createShader(r),
+                      child: AnimatedBuilder(
+                        animation: _pages,
+                        builder: (context, _) {
+                          final page = _page;
+                          final width = MediaQuery.sizeOf(context).width;
+                          // Swiping: the leaving artwork blurs out as it drifts away
+                          // and the arriving one comes in blurred and sharpens, so
+                          // two pictures never meet at a hard edge.
+                          return Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              for (var i = 0; i < backgrounds.length; i++)
+                                _blurSlide(
+                                  _loopDistance(
+                                    page,
+                                    i,
+                                    backgrounds.length,
+                                  ).clamp(-1.0, 1.0),
+                                  width,
+                                  backgrounds[i],
+                                  maxBlur: 26,
+                                  drift: 0.18,
+                                ),
+                            ],
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),
-              ),
-            if (fronts.isNotEmpty)
-              NotificationListener<ScrollStartNotification>(
-                onNotification: (n) {
-                  if (n.dragDetails != null) _restartAuto();
-                  return false;
-                },
-                child: PageView.builder(
-                  controller: _pages,
-                  onPageChanged: (index) {
-                    final weekly = (_hasMix ? 1 : 0) + (_hasArtist ? 1 : 0);
-                    if (_hasWeekly &&
-                        fronts.length > 1 &&
-                        index % fronts.length == weekly) {
-                      setState(() => _weeklyTurn++);
-                    }
+              if (fronts.isNotEmpty)
+                NotificationListener<ScrollStartNotification>(
+                  onNotification: (n) {
+                    if (n.dragDetails != null) _restartAuto();
+                    return false;
                   },
-                  // One card: no loop, nothing to swipe to.
-                  itemCount: fronts.length < 2 ? 1 : null,
-                  itemBuilder: (context, index) {
-                    final i = fronts.length < 2 ? 0 : index % fronts.length;
-                    return AnimatedBuilder(
-                      animation: _pages,
-                      child: fronts[i],
-                      builder: (context, child) {
-                        final d = fronts.length < 2
-                            ? 0.0
-                            : (_page - index).clamp(-1.0, 1.0);
-                        // Text blurs and fades with its card (it already slides).
-                        return ImageFiltered(
-                          enabled: d.abs() > 0.002,
-                          imageFilter: ui.ImageFilter.blur(
-                            sigmaX: d.abs() * 12,
-                            sigmaY: d.abs() * 12,
-                          ),
-                          child: Opacity(
-                            opacity: (1 - d.abs() * 1.3).clamp(0.0, 1.0),
-                            child: child,
-                          ),
-                        );
-                      },
-                    );
-                  },
+                  child: PageView.builder(
+                    controller: _pages,
+                    onPageChanged: (index) {
+                      final weekly = (_hasMix ? 1 : 0) + (_hasArtist ? 1 : 0);
+                      if (_hasWeekly &&
+                          fronts.length > 1 &&
+                          index % fronts.length == weekly) {
+                        setState(() => _weeklyTurn++);
+                      }
+                    },
+                    // One card: no loop, nothing to swipe to.
+                    itemCount: fronts.length < 2 ? 1 : null,
+                    itemBuilder: (context, index) {
+                      final i = fronts.length < 2 ? 0 : index % fronts.length;
+                      return AnimatedBuilder(
+                        animation: _pages,
+                        child: fronts[i],
+                        builder: (context, child) {
+                          final d = fronts.length < 2
+                              ? 0.0
+                              : (_page - index).clamp(-1.0, 1.0);
+                          // Text blurs and fades with its card (it already slides).
+                          return ImageFiltered(
+                            enabled: d.abs() > 0.002,
+                            imageFilter: ui.ImageFilter.blur(
+                              sigmaX: d.abs() * 12,
+                              sigmaY: d.abs() * 12,
+                            ),
+                            child: Opacity(
+                              opacity: (1 - d.abs() * 1.3).clamp(0.0, 1.0),
+                              child: child,
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+/// Reports the [TickerMode] below [PauseWhenOffscreen]: scrolled away, hidden
+/// tab or covered route all turn it off.
+class _TickerModeReporter extends StatefulWidget {
+  const _TickerModeReporter({required this.onChanged, required this.child});
+
+  final ValueChanged<bool> onChanged;
+  final Widget child;
+
+  @override
+  State<_TickerModeReporter> createState() => _TickerModeReporterState();
+}
+
+class _TickerModeReporterState extends State<_TickerModeReporter> {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    widget.onChanged(TickerMode.valuesOf(context).enabled);
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 /// One hero artwork at distance [d] (-1…1) from the settled page: fades,

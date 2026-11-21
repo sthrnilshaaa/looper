@@ -1,11 +1,15 @@
 import 'dart:collection';
+import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:looper_player/features/library/domain/models/models.dart';
+import 'package:looper_player/ui/android/shell/smooth_blur.dart';
 
 /// The song's art, blurred, filling its box. The blur is drawn once per song
 /// and box size into a small image that every copy (main screen, music bar,
@@ -210,6 +214,20 @@ Future<ui.Image?> _blurredArt(String path, Size size, _BlurStyle style) {
 
 String? _screenSizedKey;
 
+/// How much smaller than the screen the software blur works.
+const int _kSoftBlurScale = 8;
+
+Future<Uint8List> _smoothBlurOffThread(
+  Uint8List rgba,
+  int width,
+  int height,
+  double sigma,
+  int outWidth,
+  int outHeight,
+) => Isolate.run(
+  () => smoothBlur(rgba, width, height, sigma, outWidth, outHeight),
+);
+
 // Saturation matrix: 0 = grey, 1 = unchanged.
 List<double> _saturationMatrix(double v) {
   const r = 0.2126, g = 0.7152, b = 0.0722;
@@ -257,12 +275,19 @@ Future<ui.Image?> _render(
     final Rect rect = Rect.fromLTWH(0, 0, w.toDouble(), h.toDouble());
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
-    final Paint layer = Paint()
-      ..imageFilter = ui.ImageFilter.blur(
+    // Screen-sized bakes blur in software: at these strengths the GPU blur
+    // shows its low-res grid as fine lines. The art is drawn small for it.
+    final int smallW = math.max(1, (w / _kSoftBlurScale).round());
+    final int smallH = math.max(1, (h / _kSoftBlurScale).round());
+    if (keepAspect) canvas.scale(smallW / w, smallH / h);
+    final Paint layer = Paint();
+    if (!keepAspect) {
+      layer.imageFilter = ui.ImageFilter.blur(
         sigmaX: sigma,
         sigmaY: sigma,
         tileMode: tileMode,
       );
+    }
     if (saturation != 1.0) {
       layer.colorFilter = ColorFilter.matrix(_saturationMatrix(saturation));
     }
@@ -285,10 +310,32 @@ Future<ui.Image?> _render(
     );
     canvas.restore();
     final picture = recorder.endRecording();
-    final ui.Image out = await picture.toImage(w, h);
+    final ui.Image drawn = keepAspect
+        ? await picture.toImage(smallW, smallH)
+        : await picture.toImage(w, h);
     picture.dispose();
     src.dispose();
-    return out;
+    if (!keepAspect) return drawn;
+    final ByteData? small = await drawn.toByteData();
+    drawn.dispose();
+    if (small == null) return null;
+    final Uint8List pixels = await _smoothBlurOffThread(
+      small.buffer.asUint8List(small.offsetInBytes, small.lengthInBytes),
+      smallW,
+      smallH,
+      sigma * smallW / w,
+      w,
+      h,
+    );
+    final done = Completer<ui.Image>();
+    ui.decodeImageFromPixels(
+      pixels,
+      w,
+      h,
+      ui.PixelFormat.rgba8888,
+      done.complete,
+    );
+    return await done.future;
   } catch (_) {
     return null;
   }

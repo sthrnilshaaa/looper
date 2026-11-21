@@ -8,6 +8,7 @@ import 'package:looper_player/ui/widgets/common/highlighted_text.dart';
 import 'package:looper_player/ui/widgets/common/optimized_image.dart';
 import 'package:looper_player/ui/widgets/common/song_favorite_button.dart';
 import 'package:looper_player/ui/widgets/common/playlist_reorderable_listener.dart';
+import 'package:looper_player/ui/widgets/common/queue_toggle.dart';
 import 'package:looper_player/ui/widgets/common/song_playback_overlay.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:looper_player/features/playback/presentation/providers/playback/playback_notifier.dart';
@@ -178,24 +179,31 @@ class SongTile extends ConsumerWidget {
           leading: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (collectionIndex != null) ...[
-                SizedBox(
-                  width: 20,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.center,
-                    child: Text(
-                      '${collectionIndex! + 1}',
-                      maxLines: 1,
-                      style: AppFonts.jostStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        fontSize: 11,
+              if (collectionIndex != null)
+                // The number's 20 px plus the 12 px gap: a bigger tap target
+                // with the row's layout unchanged.
+                QueueToggle(
+                  song: song,
+                  width: 32,
+                  height: 52,
+                  alignment: Alignment.centerLeft,
+                  enabled: !selectionMode,
+                  number: SizedBox(
+                    width: 20,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.center,
+                      child: Text(
+                        '${collectionIndex! + 1}',
+                        maxLines: 1,
+                        style: AppFonts.jostStyle(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          fontSize: 11,
+                        ),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-              ],
               ClipRRect(
                 borderRadius: BorderRadius.circular(5),
                 child: Stack(
@@ -271,14 +279,12 @@ class SongTile extends ConsumerWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.06),
+                        color: Theme.of(context).colorScheme.primary
+                            .withValues(alpha: 0.06),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.12),
+                          color: Theme.of(context).colorScheme.primary
+                              .withValues(alpha: 0.12),
                           width: 0.8,
                         ),
                       ),

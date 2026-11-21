@@ -72,11 +72,6 @@ extension _MiniPlayerContent on PremiumMusicBarState {
                                         : null,
                                     fit: BoxFit.cover,
                                   ),
-                                  Positioned.fill(
-                                    child: SongPlaybackOverlay(
-                                      isPlaying: isPlaying,
-                                    ),
-                                  ),
                                 ],
                               ),
                             ),

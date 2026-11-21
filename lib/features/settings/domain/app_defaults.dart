@@ -153,7 +153,7 @@ abstract final class AppDefaults {
   static const String playerStyle = 'arc';
   static const bool playerStyleAccent = false;
   static const bool cardBlackBackground = false;
-  static const bool cardAccentBackground = true;
+  static const bool cardAccentBackground = false;
   static const bool cardAccentColors = false;
   static const bool playerStyleBlur = true;
   static const bool showAlbumNextToArtist = true;

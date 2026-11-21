@@ -645,8 +645,9 @@ class PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
     // alive by the always-mounted real artwork - and the morph, remounted at
     // the start of every collapse, paints on its first frame (no blank
     // frame after a cache eviction) with the same pixels as the real art.
+    // A still cover: the playing bars here redrew the whole screen, backdrop
+    // blur included, on every frame.
     Widget? morphImage;
-    Widget? morphPlayingIcon;
     if (song.artPath != null) {
       final double dpr = MediaQuery.maybeDevicePixelRatioOf(context) ?? 2.0;
       final double decodeWidth = isLandscape
@@ -658,7 +659,6 @@ class PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
         fit: BoxFit.cover,
         cacheWidth: (decodeWidth * dpr).toInt(),
       );
-      morphPlayingIcon = SongPlaybackIndicator(isPlaying: isPlaying);
     }
 
     // Catch: a finger landing on the moving panel stops it on that frame
@@ -1080,33 +1080,7 @@ class PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
                                                   BorderRadius.circular(
                                                     isCompact ? 26.0 : 32.0,
                                                   ),
-                                              child: Stack(
-                                                fit: StackFit.expand,
-                                                children: [
-                                                  morphImage!,
-                                                  if (morphPlayingIcon !=
-                                                          null &&
-                                                      p < 0.25)
-                                                    Positioned.fill(
-                                                      child: Opacity(
-                                                        opacity: (1.0 - p * 4.0)
-                                                            .clamp(0.0, 1.0),
-                                                        child: ColoredBox(
-                                                          color: Colors.black
-                                                              .withValues(
-                                                                alpha:
-                                                                    SongPlaybackOverlay
-                                                                        .dimAlpha,
-                                                              ),
-                                                          child: Center(
-                                                            child:
-                                                                morphPlayingIcon,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                ],
-                                              ),
+                                              child: morphImage!,
                                             ),
                                           ),
                                         ),
@@ -1186,37 +1160,7 @@ class PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
                                                     ) /
                                                     scale,
                                               ),
-                                              child: Stack(
-                                                fit: StackFit.expand,
-                                                children: [
-                                                  morphImage!,
-                                                  if (morphPlayingIcon !=
-                                                          null &&
-                                                      p < 0.25)
-                                                    Positioned.fill(
-                                                      child: Opacity(
-                                                        opacity: (1.0 - p * 4.0)
-                                                            .clamp(0.0, 1.0),
-                                                        child: ColoredBox(
-                                                          color: Colors.black
-                                                              .withValues(
-                                                                alpha:
-                                                                    SongPlaybackOverlay
-                                                                        .dimAlpha,
-                                                              ),
-                                                          child: Center(
-                                                            child: Transform.scale(
-                                                              scale:
-                                                                  1.0 / scale,
-                                                              child:
-                                                                  morphPlayingIcon,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                ],
-                                              ),
+                                              child: morphImage!,
                                             ),
                                           ),
                                         ),

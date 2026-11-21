@@ -28,6 +28,7 @@
   "addSongsToPlaylistHintDesktop": "To add a song here, right-click any song and choose “Add to Playlists”.",
   "addToPlaylists": "Add to Playlists",
   "addToQueue": "Add to Queue",
+  "removeFromQueue": "Remove from Queue",
   "album": "Album",
   "albums": "Albums",
   "albumsRowDesc": "Horizontal shelf of albums",
