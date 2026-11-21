@@ -84,6 +84,7 @@ class SettingsCategoryScreen extends ConsumerWidget {
               const DisableBlurTile()
             else
               const AlwaysBlurSheetsTile(),
+            const StatusBarBlurTile(),
             // Dynamic theming paints its own background.
             if (!dynamicTheming) ...[
               demo(

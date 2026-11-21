@@ -580,6 +580,8 @@
   "selectWhenToPause": "音楽の再生をいつ一時停止するか選択してください",
   "alwaysBlurSheets": "シートを常にぼかす",
   "alwaysBlurSheetsDesc": "ダイナミックテーマがオフの場合でもポップアップシートをぼかします",
+  "statusBarBlur": "ステータスバーのぼかし",
+  "statusBarBlurDesc": "スクロール時にステータスバーの背後をぼかす",
   "artworkResetToDefault": "アートワークをデフォルトにリセットしました",
   "backupsAndLogs": "バックアップとログ",
   "backupsAndLogsDesc": "アプリデータのエクスポート、インポート、管理",

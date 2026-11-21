@@ -10359,32 +10359,37 @@ const AppSettingsSchema = CollectionSchema(
       name: r'stackSansDefaultMigrated',
       type: IsarType.bool,
     ),
-    r'stopOnTaskRemoved': PropertySchema(
+    r'statusBarBlur': PropertySchema(
       id: 149,
+      name: r'statusBarBlur',
+      type: IsarType.bool,
+    ),
+    r'stopOnTaskRemoved': PropertySchema(
+      id: 150,
       name: r'stopOnTaskRemoved',
       type: IsarType.bool,
     ),
     r'useNewFont': PropertySchema(
-      id: 150,
+      id: 151,
       name: r'useNewFont',
       type: IsarType.bool,
     ),
     r'useNewFontLyrics': PropertySchema(
-      id: 151,
+      id: 152,
       name: r'useNewFontLyrics',
       type: IsarType.bool,
     ),
     r'userName': PropertySchema(
-      id: 152,
+      id: 153,
       name: r'userName',
       type: IsarType.string,
     ),
     r'userPhotoPath': PropertySchema(
-      id: 153,
+      id: 154,
       name: r'userPhotoPath',
       type: IsarType.string,
     ),
-    r'volume': PropertySchema(id: 154, name: r'volume', type: IsarType.double),
+    r'volume': PropertySchema(id: 155, name: r'volume', type: IsarType.double),
   },
 
   estimateSize: _appSettingsEstimateSize,
@@ -10614,12 +10619,13 @@ void _appSettingsSerialize(
   writer.writeBool(offsets[146], object.sortAscending);
   writer.writeLong(offsets[147], object.sortStrategyIndex);
   writer.writeBool(offsets[148], object.stackSansDefaultMigrated);
-  writer.writeBool(offsets[149], object.stopOnTaskRemoved);
-  writer.writeBool(offsets[150], object.useNewFont);
-  writer.writeBool(offsets[151], object.useNewFontLyrics);
-  writer.writeString(offsets[152], object.userName);
-  writer.writeString(offsets[153], object.userPhotoPath);
-  writer.writeDouble(offsets[154], object.volume);
+  writer.writeBool(offsets[149], object.statusBarBlur);
+  writer.writeBool(offsets[150], object.stopOnTaskRemoved);
+  writer.writeBool(offsets[151], object.useNewFont);
+  writer.writeBool(offsets[152], object.useNewFontLyrics);
+  writer.writeString(offsets[153], object.userName);
+  writer.writeString(offsets[154], object.userPhotoPath);
+  writer.writeDouble(offsets[155], object.volume);
 }
 
 AppSettings _appSettingsDeserialize(
@@ -10779,12 +10785,13 @@ AppSettings _appSettingsDeserialize(
   object.sortAscending = reader.readBool(offsets[146]);
   object.sortStrategyIndex = reader.readLong(offsets[147]);
   object.stackSansDefaultMigrated = reader.readBool(offsets[148]);
-  object.stopOnTaskRemoved = reader.readBool(offsets[149]);
-  object.useNewFont = reader.readBool(offsets[150]);
-  object.useNewFontLyrics = reader.readBool(offsets[151]);
-  object.userName = reader.readString(offsets[152]);
-  object.userPhotoPath = reader.readString(offsets[153]);
-  object.volume = reader.readDouble(offsets[154]);
+  object.statusBarBlur = reader.readBool(offsets[149]);
+  object.stopOnTaskRemoved = reader.readBool(offsets[150]);
+  object.useNewFont = reader.readBool(offsets[151]);
+  object.useNewFontLyrics = reader.readBool(offsets[152]);
+  object.userName = reader.readString(offsets[153]);
+  object.userPhotoPath = reader.readString(offsets[154]);
+  object.volume = reader.readDouble(offsets[155]);
   return object;
 }
 
@@ -11100,10 +11107,12 @@ P _appSettingsDeserializeProp<P>(
     case 151:
       return (reader.readBool(offset)) as P;
     case 152:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 153:
       return (reader.readString(offset)) as P;
     case 154:
+      return (reader.readString(offset)) as P;
+    case 155:
       return (reader.readDouble(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -18704,6 +18713,15 @@ extension AppSettingsQueryFilter
   }
 
   QueryBuilder<AppSettings, AppSettings, QAfterFilterCondition>
+  statusBarBlurEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'statusBarBlur', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterFilterCondition>
   stopOnTaskRemovedEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -21046,6 +21064,19 @@ extension AppSettingsQuerySortBy
     });
   }
 
+  QueryBuilder<AppSettings, AppSettings, QAfterSortBy> sortByStatusBarBlur() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'statusBarBlur', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterSortBy>
+  sortByStatusBarBlurDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'statusBarBlur', Sort.desc);
+    });
+  }
+
   QueryBuilder<AppSettings, AppSettings, QAfterSortBy>
   sortByStopOnTaskRemoved() {
     return QueryBuilder.apply(this, (query) {
@@ -23085,6 +23116,19 @@ extension AppSettingsQuerySortThenBy
     });
   }
 
+  QueryBuilder<AppSettings, AppSettings, QAfterSortBy> thenByStatusBarBlur() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'statusBarBlur', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppSettings, AppSettings, QAfterSortBy>
+  thenByStatusBarBlurDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'statusBarBlur', Sort.desc);
+    });
+  }
+
   QueryBuilder<AppSettings, AppSettings, QAfterSortBy>
   thenByStopOnTaskRemoved() {
     return QueryBuilder.apply(this, (query) {
@@ -24208,6 +24252,12 @@ extension AppSettingsQueryWhereDistinct
     });
   }
 
+  QueryBuilder<AppSettings, AppSettings, QDistinct> distinctByStatusBarBlur() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'statusBarBlur');
+    });
+  }
+
   QueryBuilder<AppSettings, AppSettings, QDistinct>
   distinctByStopOnTaskRemoved() {
     return QueryBuilder.apply(this, (query) {
@@ -25248,6 +25298,12 @@ extension AppSettingsQueryProperty
   stackSansDefaultMigratedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'stackSansDefaultMigrated');
+    });
+  }
+
+  QueryBuilder<AppSettings, bool, QQueryOperations> statusBarBlurProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'statusBarBlur');
     });
   }
 

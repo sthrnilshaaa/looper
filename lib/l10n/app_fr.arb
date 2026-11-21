@@ -580,6 +580,8 @@
   "selectWhenToPause": "Choisissez quand mettre la musique en pause",
   "alwaysBlurSheets": "Toujours flouter les fiches",
   "alwaysBlurSheetsDesc": "Floute les fiches contextuelles même quand le thème dynamique est désactivé",
+  "statusBarBlur": "Flou de la barre d'état",
+  "statusBarBlurDesc": "Floute la page derrière la barre d'état pendant le défilement",
   "artworkResetToDefault": "Pochette réinitialisée par défaut",
   "backupsAndLogs": "Sauvegardes et journaux",
   "backupsAndLogsDesc": "Exporter, importer et gérer les données de l'application",

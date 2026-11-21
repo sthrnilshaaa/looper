@@ -580,6 +580,8 @@
   "selectWhenToPause": "Selecciona cuándo pausar la reproducción de música",
   "alwaysBlurSheets": "Difuminar siempre las hojas",
   "alwaysBlurSheetsDesc": "Difumina las hojas emergentes incluso cuando el tema dinámico está desactivado",
+  "statusBarBlur": "Difuminar barra de estado",
+  "statusBarBlurDesc": "Difumina la página detrás de la barra de estado al desplazarte",
   "artworkResetToDefault": "Portada restablecida a la predeterminada",
   "backupsAndLogs": "Copias de seguridad y registros",
   "backupsAndLogsDesc": "Exporta, importa y gestiona los datos de la app",

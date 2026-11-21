@@ -270,7 +270,7 @@ class HeaderBackdrop extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (progress <= 0) return child;
-    final blur = ref.watch(settingsProvider.select((s) => s.sheetShouldBlur));
+    final blur = ref.watch(settingsProvider.select((s) => s.statusBarBlur));
     final p = progress;
     // Faded through color and blur strength, not an Opacity: a
     // BackdropFilter under an Opacity costs an extra offscreen pass.

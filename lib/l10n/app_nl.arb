@@ -580,6 +580,8 @@
   "selectWhenToPause": "Kies wanneer de muziekweergave wordt gepauzeerd",
   "alwaysBlurSheets": "Sheets altijd vervagen",
   "alwaysBlurSheetsDesc": "Vervaagt pop-upsheets, zelfs als Dynamische Thema's is uitgeschakeld",
+  "statusBarBlur": "Statusbalk vervagen",
+  "statusBarBlurDesc": "Vervaag de pagina achter de statusbalk tijdens scrollen",
   "artworkResetToDefault": "Artwork teruggezet naar standaard",
   "backupsAndLogs": "Back-ups en logs",
   "backupsAndLogsDesc": "Exporteer, importeer en beheer app-gegevens",

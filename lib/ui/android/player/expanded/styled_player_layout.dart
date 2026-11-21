@@ -753,7 +753,7 @@ class _FigmaBackground extends StatelessWidget {
         if (blur && art != null)
           BlurredBackgroundArt(
             song: song,
-            sigma: 60,
+            sigma: 100,
             saturation: 0.45,
             tileMode: TileMode.mirror,
             resolution: MediaQuery.devicePixelRatioOf(context),

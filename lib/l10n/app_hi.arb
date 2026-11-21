@@ -580,6 +580,8 @@
   "selectWhenToPause": "चुनें कि म्यूज़िक प्लेबैक कब रोका जाए",
   "alwaysBlurSheets": "शीट्स को हमेशा ब्लर करें",
   "alwaysBlurSheetsDesc": "डायनामिक थीमिंग बंद होने पर भी पॉपअप शीट्स को ब्लर करें",
+  "statusBarBlur": "स्टेटस बार ब्लर",
+  "statusBarBlurDesc": "स्क्रॉल करते समय स्टेटस बार के पीछे पेज को ब्लर करें",
   "artworkResetToDefault": "आर्टवर्क डिफ़ॉल्ट पर रीसेट हो गई",
   "backupsAndLogs": "बैकअप और लॉग",
   "backupsAndLogsDesc": "ऐप डेटा एक्सपोर्ट, इंपोर्ट और मैनेज करें",

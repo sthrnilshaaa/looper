@@ -580,6 +580,8 @@
   "selectWhenToPause": "Müzik çalmanın ne zaman duraklatılacağını seçin",
   "alwaysBlurSheets": "Sayfaları Her Zaman Bulanıklaştır",
   "alwaysBlurSheetsDesc": "Dinamik Tema kapalıyken bile açılır sayfaları bulanıklaştırır",
+  "statusBarBlur": "Durum Çubuğu Bulanıklığı",
+  "statusBarBlurDesc": "Kaydırırken durum çubuğunun arkasındaki sayfayı bulanıklaştır",
   "artworkResetToDefault": "Kapak resmi varsayılana sıfırlandı",
   "backupsAndLogs": "Yedekler ve Günlükler",
   "backupsAndLogsDesc": "Uygulama verilerini dışa aktar, içe aktar ve yönet",

@@ -580,6 +580,8 @@
   "selectWhenToPause": "اختر متى يتم إيقاف تشغيل الموسيقى مؤقتًا",
   "alwaysBlurSheets": "تمويه الأوراق دائمًا",
   "alwaysBlurSheetsDesc": "يعمل على تمويه الأوراق المنبثقة حتى عند إيقاف التصميم الديناميكي",
+  "statusBarBlur": "تمويه شريط الحالة",
+  "statusBarBlurDesc": "تمويه الصفحة خلف شريط الحالة أثناء التمرير",
   "artworkResetToDefault": "تمت إعادة تعيين الغلاف إلى الافتراضي",
   "backupsAndLogs": "النسخ الاحتياطية والسجلات",
   "backupsAndLogsDesc": "تصدير بيانات التطبيق واستيرادها وإدارتها",

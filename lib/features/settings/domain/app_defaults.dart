@@ -141,6 +141,7 @@ abstract final class AppDefaults {
   static const double defaultAccentVibrancy = 0.3;
   static const bool disableBlur = true;
   static const bool alwaysBlurSheets = false;
+  static const bool statusBarBlur = false;
   static const bool playerDynamicBackground = false;
   static const bool keepBackgroundGradient = false;
   static const bool animateBackgroundGradient = false;
@@ -149,12 +150,12 @@ abstract final class AppDefaults {
   static const bool segmentedUtilityButtons = false;
   static const bool playerLyricLine = true;
   static const String playerLyricLineTransition = 'cube';
-  static const String playerStyle = 'classic';
+  static const String playerStyle = 'arc';
   static const bool playerStyleAccent = false;
   static const bool cardBlackBackground = false;
   static const bool cardAccentBackground = true;
   static const bool cardAccentColors = false;
-  static const bool playerStyleBlur = false;
+  static const bool playerStyleBlur = true;
   static const bool showAlbumNextToArtist = true;
   static const bool showAlbumInQuickPicks = true;
   static const bool disableHaptics = false;
@@ -261,7 +262,7 @@ abstract final class AppDefaults {
   // SECTION 8: NETWORK & SCAN DEFAULTS
   // ===========================================================================
   static const bool enableInternet = true;
-  static const bool downloadArtwork = false;
+  static const bool downloadArtwork = true;
   static const bool includeSystemAndMessagingAudio = false;
 
   // ===========================================================================

@@ -580,6 +580,8 @@
   "selectWhenToPause": "Wählen Sie, wann die Musikwiedergabe pausiert werden soll",
   "alwaysBlurSheets": "Sheets immer weichzeichnen",
   "alwaysBlurSheetsDesc": "Popup-Sheets weichzeichnen, auch wenn dynamisches Design deaktiviert ist",
+  "statusBarBlur": "Statusleiste weichzeichnen",
+  "statusBarBlurDesc": "Seite hinter der Statusleiste beim Scrollen weichzeichnen",
   "artworkResetToDefault": "Cover auf Standard zurückgesetzt",
   "backupsAndLogs": "Backups & Protokolle",
   "backupsAndLogsDesc": "Daten exportieren, importieren und verwalten",

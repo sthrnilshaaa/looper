@@ -443,7 +443,7 @@ jobs:
           ## Looper Player $TAG_NAME
 
           #### Downloads
-          - **Android**: \`-offline-\` APKs play your own music, \`-online-\` APKs add YouTube Music streaming. Pick the one for your phone (\`arm64-v8a\` for most phones) or the universal APK.
+          - **Android**: pick the APK for your phone (\`arm64-v8a\` for most phones) or the universal APK.
           - **Linux**: \`.deb\` (Debian/Ubuntu), \`.rpm\` (Fedora/openSUSE), \`.AppImage\`, or the portable \`.tar.gz\` with an install script.
           - **Windows**: the \`-setup.exe\` installer or the portable \`.zip\`. The app is not code-signed yet, so if SmartScreen warns, choose *More info → Run anyway*.
 

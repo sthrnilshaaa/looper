@@ -150,6 +150,13 @@ extension _SettingsSearch on _SettingsViewState {
               '${l10n.catPlayerInterface} · ${l10n.themeGroupBlurBackgrounds}',
           widget: const AlwaysBlurSheetsTile(),
         ),
+        SettingsSearchItem(
+          title: l10n.statusBarBlur,
+          subtitle: l10n.statusBarBlurDesc,
+          category:
+              '${l10n.catPlayerInterface} · ${l10n.themeGroupBlurBackgrounds}',
+          widget: const StatusBarBlurTile(),
+        ),
         if (!settings.dynamicAccentColor) ...[
           SettingsSearchItem(
             title: l10n.accentColor,

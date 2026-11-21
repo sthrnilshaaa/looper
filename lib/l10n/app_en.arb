@@ -566,6 +566,8 @@
   "tapFieldToEdit": "Tap a field to edit",
   "alwaysBlurSheets": "Always Blur Sheets",
   "alwaysBlurSheetsDesc": "Blur popup sheets even when Dynamic Theming is off",
+  "statusBarBlur": "Status Bar Blur",
+  "statusBarBlurDesc": "Blur the page behind the status bar as you scroll",
   "playerDynamicBackground": "Dynamic Player Background",
   "playerDynamicBackgroundDesc": "Use the blurred album art background on the player screen only",
   "removeArtwork": "Remove artwork",

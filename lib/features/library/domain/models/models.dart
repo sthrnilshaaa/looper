@@ -203,6 +203,8 @@ class AppSettings {
   // sheets their blur without needing all of that. Independent of disableBlur,
   // which only gates the Dynamic Theming blur path (see app_bottom_sheet.dart).
   bool alwaysBlurSheets = AppDefaults.alwaysBlurSheets;
+  // Blur behind the status bar on Home and collection top bars.
+  bool statusBarBlur = AppDefaults.statusBarBlur;
   // The Dynamic Theming art background on the player screen only, without
   // the app-wide accent/gradient changes.
   bool playerDynamicBackground = AppDefaults.playerDynamicBackground;

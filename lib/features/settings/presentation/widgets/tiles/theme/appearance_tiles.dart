@@ -86,6 +86,26 @@ class AlwaysBlurSheetsTile extends ConsumerWidget {
   }
 }
 
+/// Blur behind the status bar on Home and album/playlist top bars.
+class StatusBarBlurTile extends ConsumerWidget {
+  const StatusBarBlurTile({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final l10n = AppLocalizations.of(context)!;
+    return SwitchListTile(
+      secondary: const Icon(LucideIcons.panelTop),
+      title: Text(l10n.statusBarBlur, style: _tileTitleStyle()),
+      subtitle: Text(l10n.statusBarBlurDesc, style: _tileSubtitleStyle()),
+      value: settings.statusBarBlur,
+      onChanged: (value) {
+        ref.read(settingsProvider.notifier).updateStatusBarBlur(value);
+      },
+    );
+  }
+}
+
 /// Dynamic Theming's art background on the player screen only. Hidden while
 /// Dynamic Theming is on, which already gives the player that background.
 class PlayerDynamicBackgroundTile extends ConsumerWidget {

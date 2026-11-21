@@ -580,6 +580,8 @@
   "selectWhenToPause": "选择何时暂停音乐播放",
   "alwaysBlurSheets": "始终模糊面板",
   "alwaysBlurSheetsDesc": "即使动态主题关闭，也模糊弹出面板",
+  "statusBarBlur": "状态栏模糊",
+  "statusBarBlurDesc": "滚动时模糊状态栏后方的页面",
   "artworkResetToDefault": "封面已重置为默认",
   "backupsAndLogs": "备份与日志",
   "backupsAndLogsDesc": "导出、导入并管理应用数据",

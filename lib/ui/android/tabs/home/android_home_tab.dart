@@ -422,9 +422,7 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab>
 
     // Same rule as sheets: Dynamic Theming's blur toggle, else
     // "Always Blur Sheets & Headers".
-    final useBlur = ref.watch(
-      settingsProvider.select((s) => s.sheetShouldBlur),
-    );
+    final useBlur = ref.watch(settingsProvider.select((s) => s.statusBarBlur));
 
     // Switching tabs cancels reorder mode.
     ref.listen(appNavigationProvider.select((s) => s.activeItem), (_, item) {

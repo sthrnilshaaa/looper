@@ -580,6 +580,8 @@
   "selectWhenToPause": "Seleziona quando mettere in pausa la riproduzione musicale",
   "alwaysBlurSheets": "Sfoca sempre i fogli",
   "alwaysBlurSheetsDesc": "Sfoca i fogli popup anche quando il tema dinamico è disattivato",
+  "statusBarBlur": "Sfocatura barra di stato",
+  "statusBarBlurDesc": "Sfoca la pagina dietro la barra di stato durante lo scorrimento",
   "artworkResetToDefault": "Copertina ripristinata a quella predefinita",
   "backupsAndLogs": "Backup e registri",
   "backupsAndLogsDesc": "Esporta, importa e gestisci i dati dell'app",
