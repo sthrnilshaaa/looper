@@ -159,15 +159,22 @@ class AppNavigation extends _$AppNavigation {
     );
   }
 
-  void showSettingsCategory({required String id, required String title}) {
+  /// [replace] swaps the open category instead of adding a Back step.
+  void showSettingsCategory({
+    required String id,
+    required String title,
+    bool replace = false,
+  }) {
     if (state.activeItem == NavItem.settingsCategory &&
         state.settingsCategoryId == id) {
       return;
     }
 
     // Push current state to history
-    final newHistory = List<NavigationState>.from(state.history)
-      ..add(_captureCurrentState());
+    final newHistory = replace && state.activeItem == NavItem.settingsCategory
+        ? state.history
+        : (List<NavigationState>.from(state.history)
+            ..add(_captureCurrentState()));
 
     state = NavigationState(
       activeItem: NavItem.settingsCategory,

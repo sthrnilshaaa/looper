@@ -98,7 +98,7 @@ class UpdateService {
     final PackageInfo packageInfo = await PackageInfo.fromPlatform();
     final release = await fetchLatestRelease();
     if (release.tag.isEmpty ||
-        release.waitingForMyApk ||
+        (!Platform.isLinux && release.waitingForMyApk) ||
         !isNewerVersion(packageInfo.version, release.tag)) {
       return null;
     }

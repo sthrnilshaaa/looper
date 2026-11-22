@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:lottie/lottie.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:looper_player/core/providers/providers.dart';
 import 'package:looper_player/core/theme/app_assets.dart';
@@ -13,6 +12,7 @@ import 'package:looper_player/features/library/presentation/providers/library/li
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
 import 'package:looper_player/ui/welcome/welcome_screen.dart';
+import 'package:looper_player/ui/widgets/common/app_loading_indicator.dart';
 import 'package:looper_player/ui/widgets/common/folder_picker_helper.dart';
 
 part 'desktop_welcome_widgets.dart';
@@ -221,13 +221,7 @@ class _DesktopWelcomeScreenState extends ConsumerState<DesktopWelcomeScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          RepaintBoundary(
-            child: SizedBox(
-              width: 320,
-              height: 220,
-              child: Lottie.asset(AppAssets.loadingAnimation, repeat: true),
-            ),
-          ),
+          const AppLoadingIndicator(size: 32),
           const SizedBox(height: 16),
           Text(
             l10n.scanningStorage,

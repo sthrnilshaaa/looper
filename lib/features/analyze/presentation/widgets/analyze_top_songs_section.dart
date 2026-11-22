@@ -1,5 +1,6 @@
 import 'package:looper_player/core/utils/song_metadata.dart';
 import 'package:flutter/material.dart';
+import 'package:looper_player/core/utils/ui_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/features/analyze/domain/analyze_models.dart';
@@ -144,7 +145,7 @@ class _TopSongRow extends ConsumerWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(UiUtils.cardCorner(16)),
         child: Stack(
           children: [
             // Play share vs. the #1 song, drawn as a soft fill behind the
@@ -159,7 +160,9 @@ class _TopSongRow extends ConsumerWidget {
                   widthFactor: share.clamp(0.0, 1.0),
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(
+                        UiUtils.cardCorner(16),
+                      ),
                       gradient: LinearGradient(
                         colors: [
                           (rankColor ?? accent).withValues(alpha: 0.03),
@@ -191,7 +194,7 @@ class _TopSongRow extends ConsumerWidget {
                   SongArtwork(
                     song: stat.song,
                     size: 46,
-                    borderRadius: BorderRadius.circular(11),
+                    borderRadius: BorderRadius.circular(UiUtils.artCorner(11)),
                   ),
                   const SizedBox(width: 12),
                   Expanded(

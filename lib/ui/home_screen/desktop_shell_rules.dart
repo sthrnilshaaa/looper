@@ -14,7 +14,13 @@ class DesktopShellRules {
 
   /// Lyrics and Analyze are full-pane views with their own header.
   static bool showTopBar(NavItem item) =>
-      item != NavItem.lyrics && item != NavItem.analyze;
+      item != NavItem.lyrics && item != NavItem.analyze && !isSettings(item);
+
+  /// The pages that make up the one Settings section.
+  static bool isSettings(NavItem item) =>
+      item == NavItem.settings ||
+      item == NavItem.settingsCategory ||
+      item == NavItem.account;
 
   /// With no music yet, every page offers Add Folder. After that it only
   /// appears on the library pages, where it is not in the way.

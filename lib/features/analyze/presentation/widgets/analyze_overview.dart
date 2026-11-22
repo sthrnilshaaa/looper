@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:looper_player/core/utils/ui_utils.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/core/utils/l10n.dart';
 import 'package:looper_player/features/analyze/domain/analyze_models.dart';
@@ -200,7 +201,7 @@ class _IconChip extends StatelessWidget {
       height: 34,
       decoration: BoxDecoration(
         color: accent.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(11),
+        borderRadius: BorderRadius.circular(UiUtils.artCorner(11)),
       ),
       child: Icon(icon, color: accent, size: 18),
     );

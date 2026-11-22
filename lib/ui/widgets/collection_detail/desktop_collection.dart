@@ -86,7 +86,7 @@ extension _DesktopCollection on CollectionDetailView {
                             songPaths: reactivePlaylist.songPaths,
                             coverPath: reactivePlaylist.coverPath,
                             size: 140,
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(5),
                           )
                         else
                           OptimizedImage(
@@ -94,11 +94,11 @@ extension _DesktopCollection on CollectionDetailView {
                             imageUrl: imageUrl,
                             width: 140,
                             height: 140,
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(5),
                             placeholder: Container(
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.05),
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: BorderRadius.circular(5),
                               ),
                               child: const Icon(
                                 LucideIcons.music,
@@ -419,7 +419,7 @@ class _DesktopSongRowState extends ConsumerState<_DesktopSongRow> {
             color: lit
                 ? Colors.white.withValues(alpha: 0.04)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
             children: [
@@ -440,14 +440,14 @@ class _DesktopSongRowState extends ConsumerState<_DesktopSongRow> {
               ),
               const SizedBox(width: 12),
               ClipRRect(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(5),
                 child: Stack(
                   children: [
                     OptimizedImage(
                       imagePath: song.artPath,
                       width: 42,
                       height: 42,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(5),
                       placeholder: Container(
                         color: Colors.white.withValues(alpha: 0.05),
                         child: const Icon(

@@ -34,10 +34,14 @@ class SettingsCategoryScreen extends ConsumerWidget {
   final String categoryId;
   final String title;
 
+  /// False when shown beside the settings list, where no Back is needed.
+  final bool showBack;
+
   const SettingsCategoryScreen({
     super.key,
     required this.categoryId,
     required this.title,
+    this.showBack = true,
   });
 
   @override
@@ -97,6 +101,8 @@ class SettingsCategoryScreen extends ConsumerWidget {
             ],
             if (dynamicTheming || settings.keepBackgroundGradient)
               const HomeDarknessSlider(),
+            if (dynamicTheming && UiUtils.isDesktop)
+              const DesktopBackgroundDarknessSlider(),
             if (dynamicTheming) ...[
               const SongsDarknessSlider(),
               const LibraryDarknessSlider(),
@@ -128,8 +134,7 @@ class SettingsCategoryScreen extends ConsumerWidget {
         (
           title: l10n.themeGroupFonts,
           tiles: [
-            // Desktop has its own UI scale row in its settings view.
-            if (!UiUtils.isDesktop) const UiScaleTile(),
+            const UiScaleTile(),
             const LetterSpacingTile(),
             const UseNewFontTile(),
             sub(settings.useNewFont, const [
@@ -182,6 +187,7 @@ class SettingsCategoryScreen extends ConsumerWidget {
                 SettingsDemoKind.segmentedButtons,
                 const SegmentedUtilityButtonsTile(),
               ),
+              if (UiUtils.isDesktop) const FlatProgressBarTile(),
               const ProgressBarStyleTile(),
               const PlainTimestampsTile(),
               const ArtworkVisualizerTile(),
@@ -217,6 +223,7 @@ class SettingsCategoryScreen extends ConsumerWidget {
             const InactiveLyricsOpacityTile(),
             const LyricsAlignmentTile(),
             const LyricsLineGroupingTile(),
+            if (UiUtils.isDesktop) const LyricsSizeTile(),
           ],
         ),
         (
@@ -365,12 +372,14 @@ class SettingsCategoryScreen extends ConsumerWidget {
                 title: l10n.corePurpose,
                 description: l10n.corePurposeDesc,
               ),
-              const SizedBox(height: 16),
-              InfoSubTile(
-                icon: LucideIcons.shieldCheck,
-                title: l10n.whyPermissionsUsed,
-                description: l10n.whyPermissionsUsedDesc,
-              ),
+              if (!UiUtils.isDesktop) ...[
+                const SizedBox(height: 16),
+                InfoSubTile(
+                  icon: LucideIcons.shieldCheck,
+                  title: l10n.whyPermissionsUsed,
+                  description: l10n.whyPermissionsUsedDesc,
+                ),
+              ],
               const SizedBox(height: 16),
               InfoSubTile(
                 icon: LucideIcons.globe,
@@ -396,6 +405,16 @@ class SettingsCategoryScreen extends ConsumerWidget {
       ];
     }
 
+    if (UiUtils.isDesktop) {
+      sections = [
+        for (final section in sections)
+          (
+            title: section.title,
+            tiles: [for (final tile in section.tiles) ?_desktopTile(tile)],
+          ),
+      ];
+    }
+
     // A section whose options all depend on something that's off.
     sections = [
       for (final section in sections)
@@ -406,8 +425,10 @@ class SettingsCategoryScreen extends ConsumerWidget {
       data: settingsTheme(Theme.of(context)),
       child: Scaffold(
         // See the comment on the main SettingsView's Scaffold above - same
-        // reasoning applies here.
-        backgroundColor: Theme.of(context).colorScheme.surface,
+        // reasoning applies here. Desktop sits over the shell's background.
+        backgroundColor: UiUtils.isDesktop
+            ? Colors.transparent
+            : Theme.of(context).colorScheme.surface,
         body: _aboutBackground(
           categoryId == 'about',
           SafeArea(
@@ -417,14 +438,17 @@ class SettingsCategoryScreen extends ConsumerWidget {
                   padding: const EdgeInsets.fromLTRB(22, 12, 22, 8),
                   child: SettingsHeader(
                     title: title,
-                    onBack: () {
-                      AppHaptics.light();
-                      // Go through appNavigationProvider (not a raw Navigator
-                      // pop) so its logical history stays in sync with the
-                      // physical route stack -- see showSettingsCategory's
-                      // call site for why that matters for the back button.
-                      ref.read(appNavigationProvider.notifier).goBack();
-                    },
+                    onBack: !showBack
+                        ? null
+                        : () {
+                            AppHaptics.light();
+                            // Go through appNavigationProvider (not a raw
+                            // Navigator pop) so its logical history stays in
+                            // sync with the physical route stack -- see
+                            // showSettingsCategory's call site for why that
+                            // matters for the back button.
+                            ref.read(appNavigationProvider.notifier).goBack();
+                          },
                   ),
                 ),
                 Expanded(
@@ -510,6 +534,51 @@ class SettingsCategoryScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Android-only options: what they change isn't part of the desktop UI.
+const _androidOnlyTiles = <Type>{
+  AlwaysBlurSheetsTile,
+  StatusBarBlurTile,
+  AnimateBackgroundGradientTile,
+  HomeDarknessSlider,
+  SongsDarknessSlider,
+  LibraryDarknessSlider,
+  ShowAlbumInQuickPicksTile,
+  ShowAlbumsRowTile,
+  ReorderDashboardSectionsTile,
+  PlayerStyleTile,
+  PlayerDynamicBackgroundTile,
+  PlayerLyricLineTile,
+  PlayerLyricLineTransitionTile,
+  SegmentedUtilityButtonsTile,
+  ProgressBarStyleTile,
+  ArtworkVisualizerTile,
+  ShowQualityBadgeTile,
+  QualityBadgeStyleTile,
+  EnablePlayerGradientTile,
+  AnimatePlayerGradientTile,
+  MusicDarknessSlider,
+  EnableLyricsGradientTile,
+  AmbientLyricsBgTile,
+  BlurredArtworkLyricsTile,
+  LyricsDarknessSlider,
+};
+
+bool isAndroidOnlySetting(Widget tile) =>
+    _androidOnlyTiles.contains(tile.runtimeType);
+
+/// [tile] without its Android-only options, or null if none are left.
+Widget? _desktopTile(Widget tile) {
+  if (isAndroidOnlySetting(tile)) return null;
+  if (tile is SettingsDemo && isAndroidOnlySetting(tile.child)) return null;
+  if (tile is _SubGroup) {
+    final kept = [for (final child in tile.children) ?_desktopTile(child)];
+    return kept.isEmpty
+        ? null
+        : _SubGroup(visible: tile.visible, children: kept);
+  }
+  return tile;
 }
 
 /// Titled card of settings. A collapsible one starts folded; tapping the
@@ -605,8 +674,8 @@ class _SettingsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // Material (not a decorated Container) so tile ripples paint on the card.
     return Material(
-      color: kSettingsCard,
-      borderRadius: BorderRadius.circular(15),
+      color: SettingsCardTint.of(context, kSettingsCard),
+      borderRadius: BorderRadius.circular(UiUtils.isDesktop ? 10 : 15),
       clipBehavior: Clip.antiAlias,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
@@ -675,4 +744,4 @@ class _SubGroup extends StatelessWidget {
 
 /// About wears the setup flow's animated logo backdrop.
 Widget _aboutBackground(bool about, Widget child) =>
-    about ? SetupBackground(child: child) : child;
+    about && !UiUtils.isDesktop ? SetupBackground(child: child) : child;

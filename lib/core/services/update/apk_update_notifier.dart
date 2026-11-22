@@ -10,6 +10,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:looper_player/core/services/storage/local_json_store.dart';
 import 'package:looper_player/core/services/update/apk_installer.dart';
 import 'package:looper_player/core/services/update/github_release.dart';
+import 'package:looper_player/core/services/update/linux_updater.dart';
 import 'package:looper_player/core/services/update/update_service.dart';
 
 part 'apk_update_notifier.g.dart';
@@ -94,9 +95,9 @@ class ApkUpdateState {
   );
 }
 
-/// In-app update for the Android `github` build: finds the newest GitHub
-/// release, downloads the APK for this device and hands it to the system
-/// installer. Other builds never leave [ApkUpdatePhase.idle].
+/// In-app update for the Android `github` build and Linux: finds the newest
+/// GitHub release, downloads the file for this install and installs it.
+/// Other builds never leave [ApkUpdatePhase.idle].
 @Riverpod(keepAlive: true)
 class ApkUpdate extends _$ApkUpdate {
   static const _dismissedVersionKey = 'update_dismissed_version';
@@ -133,13 +134,18 @@ class ApkUpdate extends _$ApkUpdate {
         release.tag.isNotEmpty &&
         isNewerVersion(packageInfo.version, release.tag);
 
-    final abis = await ApkInstaller.supportedAbis();
-    final asset = release.apkFor(
-      abis.isNotEmpty ? abis : const ['arm64-v8a', 'universal'],
-    );
+    final ApkAsset? asset;
+    if (Platform.isLinux) {
+      asset = LinuxUpdater.assetFor(release);
+    } else {
+      final abis = await ApkInstaller.supportedAbis();
+      asset = release.apkFor(
+        abis.isNotEmpty ? abis : const ['arm64-v8a', 'universal'],
+      );
+    }
 
     // Our APK isn't on the release yet: say nothing until it is.
-    if (!isNewer || release.waitingForMyApk) {
+    if (!isNewer || (!Platform.isLinux && release.waitingForMyApk)) {
       await _clearDownloads(keep: null);
       state = ApkUpdateState(
         phase: ApkUpdatePhase.upToDate,
@@ -288,7 +294,9 @@ class ApkUpdate extends _$ApkUpdate {
     }
 
     state = state._to(ApkUpdatePhase.installing);
-    final result = await ApkInstaller.install(file.path);
+    final result = Platform.isLinux
+        ? await LinuxUpdater.install(file)
+        : await ApkInstaller.install(file.path);
     switch (result.status) {
       case ApkInstallStatus.success:
         // Normally unreachable: the update replaces this process.

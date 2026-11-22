@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:looper_player/core/utils/ui_utils.dart';
 import 'package:intl/intl.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/core/utils/l10n.dart';
@@ -88,7 +89,7 @@ class AnalyzeCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: gradient == null ? Colors.white.withValues(alpha: 0.055) : null,
         gradient: gradient,
-        borderRadius: BorderRadius.circular(radius),
+        borderRadius: BorderRadius.circular(UiUtils.cardCorner(radius)),
         border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
       ),
       child: child,

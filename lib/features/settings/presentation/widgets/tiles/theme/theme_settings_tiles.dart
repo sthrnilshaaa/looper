@@ -1,5 +1,6 @@
 import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'package:flutter/material.dart';
+import 'package:looper_player/core/utils/ui_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
@@ -9,6 +10,7 @@ import 'package:looper_player/core/utils/ui_scale_steps.dart';
 import 'package:looper_player/core/utils/artwork_colors.dart' show boostChroma;
 import 'package:looper_player/features/playback/presentation/widgets/lyrics/advanced_lyric_line/advanced_lyric_line.dart'
     show activeLyricsColor, AdvancedLyricLine, inactiveLyricsOpacity;
+import 'package:looper_player/features/playback/presentation/widgets/lyrics/lyrics_scale.dart';
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
 import '../../settings_widgets.dart';

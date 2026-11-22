@@ -52,23 +52,43 @@ class AlbumsGrid extends ConsumerWidget {
     final albumsAsync = ref.watch(albumsProvider);
 
     return albumsAsync.when(
-      data: (albums) => GridView.builder(
-        // The bottom inset keeps the last row clear of the player bar.
-        padding: EdgeInsets.fromLTRB(24.s, 16.s, 24.s, 140),
-        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 200.s,
-          childAspectRatio: 0.72,
-          crossAxisSpacing: 20,
-          mainAxisSpacing: 20,
-        ),
-        itemCount: albums.length,
-        itemBuilder: (context, index) => _AlbumCard(album: albums[index]),
+      data: (albums) => LayoutBuilder(
+        builder: (context, constraints) {
+          const spacing = 20.0;
+          final usable = constraints.maxWidth - 48.s;
+          final columns = ((usable + spacing) / (200.s + spacing)).ceil().clamp(
+            1,
+            100,
+          );
+          final tile = (usable - (columns - 1) * spacing) / columns;
+          final scaler = MediaQuery.textScalerOf(context);
+          return GridView.builder(
+            // The bottom inset keeps the last row clear of the player bar.
+            padding: EdgeInsets.fromLTRB(24.s, 16.s, 24.s, 140),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: columns,
+              // Square art (tile minus its padding) + padding + gap + text.
+              mainAxisExtent:
+                  tile +
+                  12 +
+                  (scaler.scale(14.ts) + scaler.scale(12.ts)) * _albumTextLine +
+                  1,
+              crossAxisSpacing: spacing,
+              mainAxisSpacing: spacing,
+            ),
+            itemCount: albums.length,
+            itemBuilder: (context, index) => _AlbumCard(album: albums[index]),
+          );
+        },
       ),
       loading: () => const AppLoadingIndicator(),
       error: (e, s) => Center(child: Text(context.l10n.errorWithDetails('$e'))),
     );
   }
 }
+
+/// Forced line height of the album card text, so the grid knows its height.
+const _albumTextLine = 1.4;
 
 class _AlbumCard extends ConsumerWidget {
   final Album album;
@@ -113,10 +133,11 @@ class _AlbumCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
+            AspectRatio(
+              aspectRatio: 1,
               child: Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(UiUtils.artCorner(16)),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.3),
@@ -131,10 +152,12 @@ class _AlbumCard extends ConsumerWidget {
                   isPlaying:
                       isCurrentAlbum &&
                       ref.watch(playbackProvider.select((s) => s.isPlaying)),
-                  borderRadius: 16,
+                  borderRadius: UiUtils.artCorner(16),
                   child: album.artPath != null
                       ? ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(
+                            UiUtils.artCorner(16),
+                          ),
                           child: OptimizedImage(
                             imagePath: album.artPath,
                             fit: BoxFit.cover,
@@ -165,6 +188,11 @@ class _AlbumCard extends ConsumerWidget {
                 children: [
                   Text(
                     album.name,
+                    strutStyle: StrutStyle(
+                      fontSize: 14.ts,
+                      height: _albumTextLine,
+                      forceStrutHeight: true,
+                    ),
                     style: AppFonts.jostStyle(
                       fontWeight: FontWeight.normal,
                       fontSize: 14.ts,
@@ -174,6 +202,11 @@ class _AlbumCard extends ConsumerWidget {
                   ),
                   Text(
                     album.artist ?? context.l10n.unknownArtist,
+                    strutStyle: StrutStyle(
+                      fontSize: 12.ts,
+                      height: _albumTextLine,
+                      forceStrutHeight: true,
+                    ),
                     style: AppFonts.jostStyle(
                       color: Colors.grey[400],
                       fontSize: 12.ts,

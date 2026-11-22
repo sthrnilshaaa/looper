@@ -8,6 +8,10 @@ class UiUtils {
   static bool get isDesktop =>
       Platform.isLinux || Platform.isWindows || Platform.isMacOS;
 
+  /// Desktop's redesign corners; other platforms keep [other].
+  static double artCorner(double other) => isDesktop ? 5 : other;
+  static double cardCorner(double other) => isDesktop ? 10 : other;
+
   /// Returns a scaling factor for UI components.
   /// Android gets a smaller scale (0.85) to fit more content.
   static double get scale => isAndroid ? 0.85 : 1.0;

@@ -569,13 +569,20 @@ class AboutHeroCard extends ConsumerWidget {
         height: 212,
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(15),
-          gradient: const LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-            stops: [0.128, 0.496, 0.872],
-            colors: [Color(0xFF101010), Color(0xFF181818), Color(0xFF131313)],
-          ),
+          borderRadius: BorderRadius.circular(UiUtils.cardCorner(15)),
+          color: SettingsCardTint.of(context, Colors.transparent),
+          gradient: SettingsCardTint.isGlass(context)
+              ? null
+              : const LinearGradient(
+                  begin: Alignment.topRight,
+                  end: Alignment.bottomLeft,
+                  stops: [0.128, 0.496, 0.872],
+                  colors: [
+                    Color(0xFF101010),
+                    Color(0xFF181818),
+                    Color(0xFF131313),
+                  ],
+                ),
         ),
         child: Stack(
           children: [
@@ -834,7 +841,7 @@ class _AboutStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: _aboutCardFill,
+      color: SettingsCardTint.of(context, _aboutCardFill),
       borderRadius: BorderRadius.circular(10),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -1153,7 +1160,10 @@ HeroFlightShuttleBuilder _dialogShuttle(double cardRadius) =>
       final dialogContext = direction == HeroFlightDirection.push
           ? toContext
           : fromContext;
-      final size = dialogContext.size ?? Size.zero;
+      // Not context.size: on desktop the flight is built during layout (under
+      // DesktopUiScale's LayoutBuilder), where that getter throws.
+      final box = dialogContext.findRenderObject() as RenderBox?;
+      final size = box != null && box.hasSize ? box.size : Size.zero;
       return AnimatedBuilder(
         animation: animation,
         builder: (_, child) => ClipRRect(
@@ -1234,8 +1244,8 @@ class AboutActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: _aboutCardFill,
-      borderRadius: BorderRadius.circular(15),
+      color: SettingsCardTint.of(context, _aboutCardFill),
+      borderRadius: BorderRadius.circular(UiUtils.cardCorner(15)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,

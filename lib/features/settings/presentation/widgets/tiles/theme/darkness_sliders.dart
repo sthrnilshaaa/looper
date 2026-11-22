@@ -1,9 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:looper_player/features/library/domain/models/models.dart';
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
 import '../../settings_widgets.dart';
+
+/// Desktop's window background; Android has one slider per screen.
+class DesktopBackgroundDarknessSlider extends ConsumerWidget {
+  const DesktopBackgroundDarknessSlider({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final darkness = ref.watch(
+      settingsProvider.select((s) => s.desktopBackgroundDarkness),
+    );
+    final l10n = AppLocalizations.of(context)!;
+    return SettingsSliderTile(
+      icon: LucideIcons.moon,
+      title: l10n.homeDarkness,
+      subtitle: l10n.homeDarknessDesc,
+      value:
+          (darkness.isNaN
+              ? AppSettings.defaultDesktopBackgroundDarkness
+              : darkness) *
+          100,
+      min: 0.0,
+      max: 100.0,
+      divisions: 100,
+      suffix: '%',
+      onChanged: (val) => ref
+          .read(settingsProvider.notifier)
+          .updateDesktopBackgroundDarkness(val / 100.0),
+    );
+  }
+}
 
 class HomeDarknessSlider extends ConsumerWidget {
   const HomeDarknessSlider({super.key});

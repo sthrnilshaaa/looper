@@ -108,7 +108,7 @@ extension _SettingsSearch on _SettingsViewState {
     AppSettings settings,
     AppLocalizations l10n,
   ) {
-    return [
+    final items = <SettingsSearchItem>[
       // Theme
       SettingsSearchItem(
         title: l10n.dynamicTheming,
@@ -352,13 +352,12 @@ extension _SettingsSearch on _SettingsViewState {
               '${l10n.catPlayerInterface} · ${l10n.themeGroupBlurBackgrounds}',
           widget: const AnimateBackgroundGradientTile(),
         ),
-      if (!UiUtils.isDesktop)
-        SettingsSearchItem(
-          title: l10n.uiScale,
-          subtitle: l10n.uiScaleDesc,
-          category: '${l10n.catPlayerInterface} · ${l10n.themeGroupFonts}',
-          widget: const UiScaleTile(),
-        ),
+      SettingsSearchItem(
+        title: l10n.uiScale,
+        subtitle: l10n.uiScaleDesc,
+        category: '${l10n.catPlayerInterface} · ${l10n.themeGroupFonts}',
+        widget: const UiScaleTile(),
+      ),
       SettingsSearchItem(
         title: l10n.useCustomFont,
         subtitle: l10n.useCustomFontDesc,
@@ -659,6 +658,31 @@ extension _SettingsSearch on _SettingsViewState {
         category: l10n.aboutAndMaintainers,
         widget: LyricsCreditsSection(accentColor: settings.accent),
       ),
+      if (UiUtils.isDesktop) ...[
+        SettingsSearchItem(
+          title: l10n.flatProgressBar,
+          subtitle: l10n.disableSquigglyProgressBar,
+          category: '${l10n.nowPlaying} · ${l10n.sectionClassicLayout}',
+          widget: const FlatProgressBarTile(),
+        ),
+        SettingsSearchItem(
+          title: l10n.lyricsSize,
+          subtitle: l10n.lyricsSizeDesc,
+          category: '${l10n.lyrics} · ${l10n.sectionLook}',
+          widget: const LyricsSizeTile(),
+        ),
+        if (settings.enableDynamicTheming)
+          SettingsSearchItem(
+            title: l10n.homeDarkness,
+            subtitle: l10n.homeDarknessDesc,
+            category:
+                '${l10n.catPlayerInterface} · ${l10n.themeGroupBlurBackgrounds}',
+            widget: const DesktopBackgroundDarknessSlider(),
+          ),
+      ],
     ];
+    return UiUtils.isDesktop
+        ? items.where((i) => !isAndroidOnlySetting(i.widget)).toList()
+        : items;
   }
 }

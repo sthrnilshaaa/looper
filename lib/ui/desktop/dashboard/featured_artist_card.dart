@@ -23,7 +23,7 @@ class _FeaturedArtistCard extends ConsumerWidget {
                 songs: artistSongs,
               );
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
         child: Container(
           width: isNarrow ? 80 : 100,
           padding: const EdgeInsets.all(8),

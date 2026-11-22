@@ -32,6 +32,8 @@ import '../../widgets/tiles/library_settings_tiles.dart';
 import '../../widgets/tiles/about_settings_tiles.dart';
 import '../../widgets/lyrics_services_sheet.dart';
 import 'package:looper_player/core/services/haptics/app_haptics.dart';
+import '../account_view.dart';
+import '../settings_category_screen.dart';
 export '../settings_category_screen.dart';
 
 part 'settings_view.g.dart';
@@ -49,7 +51,10 @@ class SupportUsSheetVisible extends _$SupportUsSheetVisible {
 }
 
 class SettingsView extends ConsumerStatefulWidget {
-  const SettingsView({super.key});
+  const SettingsView({super.key, this.selectedCategoryId});
+
+  /// Row shown as selected when a category is open beside this list.
+  final String? selectedCategoryId;
 
   @override
   ConsumerState<SettingsView> createState() => _SettingsViewState();
@@ -97,6 +102,14 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     // sounds, where music comes from, then app chores and info.
     final groups = <List<_CategoryEntry>>[
       [
+        if (UiUtils.isDesktop)
+          entry(
+            'account',
+            l10n.account,
+            l10n.accountSettings,
+            LucideIcons.userRound,
+            SettingsIcons.userCircle,
+          ),
         entry(
           'theme',
           l10n.catPlayerInterface,
@@ -181,9 +194,12 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
       child: Theme(
         data: settingsTheme(Theme.of(context)),
         child: Material(
-          color: colorScheme.surface,
+          // Desktop embeds this page in the shell, over its artwork background.
+          color: UiUtils.isDesktop ? Colors.transparent : colorScheme.surface,
           child: Scaffold(
-            backgroundColor: colorScheme.surface,
+            backgroundColor: UiUtils.isDesktop
+                ? Colors.transparent
+                : colorScheme.surface,
             body: SafeArea(
               // In landscape the list is capped to a readable width and
               // centered instead of stretching every tile edge-to-edge.
@@ -200,8 +216,8 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                         padding: const EdgeInsets.fromLTRB(22, 12, 22, 12),
                         child: SettingsHeader(
                           title: l10n.settings,
-                          centerTitle: true,
-                          onBack: _back,
+                          centerTitle: !UiUtils.isDesktop,
+                          onBack: UiUtils.isDesktop ? null : _back,
                         ),
                       ),
                       Padding(
@@ -226,6 +242,10 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                                 ),
                                 physics: const LooperScrollPhysics(),
                                 children: [
+                                  if (UiUtils.isDesktop) ...[
+                                    const AccountSummary(),
+                                    const SizedBox(height: 17),
+                                  ],
                                   for (final group in groups)
                                     Padding(
                                       padding: const EdgeInsets.only(
@@ -238,6 +258,9 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                                               icon: e.icon,
                                               title: e.title,
                                               subtitle: e.subtitle,
+                                              selected:
+                                                  e.id ==
+                                                  widget.selectedCategoryId,
                                               onTap: () => _openCategory(
                                                 context,
                                                 e.id,
@@ -291,8 +314,8 @@ class _SearchField extends StatelessWidget {
       height: 55,
       padding: const EdgeInsets.only(left: 21, right: 8),
       decoration: BoxDecoration(
-        color: kSettingsCard,
-        borderRadius: BorderRadius.circular(15),
+        color: SettingsCardTint.of(context, kSettingsCard),
+        borderRadius: BorderRadius.circular(UiUtils.isDesktop ? 10 : 15),
       ),
       child: Row(
         children: [

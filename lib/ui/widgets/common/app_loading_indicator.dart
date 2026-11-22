@@ -19,7 +19,14 @@ class AppLoadingIndicator extends StatelessWidget {
       child: SizedBox(
         width: size,
         height: size,
-        child: Center(child: LooperLoader(size: mark)),
+        child: Center(
+          child: UiUtils.isDesktop
+              ? SizedBox.square(
+                  dimension: mark.clamp(0.0, 32.0),
+                  child: const CircularProgressIndicator(strokeWidth: 2.5),
+                )
+              : LooperLoader(size: mark),
+        ),
       ),
     );
   }

@@ -35,7 +35,7 @@ extension _DashboardSections on HomeDashboard {
                 padding: const EdgeInsets.only(right: 12),
                 child: InkWell(
                   onTap: () => ref.read(playbackProvider.notifier).play(song),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(10),
                   child: Container(
                     width: isNarrow ? 120 : 140,
                     padding: const EdgeInsets.all(8),
@@ -45,13 +45,13 @@ extension _DashboardSections on HomeDashboard {
                         SongArtwork(
                           song: song,
                           size: isNarrow ? 104 : 124,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(5),
                           placeholder: Container(
                             decoration: BoxDecoration(
                               color: Colors.grey.withValues(
                                 alpha: isDynamic ? 0.8 : 0.1,
                               ),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(5),
                             ),
                             child: const Center(child: Icon(LucideIcons.music)),
                           ),
@@ -129,7 +129,7 @@ extension _DashboardSections on HomeDashboard {
 
                 return InkWell(
                   onTap: () => ref.read(playbackProvider.notifier).play(song),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(10),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     padding: const EdgeInsets.all(8),
@@ -139,14 +139,14 @@ extension _DashboardSections on HomeDashboard {
                               context,
                             ).colorScheme.primary.withValues(alpha: 0.5)
                           : Colors.white.withValues(alpha: 0.02),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
                       children: [
                         SongArtwork(
                           song: song,
                           size: 54,
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(5),
                           placeholder: const Icon(LucideIcons.music, size: 20),
                         ),
                         const SizedBox(width: 12),
@@ -295,7 +295,7 @@ extension _DashboardSections on HomeDashboard {
                               songs: songs,
                             );
                       },
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(10),
                       child: Container(
                         width: isNarrow ? 120 : 140,
                         padding: const EdgeInsets.all(8),
@@ -306,13 +306,13 @@ extension _DashboardSections on HomeDashboard {
                               imagePath: album.artPath,
                               height: isNarrow ? 104 : 124,
                               width: isNarrow ? 104 : 124,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(5),
                               placeholder: Container(
                                 decoration: BoxDecoration(
                                   color: Colors.grey.withValues(
                                     alpha: isDynamic ? 0.8 : 0.1,
                                   ),
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(5),
                                 ),
                                 child: const Center(
                                   child: Icon(LucideIcons.disc),

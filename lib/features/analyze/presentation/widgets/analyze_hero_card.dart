@@ -1,5 +1,6 @@
 import 'package:looper_player/core/utils/song_metadata.dart';
 import 'package:flutter/material.dart';
+import 'package:looper_player/core/utils/ui_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/core/utils/l10n.dart';
@@ -39,7 +40,7 @@ class AnalyzeHeroCard extends ConsumerWidget {
         children: [
           Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(UiUtils.artCorner(20)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.35),
@@ -51,7 +52,7 @@ class AnalyzeHeroCard extends ConsumerWidget {
             child: SongArtwork(
               song: stat.song,
               size: 118,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(UiUtils.artCorner(20)),
               cacheWidth: 320,
               cacheHeight: 320,
             ),

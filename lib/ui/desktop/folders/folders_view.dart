@@ -119,7 +119,7 @@ class DesktopFoldersView extends ConsumerWidget {
         return Padding(
           padding: const EdgeInsets.only(bottom: 4),
           child: HoverCard(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             onTap: () => ref
                 .read(appNavigationProvider.notifier)
                 .showCollection(
@@ -139,7 +139,7 @@ class DesktopFoldersView extends ConsumerWidget {
                     height: 42,
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(5),
                     ),
                     child: Icon(
                       LucideIcons.folder,

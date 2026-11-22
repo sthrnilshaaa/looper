@@ -1,5 +1,6 @@
 import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'package:flutter/material.dart';
+import 'package:looper_player/core/utils/ui_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/core/providers/navigation_provider.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
@@ -81,7 +82,7 @@ class _AlbumCard extends StatelessWidget {
     return Material(
       color: Colors.white.withValues(alpha: 0.055),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(UiUtils.cardCorner(20)),
         side: BorderSide(color: Colors.white.withValues(alpha: 0.07)),
       ),
       clipBehavior: Clip.antiAlias,
@@ -96,7 +97,7 @@ class _AlbumCard extends StatelessWidget {
               Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(UiUtils.artCorner(12)),
                     child: SizedBox(
                       width: 120,
                       height: 120,

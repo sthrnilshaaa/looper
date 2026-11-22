@@ -14,6 +14,7 @@ import 'package:looper_player/core/providers/navigation_provider.dart';
 import 'package:looper_player/core/providers/providers.dart';
 import 'package:looper_player/core/services/haptics/app_haptics.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
+import 'package:looper_player/core/utils/ui_utils.dart';
 import 'package:looper_player/features/analyze/presentation/providers/analyze_notifier.dart';
 import 'package:looper_player/features/library/domain/models/models.dart';
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
@@ -255,52 +256,7 @@ class AccountView extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 24),
-                const _HeroCard(),
-                const SizedBox(height: 17),
-                SizedBox(
-                  height: 128,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 144,
-                        child: _StatCard(
-                          label: '${l10n.accountViewStats} >',
-                          onTap: () => nav.setItem(NavItem.analyze),
-                          child: const _TodayListening(),
-                        ),
-                      ),
-                      const SizedBox(width: 15),
-                      Expanded(
-                        flex: 198,
-                        child: _StatCard(
-                          label: '${l10n.accountVersionAbout} >',
-                          onTap: () => nav.showSettingsCategory(
-                            id: 'about',
-                            title: l10n.catAbout,
-                          ),
-                          child: Row(
-                            children: [
-                              Flexible(
-                                child: FittedBox(
-                                  child: Text(
-                                    ref.watch(appVersionProvider).value ?? '',
-                                    style: _big,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 18),
-                              SvgPicture.asset(
-                                SettingsIcons.forward,
-                                width: 38,
-                                height: 27,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                const AccountSummary(),
                 const SizedBox(height: 26),
                 Padding(
                   padding: const EdgeInsets.only(left: 1, bottom: 12),
@@ -337,6 +293,70 @@ class AccountView extends ConsumerWidget {
   }
 }
 
+/// Greeting card plus today's listening and version cards.
+class AccountSummary extends ConsumerWidget {
+  const AccountSummary({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final nav = ref.read(appNavigationProvider.notifier);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const _HeroCard(),
+        const SizedBox(height: 17),
+        SizedBox(
+          height: 128,
+          child: Row(
+            children: [
+              Expanded(
+                flex: 144,
+                child: _StatCard(
+                  label: '${l10n.accountViewStats} >',
+                  onTap: () => nav.setItem(NavItem.analyze),
+                  child: const _TodayListening(),
+                ),
+              ),
+              const SizedBox(width: 15),
+              Expanded(
+                flex: 198,
+                child: _StatCard(
+                  label: '${l10n.accountVersionAbout} >',
+                  onTap: () => nav.showSettingsCategory(
+                    id: 'about',
+                    title: l10n.catAbout,
+                    replace: UiUtils.isDesktop,
+                  ),
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: FittedBox(
+                          child: Text(
+                            ref.watch(appVersionProvider).value ?? '',
+                            style: _big,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 18),
+                      SvgPicture.asset(
+                        SettingsIcons.forward,
+                        width: 38,
+                        height: 27,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 final _big = AppFonts.jostStyle(
   color: Colors.white,
   fontSize: 40,
@@ -367,7 +387,7 @@ class _HeroCard extends ConsumerWidget {
       borderRadius: BorderRadius.circular(10),
       child: Container(
         height: 128,
-        color: kAccountCard,
+        color: SettingsCardTint.of(context, kAccountCard),
         child: Stack(
           children: [
             // Faint "Looper Player" watermark tiled behind the greeting.
@@ -524,7 +544,7 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: kAccountCard,
+      color: SettingsCardTint.of(context, kAccountCard),
       borderRadius: BorderRadius.circular(10),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -568,7 +588,7 @@ class _NavRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: kAccountCard,
+      color: SettingsCardTint.of(context, kAccountCard),
       borderRadius: BorderRadius.circular(10),
       clipBehavior: Clip.antiAlias,
       child: InkWell(

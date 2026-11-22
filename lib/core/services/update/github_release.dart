@@ -29,6 +29,9 @@ class GithubRelease {
   final String? publishedAt;
   final List<ApkAsset> apks;
 
+  /// Every file on the release, including the Linux packages.
+  final List<ApkAsset> assets;
+
   const GithubRelease({
     required this.tag,
     this.name = '',
@@ -36,22 +39,22 @@ class GithubRelease {
     required this.notes,
     this.publishedAt,
     required this.apks,
+    this.assets = const [],
   });
 
   factory GithubRelease.fromJson(
     Map<String, dynamic> json, {
     required String fallbackHtmlUrl,
   }) {
-    final apks = <ApkAsset>[];
+    final assets = <ApkAsset>[];
     for (final asset in (json['assets'] as List?) ?? const []) {
       if (asset is! Map) continue;
       final name = asset['name'];
       final url = asset['browser_download_url'];
       final size = asset['size'];
       if (name is! String || url is! String || size is! int) continue;
-      if (!name.toLowerCase().endsWith('.apk')) continue;
       final digest = asset['digest'];
-      apks.add(
+      assets.add(
         ApkAsset(
           name: name,
           url: url,
@@ -68,7 +71,11 @@ class GithubRelease {
       htmlUrl: (json['html_url'] as String?) ?? fallbackHtmlUrl,
       notes: ((json['body'] as String?) ?? '').trim(),
       publishedAt: json['published_at'] as String?,
-      apks: apks,
+      apks: [
+        for (final asset in assets)
+          if (asset.name.toLowerCase().endsWith('.apk')) asset,
+      ],
+      assets: assets,
     );
   }
 

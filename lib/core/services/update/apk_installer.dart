@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/services.dart';
+import 'package:looper_player/core/services/update/linux_updater.dart';
 
 /// Outcome of handing an APK to the system installer.
 enum ApkInstallStatus { success, aborted, storage, failed }
@@ -10,8 +11,11 @@ enum ApkInstallStatus { success, aborted, storage, failed }
 class ApkInstaller {
   static const _channel = MethodChannel('com.looper.player/updates');
 
-  /// Only the Android `github` flavor can install its own updates.
-  static bool get supported => Platform.isAndroid && appFlavor == 'github';
+  /// Builds that install their own updates: the Android `github` flavor and
+  /// released Linux packages.
+  static bool get supported =>
+      (Platform.isAndroid && appFlavor == 'github') ||
+      (Platform.isLinux && LinuxUpdater.kind != null);
 
   /// The device's ABIs, most preferred first.
   static Future<List<String>> supportedAbis() async {

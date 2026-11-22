@@ -129,7 +129,9 @@ class QueueView extends ConsumerWidget {
                                   context,
                                 ).colorScheme.primary.withValues(alpha: 0.5)
                               : Colors.white.withValues(alpha: 0.02),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(
+                            UiUtils.cardCorner(12),
+                          ),
                         ),
                         child: Material(
                           color: Colors.transparent,
@@ -138,7 +140,9 @@ class QueueView extends ConsumerWidget {
                               imagePath: song.artPath,
                               width: 44,
                               height: 44,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(
+                                UiUtils.artCorner(8),
+                              ),
                             ),
                             title: Text(
                               song.title,

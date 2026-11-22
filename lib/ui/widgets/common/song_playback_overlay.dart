@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:looper_player/ui/widgets/common/looper_loader.dart';
 import 'package:flutter/material.dart';
 import 'package:looper_player/core/theme/app_assets.dart';
 import 'package:looper_player/core/utils/motion.dart';
@@ -58,18 +57,19 @@ class SongPlaybackIndicator extends StatelessWidget {
   }
 
   Widget _content(BuildContext context) =>
-      // Android shows the playing GIF; desktop the code-drawn bars. Either is
-      // only mounted when visible and playing (GIF decoding keeps running
-      // offstage and while paused).
-      isPlaying && TickerMode.of(context) && !Motion.reducedOf(context)
-      ? (Platform.isAndroid
-            ? Image.asset(
-                AppAssets.playingGif,
-                width: size,
-                height: size,
-                color: Colors.white,
-              )
-            : LooperLoader(size: size, color: Colors.white))
+      // Android shows the playing GIF, only while visible and playing (GIF
+      // decoding keeps running offstage and while paused). Desktop always
+      // shows the still dots, so the current song never forces redraws.
+      Platform.isAndroid &&
+          isPlaying &&
+          TickerMode.of(context) &&
+          !Motion.reducedOf(context)
+      ? Image.asset(
+          AppAssets.playingGif,
+          width: size,
+          height: size,
+          color: Colors.white,
+        )
       : FittedBox(
           fit: BoxFit.scaleDown,
           child: SizedBox(

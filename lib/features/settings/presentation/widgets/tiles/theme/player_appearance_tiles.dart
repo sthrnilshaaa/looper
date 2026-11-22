@@ -60,6 +60,51 @@ class ArtworkVisualizerTile extends ConsumerWidget {
   }
 }
 
+/// Desktop's progress bar has no style sheet, only flat or squiggly.
+class FlatProgressBarTile extends ConsumerWidget {
+  const FlatProgressBarTile({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    return SwitchListTile(
+      secondary: const Icon(LucideIcons.sliders),
+      title: Text(l10n.flatProgressBar, style: _tileTitleStyle()),
+      subtitle: Text(
+        l10n.disableSquigglyProgressBar,
+        style: _tileSubtitleStyle(),
+      ),
+      value: ref.watch(settingsProvider.select((s) => s.disableSquiggle)),
+      onChanged: (value) =>
+          ref.read(settingsProvider.notifier).updateDisableSquiggle(value),
+    );
+  }
+}
+
+/// Desktop's lyrics text size.
+class LyricsSizeTile extends ConsumerWidget {
+  const LyricsSizeTile({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final scale = ref.watch(settingsProvider.select((s) => s.lyricsFontScale));
+    return SettingsSliderTile(
+      icon: LucideIcons.languages,
+      title: l10n.lyricsSize,
+      subtitle: l10n.lyricsSizeDesc,
+      value: LyricsScale.normalize(scale) * 100,
+      min: LyricsScale.min * 100,
+      max: LyricsScale.max * 100,
+      divisions: 19,
+      suffix: '%',
+      onChanged: (val) => ref
+          .read(settingsProvider.notifier)
+          .updateLyricsFontScale((val / 10).round() / 10),
+    );
+  }
+}
+
 class PlainTimestampsTile extends ConsumerWidget {
   const PlainTimestampsTile({super.key});
 
@@ -541,8 +586,8 @@ class _PlayerStylesCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.fromLTRB(21, 20, 20, 25),
       decoration: BoxDecoration(
-        color: const Color(0xFF101010),
-        borderRadius: BorderRadius.circular(15),
+        color: SettingsCardTint.of(context, const Color(0xFF101010)),
+        borderRadius: BorderRadius.circular(UiUtils.cardCorner(15)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

@@ -43,8 +43,13 @@ TextStyle setupBody({
 /// Dark backdrop with three dim Looper-logo outlines; a soft grey light
 /// travels along each one.
 class SetupBackground extends StatefulWidget {
-  const SetupBackground({super.key, required this.child});
+  const SetupBackground({
+    super.key,
+    required this.child,
+    this.color = kSetupBg,
+  });
   final Widget child;
+  final Color color;
 
   @override
   State<SetupBackground> createState() => _SetupBackgroundState();
@@ -76,11 +81,15 @@ class _SetupBackgroundState extends State<SetupBackground>
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: kSetupBg,
+      color: widget.color,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          RepaintBoundary(child: CustomPaint(painter: _FlowLinesPainter(_c))),
+          RepaintBoundary(
+            child: CustomPaint(
+              painter: _FlowLinesPainter(_c, glass: widget.color.a == 0),
+            ),
+          ),
           widget.child,
         ],
       ),
@@ -89,8 +98,9 @@ class _SetupBackgroundState extends State<SetupBackground>
 }
 
 class _FlowLinesPainter extends CustomPainter {
-  _FlowLinesPainter(this.t) : super(repaint: t);
+  _FlowLinesPainter(this.t, {this.glass = false}) : super(repaint: t);
   final Animation<double> t;
+  final bool glass;
 
   Size? _size;
   double _s = 1;
@@ -126,10 +136,13 @@ class _FlowLinesPainter extends CustomPainter {
     _outline = [
       // Figma: each outline fades #141414 (top) to #0E0E0E (bottom).
       for (final (top, bottom) in kSetupLogoSpans)
-        ui.Gradient.linear(Offset(0, top * s), Offset(0, bottom * s), const [
-          Color(0xFF141414),
-          Color(0xFF0E0E0E),
-        ]),
+        ui.Gradient.linear(
+          Offset(0, top * s),
+          Offset(0, bottom * s),
+          glass
+              ? const [Color(0x14FFFFFF), Color(0x0AFFFFFF)]
+              : const [Color(0xFF141414), Color(0xFF0E0E0E)],
+        ),
     ];
     _spots = [
       for (final (logo, part, phase) in _glows)
@@ -167,7 +180,9 @@ class _FlowLinesPainter extends CustomPainter {
       _lit.shader = ui.Gradient.radial(
         c,
         86 * _s,
-        const [Color(0xFF262626), Color(0xCC262626), Color(0x00262626)],
+        glass
+            ? const [Color(0x2EFFFFFF), Color(0x22FFFFFF), Color(0x00FFFFFF)]
+            : const [Color(0xFF262626), Color(0xCC262626), Color(0x00262626)],
         const [0, 0.38, 1],
       );
       _strokeInside(canvas, _shapes[logo * 2], _lit);
@@ -176,7 +191,7 @@ class _FlowLinesPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_FlowLinesPainter old) => old.t != t;
+  bool shouldRepaint(_FlowLinesPainter old) => old.t != t || old.glass != glass;
 }
 
 /// One setup screen: step label, title, description, body, bottom bar.

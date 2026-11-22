@@ -21,6 +21,6 @@ extension _SettingsCategoryGroup on _SettingsViewState {
     // main tab in one shot.
     ref
         .read(appNavigationProvider.notifier)
-        .showSettingsCategory(id: id, title: title);
+        .showSettingsCategory(id: id, title: title, replace: UiUtils.isDesktop);
   }
 }

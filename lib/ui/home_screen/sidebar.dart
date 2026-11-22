@@ -113,15 +113,12 @@ class Sidebar extends ConsumerWidget {
                       onTap: () => navigateTo(NavItem.analyze),
                     ),
                     _SidebarItem(
-                      icon: LucideIcons.listOrdered,
-                      label: l10n.playQueue,
-                      isSelected: activeItem == NavItem.queue,
-                      onTap: () => navigateTo(NavItem.queue),
-                    ),
-                    _SidebarItem(
                       customIcon: AppIcons.settings,
                       label: l10n.settings,
-                      isSelected: activeItem == NavItem.settings,
+                      isSelected:
+                          activeItem == NavItem.settings ||
+                          activeItem == NavItem.account ||
+                          activeItem == NavItem.settingsCategory,
                       onTap: () => navigateTo(NavItem.settings),
                     ),
                     const SizedBox(height: 16),

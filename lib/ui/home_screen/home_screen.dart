@@ -22,16 +22,18 @@ import 'package:looper_player/features/playlists/presentation/screens/playlist_v
 import 'package:looper_player/features/search/presentation/screens/search_view.dart';
 import 'package:looper_player/core/providers/navigation_provider.dart';
 import 'package:looper_player/features/library/presentation/screens/smart_views.dart';
-import 'package:looper_player/ui/desktop/settings/settings_view.dart';
+import 'package:looper_player/features/settings/presentation/screens/settings_view/settings_view.dart';
+import 'package:looper_player/features/settings/presentation/widgets/settings_widgets.dart';
 import 'package:looper_player/ui/welcome/welcome_screen.dart';
 import 'package:looper_player/ui/desktop/welcome/desktop_welcome_screen.dart';
 import 'package:looper_player/ui/widgets/common/folder_picker_helper.dart';
+import 'package:looper_player/ui/widgets/common/setup_kit.dart';
 
 import 'package:looper_player/ui/widgets/collection_detail/collection_detail_view.dart';
 import 'package:looper_player/features/playback/presentation/screens/lyrics_view.dart';
 import 'package:looper_player/features/playback/presentation/providers/playback/playback_notifier.dart';
 import 'package:looper_player/features/playback/presentation/providers/lyrics/lyrics_notifier.dart';
-import 'package:looper_player/features/library/presentation/screens/queue_view.dart';
+import 'package:looper_player/ui/desktop/queue/desktop_queue_view.dart';
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
 import 'package:looper_player/core/providers/providers.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -268,6 +270,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ],
             ],
 
+            // Settings pages stay off pure black when there's no artwork layer.
+            if (!showWelcome &&
+                !hasBgLayer &&
+                DesktopShellRules.isSettings(nav.activeItem))
+              const Positioned.fill(
+                child: ColoredBox(color: Color(0xFF121214)),
+              ),
+
             Column(
               children: [
                 // Custom Title Bar always at the top
@@ -495,7 +505,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       switchOutCurve: Curves.easeInOut,
       transitionBuilder: (child, animation) =>
           FadeTransition(opacity: animation, child: child),
-      child: KeyedSubtree(key: ValueKey(nav.activeItem), child: childWidget),
+      // One key for all Settings pages: picking a category must not rebuild
+      // or fade the list column.
+      child: KeyedSubtree(
+        key: ValueKey(
+          DesktopShellRules.isSettings(nav.activeItem)
+              ? NavItem.settings
+              : nav.activeItem,
+        ),
+        child: childWidget,
+      ),
     );
   }
 
@@ -522,7 +541,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       case NavItem.lyrics:
         return const LyricsView();
       case NavItem.settings:
-        return const SettingsView();
+      case NavItem.account:
+      case NavItem.settingsCategory:
+        return _settingsPage(nav, l10n);
       case NavItem.collectionDetail:
         return CollectionDetailView(
           title: nav.collectionTitle ?? context.l10n.unknown,
@@ -535,7 +556,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           artist: nav.activeArtist,
         );
       case NavItem.queue:
-        return const QueueView();
+        return const DesktopQueueView();
       case NavItem.songs:
         return library.songs.isEmpty
             ? _buildEmptyState(context, l10n)
@@ -552,6 +573,65 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ? _buildEmptyState(context, l10n)
             : const HomeDashboard();
     }
+  }
+
+  /// Settings list beside the selected category; one column when narrow.
+  Widget _settingsPage(NavigationState nav, AppLocalizations l10n) {
+    final inCategory = nav.activeItem == NavItem.settingsCategory;
+    return SettingsCardTint(
+      glass: ref.watch(
+        settingsProvider.select(
+          (s) => s.enableDynamicTheming || s.keepBackgroundGradient,
+        ),
+      ),
+      child: SetupBackground(
+        color: Colors.transparent,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 760) {
+              return Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  child: inCategory
+                      ? SettingsCategoryScreen(
+                          key: ValueKey(nav.settingsCategoryId),
+                          categoryId: nav.settingsCategoryId ?? '',
+                          title: nav.settingsCategoryTitle ?? '',
+                        )
+                      : const SettingsView(),
+                ),
+              );
+            }
+            final id = inCategory ? nav.settingsCategoryId ?? 'about' : 'about';
+            final title = inCategory
+                ? nav.settingsCategoryTitle ?? l10n.catAbout
+                : l10n.catAbout;
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1240),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      width: (constraints.maxWidth * 0.36).clamp(320.0, 420.0),
+                      child: SettingsView(selectedCategoryId: id),
+                    ),
+                    Expanded(
+                      child: SettingsCategoryScreen(
+                        key: ValueKey(id),
+                        categoryId: id,
+                        title: title,
+                        showBack: false,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 
   Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {

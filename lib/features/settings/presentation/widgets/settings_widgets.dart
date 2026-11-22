@@ -1,6 +1,7 @@
 import 'package:looper_player/core/utils/desktop_paths.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:looper_player/core/utils/ui_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -361,6 +362,27 @@ class SettingsSearchItem {
 const kSettingsCard = Color(0xFF101010);
 const kSettingsDivider = Color(0x0FFFFFFF);
 
+/// Makes the settings cards below it see-through over an artwork background.
+class SettingsCardTint extends InheritedWidget {
+  const SettingsCardTint({
+    super.key,
+    required this.glass,
+    required super.child,
+  });
+
+  final bool glass;
+
+  static bool isGlass(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<SettingsCardTint>()?.glass ==
+      true;
+
+  static Color of(BuildContext context, Color opaque) =>
+      isGlass(context) ? const Color(0x14FFFFFF) : opaque;
+
+  @override
+  bool updateShouldNotify(SettingsCardTint old) => old.glass != glass;
+}
+
 /// Icons exported from the Figma devvlooper settings/account screens.
 abstract final class SettingsIcons {
   static const _d = 'assets/icons/settings';
@@ -390,7 +412,9 @@ class SettingsHeader extends StatelessWidget {
   });
 
   final String title;
-  final VoidCallback onBack;
+
+  /// Null hides the back button.
+  final VoidCallback? onBack;
   final bool centerTitle;
 
   @override
@@ -398,20 +422,22 @@ class SettingsHeader extends StatelessWidget {
     final material = MaterialLocalizations.of(context);
     return Row(
       children: [
-        Semantics(
-          button: true,
-          label: material.backButtonTooltip,
-          child: InkWell(
-            onTap: onBack,
-            customBorder: const CircleBorder(),
-            child: SvgPicture.asset(
-              SettingsIcons.backButton,
-              width: 41,
-              height: 40,
+        if (onBack != null) ...[
+          Semantics(
+            button: true,
+            label: material.backButtonTooltip,
+            child: InkWell(
+              onTap: onBack,
+              customBorder: const CircleBorder(),
+              child: SvgPicture.asset(
+                SettingsIcons.backButton,
+                width: 41,
+                height: 40,
+              ),
             ),
           ),
-        ),
-        const SizedBox(width: 14),
+          const SizedBox(width: 14),
+        ],
         Expanded(
           child: Text(
             title,
@@ -426,7 +452,7 @@ class SettingsHeader extends StatelessWidget {
           ),
         ),
         // Balances the back button so a centred title sits truly centred.
-        if (centerTitle) const SizedBox(width: 55),
+        if (centerTitle && onBack != null) const SizedBox(width: 55),
       ],
     );
   }
@@ -441,8 +467,8 @@ class SettingsGroupCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: kSettingsCard,
-      borderRadius: BorderRadius.circular(15),
+      color: SettingsCardTint.of(context, kSettingsCard),
+      borderRadius: BorderRadius.circular(UiUtils.isDesktop ? 10 : 15),
       clipBehavior: Clip.antiAlias,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -472,8 +498,10 @@ class SettingsNavRow extends StatelessWidget {
     required this.subtitle,
     required this.onTap,
     this.svg,
+    this.selected = false,
   });
 
+  final bool selected;
   final IconData icon;
 
   /// Figma icon; takes precedence over [icon] when set.
@@ -484,7 +512,7 @@ class SettingsNavRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    final row = InkWell(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
@@ -533,6 +561,12 @@ class SettingsNavRow extends StatelessWidget {
         ),
       ),
     );
+    return selected
+        ? Semantics(
+            selected: true,
+            child: Material(color: const Color(0x1FFFFFFF), child: row),
+          )
+        : row;
   }
 }
 

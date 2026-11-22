@@ -95,7 +95,7 @@ extension _DashboardDesktopItems on HomeDashboard {
                 songs: songs,
               );
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -160,7 +160,7 @@ extension _DashboardDesktopItems on HomeDashboard {
               .read(appNavigationProvider.notifier)
               .showAlbum(album, unknownArtist: l10n.unknownArtist);
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -168,7 +168,7 @@ extension _DashboardDesktopItems on HomeDashboard {
             AspectRatio(
               aspectRatio: 1.0,
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(5),
                 child: OptimizedImage(
                   imagePath: album.artPath,
                   fit: BoxFit.cover,
@@ -217,11 +217,11 @@ extension _DashboardDesktopItems on HomeDashboard {
                 songs: genreSongs,
               );
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
         child: Container(
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           ),
           padding: const EdgeInsets.all(16),
