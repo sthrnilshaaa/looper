@@ -92,6 +92,9 @@ dependency_overrides:
   # newer one and tag reading silently stops working. Drop this pin only
   # together with a metadata_god release built on a newer bridge.
   flutter_rust_bridge: 2.11.1
+  # Patched copy: audio-focus fixes (see third_party/mpv_audio_kit/LOOPER_PATCH.md).
+  mpv_audio_kit:
+    path: third_party/mpv_audio_kit
 
 flutter_launcher_icons:
   android: true

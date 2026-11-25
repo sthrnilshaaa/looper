@@ -1,0 +1,62 @@
+# Static analysis configuration for a published package.
+#
+# Builds on flutter_lints with a stricter, curated ruleset: enforced API
+# docs, stricter type checking, const correctness and awaited futures.
+#
+# The Dart packages under tool/ (metrics, data_classes, mutation) have
+# rules of their own in tool/metrics/analysis_options.yaml, and are
+# analyzed once their dependencies are there (dart pub get -C tool/<name>).
+
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-raw-types: true
+    strict-inference: true
+  exclude:
+    # Emitted by tool/codegen; their ignore_for_file
+    # headers don't cover this file's stricter ruleset, and the resulting
+    # ~5k infos would bury every real finding in `flutter analyze`.
+    - test/generated/**
+    # The codegen's static overlay only compiles once copied into lib/.
+    - tool/codegen/**
+    - build/**
+    - android/**
+    - windows/**
+    - linux/**
+
+linter:
+  rules:
+    - public_member_api_docs
+    - prefer_const_constructors
+    - prefer_const_constructors_in_immutables
+    - prefer_const_declarations
+    - prefer_const_literals_to_create_immutables
+    - prefer_final_locals
+    - prefer_final_in_for_each
+    - unawaited_futures
+    - directives_ordering
+    - sort_pub_dependencies
+    # The package itself reads no deprecated member, such as a flat field
+    # of PlayerState: what it deprecates can go without a change inside.
+    - deprecated_member_use_from_same_package
+    - prefer_single_quotes
+    - use_super_parameters
+    - avoid_redundant_argument_values
+    - unnecessary_parenthesis
+    - avoid_dynamic_calls
+    - unnecessary_async
+    - cancel_subscriptions
+    - close_sinks
+    - discarded_futures
+    - unnecessary_ignore
+    - always_declare_return_types
+    - strict_top_level_inference
+    - unreachable_from_main
+    - prefer_void_to_null
+    - avoid_void_async
+    - throw_in_finally
+    - unnecessary_statements
+    - unnecessary_library_name
+    - test_types_in_equals

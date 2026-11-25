@@ -1,0 +1,54 @@
+dartdoc:
+  categories:
+    "Playback":
+      markdown: doc/playback.md
+    "Effects":
+      markdown: doc/effects.md
+    "Output":
+      markdown: doc/output.md
+    "Network and cache":
+      markdown: doc/network.md
+    "Metadata":
+      markdown: doc/metadata.md
+    "State and streams":
+      markdown: doc/state.md
+    "Errors and logs":
+      markdown: doc/errors.md
+    "Hooks and raw access":
+      markdown: doc/hooks.md
+    "Visualizer and analysis":
+      markdown: doc/analysis.md
+    "Media session":
+      markdown: doc/media_session.md
+    "Platforms":
+      markdown: doc/platforms.md
+    "Web":
+      markdown: doc/web.md
+    "Android TV":
+      markdown: doc/android_tv.md
+    "Wear OS":
+      markdown: doc/wear_os.md
+    "Tizen":
+      markdown: doc/tizen.md
+    "webOS":
+      markdown: doc/webos.md
+    "HarmonyOS":
+      markdown: doc/ohos.md
+  categoryOrder:
+    - "Playback"
+    - "Effects"
+    - "Output"
+    - "Network and cache"
+    - "Metadata"
+    - "State and streams"
+    - "Errors and logs"
+    - "Hooks and raw access"
+    - "Visualizer and analysis"
+    - "Media session"
+    - "Platforms"
+    - "Web"
+    - "Android TV"
+    - "Wear OS"
+    - "Tizen"
+    - "webOS"
+    - "HarmonyOS"

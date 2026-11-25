@@ -49,7 +49,7 @@ class AndroidAudioFocusManager {
 
       case 'onBluetoothConnected':
         LoggerHelper.write('AndroidAudioFocusManager: onBluetoothConnected');
-        if (settings.resumeOnBluetoothConnect) {
+        if (settings.audioFocus && settings.resumeOnBluetoothConnect) {
           await playback.resumeOnBluetoothConnect();
         }
         break;
@@ -65,7 +65,9 @@ class AndroidAudioFocusManager {
     final settings = _ref.read(settingsProvider);
     try {
       await _channel.invokeMethod('syncSettings', {
-        'resumeOnBluetoothConnect': settings.resumeOnBluetoothConnect,
+        // Hidden, so off, while Manage Audio Focus is off.
+        'resumeOnBluetoothConnect':
+            settings.audioFocus && settings.resumeOnBluetoothConnect,
       });
     } catch (e) {
       LoggerHelper.write(

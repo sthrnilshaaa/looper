@@ -1,0 +1,32 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <!-- The OS media session runs in a foreground service of type
+       mediaPlayback so the now-playing notification and lock-screen
+       controls persist while the screen is off. FOREGROUND_SERVICE_MEDIA_PLAYBACK
+       is mandatory on Android 14+ (API 34) for this service type. -->
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+  <!-- A runtime permission from Android 13 (API 33), but media session
+       notifications are exempt: the media controls show in the shade, on
+       the lock screen and over Bluetooth without the grant, so the app
+       need not request it. -->
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+  <application>
+    <service
+      android:name=".media_session.MpvMediaSessionService"
+      android:exported="true"
+      android:foregroundServiceType="mediaPlayback">
+      <intent-filter>
+        <action android:name="androidx.media3.session.MediaSessionService" />
+      </intent-filter>
+    </service>
+
+    <!-- No MediaButtonReceiver: with the process gone it would cold-start the
+         service for a Bluetooth or headset key, but the session only exists
+         once Dart enables it, so the service could never enter the
+         foreground and Android would kill the app. Playback lives in the
+         Dart engine and cannot be resumed from here; while the session is
+         live, Media3 registers its own runtime receiver. -->
+  </application>
+</manifest>
