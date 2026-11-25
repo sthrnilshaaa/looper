@@ -2668,18 +2668,16 @@ class _LyricsArcControlsState extends ConsumerState<LyricsArcControls>
 
         // The player's times sit 56.5 units inside the curve at its ends;
         // mirrored, that is below the arch, tilted the other way.
-        Widget label(String text, double xD, double deg) => Positioned(
+        // Straight, centred on the line of the transport buttons.
+        Widget label(String text, double xD) => Positioned(
           left: xD * s - 30 * s,
-          top: (_apexY + 56.5) * s - 12 * s,
+          top: 62 * s - 12 * s,
           width: 60 * s,
           height: 24 * s,
           child: IgnorePointer(
-            child: Transform.rotate(
-              angle: deg * math.pi / 180,
-              child: OverflowBox(
-                maxWidth: double.infinity,
-                child: Center(child: _timeText(text, s)),
-              ),
+            child: OverflowBox(
+              maxWidth: double.infinity,
+              child: Center(child: _timeText(text, s)),
             ),
           ),
         );
@@ -2731,8 +2729,8 @@ class _LyricsArcControlsState extends ConsumerState<LyricsArcControls>
                   ),
                 ),
               ),
-              label(UiUtils.formatPlaybackDuration(shown), 41.6, -40.05),
-              label(UiUtils.formatPlaybackDuration(duration), 362.9, 40.6),
+              label(UiUtils.formatPlaybackDuration(shown), 41.6),
+              label(UiUtils.formatPlaybackDuration(duration), 362.9),
               button(
                 _cxD - 66,
                 _IconTap(
