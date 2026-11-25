@@ -1,4 +1,6 @@
 {
+  "headerProfilePhoto": "Photo dans les barres du haut",
+  "headerProfilePhotoDesc": "Afficher votre photo de profil sur Accueil, Titres et Bibliothèque au lieu de l'icône de personne",
   "customizeLibraryDesc": "Épinglez des playlists ou les favoris en haut de la bibliothèque et faites-les glisser pour les ordonner.",
   "lyricsMenuSync": "Synchronisation",
   "lyricsMenuSource": "Source",

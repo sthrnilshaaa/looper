@@ -1,4 +1,6 @@
 {
+  "headerProfilePhoto": "Foto in bovenbalken",
+  "headerProfilePhotoDesc": "Toon je profielfoto op Start, Nummers en Bibliotheek in plaats van het persoonspictogram",
   "customizeLibraryDesc": "Zet afspeellijsten of Favorieten bovenaan de bibliotheek vast en sleep ze in volgorde.",
   "lyricsMenuSync": "Synchronisatie",
   "lyricsMenuSource": "Bron",

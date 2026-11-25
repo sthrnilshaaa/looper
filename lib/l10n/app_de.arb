@@ -1,4 +1,6 @@
 {
+  "headerProfilePhoto": "Foto in den oberen Leisten",
+  "headerProfilePhotoDesc": "Dein Profilfoto auf Start, Songs und Bibliothek statt des Personensymbols zeigen",
   "customizeLibraryDesc": "Hefte Playlists oder Favoriten oben in der Bibliothek an und ziehe sie in die gewünschte Reihenfolge.",
   "lyricsMenuSync": "Synchronisierung",
   "lyricsMenuSource": "Quelle",

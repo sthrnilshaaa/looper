@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:looper_player/features/settings/presentation/screens/account_view.dart'
+    show headerProfilePhoto;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/core/providers/navigation_provider.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
@@ -436,6 +438,7 @@ class _CategoryScaffoldState extends ConsumerState<_CategoryScaffold> {
             const SizedBox(width: 6),
             RoundIconButton(
               icon: Icons.person_rounded,
+              child: headerProfilePhoto(ref, 42),
               onTap: () {
                 AppHaptics.light();
                 ref

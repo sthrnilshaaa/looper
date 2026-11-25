@@ -1,4 +1,6 @@
 {
+  "headerProfilePhoto": "상단 바에 사진",
+  "headerProfilePhotoDesc": "홈, 노래, 보관함에서 사람 아이콘 대신 프로필 사진을 표시합니다",
   "customizeLibraryDesc": "재생목록이나 즐겨찾기를 보관함 상단에 고정하고 드래그해 순서를 바꿉니다.",
   "lyricsMenuSync": "동기화",
   "lyricsMenuSource": "출처",

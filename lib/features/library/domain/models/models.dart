@@ -363,6 +363,9 @@ class AppSettings {
   String userName = '';
   // Profile photo the user picked, copied into app support storage.
   String userPhotoPath = '';
+  // Profile photo in place of the person icon in the Home / Songs /
+  // Library top bars. Off by default.
+  bool showHeaderProfilePhoto = false;
   // Only the default avatar (looper_main.svg) contains the swappable
   // "#C0E200" accent color - see SelectedAvatar's doc comment.
   bool avatarDynamicColor = AppDefaults.avatarDynamicColor;

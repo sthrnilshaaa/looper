@@ -1,4 +1,6 @@
 {
+  "headerProfilePhoto": "الصورة في الأشرطة العلوية",
+  "headerProfilePhotoDesc": "اعرض صورة ملفك الشخصي في الرئيسية والأغاني والمكتبة بدلًا من أيقونة الشخص",
   "customizeLibraryDesc": "ثبّت قوائم التشغيل أو المفضلة أعلى المكتبة واسحبها لترتيبها.",
   "lyricsMenuSync": "المزامنة",
   "lyricsMenuSource": "المصدر",

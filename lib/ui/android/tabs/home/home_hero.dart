@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:looper_player/features/settings/presentation/screens/account_view.dart'
+    show headerProfilePhoto;
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -821,7 +823,7 @@ class _HeaderRow extends ConsumerWidget {
           color: _fill,
           semanticLabel: l10n.account,
           onTap: onProfile,
-          child: HomeIcons.profile(),
+          child: headerProfilePhoto(ref, 42) ?? HomeIcons.profile(),
         ),
       ],
     );

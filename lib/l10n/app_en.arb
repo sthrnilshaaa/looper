@@ -1880,6 +1880,8 @@
   "accountSettingsDesc": "Name, avatar and linked accounts",
   "accountProfile": "Profile",
   "accountPhoto": "Profile photo",
+  "headerProfilePhoto": "Photo in Top Bars",
+  "headerProfilePhotoDesc": "Show your profile photo on Home, Songs and Library instead of the person icon",
   "accountPhotoDesc": "Pick any image from your device",
   "accountPhotoRemove": "Remove photo",
   "accountEditName": "Your name",

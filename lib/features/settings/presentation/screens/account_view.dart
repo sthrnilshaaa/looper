@@ -166,6 +166,41 @@ Future<void> showEditNameDialog(BuildContext context, WidgetRef ref) async {
 }
 
 /// Settings > Account > "Your name" row.
+/// Settings > Account: the profile photo in place of the person icon in
+/// the Home, Songs and Library top bars.
+class HeaderProfilePhotoTile extends ConsumerWidget {
+  const HeaderProfilePhotoTile({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final show = ref.watch(
+      settingsProvider.select((s) => s.showHeaderProfilePhoto),
+    );
+    return SwitchListTile(
+      secondary: const Icon(LucideIcons.circleUser),
+      title: Text(l10n.headerProfilePhoto),
+      subtitle: Text(l10n.headerProfilePhotoDesc),
+      value: show,
+      onChanged: (value) {
+        AppHaptics.light();
+        ref.read(settingsProvider.notifier).updateHeaderProfilePhoto(value);
+      },
+    );
+  }
+}
+
+/// The round profile photo for a [size] top-bar button, or null when there
+/// is none or the user turned it off (the button keeps its person icon).
+Widget? headerProfilePhoto(WidgetRef ref, double size) {
+  final show = ref.watch(
+    settingsProvider.select(
+      (s) => s.showHeaderProfilePhoto && s.userPhotoPath.isNotEmpty,
+    ),
+  );
+  return show ? ProfilePhoto(size: size, radius: size / 2) : null;
+}
+
 class AccountNameTile extends ConsumerWidget {
   const AccountNameTile({super.key});
 

@@ -484,6 +484,7 @@ class Settings extends _$Settings {
       ..selectedAvatarAsset = s.selectedAvatarAsset
       ..userName = s.userName
       ..userPhotoPath = s.userPhotoPath
+      ..showHeaderProfilePhoto = s.showHeaderProfilePhoto
       ..avatarDynamicColor = s.avatarDynamicColor
       ..showPerformanceOptimizer = s.showPerformanceOptimizer
       ..useNewFont = s.useNewFont
@@ -954,6 +955,9 @@ class Settings extends _$Settings {
 
   Future<void> updateUserPhotoPath(String value) =>
       _update((s) => s..userPhotoPath = value);
+
+  Future<void> updateHeaderProfilePhoto(bool show) =>
+      _update((s) => s..showHeaderProfilePhoto = show);
 
   Future<void> updateAvatarDynamicColor(bool value) =>
       _update((s) => s..avatarDynamicColor = value);
