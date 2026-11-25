@@ -1,7 +1,7 @@
 part of 'android_lyrics_menu_sheet.dart';
 
-/// Rounded card grouping related menu rows, with hairline dividers between
-/// them.
+/// Rounded card grouping related menu rows, with inset hairlines between
+/// them (the redesign's card).
 class _MenuSection extends StatelessWidget {
   final List<Widget> children;
 
@@ -11,10 +11,10 @@ class _MenuSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       clipBehavior: Clip.antiAlias,
+      padding: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        color: const Color(0xFF181818),
+        borderRadius: BorderRadius.circular(22),
       ),
       child: Material(
         type: MaterialType.transparency,
@@ -23,7 +23,11 @@ class _MenuSection extends StatelessWidget {
           children: [
             for (var i = 0; i < children.length; i++) ...[
               if (i > 0)
-                Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
+                Container(
+                  height: 1,
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  color: Colors.white.withValues(alpha: 0.06),
+                ),
               children[i],
             ],
           ],
@@ -33,6 +37,7 @@ class _MenuSection extends StatelessWidget {
   }
 }
 
+/// A title inside a card, above its control.
 class _SectionLabel extends StatelessWidget {
   final String text;
 
@@ -43,32 +48,23 @@ class _SectionLabel extends StatelessWidget {
     return Text(
       text,
       style: AppFonts.jostStyle(
-        color: Colors.white70,
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
+        color: Colors.white,
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
       ),
     );
   }
 }
 
-/// Leading icon badge shared by the menu's switch and action rows.
+/// Leading icon of an action row.
 class _MenuIcon extends StatelessWidget {
   final IconData icon;
   final Color color;
 
-  const _MenuIcon(this.icon, {this.color = Colors.white70});
+  const _MenuIcon(this.icon, {this.color = Colors.white});
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Icon(icon, color: color, size: 18),
-    );
-  }
+  Widget build(BuildContext context) => Icon(icon, color: color, size: 20);
 }
 
 class _MenuActionTile extends StatelessWidget {
@@ -83,36 +79,52 @@ class _MenuActionTile extends StatelessWidget {
     required this.title,
     required this.onTap,
     this.subtitle,
-    this.iconColor = Colors.white70,
+    this.iconColor = Colors.white,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-      dense: true,
-      visualDensity: VisualDensity.compact,
-      leading: _MenuIcon(icon, color: iconColor),
-      title: Text(
-        title,
-        style: AppFonts.jostStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w500,
-          fontSize: 15,
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            _MenuIcon(icon, color: iconColor),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppFonts.jostStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 16,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle!,
+                      style: AppFonts.jostStyle(
+                        color: Colors.white.withValues(alpha: 0.56),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Icon(
+              LucideIcons.chevronRight,
+              color: Colors.white.withValues(alpha: 0.5),
+              size: 18,
+            ),
+          ],
         ),
       ),
-      subtitle: subtitle == null
-          ? null
-          : Text(
-              subtitle!,
-              style: AppFonts.jostStyle(color: Colors.white54, fontSize: 12),
-            ),
-      trailing: const Icon(
-        LucideIcons.chevronRight,
-        color: Colors.white38,
-        size: 18,
-      ),
-      onTap: onTap,
     );
   }
 }
@@ -136,34 +148,50 @@ class _MenuSwitchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SwitchListTile(
-      contentPadding: const EdgeInsets.only(left: 16, right: 10),
-      dense: true,
-      visualDensity: VisualDensity.compact,
-      activeColor: accent,
-      secondary: _MenuIcon(icon),
-      title: Text(
-        title,
-        style: AppFonts.jostStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w500,
-          fontSize: 15,
+    void toggle(bool val) {
+      AppHaptics.light();
+      onChanged(val);
+    }
+
+    return InkWell(
+      onTap: () => toggle(!value),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppFonts.jostStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: AppFonts.jostStyle(
+                      color: Colors.white.withValues(alpha: 0.56),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Switch(value: value, onChanged: toggle),
+          ],
         ),
       ),
-      subtitle: Text(
-        subtitle,
-        style: AppFonts.jostStyle(color: Colors.white54, fontSize: 12),
-      ),
-      value: value,
-      onChanged: (val) {
-        AppHaptics.light();
-        onChanged(val);
-      },
     );
   }
 }
 
-/// "Word-synced" / "Line-synced" / "Not synced" pill next to the lyrics
+/// "Word synced" / "Line synced" / "Not synced" pill next to the lyrics
 /// source.
 class _SyncBadge extends StatelessWidget {
   final bool wordSynced;
@@ -179,37 +207,48 @@ class _SyncBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final color = wordSynced ? accent : Colors.white54;
+    return _MenuPill(
+      icon: wordSynced
+          ? LucideIcons.sparkles
+          : synced
+          ? LucideIcons.alignLeft
+          : LucideIcons.timerOff,
+      label: wordSynced
+          ? l10n.lyricsWordSynced
+          : synced
+          ? l10n.lyricsLineSynced
+          : l10n.lyricsNotSynced,
+    );
+  }
+}
+
+/// A neutral info pill in the menu's header.
+class _MenuPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _MenuPill({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      height: 30,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(15),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            wordSynced
-                ? LucideIcons.sparkles
-                : synced
-                ? LucideIcons.alignLeft
-                : LucideIcons.timerOff,
-            size: 13,
-            color: color,
-          ),
+          Icon(icon, size: 13, color: Colors.white),
           const SizedBox(width: 6),
           Text(
-            wordSynced
-                ? l10n.lyricsWordSynced
-                : synced
-                ? l10n.lyricsLineSynced
-                : l10n.lyricsNotSynced,
+            label,
             style: AppFonts.jostStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -218,7 +257,8 @@ class _SyncBadge extends StatelessWidget {
   }
 }
 
-/// Choice chip used by both the highlight-style and provider pickers.
+/// Choice chip used by both the highlight-style and provider pickers:
+/// white with black text when picked.
 class _MenuChip extends StatelessWidget {
   final String label;
   final bool selected;
@@ -234,28 +274,30 @@ class _MenuChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChoiceChip(
-      label: Text(
-        label,
-        style: AppFonts.jostStyle(
-          color: selected ? Colors.white : Colors.white70,
-          fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-          fontSize: 13,
-        ),
-      ),
+    return Semantics(
+      button: true,
       selected: selected,
-      showCheckmark: false,
-      visualDensity: VisualDensity.compact,
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      selectedColor: accent,
-      backgroundColor: Colors.white.withValues(alpha: 0.06),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: selected ? accent : Colors.white.withValues(alpha: 0.1),
+      child: Material(
+        color: selected ? Colors.white : Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(18),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onSelected,
+          child: Container(
+            height: 36,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            alignment: Alignment.center,
+            child: Text(
+              label,
+              style: AppFonts.jostStyle(
+                color: selected ? Colors.black : Colors.white,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                fontSize: 14,
+              ),
+            ),
+          ),
         ),
       ),
-      onSelected: (_) => onSelected(),
     );
   }
 }
@@ -285,68 +327,98 @@ class _LyricsOffsetControl extends StatelessWidget {
     final seconds = (offsetMs / 1000).toStringAsFixed(1);
     final label = offsetMs > 0 ? '+$seconds s' : '$seconds s';
 
-    Widget stepButton(IconData icon, String tooltip, int delta) => IconButton(
-      tooltip: tooltip,
-      visualDensity: VisualDensity.compact,
-      icon: Icon(icon, size: 18, color: Colors.white70),
-      onPressed: () {
-        AppHaptics.selection();
-        onChanged(offsetMs + delta);
-      },
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l10n.lyricsTiming,
-          style: AppFonts.jostStyle(
-            color: Colors.white70,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
+    Widget stepButton(IconData icon, String tooltip, int delta) => Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () {
+            AppHaptics.selection();
+            onChanged(offsetMs + delta);
+          },
+          child: SizedBox(
+            width: 36,
+            height: 36,
+            child: Icon(icon, size: 18, color: Colors.white),
           ),
         ),
-        const SizedBox(height: 2),
-        Text(
-          l10n.lyricsTimingDesc,
-          style: AppFonts.jostStyle(color: Colors.white38, fontSize: 12),
-        ),
-        Row(
-          children: [
-            stepButton(LucideIcons.minus, l10n.lyricsTimingLater, -_step),
-            Container(
-              constraints: const BoxConstraints(minWidth: 72),
-              alignment: Alignment.center,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: (isDefault ? Colors.white : accent).withValues(
-                  alpha: 0.1,
-                ),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Text(
-                label,
+      ),
+    );
+
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.lyricsTiming,
                 style: AppFonts.jostStyle(
-                  color: isDefault ? Colors.white70 : accent,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-            ),
-            stepButton(LucideIcons.plus, l10n.lyricsTimingEarlier, _step),
-            const Spacer(),
-            if (!isDefault)
-              TextButton(
-                onPressed: () {
-                  AppHaptics.selection();
-                  onChanged(defaultMs);
-                },
+              const SizedBox(height: 2),
+              Text(
+                l10n.lyricsTimingDesc,
+                style: AppFonts.jostStyle(
+                  color: Colors.white.withValues(alpha: 0.56),
+                  fontSize: 13,
+                ),
+              ),
+              if (!isDefault)
+                GestureDetector(
+                  onTap: () {
+                    AppHaptics.selection();
+                    onChanged(defaultMs);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      l10n.lyricsTimingReset,
+                      style: AppFonts.jostStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.underline,
+                        decorationColor: Colors.white54,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Container(
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              stepButton(LucideIcons.minus, l10n.lyricsTimingLater, -_step),
+              SizedBox(
+                width: 62,
                 child: Text(
-                  l10n.lyricsTimingReset,
-                  style: AppFonts.jostStyle(color: accent, fontSize: 13),
+                  label,
+                  textAlign: TextAlign.center,
+                  style: AppFonts.jostStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
               ),
-          ],
+              stepButton(LucideIcons.plus, l10n.lyricsTimingEarlier, _step),
+            ],
+          ),
         ),
       ],
     );

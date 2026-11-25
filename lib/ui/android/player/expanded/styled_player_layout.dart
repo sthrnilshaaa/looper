@@ -290,7 +290,7 @@ class _StyledPlayerLayoutState extends ConsumerState<StyledPlayerLayout>
                 bottom: fromBottom(142) - 20 * s,
                 height: 40 * s,
                 child: fade(
-                  _LinearSeekRow(scale: s),
+                  _seekHero(_LinearSeekRow(scale: s)),
                   FluidSectionMotion.seekBar,
                 ),
               ),
@@ -302,7 +302,7 @@ class _StyledPlayerLayoutState extends ConsumerState<StyledPlayerLayout>
                 top: 457 * s,
                 height: 40 * s,
                 child: fade(
-                  _LinearSeekRow(scale: s),
+                  _seekHero(_LinearSeekRow(scale: s)),
                   FluidSectionMotion.seekBar,
                 ),
               ),
@@ -494,7 +494,7 @@ class _StyledPlayerLayoutState extends ConsumerState<StyledPlayerLayout>
         top: 340 * s,
         height: 130 * s,
         child: widget.fadeWithSlide(
-          _ArcSeekBar(sx: sx, s: s, top: 340 * s),
+          _seekHero(_ArcSeekBar(sx: sx, s: s, top: 340 * s)),
           FluidSectionMotion.seekBar,
         ),
       ),
@@ -656,21 +656,65 @@ mixin _StyledArt<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     ),
   );
 
-  Widget _hero(Widget child) => _enableSlide
-      ? child
-      : Hero(
-          tag: 'album_art',
-          flightShuttleBuilder: artworkFlightShuttle,
-          child: child,
-        );
+  // Flies in the Fluid Player too, as the classic player's art does: its
+  // layer turns HeroMode off while collapsed.
+  Widget _hero(Widget child) => Hero(
+    tag: 'album_art',
+    flightShuttleBuilder: artworkFlightShuttle,
+    child: child,
+  );
 
   Widget _artImage() => _StyledArtwork(song: _song, style: _style);
 }
 
-class _StyledArtwork extends ConsumerWidget {
+class _StyledArtwork extends StatelessWidget {
   final Song song;
   final PlayerLayoutStyle style;
   const _StyledArtwork({required this.song, required this.style});
+
+  // A swipe changes the song at once; the cover cross-fades through a soft
+  // blur (as the Home header blurs what passes under it) instead of
+  // cutting, which read as a flash.
+  @override
+  Widget build(BuildContext context) => AnimatedSwitcher(
+    duration: const Duration(milliseconds: 380),
+    switchInCurve: Curves.easeOutCubic,
+    switchOutCurve: Curves.easeInCubic,
+    layoutBuilder: (current, previous) =>
+        Stack(fit: StackFit.expand, children: [...previous, ?current]),
+    transitionBuilder: (child, animation) => AnimatedBuilder(
+      animation: animation,
+      child: child,
+      builder: (context, child) {
+        final double t = animation.value;
+        final double sigma = (1 - t) * 14;
+        return Opacity(
+          opacity: t,
+          child: sigma < 0.3
+              ? child
+              : ImageFiltered(
+                  imageFilter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+                  child: child,
+                ),
+        );
+      },
+    ),
+    child: _StyledArtworkImage(
+      key: ValueKey(song.id),
+      song: song,
+      style: style,
+    ),
+  );
+}
+
+class _StyledArtworkImage extends ConsumerWidget {
+  final Song song;
+  final PlayerLayoutStyle style;
+  const _StyledArtworkImage({
+    super.key,
+    required this.song,
+    required this.style,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1702,6 +1746,13 @@ mixin _Scrubbing<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   }
 }
 
+/// The seek bar flies to and from the lyrics screen's, as on the classic
+/// player.
+Widget _seekHero(Widget child) => Hero(
+  tag: 'player_seek_bar',
+  child: Material(type: MaterialType.transparency, child: child),
+);
+
 TextStyle _timeStyle(double s) => TextStyle(
   fontFamily: 'DM Sans',
   fontSize: 15 * s,
@@ -2180,7 +2231,7 @@ class _StyledLandscapeLayoutState extends ConsumerState<StyledLandscapeLayout>
                 top: f.y(344) - 20 * s,
                 height: 40 * s,
                 child: fade(
-                  _LinearSeekRow(scale: s),
+                  _seekHero(_LinearSeekRow(scale: s)),
                   FluidSectionMotion.seekBar,
                 ),
               ),
@@ -2549,6 +2600,218 @@ class _LandscapeArcSeekBarState extends ConsumerState<_LandscapeArcSeekBar>
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The Linear and Card players' seek row, for the lyrics screen.
+class LyricsLinearSeekRow extends StatelessWidget {
+  final double scale;
+  const LyricsLinearSeekRow({super.key, this.scale = 1.0});
+
+  @override
+  Widget build(BuildContext context) => _seekHero(
+    SizedBox(
+      height: 40 * scale,
+      child: _LinearSeekRow(scale: scale),
+    ),
+  );
+}
+
+/// The lyrics screen's seek bar and transport for the Arc player: the
+/// player's seek ellipse (same radii, span, stroke and colours) flipped
+/// into an arch, with the Arc player's previous / play / next inside it.
+class LyricsArcControls extends ConsumerStatefulWidget {
+  /// Called on every touch, so the screen can keep its controls showing.
+  final VoidCallback? onInteract;
+  const LyricsArcControls({super.key, this.onInteract});
+
+  @override
+  ConsumerState<LyricsArcControls> createState() => _LyricsArcControlsState();
+}
+
+class _LyricsArcControlsState extends ConsumerState<LyricsArcControls>
+    with _Scrubbing<LyricsArcControls> {
+  // The Arc player's ellipse (design units), flipped top to bottom.
+  static const double _rx = 204.25, _ry = 150.25, _cxD = 198.5;
+  static const double _startDeg = -130.7, _endDeg = -45.4;
+  // Apex of the arch in the box, and the box height (design units).
+  static const double _apexY = 8, _boxH = 104;
+
+  /// The elapsed time, riding just outside the arch at the progress head
+  /// and tilted along the curve.
+  Widget _ridingTime(String text, Offset center, double s, double deg) {
+    final double r = deg * math.pi / 180;
+    final double rx = _rx * s, ry = _ry * s;
+    final Offset head = center + Offset(rx * math.cos(r), ry * math.sin(r));
+    // Outward normal of the ellipse at the head.
+    final Offset n = Offset(math.cos(r) / rx, math.sin(r) / ry);
+    final Offset normal = n / n.distance;
+    final Offset at = head + normal * (18 * s);
+    final double tilt = math.atan2(ry * math.cos(r), -rx * math.sin(r));
+    return Positioned(
+      left: at.dx - 30 * s,
+      top: at.dy - 12 * s,
+      width: 60 * s,
+      height: 24 * s,
+      child: IgnorePointer(
+        child: Transform.rotate(
+          angle: tilt,
+          child: OverflowBox(
+            maxWidth: double.infinity,
+            child: Center(child: _timeText(text, s)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, box) {
+        final double s = box.maxWidth / _designW;
+        final Offset center = Offset(_cxD * s, (_apexY + _ry) * s);
+
+        double fractionAt(Offset p) {
+          final a =
+              math.atan2(
+                (p.dy - center.dy) / (_ry * s),
+                (p.dx - center.dx) / (_rx * s),
+              ) *
+              180 /
+              math.pi;
+          return ((a - _startDeg) / (_endDeg - _startDeg)).clamp(0.0, 1.0);
+        }
+
+        final position = ref.watch(playbackProvider.select((p) => p.position));
+        final duration = ref.watch(playbackProvider.select((p) => p.duration));
+        final ms = duration.inMilliseconds;
+        final f =
+            dragFraction ??
+            (ms <= 0 ? 0.0 : (position.inMilliseconds / ms).clamp(0.0, 1.0));
+        final shown = dragFraction != null
+            ? duration * dragFraction!
+            : position;
+
+        // The player's times sit 56.5 units inside the curve at its ends;
+        // mirrored, that is below the arch, tilted the other way.
+        Widget label(String text, double xD, double deg) => Positioned(
+          left: xD * s - 30 * s,
+          top: (_apexY + 56.5) * s - 12 * s,
+          width: 60 * s,
+          height: 24 * s,
+          child: IgnorePointer(
+            child: Transform.rotate(
+              angle: deg * math.pi / 180,
+              child: OverflowBox(
+                maxWidth: double.infinity,
+                child: Center(child: _timeText(text, s)),
+              ),
+            ),
+          ),
+        );
+
+        Widget button(double xD, Widget child) => Positioned(
+          left: xD * s - 24,
+          top: 62 * s - 24,
+          width: 48,
+          height: 48,
+          child: child,
+        );
+
+        final playback = ref.read(playbackProvider.notifier);
+        return SizedBox(
+          height: _boxH * s,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned.fill(
+                child: _seekHero(
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTapUp: (d) {
+                      widget.onInteract?.call();
+                      tapSeek(fractionAt(d.localPosition));
+                    },
+                    onHorizontalDragStart: (d) {
+                      widget.onInteract?.call();
+                      scrubStart(fractionAt(d.localPosition));
+                    },
+                    onHorizontalDragUpdate: (d) =>
+                        scrubUpdate(fractionAt(d.localPosition)),
+                    onHorizontalDragEnd: (_) => scrubEnd(),
+                    onHorizontalDragCancel: scrubEnd,
+                    child: RepaintBoundary(
+                      child: CustomPaint(
+                        painter: _ArcPainter(
+                          color: ref.watch(_activeColorProvider),
+                          center: center,
+                          rx: _rx * s,
+                          ry: _ry * s,
+                          stroke: 6.5 * s,
+                          fraction: f,
+                          startDeg: _startDeg,
+                          endDeg: _endDeg,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              _ridingTime(
+                UiUtils.formatPlaybackDuration(shown),
+                center,
+                s,
+                _startDeg + (_endDeg - _startDeg) * f,
+              ),
+              label(UiUtils.formatPlaybackDuration(duration), 362.9, 40.6),
+              button(
+                _cxD - 66,
+                _IconTap(
+                  semanticLabel: AppLocalizations.of(context)!.previousLabel,
+                  onTap: () {
+                    widget.onInteract?.call();
+                    AppHaptics.light();
+                    playback.skipPrevious();
+                  },
+                  child: Transform.flip(
+                    flipX: true,
+                    child: SvgPicture.asset(
+                      '$_icons/next.svg',
+                      width: 22 * s,
+                      height: 19 * s,
+                    ),
+                  ),
+                ),
+              ),
+              button(
+                _cxD,
+                Listener(
+                  onPointerDown: (_) => widget.onInteract?.call(),
+                  child: _PlayPauseButton(scale: s),
+                ),
+              ),
+              button(
+                _cxD + 66,
+                _IconTap(
+                  semanticLabel: AppLocalizations.of(context)!.nextLabel,
+                  onTap: () {
+                    widget.onInteract?.call();
+                    AppHaptics.light();
+                    playback.skipNext();
+                  },
+                  child: SvgPicture.asset(
+                    '$_icons/next.svg',
+                    width: 22 * s,
+                    height: 19 * s,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

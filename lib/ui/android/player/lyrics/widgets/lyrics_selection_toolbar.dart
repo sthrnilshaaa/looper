@@ -35,32 +35,51 @@ class LyricsSelectionToolbar extends ConsumerWidget {
           duration: const Duration(milliseconds: 200),
           child: Container(
             margin: EdgeInsets.symmetric(horizontal: 16.s),
-            padding: const EdgeInsets.all(6),
+            height: 56,
+            padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.04),
-              borderRadius: BorderRadius.circular(40),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
             child: Row(
               children: [
-                IconButton(
-                  onPressed: () {
-                    AppHaptics.light();
-                    ref.read(lyricsSelectionProvider.notifier).clear();
-                  },
-                  icon: const Icon(
-                    LucideIcons.x,
-                    color: Colors.white,
-                    size: 18,
+                Material(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  shape: const CircleBorder(),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () {
+                      AppHaptics.light();
+                      ref.read(lyricsSelectionProvider.notifier).clear();
+                    },
+                    child: SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: Icon(
+                        LucideIcons.x,
+                        color: Colors.black,
+                        size: 18,
+                        semanticLabel: MaterialLocalizations.of(
+                          context,
+                        ).cancelButtonLabel,
+                      ),
+                    ),
                   ),
                 ),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     context.l10n.linesSelected(selection.count),
-                    textAlign: TextAlign.center,
                     style: AppFonts.jostStyle(
-                      color: Colors.white,
-                      fontSize: 12.5,
+                      color: Colors.black,
+                      fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -82,13 +101,11 @@ class LyricsSelectionToolbar extends ConsumerWidget {
                     );
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
+                    height: 44,
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.onSecondary,
-                      borderRadius: BorderRadius.circular(32),
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(22),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -103,8 +120,8 @@ class LyricsSelectionToolbar extends ConsumerWidget {
                           context.l10n.share,
                           style: AppFonts.jostStyle(
                             color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],

@@ -8,7 +8,7 @@ void _showAudioCapabilitiesSheet(BuildContext context, WidgetRef ref) {
     barrierColor: Colors.black54,
     builder: (context) {
       final settings = ref.read(settingsProvider);
-      final accentColor = settings.accent;
+      const accentColor = Colors.white;
 
       return FutureBuilder<Map<String, String>>(
         future: ref.read(audioServiceProvider).getAudioOutputCapabilities(),

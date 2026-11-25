@@ -17,7 +17,6 @@ class EqualizerSliderTrack extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final percent = ((gain + 20) / 40).clamp(0.0, 1.0);
-    final accentColor = Theme.of(context).colorScheme.primary;
 
     return Opacity(
       opacity: enabled ? 1.0 : 0.35,
@@ -69,9 +68,9 @@ class EqualizerSliderTrack extends StatelessWidget {
                 children: [
                   // Full background pill
                   Container(
-                    width: 6,
+                    width: 4,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: Colors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(3),
                     ),
                   ),
@@ -93,14 +92,7 @@ class EqualizerSliderTrack extends StatelessWidget {
                     child: Container(
                       width: 6,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            accentColor,
-                            accentColor.withValues(alpha: 0.6),
-                          ],
-                        ),
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(3),
                       ),
                     ),
@@ -109,20 +101,19 @@ class EqualizerSliderTrack extends StatelessWidget {
                   Positioned(
                     top: thumbY,
                     child: Container(
-                      width: 16,
-                      height: 16,
+                      width: 18,
+                      height: 18,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
                         boxShadow: [
                           if (enabled)
                             BoxShadow(
-                              color: accentColor.withValues(alpha: 0.4),
-                              blurRadius: 6,
-                              spreadRadius: 1,
+                              color: Colors.black.withValues(alpha: 0.5),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
                             ),
                         ],
-                        border: Border.all(color: accentColor, width: 3),
                       ),
                     ),
                   ),

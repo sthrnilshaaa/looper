@@ -64,12 +64,11 @@ class _HeadphoneCorrectionCardState
     final activeTilt = _isDraggingTilt ? _dragTilt : widget.eqState.autoEqTilt;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
+      margin: const EdgeInsets.only(bottom: 22),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+        color: _kEqCard,
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -78,10 +77,10 @@ class _HeadphoneCorrectionCardState
           Row(
             children: [
               Container(
-                width: 38,
-                height: 38,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: widget.accentColor.withValues(alpha: 0.12),
+                  color: Colors.white.withValues(alpha: 0.08),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -98,8 +97,8 @@ class _HeadphoneCorrectionCardState
                     Text(
                       _deviceDisplayLabel(device, l10n),
                       style: AppFonts.jostStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
                         color: Colors.white,
                       ),
                       maxLines: 1,
@@ -110,10 +109,8 @@ class _HeadphoneCorrectionCardState
                       widget.eqState.autoEqSelectedProfile ??
                           l10n.autoEqNoProfile,
                       style: AppFonts.jostStyle(
-                        fontSize: 11,
-                        color: widget.eqState.autoEqSelectedProfile != null
-                            ? widget.accentColor
-                            : Colors.white38,
+                        fontSize: 13,
+                        color: Colors.white.withValues(alpha: 0.56),
                         fontWeight: FontWeight.w500,
                       ),
                       maxLines: 1,
@@ -125,10 +122,8 @@ class _HeadphoneCorrectionCardState
               Semantics(
                 label:
                     '${l10n.headphoneCorrection}, ${widget.eqState.autoEqEnabled ? "on" : "off"}',
-                child: Switch.adaptive(
+                child: Switch(
                   value: widget.eqState.autoEqEnabled && !isSpeaker,
-                  activeThumbColor: widget.accentColor,
-                  activeTrackColor: widget.accentColor.withValues(alpha: 0.35),
                   onChanged: isSpeaker
                       ? null
                       : (val) {

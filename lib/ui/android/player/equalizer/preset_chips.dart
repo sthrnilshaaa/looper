@@ -20,44 +20,33 @@ extension _EqualizerPresetChips on AndroidEqualizerScreen {
     VoidCallback? onLongPress,
     IconData? icon,
   }) {
+    final fg = isCurrent ? Colors.black : Colors.white;
     return Padding(
       padding: const EdgeInsets.only(right: 8.0),
-      child: InkWell(
-        onTap: onTap,
-        onLongPress: onLongPress,
+      child: Material(
+        color: isCurrent ? Colors.white : Colors.white.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: isCurrent
-                ? accentColor.withValues(alpha: 0.15)
-                : Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isCurrent
-                  ? accentColor
-                  : Colors.white.withValues(alpha: 0.08),
-              width: 1,
-            ),
-          ),
-          child: Center(
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          onLongPress: onLongPress,
+          child: Container(
+            height: 40,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            alignment: Alignment.center,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (icon != null) ...[
-                  Icon(
-                    icon,
-                    size: 14,
-                    color: isCurrent ? accentColor : Colors.white70,
-                  ),
+                  Icon(icon, size: 14, color: fg),
                   const SizedBox(width: 6),
                 ],
                 Text(
                   label,
                   style: AppFonts.jostStyle(
-                    fontSize: 13,
-                    fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                    color: isCurrent ? accentColor : Colors.white70,
+                    fontSize: 14,
+                    fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w400,
+                    color: fg,
                   ),
                 ),
               ],

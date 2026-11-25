@@ -18,10 +18,8 @@ extension _EqualizerSettingRows on AndroidEqualizerScreen {
           ),
         ),
         const Spacer(),
-        Switch.adaptive(
+        Switch(
           value: value,
-          activeThumbColor: accentColor,
-          activeTrackColor: accentColor.withValues(alpha: 0.35),
           onChanged: (val) {
             AppHaptics.medium();
             onChanged(val);

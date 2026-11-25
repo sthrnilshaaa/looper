@@ -1,3 +1,4 @@
+import 'dart:ui' show ImageFilter;
 import 'package:looper_player/ui/android/shell/music_bar/fluid_player_motion.dart'
     show kFluidHandoff;
 import 'package:looper_player/ui/android/player/lyrics/lyrics_route.dart';
@@ -488,7 +489,11 @@ class _GestureArtworkWithFeedbackState
                           ),
                           child: Transform.scale(
                             scale: 0.95 + 0.05 * _swipeProgress(slideExtent),
-                            child: card,
+                            // Sharpens as it lands (see the active cover).
+                            child: _swipeBlur(
+                              1 - _swipeProgress(slideExtent),
+                              card,
+                            ),
                           ),
                         );
                       },
@@ -504,7 +509,12 @@ class _GestureArtworkWithFeedbackState
                         offset: Offset(offset, 0),
                         child: Transform.scale(
                           scale: 1.0 - 0.05 * _swipeProgress(slideExtent),
-                          child: child,
+                          // Blurs as it leaves, so a swipe reads as motion
+                          // rather than a flash of two sharp covers.
+                          child: _swipeBlur(
+                            _swipeProgress(slideExtent),
+                            child!,
+                          ),
                         ),
                       ),
                       child: artworkSwitcher,
@@ -677,4 +687,14 @@ class _ArtCarouselFrame extends StatelessWidget {
       child: ClipRRect(borderRadius: BorderRadius.circular(12), child: child),
     );
   }
+}
+
+/// The Home header's soft gaussian blur, scaled by [amount] (0 to 1).
+Widget _swipeBlur(double amount, Widget child) {
+  final double sigma = amount.clamp(0.0, 1.0) * 10;
+  if (sigma < 0.3) return child;
+  return ImageFiltered(
+    imageFilter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+    child: child,
+  );
 }

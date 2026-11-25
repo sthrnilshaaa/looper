@@ -9,7 +9,7 @@ void _showEqualizerModeDialog(BuildContext context, WidgetRef ref) {
     builder: (context) {
       final l10n = AppLocalizations.of(context)!;
       final settings = ref.watch(settingsProvider);
-      final accentColor = settings.accent;
+      const accentColor = Colors.white;
       final isGlobal = settings.equalizerGlobalMode;
 
       return AppBottomSheetContainer(

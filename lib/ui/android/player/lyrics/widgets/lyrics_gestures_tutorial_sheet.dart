@@ -109,173 +109,281 @@ Future<void> showLyricsGesturesTutorial(BuildContext context, WidgetRef ref) {
   );
 }
 
-class _LyricsGesturesTutorialSheet extends StatelessWidget {
+class _LyricsGesturesTutorialSheet extends StatefulWidget {
   const _LyricsGesturesTutorialSheet();
 
   @override
+  State<_LyricsGesturesTutorialSheet> createState() =>
+      _LyricsGesturesTutorialSheetState();
+}
+
+class _LyricsGesturesTutorialSheetState
+    extends State<_LyricsGesturesTutorialSheet> {
+  bool _menuTab = false;
+
+  @override
   Widget build(BuildContext context) {
-    final accentColor = Theme.of(context).colorScheme.primary;
+    final l10n = context.l10n;
+    final gestures = _lyricsGestureTips(context);
+    // Scroll freely gets the full-width card under the four quick gestures.
+    final scroll = gestures[3];
+    final quick = [gestures[0], gestures[1], gestures[2], gestures[4]];
+
+    Widget tab(String label, bool menu) {
+      final selected = _menuTab == menu;
+      return Expanded(
+        child: Semantics(
+          button: true,
+          selected: selected,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => setState(() => _menuTab = menu),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: selected ? Colors.white : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                label,
+                style: AppFonts.jostStyle(
+                  fontSize: 14,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  color: selected
+                      ? Colors.black
+                      : Colors.white.withValues(alpha: 0.7),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return AppBottomSheetContainer(
-      // AppBottomSheetContainer lays its child out with unbounded height, so
-      // the scroll view needs an explicit cap to scroll on short screens.
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * 0.75,
+          maxHeight: MediaQuery.sizeOf(context).height * 0.8,
         ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                l10n.lyricsGestures,
+                style: AppFonts.jostStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
                 children: [
-                  Icon(LucideIcons.lightbulb, color: accentColor, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    context.l10n.lyricsGestures,
-                    style: AppFonts.jostStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                  tab(l10n.lyricsTipsGestures, false),
+                  const SizedBox(width: 4),
+                  tab(l10n.lyricsTipsMenu, true),
                 ],
               ),
-              const SizedBox(height: 10),
-              _TipSection(
-                label: context.l10n.lyricsTipsGestures,
-                tips: _lyricsGestureTips(context),
-                accentColor: accentColor,
+            ),
+            const SizedBox(height: 14),
+            Flexible(
+              child: SingleChildScrollView(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: _menuTab
+                      ? _TipList(
+                          key: const ValueKey('menu'),
+                          tips: _lyricsMenuTips(context),
+                        )
+                      : Column(
+                          key: const ValueKey('gestures'),
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (var row = 0; row < 2; row++) ...[
+                              if (row > 0) const SizedBox(height: 10),
+                              IntrinsicHeight(
+                                child: Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Expanded(
+                                      child: _TipCard(tip: quick[row * 2]),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: _TipCard(tip: quick[row * 2 + 1]),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 10),
+                            _TipCard(tip: scroll, wide: true),
+                          ],
+                        ),
+                ),
               ),
-              const SizedBox(height: 10),
-              _TipSection(
-                label: context.l10n.lyricsTipsMenu,
-                tips: _lyricsMenuTips(context),
-                accentColor: accentColor,
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                height: 42,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: accentColor,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: Text(
-                    context.l10n.gotIt,
-                    style: AppFonts.jostStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 54,
+              child: FilledButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  shape: const StadiumBorder(),
+                ),
+                child: Text(
+                  l10n.gotIt,
+                  style: AppFonts.jostStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-/// A small caps label followed by a rounded card of compact tip rows.
-class _TipSection extends StatelessWidget {
-  final String label;
-  final List<_GestureTip> tips;
-  final Color accentColor;
+/// One gesture as a card: its icon on a soft tile, then title and line.
+class _TipCard extends StatelessWidget {
+  final _GestureTip tip;
+  final bool wide;
 
-  const _TipSection({
-    required this.label,
-    required this.tips,
-    required this.accentColor,
-  });
+  const _TipCard({required this.tip, this.wide = false});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    final iconTile = Container(
+      height: wide ? 56 : 64,
+      width: wide ? 56 : null,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Icon(tip.icon, color: Colors.white, size: 26),
+    );
+    final text = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 6),
-          child: Text(
-            label.toUpperCase(),
-            style: AppFonts.jostStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.8,
-              color: accentColor,
-            ),
+        Text(
+          tip.title,
+          style: AppFonts.jostStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
           ),
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            children: [
-              for (final tip in tips)
-                _TipRow(tip: tip, accentColor: accentColor),
-            ],
+        const SizedBox(height: 3),
+        Text(
+          tip.description,
+          style: AppFonts.jostStyle(
+            fontSize: 12,
+            height: 1.35,
+            color: Colors.white.withValues(alpha: 0.6),
           ),
         ),
       ],
     );
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF181818),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: wide
+          ? Row(
+              children: [
+                iconTile,
+                const SizedBox(width: 14),
+                Expanded(child: text),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [iconTile, const SizedBox(height: 14), text],
+            ),
+    );
   }
 }
 
-class _TipRow extends StatelessWidget {
-  final _GestureTip tip;
-  final Color accentColor;
+/// The menu tips as rows in one card.
+class _TipList extends StatelessWidget {
+  final List<_GestureTip> tips;
 
-  const _TipRow({required this.tip, required this.accentColor});
+  const _TipList({super.key, required this.tips});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF181818),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(tip.icon, color: accentColor, size: 14),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tip.title,
-                  style: AppFonts.jostStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+          for (var i = 0; i < tips.length; i++) ...[
+            if (i > 0)
+              Container(
+                height: 1,
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                color: Colors.white.withValues(alpha: 0.06),
+              ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(tips[i].icon, color: Colors.white, size: 20),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          tips[i].title,
+                          style: AppFonts.jostStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          tips[i].description,
+                          style: AppFonts.jostStyle(
+                            fontSize: 12,
+                            height: 1.35,
+                            color: Colors.white.withValues(alpha: 0.6),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                Text(
-                  tip.description,
-                  style: AppFonts.jostStyle(
-                    fontSize: 11.5,
-                    color: Colors.white60,
-                    height: 1.25,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
