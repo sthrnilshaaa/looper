@@ -823,7 +823,7 @@ class _HeaderRow extends ConsumerWidget {
           color: _fill,
           semanticLabel: l10n.account,
           onTap: onProfile,
-          child: headerProfilePhoto(ref, 42) ?? HomeIcons.profile(),
+          child: headerProfilePhoto(ref, 36) ?? HomeIcons.profile(),
         ),
       ],
     );

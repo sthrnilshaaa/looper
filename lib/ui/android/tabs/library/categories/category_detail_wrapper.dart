@@ -438,7 +438,7 @@ class _CategoryScaffoldState extends ConsumerState<_CategoryScaffold> {
             const SizedBox(width: 6),
             RoundIconButton(
               icon: Icons.person_rounded,
-              child: headerProfilePhoto(ref, 42),
+              child: headerProfilePhoto(ref, 36),
               onTap: () {
                 AppHaptics.light();
                 ref
