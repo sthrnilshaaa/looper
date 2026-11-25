@@ -2638,34 +2638,6 @@ class _LyricsArcControlsState extends ConsumerState<LyricsArcControls>
   // Apex of the arch in the box, and the box height (design units).
   static const double _apexY = 8, _boxH = 104;
 
-  /// The elapsed time, riding just inside the arch at the progress head
-  /// (the side the total time sits on) and tilted along the curve.
-  Widget _ridingTime(String text, Offset center, double s, double deg) {
-    final double r = deg * math.pi / 180;
-    final double rx = _rx * s, ry = _ry * s;
-    final Offset head = center + Offset(rx * math.cos(r), ry * math.sin(r));
-    // Outward normal of the ellipse at the head.
-    final Offset n = Offset(math.cos(r) / rx, math.sin(r) / ry);
-    final Offset normal = n / n.distance;
-    final Offset at = head - normal * (16 * s);
-    final double tilt = math.atan2(ry * math.cos(r), -rx * math.sin(r));
-    return Positioned(
-      left: at.dx - 30 * s,
-      top: at.dy - 12 * s,
-      width: 60 * s,
-      height: 24 * s,
-      child: IgnorePointer(
-        child: Transform.rotate(
-          angle: tilt,
-          child: OverflowBox(
-            maxWidth: double.infinity,
-            child: Center(child: _timeText(text, s)),
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -2759,12 +2731,7 @@ class _LyricsArcControlsState extends ConsumerState<LyricsArcControls>
                   ),
                 ),
               ),
-              _ridingTime(
-                UiUtils.formatPlaybackDuration(shown),
-                center,
-                s,
-                _startDeg + (_endDeg - _startDeg) * f,
-              ),
+              label(UiUtils.formatPlaybackDuration(shown), 41.6, -40.05),
               label(UiUtils.formatPlaybackDuration(duration), 362.9, 40.6),
               button(
                 _cxD - 66,
