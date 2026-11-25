@@ -1,5 +1,29 @@
 part of 'theme_settings_tiles.dart';
 
+/// On: the lyrics screen draws the Now Playing background and hides its own
+/// background options.
+class LyricsFollowPlayerBackgroundTile extends ConsumerWidget {
+  const LyricsFollowPlayerBackgroundTile({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final l10n = AppLocalizations.of(context)!;
+    return SwitchListTile(
+      secondary: const Icon(LucideIcons.layers),
+      title: Text(l10n.lyricsFollowPlayerBackground, style: _tileTitleStyle()),
+      subtitle: Text(
+        l10n.lyricsFollowPlayerBackgroundDesc,
+        style: _tileSubtitleStyle(),
+      ),
+      value: !settings.lyricsOwnBackground,
+      onChanged: (value) => ref
+          .read(settingsProvider.notifier)
+          .updateLyricsFollowPlayerBackground(value),
+    );
+  }
+}
+
 class EnableLyricsGradientTile extends ConsumerWidget {
   const EnableLyricsGradientTile({super.key});
 
@@ -87,28 +111,6 @@ class DynamicColorActiveLyricsTile extends ConsumerWidget {
         ref
             .read(settingsProvider.notifier)
             .updateDynamicColorActiveLyrics(value);
-      },
-    );
-  }
-}
-
-class ActiveLyricsUseAccentTile extends ConsumerWidget {
-  const ActiveLyricsUseAccentTile({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(settingsProvider);
-    final l10n = AppLocalizations.of(context)!;
-    return SwitchListTile(
-      secondary: const Icon(LucideIcons.paintbrush),
-      title: Text(l10n.activeLyricsUseAccent, style: _tileTitleStyle()),
-      subtitle: Text(
-        l10n.activeLyricsUseAccentDesc,
-        style: _tileSubtitleStyle(),
-      ),
-      value: !settings.activeLyricsSoftColor,
-      onChanged: (value) {
-        ref.read(settingsProvider.notifier).updateActiveLyricsUseAccent(value);
       },
     );
   }

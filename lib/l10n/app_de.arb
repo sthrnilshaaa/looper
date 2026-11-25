@@ -101,8 +101,6 @@
   "activeLyricsIntensityPreviewActive": "Aktive Zeile",
   "inactiveLyricsOpacity": "Deckkraft inaktiver Zeilen",
   "inactiveLyricsOpacityDesc": "Wie deckend die Liedtextzeilen um die aktuelle Zeile wirken; weniger ist transparenter",
-  "activeLyricsUseAccent": "Akzentfarbe für aktive Zeile",
-  "activeLyricsUseAccentDesc": "Reine Akzentfarbe verwenden; aus mischt sie mit Weiß zu einem sanfteren Ton",
   "lyricsLineGrouping": "Fortlaufende Zeilen gruppieren",
   "lyricsLineGroupingDesc": "Zwei in einem Atemzug gesungene Zeilen zusammen anzeigen, ohne dazwischen zu scrollen",
   "dynamicLyricsBg": "Dynamischer Liedtext BG",

@@ -144,18 +144,6 @@ Color boostChroma(Color color, double t) {
   return Color(hct.toInt()).withValues(alpha: color.a);
 }
 
-/// The softer active lyric line color: [color] blended towards white by
-/// lifting its tone (hue kept), for when the pure accent isn't wanted.
-/// [intensity] (0..1, the user's slider) brings back more of the color:
-/// 0 is a light tint (tone 90), 1 stops at tone 70.
-Color lyricsSoftActiveColor(Color color, {double intensity = 0}) {
-  final double t = intensity.isNaN ? 0.35 : intensity.clamp(0.0, 1.0);
-  final Hct hct = Hct.fromInt(readableOnDark(color).toARGB32());
-  final double tone = 90 - 20 * t;
-  if (hct.tone >= tone) return color;
-  return Color(Hct.from(hct.hue, hct.chroma, tone).toInt());
-}
-
 /// Returns `[primary, secondary, dominant, ...accents]` as ARGB ints, or null
 /// for an empty image. Runs on a background isolate.
 Future<List<int>?> _extract(Uint8List rgba) async {

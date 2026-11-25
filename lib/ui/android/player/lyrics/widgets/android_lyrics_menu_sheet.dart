@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:looper_player/features/settings/presentation/widgets/settings_widgets.dart'
     show settingsTheme;
 import 'package:flutter/services.dart';
+import 'package:looper_player/features/playback/presentation/widgets/lyrics/advanced_lyric_line/advanced_lyric_line.dart'
+    show activeLyricsIsWhite;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/features/library/domain/models/models.dart';
@@ -124,7 +126,10 @@ class _LyricsMenuSheetContent extends ConsumerWidget {
         LyricsProviderInfo.of(id)?.label ?? id,
     ];
 
-    final accent = Color(currentAccent);
+    // White stands in for the accent while Dynamic Color Active Line is off.
+    final accent = activeLyricsIsWhite(settings)
+        ? Colors.white
+        : Color(currentAccent);
     final hasLyrics = lyricsState.parsedLines.isNotEmpty;
     final lyricsScale = LyricsScale.normalize(settings.lyricsFontScale);
 

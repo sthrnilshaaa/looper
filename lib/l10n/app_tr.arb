@@ -101,8 +101,6 @@
   "activeLyricsIntensityPreviewActive": "Aktif satır",
   "inactiveLyricsOpacity": "Pasif Satır Opaklığı",
   "inactiveLyricsOpacityDesc": "Çalan satırın çevresindeki satırların ne kadar belirgin göründüğü; düşük değer daha saydam",
-  "activeLyricsUseAccent": "Aktif Satırda Vurgu Rengi",
-  "activeLyricsUseAccentDesc": "Saf vurgu rengini kullan; kapalıyken daha yumuşak bir ton için beyazla karıştırılır",
   "lyricsLineGrouping": "Kesintisiz satırları grupla",
   "lyricsLineGroupingDesc": "Tek nefeste söylenen iki satırı aralarında kaydırmadan birlikte göster",
   "dynamicLyricsBg": "Dinamik Şarkı Sözleri BG",

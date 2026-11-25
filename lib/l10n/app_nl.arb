@@ -101,8 +101,6 @@
   "activeLyricsIntensityPreviewActive": "Actieve regel",
   "inactiveLyricsOpacity": "Dekking inactieve regels",
   "inactiveLyricsOpacityDesc": "Hoe vol de regels rond de spelende regel ogen; lager is transparanter",
-  "activeLyricsUseAccent": "Accentkleur actieve regel",
-  "activeLyricsUseAccentDesc": "Gebruik de pure accentkleur; uit mengt die met wit voor een zachtere tint",
   "lyricsLineGrouping": "Doorlopende regels groeperen",
   "lyricsLineGroupingDesc": "Toon twee in één adem gezongen regels samen, zonder ertussen te scrollen",
   "dynamicLyricsBg": "Dynamische songteksten BG",

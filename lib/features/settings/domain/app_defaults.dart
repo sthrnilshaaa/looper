@@ -210,8 +210,8 @@ abstract final class AppDefaults {
   static const bool dynamicColorActiveLyrics = true;
   static const double activeLyricsIntensity = 0.7;
   static const double defaultInactiveLyricsOpacity = 0.35;
-  static const bool activeLyricsSoftColor = false;
   static const bool lyricsNoLineGrouping = false;
+  static const bool lyricsOwnBackground = false;
   static const bool enableLyricsGradient = true;
   static const bool ambientColorBackground = true;
   static const String lyricsAlignment = 'left';

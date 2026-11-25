@@ -101,8 +101,6 @@
   "activeLyricsIntensityPreviewActive": "アクティブ行",
   "inactiveLyricsOpacity": "非アクティブ行の不透明度",
   "inactiveLyricsOpacityDesc": "再生中の行の周りの歌詞行の濃さ。低いほど透明になります",
-  "activeLyricsUseAccent": "アクティブ行にアクセントカラー",
-  "activeLyricsUseAccentDesc": "アクセントカラーをそのまま使います。オフにすると白と混ぜた柔らかい色合いになります",
   "lyricsLineGrouping": "続けて歌う行をまとめる",
   "lyricsLineGroupingDesc": "ひと息で歌われる2行を、スクロールせずに一緒に表示します",
   "dynamicLyricsBg": "ダイナミックリリックBG",

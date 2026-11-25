@@ -101,8 +101,6 @@
   "activeLyricsIntensityPreviewActive": "Linha ativa",
   "inactiveLyricsOpacity": "Opacidade das linhas inativas",
   "inactiveLyricsOpacityDesc": "Quão sólidas parecem as linhas ao redor da que está tocando; menor é mais transparente",
-  "activeLyricsUseAccent": "Cor de destaque na linha ativa",
-  "activeLyricsUseAccentDesc": "Usar a cor de destaque pura; desligado a mistura com branco para um tom mais suave",
   "lyricsLineGrouping": "Agrupar linhas contínuas",
   "lyricsLineGroupingDesc": "Mostra juntas duas linhas cantadas num só fôlego, sem rolar entre elas",
   "dynamicLyricsBg": "Letras Dinâmicas BG",

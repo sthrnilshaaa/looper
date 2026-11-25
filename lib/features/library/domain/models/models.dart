@@ -320,14 +320,13 @@ class AppSettings {
   // Opacity of the lyric lines around the playing one, 0.1 (most see-through)
   // to 1 (solid). Null = the default 35 %.
   double? inactiveLyricsOpacity;
-  // "Accent Color Active Line" off: the active lyric line uses the accent
-  // blended with white instead of the pure accent. Stored inverted so the
-  // toggle defaults to on, also for settings saved before it existed.
-  bool activeLyricsSoftColor = AppDefaults.activeLyricsSoftColor;
   // "Group Continued Lines" off: two lyric lines sung in one breath are no
   // longer shown as one (LyricLine.pairHeads). Stored inverted so grouping
   // stays on by default, also for settings saved before it existed.
   bool lyricsNoLineGrouping = AppDefaults.lyricsNoLineGrouping;
+  // "Follow Now Playing Background" off: the lyrics screen uses its own
+  // gradient / blurred-art options. Inverted so following is the default.
+  bool lyricsOwnBackground = AppDefaults.lyricsOwnBackground;
   bool enableLyricsGradient = AppDefaults.enableLyricsGradient;
   bool ambientColorBackground = AppDefaults.ambientColorBackground;
   String lyricsAlignment =

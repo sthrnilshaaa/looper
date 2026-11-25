@@ -730,6 +730,53 @@ class _StyledArtworkImage extends ConsumerWidget {
   }
 }
 
+/// The Now Playing screen's background for [style], for screens that mirror
+/// it (lyrics with Follow Now Playing Background on). Classic matches the
+/// expanded player: blurred art, else the player gradient, else surface.
+Widget nowPlayingBackground(
+  BuildContext context,
+  WidgetRef ref,
+  Song song,
+  PlayerLayoutStyle style,
+) {
+  if (style != PlayerLayoutStyle.classic) {
+    return _buildStyledBackground(context, ref, song, style);
+  }
+  final settings = ref.watch(settingsProvider);
+  final double darkness = settings.musicDarkness.isNaN
+      ? 0.62
+      : settings.musicDarkness;
+  final bool art =
+      (settings.enableDynamicTheming || settings.playerDynamicBackground) &&
+      song.artPath != null;
+  return AnimatedSwitcher(
+    duration: const Duration(milliseconds: 800),
+    transitionBuilder: (child, animation) =>
+        FadeTransition(opacity: animation, child: child),
+    child: art
+        ? Stack(
+            key: ValueKey(('art', song.id)),
+            fit: StackFit.expand,
+            children: [
+              BlurredBackgroundArt(song: song, zoom: 1.08),
+              ColoredBox(color: Colors.black.withValues(alpha: darkness)),
+            ],
+          )
+        : settings.enablePlayerGradient
+        ? SizedBox.expand(
+            key: const ValueKey('gradient'),
+            child: PlayerGradientBackground(
+              darkness: darkness,
+              animated: settings.animatePlayerGradient,
+            ),
+          )
+        : ColoredBox(
+            key: const ValueKey('surface'),
+            color: Theme.of(context).colorScheme.surface,
+          ),
+  );
+}
+
 Widget _buildStyledBackground(
   BuildContext context,
   WidgetRef ref,

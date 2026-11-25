@@ -101,8 +101,6 @@
   "activeLyricsIntensityPreviewActive": "Ligne active",
   "inactiveLyricsOpacity": "Opacité des lignes inactives",
   "inactiveLyricsOpacityDesc": "Opacité des lignes autour de celle en cours ; plus bas est plus transparent",
-  "activeLyricsUseAccent": "Couleur d'accent pour la ligne active",
-  "activeLyricsUseAccentDesc": "Utiliser la couleur d'accent pure ; désactivé, elle est mélangée au blanc pour une teinte plus douce",
   "lyricsLineGrouping": "Grouper les lignes enchaînées",
   "lyricsLineGroupingDesc": "Affiche ensemble deux lignes chantées d’un seul souffle, sans défiler entre elles",
   "dynamicLyricsBg": "Fond de paroles dynamique",

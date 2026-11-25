@@ -186,26 +186,33 @@ extension _SettingsSearch on _SettingsViewState {
           ),
         ],
       ],
-      //if (!settings.enableDynamicTheming)
       SettingsSearchItem(
-        title: l10n.enableLyricsGradient,
-        subtitle: l10n.enableLyricsGradientDesc,
+        title: l10n.lyricsFollowPlayerBackground,
+        subtitle: l10n.lyricsFollowPlayerBackgroundDesc,
         category: '${l10n.lyrics} · ${l10n.sectionBackground}',
-        widget: const EnableLyricsGradientTile(),
+        widget: const LyricsFollowPlayerBackgroundTile(),
       ),
-      if (settings.enableLyricsGradient)
+      if (settings.lyricsOwnBackground) ...[
         SettingsSearchItem(
-          title: l10n.ambientColorBackground,
-          subtitle: l10n.ambientColorBackgroundDesc,
+          title: l10n.enableLyricsGradient,
+          subtitle: l10n.enableLyricsGradientDesc,
           category: '${l10n.lyrics} · ${l10n.sectionBackground}',
-          widget: const AmbientLyricsBgTile(),
+          widget: const EnableLyricsGradientTile(),
         ),
-      SettingsSearchItem(
-        title: l10n.blurredArtworkForLyrics,
-        subtitle: l10n.blurredArtworkForLyricsDesc,
-        category: '${l10n.lyrics} · ${l10n.sectionBackground}',
-        widget: const BlurredArtworkLyricsTile(),
-      ),
+        if (settings.enableLyricsGradient)
+          SettingsSearchItem(
+            title: l10n.ambientColorBackground,
+            subtitle: l10n.ambientColorBackgroundDesc,
+            category: '${l10n.lyrics} · ${l10n.sectionBackground}',
+            widget: const AmbientLyricsBgTile(),
+          ),
+        SettingsSearchItem(
+          title: l10n.blurredArtworkForLyrics,
+          subtitle: l10n.blurredArtworkForLyricsDesc,
+          category: '${l10n.lyrics} · ${l10n.sectionBackground}',
+          widget: const BlurredArtworkLyricsTile(),
+        ),
+      ],
       SettingsSearchItem(
         title: l10n.dynamicColorActiveLyrics,
         subtitle: l10n.dynamicColorActiveLyricsDesc,
@@ -213,12 +220,6 @@ extension _SettingsSearch on _SettingsViewState {
         widget: const DynamicColorActiveLyricsTile(),
       ),
       if (!activeLyricsIsWhite(settings)) ...[
-        SettingsSearchItem(
-          title: l10n.activeLyricsUseAccent,
-          subtitle: l10n.activeLyricsUseAccentDesc,
-          category: '${l10n.lyrics} · ${l10n.sectionLook}',
-          widget: const ActiveLyricsUseAccentTile(),
-        ),
         SettingsSearchItem(
           title: l10n.activeLyricsIntensity,
           subtitle: l10n.activeLyricsIntensityDesc,

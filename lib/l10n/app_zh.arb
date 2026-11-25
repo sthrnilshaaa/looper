@@ -101,8 +101,6 @@
   "activeLyricsIntensityPreviewActive": "活动行",
   "inactiveLyricsOpacity": "非活动行不透明度",
   "inactiveLyricsOpacityDesc": "当前歌词行周围各行的浓淡程度；越低越透明",
-  "activeLyricsUseAccent": "活动行使用强调色",
-  "activeLyricsUseAccentDesc": "使用纯强调色；关闭则与白色混合，呈现更柔和的色调",
   "lyricsLineGrouping": "合并连续歌词行",
   "lyricsLineGroupingDesc": "将一口气唱出的两行歌词一起显示，中间不滚动",
   "dynamicLyricsBg": "动态歌词BG",

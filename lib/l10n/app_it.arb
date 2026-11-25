@@ -101,8 +101,6 @@
   "activeLyricsIntensityPreviewActive": "Riga attiva",
   "inactiveLyricsOpacity": "Opacità righe inattive",
   "inactiveLyricsOpacityDesc": "Quanto appaiono piene le righe attorno a quella in riproduzione; meno è più trasparente",
-  "activeLyricsUseAccent": "Colore d'accento per la riga attiva",
-  "activeLyricsUseAccentDesc": "Usa il colore d'accento puro; se disattivato viene mescolato con il bianco per una tinta più morbida",
   "lyricsLineGrouping": "Raggruppa righe continue",
   "lyricsLineGroupingDesc": "Mostra insieme due righe cantate in un solo respiro, senza scorrere tra loro",
   "dynamicLyricsBg": "Sfondo dinamico dei testi",

@@ -220,7 +220,6 @@ class SettingsCategoryScreen extends ConsumerWidget {
           tiles: [
             const DynamicColorActiveLyricsTile(),
             sub(!activeLyricsIsWhite(settings), const [
-              ActiveLyricsUseAccentTile(),
               ActiveLyricsIntensityTile(),
             ]),
             const InactiveLyricsOpacityTile(),
@@ -232,17 +231,22 @@ class SettingsCategoryScreen extends ConsumerWidget {
         (
           title: l10n.sectionBackground,
           tiles: [
-            demo(SettingsDemoKind.gradient, const EnableLyricsGradientTile()),
-            sub(settings.enableLyricsGradient, const [
-              AnimatePlayerGradientTile(),
-              AmbientLyricsBgTile(),
-            ]),
-            const BlurredArtworkLyricsTile(),
-            if (settings.enableDynamicTheming ||
-                settings.ambientColorBackground ||
-                settings.keepBackgroundGradient ||
-                settings.blurredArtworkForLyrics ||
-                settings.enableLyricsGradient)
+            const LyricsFollowPlayerBackgroundTile(),
+            if (settings.lyricsOwnBackground) ...[
+              demo(SettingsDemoKind.gradient, const EnableLyricsGradientTile()),
+              sub(settings.enableLyricsGradient, const [
+                AnimatePlayerGradientTile(),
+                AmbientLyricsBgTile(),
+              ]),
+              const BlurredArtworkLyricsTile(),
+            ],
+            // Following the player uses Music Darkness instead.
+            if (settings.lyricsOwnBackground &&
+                (settings.enableDynamicTheming ||
+                    settings.ambientColorBackground ||
+                    settings.keepBackgroundGradient ||
+                    settings.blurredArtworkForLyrics ||
+                    settings.enableLyricsGradient))
               const LyricsDarknessSlider(),
           ],
         ),

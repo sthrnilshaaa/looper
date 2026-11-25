@@ -101,8 +101,6 @@
   "activeLyricsIntensityPreviewActive": "سطر نشط",
   "inactiveLyricsOpacity": "شفافية الأسطر غير النشطة",
   "inactiveLyricsOpacityDesc": "مدى وضوح أسطر الكلمات حول السطر الحالي؛ القيمة الأقل أكثر شفافية",
-  "activeLyricsUseAccent": "لون التمييز للسطر النشط",
-  "activeLyricsUseAccentDesc": "استخدام لون التمييز الصافي؛ عند الإيقاف يُمزج مع الأبيض للحصول على درجة أنعم",
   "lyricsLineGrouping": "تجميع الأسطر المتصلة",
   "lyricsLineGroupingDesc": "عرض سطرين يُغنّيان في نفَس واحد معًا دون تمرير بينهما",
   "dynamicLyricsBg": "كلمات ديناميكية BG",

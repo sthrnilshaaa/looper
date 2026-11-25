@@ -40,24 +40,16 @@ final artworkColorProvider = Provider<Color?>((ref) {
 });
 
 /// Whether the active lyric line is plain white ("Dynamic Color Active
-/// Line" off). The accent toggle and intensity slider do nothing then.
+/// Line" off). The intensity slider does nothing then.
 bool activeLyricsIsWhite(AppSettings settings) =>
     !settings.dynamicColorActiveLyrics;
 
-/// The active lyric line's color, from the app [accent] (theme primary,
-/// which already follows the artwork with dynamic theming):
-/// - "Accent Color Active Line" on: the accent itself, made more saturated
-///   by the intensity slider ([lyricsActiveColor]).
-/// - off: the accent blended with white, the slider bringing back more of
-///   the color ([lyricsSoftActiveColor]).
+/// The active lyric line's color: white, or the app [accent] (theme
+/// primary, which follows the artwork with dynamic theming) made more
+/// saturated by the intensity slider.
 Color activeLyricsColor(AppSettings settings, {required Color accent}) {
   if (activeLyricsIsWhite(settings)) return Colors.white;
-  return !settings.activeLyricsSoftColor
-      ? lyricsActiveColor(accent, intensity: settings.activeLyricsIntensity)
-      : lyricsSoftActiveColor(
-          accent,
-          intensity: settings.activeLyricsIntensity,
-        );
+  return lyricsActiveColor(accent, intensity: settings.activeLyricsIntensity);
 }
 
 /// The opacity of the inactive lyric line next to the current one, from the
