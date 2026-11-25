@@ -1,0 +1,14 @@
+{
+  "background": "linear-gradient(160deg, #1E293B 0%, #0F172A 100%)",
+  "fontFamily": "\"DM Sans\", system-ui, sans-serif",
+  "order": [
+    "home",
+    "player",
+    "songs",
+    "library",
+    "queue"
+  ],
+  "template": "showcase",
+  "layout": "classic",
+  "screenOnly": false
+}
