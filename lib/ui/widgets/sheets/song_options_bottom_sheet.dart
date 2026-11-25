@@ -223,11 +223,10 @@ class _SongOptionsSheetContent extends ConsumerWidget {
     final isPureBlack = settings.darkTheme;
     final accentColor = settings.accent;
 
-    final sheetBg = isPureBlack
-        ? Colors.black
-        : (useBlur
-              ? Colors.black.withValues(alpha: 0.6)
-              : const Color(0xFF1E1E1E));
+    // Blur wins over Pure Black, as in AppBottomSheetContainer.
+    final sheetBg = useBlur
+        ? Colors.black.withValues(alpha: 0.6)
+        : (isPureBlack ? Colors.black : const Color(0xFF1E1E1E));
 
     Widget sheetContent = Container(
       decoration: BoxDecoration(
@@ -526,7 +525,7 @@ class _SongOptionsSheetContent extends ConsumerWidget {
       ),
     );
 
-    if (useBlur && !isPureBlack) {
+    if (useBlur) {
       return RepaintBoundary(
         child: ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
@@ -754,9 +753,14 @@ class _PlayerSongOptionsSheet extends _SongOptionsSheetContent {
     final isWide =
         Responsive.isLandscape(MediaQuery.sizeOf(context)) || UiUtils.isDesktop;
 
+    final bool useBlur = ref.watch(
+      settingsProvider.select((s) => s.sheetShouldBlur),
+    );
     Widget body = Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF080808),
+      decoration: BoxDecoration(
+        color: useBlur
+            ? Colors.black.withValues(alpha: 0.6)
+            : const Color(0xFF080808),
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: SafeArea(
@@ -925,6 +929,18 @@ class _PlayerSongOptionsSheet extends _SongOptionsSheetContent {
         ),
       ),
     );
+
+    if (useBlur) {
+      body = RepaintBoundary(
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: body,
+          ),
+        ),
+      );
+    }
 
     if (isWide) {
       body = Center(

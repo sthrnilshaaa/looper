@@ -222,6 +222,8 @@ class SettingsCategoryScreen extends ConsumerWidget {
             sub(!activeLyricsIsWhite(settings), const [
               ActiveLyricsIntensityTile(),
             ]),
+            // White line: no slider, but still show how it looks.
+            if (activeLyricsIsWhite(settings)) const ActiveLyricsPreview(),
             const InactiveLyricsOpacityTile(),
             const LyricsAlignmentTile(),
             const LyricsLineGroupingTile(),

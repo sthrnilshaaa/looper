@@ -2,6 +2,7 @@ import 'package:looper_player/ui/widgets/common/player_scale.dart';
 import 'package:looper_player/ui/android/player/lyrics/lyrics_route.dart';
 import 'dart:io';
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:looper_player/core/utils/song_metadata.dart';
@@ -345,6 +346,43 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
     );
   }
 
+  /// With Follow Now Playing Background on there's no dark band behind the
+  /// controls, so the lyrics themselves fade out over them, and back in as
+  /// the controls hide. Always a ShaderMask so toggling never rebuilds the
+  /// lyrics below it.
+  Widget _fadeUnderControls(
+    BuildContext context,
+    AppSettings settings,
+    double controllerHeight,
+    Widget lyrics,
+  ) {
+    if (settings.lyricsOwnBackground) return lyrics;
+    // The lyrics area ends at the safe area; the controls start above that.
+    final double fade = controllerHeight - MediaQuery.paddingOf(context).bottom;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: _showController ? 1.0 : 0.0),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      child: lyrics,
+      builder: (context, t, child) => ShaderMask(
+        blendMode: BlendMode.dstIn,
+        shaderCallback: (rect) {
+          final double h = math.max(rect.height, 1);
+          final double top = ((h - fade) / h).clamp(0.0, 1.0);
+          final double end = ((h - fade * 0.4) / h).clamp(top, 1.0);
+          final Color gone = Colors.white.withValues(alpha: 1 - t);
+          return LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.white, Colors.white, gone, gone],
+            stops: [0, top, end, 1],
+          ).createShader(rect);
+        },
+        child: child,
+      ),
+    );
+  }
+
   /// The top of the screen. While the controls show: close, the lyrics
   /// source and the menu, with the song under them. When they hide, that bar
   /// goes, the song row moves up and a favorite button takes the menu's spot.
@@ -582,8 +620,13 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                       builder: (context, exiting, child) =>
                           TickerMode(enabled: !exiting, child: child!),
                       // Arrives after the shared elements land, leaves first.
-                      child: const LyricsEntrance(
-                        child: RepaintBoundary(child: LyricsView()),
+                      child: _fadeUnderControls(
+                        context,
+                        settings,
+                        bottomControllerHeight,
+                        const LyricsEntrance(
+                          child: RepaintBoundary(child: LyricsView()),
+                        ),
                       ),
                     ),
                   ),
@@ -807,19 +850,27 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                         ignoring: !_showController,
                         child: Container(
                           height: bottomControllerHeight,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent.withValues(alpha: 0.010),
-                                Colors.transparent.withValues(alpha: 0.40),
-                                Colors.black.withValues(alpha: 0.80),
-                                Colors.black.withValues(alpha: 0.99),
-                              ],
-                              stops: const [0.0, 0.2, 0.75, 1.0],
-                            ),
-                          ),
+                          // Following the player: no dark band, the lyrics
+                          // fade out instead (_fadeUnderControls).
+                          decoration: !settings.lyricsOwnBackground
+                              ? null
+                              : BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.transparent.withValues(
+                                        alpha: 0.010,
+                                      ),
+                                      Colors.transparent.withValues(
+                                        alpha: 0.40,
+                                      ),
+                                      Colors.black.withValues(alpha: 0.80),
+                                      Colors.black.withValues(alpha: 0.99),
+                                    ],
+                                    stops: const [0.0, 0.2, 0.75, 1.0],
+                                  ),
+                                ),
                           padding: EdgeInsets.only(
                             left: 24.s,
                             right: 24.s,

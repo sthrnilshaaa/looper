@@ -45,11 +45,10 @@ class SortMenuSheet extends ConsumerWidget {
     final useBlur = settings.sheetShouldBlur;
     final isPureBlack = settings.darkTheme;
     final accent = settings.accent;
-    final sheetBg = isPureBlack
-        ? Colors.black
-        : (useBlur
-              ? Colors.black.withValues(alpha: 0.6)
-              : const Color(0xFF1E1E1E));
+    // Blur wins over Pure Black, as in AppBottomSheetContainer.
+    final sheetBg = useBlur
+        ? Colors.black.withValues(alpha: 0.6)
+        : (isPureBlack ? Colors.black : const Color(0xFF1E1E1E));
 
     final rows = [
       for (final item in items)
@@ -138,7 +137,7 @@ class SortMenuSheet extends ConsumerWidget {
       ),
     );
 
-    if (useBlur && !isPureBlack) {
+    if (useBlur) {
       return RepaintBoundary(
         child: ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),

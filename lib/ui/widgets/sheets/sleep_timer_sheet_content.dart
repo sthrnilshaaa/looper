@@ -55,11 +55,10 @@ class _SleepTimerSheetContentState
     final useBlur = settings.sheetShouldBlur;
     final isPureBlack = settings.darkTheme;
 
-    final sheetBg = isPureBlack
-        ? Colors.black
-        : (useBlur
-              ? Colors.black.withValues(alpha: 0.6)
-              : const Color(0xFF1E1E1E));
+    // Blur wins over Pure Black, as in AppBottomSheetContainer.
+    final sheetBg = useBlur
+        ? Colors.black.withValues(alpha: 0.6)
+        : (isPureBlack ? Colors.black : const Color(0xFF1E1E1E));
 
     Widget sheetContent = Container(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
@@ -190,7 +189,7 @@ class _SleepTimerSheetContentState
       ),
     );
 
-    if (useBlur && !isPureBlack) {
+    if (useBlur) {
       return RepaintBoundary(
         child: ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),

@@ -3,6 +3,7 @@ import 'package:looper_player/features/library/domain/models/models.dart';
 import 'package:intl/intl.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
+import 'package:looper_player/ui/widgets/sheets/app_bottom_sheet.dart';
 
 class SongDetailsBottomSheet extends StatelessWidget {
   final Song song;
@@ -20,12 +21,10 @@ class SongDetailsBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Container(
+    // The shared sheet shell, so it follows Always Blur Sheets.
+    return AppBottomSheetContainer(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainer,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      showDragHandle: false,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

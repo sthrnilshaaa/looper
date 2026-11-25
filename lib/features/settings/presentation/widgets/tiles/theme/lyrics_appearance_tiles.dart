@@ -173,20 +173,6 @@ class ActiveLyricsIntensityTile extends ConsumerWidget {
     final intensity = settings.activeLyricsIntensity.isNaN
         ? 0.35
         : settings.activeLyricsIntensity;
-    // Same color the lyrics screen uses.
-    final previewColor = activeLyricsColor(
-      settings,
-      accent: Theme.of(context).colorScheme.primary,
-    );
-    final previewStyle = AppFonts.getLyricsStyle(
-      useNewFontLyrics: settings.useNewFontLyrics,
-      family: settings.customFontFamilyLyrics,
-      weightDelta: settings.customFontWeightLyricsDelta,
-      activeWeightDelta: settings.activeLyricsFontWeightDelta,
-      isActive: true,
-      fontSize: 18,
-      height: 1.2,
-    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -206,42 +192,69 @@ class ActiveLyricsIntensityTile extends ConsumerWidget {
                 .updateActiveLyricsIntensity(val / 100.0);
           },
         ),
-        Container(
-          margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.45),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.activeLyricsIntensityPreviewInactive,
-                style: previewStyle.copyWith(
-                  color: Colors.white.withValues(
-                    alpha: inactiveLyricsOpacity(settings),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                l10n.activeLyricsIntensityPreviewActive,
-                style: previewStyle.copyWith(
-                  color: previewColor,
-                  shadows: [
-                    Shadow(
-                      color: previewColor.withValues(alpha: 0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+        const ActiveLyricsPreview(),
       ],
+    );
+  }
+}
+
+/// An inactive and an active lyric line drawn as the lyrics screen draws
+/// them (white active line while Dynamic Color Active Line is off).
+class ActiveLyricsPreview extends ConsumerWidget {
+  const ActiveLyricsPreview({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final l10n = AppLocalizations.of(context)!;
+    // Same color the lyrics screen uses.
+    final previewColor = activeLyricsColor(
+      settings,
+      accent: Theme.of(context).colorScheme.primary,
+    );
+    final previewStyle = AppFonts.getLyricsStyle(
+      useNewFontLyrics: settings.useNewFontLyrics,
+      family: settings.customFontFamilyLyrics,
+      weightDelta: settings.customFontWeightLyricsDelta,
+      activeWeightDelta: settings.activeLyricsFontWeightDelta,
+      isActive: true,
+      fontSize: 18,
+      height: 1.2,
+    );
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.activeLyricsIntensityPreviewInactive,
+            style: previewStyle.copyWith(
+              color: Colors.white.withValues(
+                alpha: inactiveLyricsOpacity(settings),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            l10n.activeLyricsIntensityPreviewActive,
+            style: previewStyle.copyWith(
+              color: previewColor,
+              shadows: [
+                Shadow(
+                  color: previewColor.withValues(alpha: 0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
