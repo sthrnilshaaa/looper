@@ -141,6 +141,8 @@ abstract final class AppDefaults {
   static const double defaultAccentVibrancy = 0.3;
   static const bool disableBlur = true;
   static const bool alwaysBlurSheets = false;
+  static const bool frostedMusicBar = false;
+  static const bool frostedNavbar = false;
   static const bool statusBarBlur = false;
   static const bool playerDynamicBackground = false;
   static const bool keepBackgroundGradient = false;

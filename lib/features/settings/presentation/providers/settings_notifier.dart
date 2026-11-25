@@ -397,6 +397,8 @@ class Settings extends _$Settings {
       ..artworkVisualizerSyncMs = s.artworkVisualizerSyncMs
       ..disableBlur = s.disableBlur
       ..alwaysBlurSheets = s.alwaysBlurSheets
+      ..frostedMusicBar = s.frostedMusicBar
+      ..frostedNavbar = s.frostedNavbar
       ..statusBarBlur = s.statusBarBlur
       ..playerDynamicBackground = s.playerDynamicBackground
       ..enableInternet = s.enableInternet
@@ -793,6 +795,12 @@ class Settings extends _$Settings {
 
   Future<void> updateAlwaysBlurSheets(bool value) =>
       _update((s) => s..alwaysBlurSheets = value);
+
+  Future<void> updateFrostedMusicBar(bool value) =>
+      _update((s) => s..frostedMusicBar = value);
+
+  Future<void> updateFrostedNavbar(bool value) =>
+      _update((s) => s..frostedNavbar = value);
 
   Future<void> updateStatusBarBlur(bool value) =>
       _update((s) => s..statusBarBlur = value);

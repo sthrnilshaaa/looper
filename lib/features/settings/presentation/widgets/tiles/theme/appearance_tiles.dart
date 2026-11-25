@@ -86,6 +86,44 @@ class AlwaysBlurSheetsTile extends ConsumerWidget {
   }
 }
 
+/// Blur on the music bar only, while Dynamic Theming is off.
+class FrostedMusicBarTile extends ConsumerWidget {
+  const FrostedMusicBarTile({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final l10n = AppLocalizations.of(context)!;
+    return SwitchListTile(
+      secondary: const Icon(LucideIcons.music),
+      title: Text(l10n.frostedMusicBar, style: _tileTitleStyle()),
+      subtitle: Text(l10n.frostedMusicBarDesc, style: _tileSubtitleStyle()),
+      value: settings.frostedMusicBar,
+      onChanged: (value) =>
+          ref.read(settingsProvider.notifier).updateFrostedMusicBar(value),
+    );
+  }
+}
+
+/// Blur on the navigation bar only, while Dynamic Theming is off.
+class FrostedNavbarTile extends ConsumerWidget {
+  const FrostedNavbarTile({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final l10n = AppLocalizations.of(context)!;
+    return SwitchListTile(
+      secondary: const Icon(LucideIcons.panelBottom),
+      title: Text(l10n.frostedNavbar, style: _tileTitleStyle()),
+      subtitle: Text(l10n.frostedNavbarDesc, style: _tileSubtitleStyle()),
+      value: settings.frostedNavbar,
+      onChanged: (value) =>
+          ref.read(settingsProvider.notifier).updateFrostedNavbar(value),
+    );
+  }
+}
+
 /// Blur behind the status bar on Home and album/playlist top bars.
 class StatusBarBlurTile extends ConsumerWidget {
   const StatusBarBlurTile({super.key});

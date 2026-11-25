@@ -342,6 +342,8 @@ class PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
     final isPlaying = ref.watch(playbackProvider.select((s) => s.isPlaying));
     final settings = ref.watch(settingsProvider);
     final useBlur = settings.enableDynamicTheming;
+    // The bar's own blur: Dynamic Theming's, or Frosted Music Bar without it.
+    final barBlur = useBlur || settings.frostedMusicBar;
     // The expanded panel's background; playerDynamicBackground gives it the
     // art without app-wide Dynamic Theming.
     final showArtBackground =
@@ -464,7 +466,7 @@ class PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
                 child: _buildMiniPlayerContent(
                   song,
                   isPlaying,
-                  useBlur,
+                  barBlur,
                   null,
                   3.0,
                   settings,
@@ -503,7 +505,9 @@ class PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
     // the panel's top edge ~500dp up the screen. The clip also limits hit
     // testing to the panel, so the transparent rest of the layer never
     // swallows touches meant for the screen behind it.
-    final bool isBlurActive = useBlur && !settings.disableBlur;
+    final bool isBlurActive = useBlur
+        ? !settings.disableBlur
+        : settings.frostedMusicBar;
     final Color minimizedBgColor = isBlurActive
         ? Colors.white.withValues(alpha: 0.05)
         : Theme.of(context).colorScheme.surfaceContainer;
@@ -571,7 +575,7 @@ class PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
         child: _buildMiniPlayerContent(
           song,
           isPlaying,
-          useBlur,
+          barBlur,
           Colors.transparent,
           0.0,
           settings,

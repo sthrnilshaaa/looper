@@ -203,6 +203,9 @@ class AppSettings {
   // sheets their blur without needing all of that. Independent of disableBlur,
   // which only gates the Dynamic Theming blur path (see app_bottom_sheet.dart).
   bool alwaysBlurSheets = AppDefaults.alwaysBlurSheets;
+  // Blur on just the music bar / navbar while Dynamic Theming is off.
+  bool frostedMusicBar = AppDefaults.frostedMusicBar;
+  bool frostedNavbar = AppDefaults.frostedNavbar;
   // Blur behind the status bar on Home and collection top bars.
   bool statusBarBlur = AppDefaults.statusBarBlur;
   // The Dynamic Theming art background on the player screen only, without

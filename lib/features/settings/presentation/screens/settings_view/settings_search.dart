@@ -151,6 +151,20 @@ extension _SettingsSearch on _SettingsViewState {
           widget: const AlwaysBlurSheetsTile(),
         ),
         SettingsSearchItem(
+          title: l10n.frostedMusicBar,
+          subtitle: l10n.frostedMusicBarDesc,
+          category:
+              '${l10n.catPlayerInterface} · ${l10n.themeGroupBlurBackgrounds}',
+          widget: const FrostedMusicBarTile(),
+        ),
+        SettingsSearchItem(
+          title: l10n.frostedNavbar,
+          subtitle: l10n.frostedNavbarDesc,
+          category:
+              '${l10n.catPlayerInterface} · ${l10n.themeGroupBlurBackgrounds}',
+          widget: const FrostedNavbarTile(),
+        ),
+        SettingsSearchItem(
           title: l10n.statusBarBlur,
           subtitle: l10n.statusBarBlurDesc,
           category:

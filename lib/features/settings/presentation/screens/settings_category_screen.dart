@@ -86,8 +86,11 @@ class SettingsCategoryScreen extends ConsumerWidget {
           tiles: [
             if (dynamicTheming)
               const DisableBlurTile()
-            else
+            else ...[
               const AlwaysBlurSheetsTile(),
+              const FrostedMusicBarTile(),
+              const FrostedNavbarTile(),
+            ],
             const StatusBarBlurTile(),
             // Dynamic theming paints its own background.
             if (!dynamicTheming) ...[
@@ -539,6 +542,8 @@ class SettingsCategoryScreen extends ConsumerWidget {
 /// Android-only options: what they change isn't part of the desktop UI.
 const _androidOnlyTiles = <Type>{
   AlwaysBlurSheetsTile,
+  FrostedMusicBarTile,
+  FrostedNavbarTile,
   StatusBarBlurTile,
   AnimateBackgroundGradientTile,
   HomeDarknessSlider,
