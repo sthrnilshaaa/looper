@@ -2638,8 +2638,8 @@ class _LyricsArcControlsState extends ConsumerState<LyricsArcControls>
   // Apex of the arch in the box, and the box height (design units).
   static const double _apexY = 8, _boxH = 104;
 
-  /// The elapsed time, riding just outside the arch at the progress head
-  /// and tilted along the curve.
+  /// The elapsed time, riding just inside the arch at the progress head
+  /// (the side the total time sits on) and tilted along the curve.
   Widget _ridingTime(String text, Offset center, double s, double deg) {
     final double r = deg * math.pi / 180;
     final double rx = _rx * s, ry = _ry * s;
@@ -2647,7 +2647,7 @@ class _LyricsArcControlsState extends ConsumerState<LyricsArcControls>
     // Outward normal of the ellipse at the head.
     final Offset n = Offset(math.cos(r) / rx, math.sin(r) / ry);
     final Offset normal = n / n.distance;
-    final Offset at = head + normal * (18 * s);
+    final Offset at = head - normal * (16 * s);
     final double tilt = math.atan2(ry * math.cos(r), -rx * math.sin(r));
     return Positioned(
       left: at.dx - 30 * s,
