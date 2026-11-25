@@ -13,7 +13,6 @@
         android:label="Looper Player"
         android:name="com.looper.player.LooperApplication"
         android:icon="@mipmap/ic_launcher"
-        android:extractNativeLibs="true"
         android:enableOnBackInvokedCallback="true">
 
         <!-- Player Widget Providers -->

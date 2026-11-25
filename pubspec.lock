@@ -896,10 +896,9 @@ packages:
   metadata_god:
     dependency: "direct main"
     description:
-      name: metadata_god
-      sha256: "2b19b7e88cf5ab7016fe8d1f868bb35a193aaef06fd96cfc7de4ec3eacc16eb0"
-      url: "https://pub.dev"
-    source: hosted
+      path: "third_party/metadata_god"
+      relative: true
+    source: path
     version: "1.1.0"
   mime:
     dependency: transitive
@@ -920,10 +919,11 @@ packages:
   mpv_audio_kit:
     dependency: "direct main"
     description:
-      path: "third_party/mpv_audio_kit"
-      relative: true
-    source: path
-    version: "0.4.9"
+      name: mpv_audio_kit
+      sha256: f001eba0db5cf674a9ffcaac096e4d1fa1d36b88578e1474c0810a5eb0010b54
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.8.0"
   msix:
     dependency: transitive
     description:
@@ -1477,10 +1477,10 @@ packages:
     dependency: transitive
     description:
       name: test_api
-      sha256: "2a122cbe059f8b610d3a5415f42e255b6c17b1f21eee1d960f31080237fb4f11"
+      sha256: "0a10344e901e5b2e63819567951cb6a06673ed6b84f40462188ff5a0c41f371f"
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.12"
+    version: "0.7.14"
   time:
     dependency: transitive
     description:

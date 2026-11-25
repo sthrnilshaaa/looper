@@ -23,6 +23,6 @@ abstract final class PlayerSpectrum {
   static void ensureConfigured(Player player) {
     if (_configured) return;
     _configured = true;
-    unawaited(player.setSpectrum(settings));
+    player.setSpectrum(settings);
   }
 }

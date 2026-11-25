@@ -71,186 +71,179 @@ extension AudioServiceDsp on AudioService {
     );
   }
 
+  /// Applies [update] to [player], and to [idlePlayer] when it has a file.
+  Future<void> _updateBoth(
+    List<AudioEffect> Function(List<AudioEffect>) update,
+  ) async {
+    try {
+      await player.updateAudioEffects(update);
+      if (idlePlayer.state.playback.playlist.items.isNotEmpty) {
+        try {
+          await idlePlayer.updateAudioEffects(update);
+        } catch (_) {}
+      }
+    } catch (_) {}
+  }
+
+  /// Replaces the first [T] stage with `update(it)`, or inserts
+  /// `update(null)` before the limiter, so the limiter and resampler stay
+  /// last (doc 25 §3.1).
+  static List<AudioEffect> _upsert<T extends AudioEffect>(
+    List<AudioEffect> fx,
+    T Function(T? current) update,
+  ) {
+    final out = [...fx];
+    final i = out.indexWhere((e) => e is T);
+    if (i >= 0) {
+      out[i] = update(out[i] as T);
+    } else {
+      final at = out.indexWhere((e) => e is AlimiterEffect);
+      out.insert(at < 0 ? out.length : at, update(null));
+    }
+    return out;
+  }
+
   Future<void> setLiveBandGain(int bandIndex, double gain) async {
-    if (!_filtersInitialized || player.state.playlist.items.isEmpty) return;
+    if (!_filtersInitialized || player.state.playback.playlist.items.isEmpty) {
+      return;
+    }
     if (_lastEqualizerGains == null) return;
     _lastEqualizerGains![bandIndex] = gain;
     final clampedGain = gain.clamp(-20.0, 20.0);
-    try {
-      // Live af-command to avoid tearing down the filter chain (doc 25 §3.3)
-      await player.sendRawCommand([
-        'af-command',
-        'aek_anequalizer',
-        'change',
-        'f$bandIndex|g=${clampedGain.toStringAsFixed(2)}',
-      ]);
-      if (idlePlayer.state.playlist.items.isNotEmpty) {
-        try {
-          await idlePlayer.sendRawCommand([
-            'af-command',
-            'aek_anequalizer',
-            'change',
-            'f$bandIndex|g=${clampedGain.toStringAsFixed(2)}',
-          ]);
-        } catch (_) {}
-      }
-    } catch (_) {
-      try {
-        await player.updateAudioEffects((e) {
-          final List<AnequalizerBand> bands = [];
-          for (int i = 0; i < 18; i++) {
-            final freq = _eqBandFreqs[i];
-            final width = _eqBandWidths[i];
-            final currentGain = _lastEqualizerGains![i].clamp(-20.0, 20.0);
-            bands.add(
-              AnequalizerBand(
-                frequency: freq,
-                bandwidth: width,
-                gain: currentGain,
-                type: AnequalizerBandType.butterworth,
-              ),
-            );
-          }
-          final anequalizer = AnequalizerSettings(
-            enabled: _equalizerEnabled,
-          ).withBands(bands, channels: 2);
-          return e.copyWith(
-            superequalizer: const SuperequalizerSettings(enabled: false),
-            anequalizer: anequalizer,
-          );
-        });
-      } catch (_) {}
-    }
+    // A gain-only change keeps the chain's shape, so mpv_audio_kit applies
+    // it live with af-command instead of rebuilding (doc 25 §3.3).
+    await _updateBoth((fx) {
+      var band = 0;
+      return [
+        for (final e in fx)
+          if (e is EqualizerEffect && band++ == bandIndex)
+            e.copyWith(gain: clampedGain)
+          else
+            e,
+      ];
+    });
   }
 
   Future<void> setLivePreamp(double preamp) async {
-    if (!_filtersInitialized || player.state.playlist.items.isEmpty) return;
+    if (!_filtersInitialized || player.state.playback.playlist.items.isEmpty) {
+      return;
+    }
     if (_lastEqualizerGains == null) return;
     _lastEqualizerGains![18] = preamp;
     // The preamp is the limiter's input gain, so the limiter catches it
     // (doc 25 §3.1); a live af-command, no chain rebuild while dragging.
     final levelIn = _preampLevel(_equalizerEnabled ? preamp : 0.0);
-    Future<void> apply(Player p) =>
-        p.updateAudioEffects((e) => e.copyWith(alimiter: _limiter(levelIn)));
-    try {
-      await apply(player);
-      if (idlePlayer.state.playlist.items.isNotEmpty) {
-        try {
-          await apply(idlePlayer);
-        } catch (_) {}
-      }
-    } catch (_) {}
+    await _updateBoth(
+      (fx) => _upsert<AlimiterEffect>(fx, (_) => _limiter(levelIn)),
+    );
   }
 
   /// Preamp in dB (±12) as the limiter's linear input gain.
   static double _preampLevel(double db) =>
       math.pow(10, db.clamp(-12.0, 12.0) / 20).toDouble();
 
-  /// Always in the chain, last before the resampler (patched
-  /// mpv_audio_kit), at -0.5 dBFS.
-  static AlimiterSettings _limiter(double levelIn) => AlimiterSettings(
-    enabled: true,
+  /// Always in the chain, last before the resampler, at -0.5 dBFS.
+  static AlimiterEffect _limiter(double levelIn) => AlimiterEffect(
     limit: 0.944,
     attack: 5.0,
     release: 80.0,
     level: false,
-    level_in: levelIn,
+    levelIn: levelIn,
   );
+
+  /// The 18 peaking bands: gain-only changes are live (no rebuild).
+  static List<EqualizerEffect> _eqBands(List<double> gains) => [
+    for (int i = 0; i < 18; i++)
+      EqualizerEffect(
+        frequency: _eqBandFreqs[i],
+        width: _eqBandWidths[i],
+        widthType: EqualizerWidthType.h,
+        gain: i < gains.length ? gains[i].clamp(-20.0, 20.0) : 0.0,
+      ),
+  ];
+
+  Future<void> _updateLive(
+    List<AudioEffect> Function(List<AudioEffect>) update,
+  ) async {
+    if (!_filtersInitialized || player.state.playback.playlist.items.isEmpty) {
+      return;
+    }
+    try {
+      await player.updateAudioEffects(update);
+    } catch (_) {}
+  }
 
   Future<void> setLiveCompressor({
     double? threshold,
     double? ratio,
     double? attack,
     double? release,
-  }) async {
-    if (!_filtersInitialized || player.state.playlist.items.isEmpty) return;
-    try {
-      await player.updateAudioEffects((e) {
-        final current =
-            e.acompressor ?? const AcompressorSettings(enabled: true);
-        double dBToMultiplier(double dB) =>
-            math.pow(10.0, dB / 20.0).toDouble();
-        return e.copyWith(
-          acompressor: current.copyWith(
-            threshold: threshold != null
-                ? dBToMultiplier(threshold.clamp(-40.0, 0.0))
-                : current.threshold,
-            ratio: ratio ?? current.ratio,
-            attack: attack ?? current.attack,
-            release: release ?? current.release,
-          ),
-        );
-      });
-    } catch (e) {}
-  }
+  }) => _updateLive(
+    (fx) => _upsert<AcompressorEffect>(fx, (c) {
+      final current = c ?? const AcompressorEffect();
+      double dBToMultiplier(double dB) => math.pow(10.0, dB / 20.0).toDouble();
+      return current.copyWith(
+        threshold: threshold != null
+            ? dBToMultiplier(threshold.clamp(-40.0, 0.0))
+            : current.threshold,
+        ratio: ratio ?? current.ratio,
+        attack: attack ?? current.attack,
+        release: release ?? current.release,
+      );
+    }),
+  );
 
-  Future<void> setLiveBass(double gain) async {
-    if (!_filtersInitialized || player.state.playlist.items.isEmpty) return;
-    try {
-      await player.updateAudioEffects((e) {
-        final current = e.bass ?? const BassSettings(enabled: true, f: 100.0);
-        return e.copyWith(bass: current.copyWith(g: gain.clamp(-10.0, 15.0)));
-      });
-    } catch (e) {}
-  }
+  Future<void> setLiveBass(double gain) => _updateLive(
+    (fx) => _upsert<BassEffect>(
+      fx,
+      (c) => (c ?? const BassEffect(frequency: 100.0)).copyWith(
+        gain: gain.clamp(-10.0, 15.0),
+      ),
+    ),
+  );
 
-  Future<void> setLiveTreble(double gain) async {
-    if (!_filtersInitialized || player.state.playlist.items.isEmpty) return;
-    try {
-      await player.updateAudioEffects((e) {
-        final current =
-            e.treble ?? const TrebleSettings(enabled: true, f: 8000.0);
-        return e.copyWith(treble: current.copyWith(g: gain.clamp(-10.0, 15.0)));
-      });
-    } catch (e) {}
-  }
+  Future<void> setLiveTreble(double gain) => _updateLive(
+    (fx) => _upsert<TrebleEffect>(
+      fx,
+      (c) => (c ?? const TrebleEffect(frequency: 8000.0)).copyWith(
+        gain: gain.clamp(-10.0, 15.0),
+      ),
+    ),
+  );
 
-  Future<void> setLiveStereoWidth(double m) async {
-    if (!_filtersInitialized || player.state.playlist.items.isEmpty) return;
-    try {
-      await player.updateAudioEffects((e) {
-        final current =
-            e.extrastereo ?? const ExtrastereoSettings(enabled: true);
-        return e.copyWith(
-          extrastereo: current.copyWith(m: m.clamp(-10.0, 10.0)),
-        );
-      });
-    } catch (e) {}
-  }
+  Future<void> setLiveStereoWidth(double m) => _updateLive(
+    (fx) => _upsert<ExtrastereoEffect>(
+      fx,
+      (c) => (c ?? const ExtrastereoEffect()).copyWith(m: m.clamp(-10.0, 10.0)),
+    ),
+  );
 
-  Future<void> setLiveCrossfeed(double strength) async {
-    if (!_filtersInitialized || player.state.playlist.items.isEmpty) return;
-    try {
-      await player.updateAudioEffects((e) {
-        final current = e.crossfeed ?? const CrossfeedSettings(enabled: true);
-        return e.copyWith(
-          crossfeed: current.copyWith(strength: strength.clamp(0.0, 1.0)),
-        );
-      });
-    } catch (e) {}
-  }
+  Future<void> setLiveCrossfeed(double strength) => _updateLive(
+    (fx) => _upsert<CrossfeedEffect>(
+      fx,
+      (c) => (c ?? const CrossfeedEffect()).copyWith(
+        strength: strength.clamp(0.0, 1.0),
+      ),
+    ),
+  );
 
-  Future<void> setLiveHighpass(double f) async {
-    if (!_filtersInitialized || player.state.playlist.items.isEmpty) return;
-    try {
-      await player.updateAudioEffects((e) {
-        final current = e.highpass ?? const HighpassSettings(enabled: true);
-        return e.copyWith(highpass: current.copyWith(f: f.clamp(100.0, 300.0)));
-      });
-    } catch (e) {}
-  }
+  Future<void> setLiveHighpass(double f) => _updateLive(
+    (fx) => _upsert<HighpassEffect>(
+      fx,
+      (c) => (c ?? const HighpassEffect()).copyWith(
+        frequency: f.clamp(100.0, 300.0),
+      ),
+    ),
+  );
 
-  Future<void> setLiveLowpass(double f) async {
-    if (!_filtersInitialized || player.state.playlist.items.isEmpty) return;
-    try {
-      await player.updateAudioEffects((e) {
-        final current = e.lowpass ?? const LowpassSettings(enabled: true);
-        return e.copyWith(
-          lowpass: current.copyWith(f: f.clamp(3000.0, 6000.0)),
-        );
-      });
-    } catch (e) {}
-  }
+  Future<void> setLiveLowpass(double f) => _updateLive(
+    (fx) => _upsert<LowpassEffect>(
+      fx,
+      (c) => (c ?? const LowpassEffect()).copyWith(
+        frequency: f.clamp(3000.0, 6000.0),
+      ),
+    ),
+  );
 
   Future<void> setEqualizerGains(
     List<double> gains,
@@ -266,7 +259,7 @@ extension AudioServiceDsp on AudioService {
     if (monoEnabled != null) _monoEnabled = monoEnabled;
     if (autoEqFilters != null) _autoEqFilters = autoEqFilters;
 
-    if (player.state.playlist.items.isEmpty) {
+    if (player.state.playback.playlist.items.isEmpty) {
       // FILE_LOADED hasn't fired yet — the playlist stream listener will
       // apply EQ once items populate. Mark _pendingEqApply so it triggers.
 
@@ -278,35 +271,14 @@ extension AudioServiceDsp on AudioService {
     // Helper conversion dB -> ratio multiplier (e.g. 10^(dB/20))
     double dBToMultiplier(double dB) => math.pow(10.0, dB / 20.0).toDouble();
 
-    // 1. 18-band anequalizer settings
-
-    final List<AnequalizerBand> bands = [];
-    if (enabled) {
-      for (int i = 0; i < 18; i++) {
-        final freq = _eqBandFreqs[i];
-        final width = _eqBandWidths[i];
-        final gain = i < gains.length ? gains[i].clamp(-20.0, 20.0) : 0.0;
-        bands.add(
-          AnequalizerBand(
-            frequency: freq,
-            bandwidth: width,
-            gain: gain,
-            type: AnequalizerBandType.butterworth,
-          ),
-        );
-      }
-    }
-
-    final anequalizer = AnequalizerSettings(
-      enabled: enabled,
-    ).withBands(bands, channels: 2);
+    // 1. 18 peaking equalizer bands (absent while the EQ is off)
+    final eqBands = enabled ? _eqBands(gains) : const <EqualizerEffect>[];
 
     // 2. Dynamic Range Compressor
     final bool compEnabled =
         enabled && (gains.length > 23 ? gains[23] == 1.0 : false);
     final compressor = compEnabled
-        ? AcompressorSettings(
-            enabled: true,
+        ? AcompressorEffect(
             threshold: gains.length > 24
                 ? dBToMultiplier(gains[24].clamp(-40.0, 0.0))
                 : 0.125,
@@ -320,11 +292,10 @@ extension AudioServiceDsp on AudioService {
     final bool loudnormEnabled =
         enabled && (gains.length > 28 ? gains[28] == 1.0 : false);
     final loudnorm = loudnormEnabled
-        ? LoudnormSettings(
-            enabled: true,
-            I: gains.length > 29 ? gains[29].clamp(-70.0, -5.0) : -24.0,
-            LRA: 11.0,
-            TP: -1.5,
+        ? LoudnormEffect(
+            i: gains.length > 29 ? gains[29].clamp(-70.0, -5.0) : -24.0,
+            lra: 11.0,
+            tp: -1.5,
           )
         : null;
 
@@ -332,8 +303,7 @@ extension AudioServiceDsp on AudioService {
     final bool crossfeedEnabled =
         enabled && (gains.length > 21 ? gains[21] == 1.0 : false);
     final crossfeed = crossfeedEnabled
-        ? CrossfeedSettings(
-            enabled: true,
+        ? CrossfeedEffect(
             strength: gains.length > 22 ? gains[22].clamp(0.0, 1.0) : 0.2,
           )
         : null;
@@ -342,8 +312,7 @@ extension AudioServiceDsp on AudioService {
     final bool widthEnabled =
         enabled && (gains.length > 30 ? gains[30] == 1.0 : false);
     final extrastereo = widthEnabled
-        ? ExtrastereoSettings(
-            enabled: true,
+        ? ExtrastereoEffect(
             m: gains.length > 31 ? gains[31].clamp(-10.0, 10.0) : 2.5,
           )
         : null;
@@ -358,28 +327,23 @@ extension AudioServiceDsp on AudioService {
         ? (gains.length > 33 ? gains[33] : 0.0)
         : 0.0;
     final bass = shelvingEnabled
-        ? BassSettings(enabled: true, g: bassGain.clamp(-10.0, 15.0), f: 100.0)
+        ? BassEffect(gain: bassGain.clamp(-10.0, 15.0), frequency: 100.0)
         : null;
     final treble = shelvingEnabled
-        ? TrebleSettings(
-            enabled: true,
-            g: trebleGain.clamp(-10.0, 15.0),
-            f: 8000.0,
-          )
+        ? TrebleEffect(gain: trebleGain.clamp(-10.0, 15.0), frequency: 8000.0)
         : null;
 
     // 7. Silence Trim
     final bool trimEnabled =
         enabled && (gains.length > 19 ? gains[19] == 1.0 : false);
     final silenceremove = trimEnabled
-        ? SilenceremoveSettings(
-            enabled: true,
-            start_periods: 1,
-            start_threshold: gains.length > 20
+        ? SilenceremoveEffect(
+            startPeriods: 1,
+            startThreshold: gains.length > 20
                 ? dBToMultiplier(gains[20].clamp(-60.0, -30.0))
                 : 0.003,
-            stop_periods: 1,
-            stop_threshold: gains.length > 20
+            stopPeriods: 1,
+            stopThreshold: gains.length > 20
                 ? dBToMultiplier(gains[20].clamp(-60.0, -30.0))
                 : 0.003,
           )
@@ -389,7 +353,7 @@ extension AudioServiceDsp on AudioService {
     final bool lofiEnabled =
         enabled && (gains.length > 41 ? gains[41] == 1.0 : false);
     final acrusher = lofiEnabled
-        ? AcrusherSettings(enabled: true, bits: 8.0, samples: 4.0, mix: 0.5)
+        ? const AcrusherEffect(bits: 8.0, samples: 4.0, mix: 0.5)
         : null;
 
     // 9. Speech Enhancement Filter (highpass + lowpass)
@@ -402,16 +366,14 @@ extension AudioServiceDsp on AudioService {
         ? gains[40].clamp(3000.0, 6000.0)
         : 4000.0;
 
-    final highpass = speechEnabled
-        ? HighpassSettings(enabled: true, f: hpCutoff)
-        : null;
+    final highpass = speechEnabled ? HighpassEffect(frequency: hpCutoff) : null;
 
     // Merge lowpass cutoff between Lofi and Speech
-    final LowpassSettings? lowpass;
+    final LowpassEffect? lowpass;
     if (lofiEnabled) {
-      lowpass = const LowpassSettings(enabled: true, f: 3000.0);
+      lowpass = const LowpassEffect(frequency: 3000.0);
     } else if (speechEnabled) {
-      lowpass = LowpassSettings(enabled: true, f: lpCutoff);
+      lowpass = LowpassEffect(frequency: lpCutoff);
     } else {
       lowpass = null;
     }
@@ -420,58 +382,49 @@ extension AudioServiceDsp on AudioService {
     final bool reverbEnabled =
         enabled && (gains.length > 42 ? gains[42] == 1.0 : false);
     final aecho = reverbEnabled
-        ? AechoSettings(
-            enabled: true,
+        ? const AechoEffect(
             delays: '40|60',
             decays: '0.4|0.3',
-            in_gain: 0.8,
-            out_gain: 0.5,
+            inGain: 0.8,
+            outGain: 0.5,
           )
         : null;
 
     // 11. Surround
     final bool surroundEnabled =
         enabled && (gains.length > 43 ? gains[43] == 1.0 : false);
-    final surround = surroundEnabled ? SurroundSettings(enabled: true) : null;
+    final surround = surroundEnabled ? const SurroundEffect() : null;
 
-    AudioEffects buildEffects() {
-      final List<String> finalCustomFilters = [];
-      if (_autoEqFilters.isNotEmpty) {
-        finalCustomFilters.addAll(_autoEqFilters);
-      }
-      if (customFilter != null && customFilter.trim().isNotEmpty) {
-        finalCustomFilters.add(customFilter.trim());
-      }
-      return AudioEffects(
-        custom: finalCustomFilters,
-        superequalizer: const SuperequalizerSettings(enabled: false),
-        anequalizer: anequalizer,
-        acompressor: compressor,
-        loudnorm: loudnorm,
-        crossfeed: crossfeed,
-        extrastereo: extrastereo,
-        bass: bass,
-        treble: treble,
-        silenceremove: silenceremove,
-        acrusher: acrusher,
-        lowpass: lowpass,
-        highpass: highpass,
-        aecho: aecho,
-        surround: surround,
-        pan: _monoEnabled
-            ? const PanSettings(
-                enabled: true,
-                args: 'stereo|c0=0.5*c0+0.5*c1|c1=0.5*c0+0.5*c1',
-              )
-            : null,
-        alimiter: _limiter(
-          _preampLevel(
-            enabled && gains.length > 18 ? gains[18].clamp(-12.0, 12.0) : 0.0,
-          ),
+    // List order is chain order. It keeps the 0.4 chain: raw filters, then
+    // the stages alphabetically, then the limiter and the resampler last so
+    // the limiter catches every boost (doc 25 §3.1).
+    List<AudioEffect> buildEffects() => [
+      for (final f in _autoEqFilters)
+        if (f.trim().isNotEmpty) RawAudioEffect(f.trim()),
+      if (customFilter != null && customFilter.trim().isNotEmpty)
+        RawAudioEffect(customFilter.trim()),
+      ?compressor,
+      ?acrusher,
+      ?aecho,
+      ...eqBands,
+      ?bass,
+      ?crossfeed,
+      ?extrastereo,
+      ?highpass,
+      ?loudnorm,
+      ?lowpass,
+      if (_monoEnabled)
+        const PanEffect(args: 'stereo|c0=0.5*c0+0.5*c1|c1=0.5*c0+0.5*c1'),
+      ?silenceremove,
+      ?surround,
+      ?treble,
+      _limiter(
+        _preampLevel(
+          enabled && gains.length > 18 ? gains[18].clamp(-12.0, 12.0) : 0.0,
         ),
-        aresample: const AresampleSettings(enabled: true),
-      );
-    }
+      ),
+      const AresampleEffect(),
+    ];
 
     bool success = false;
     try {
@@ -480,7 +433,7 @@ extension AudioServiceDsp on AudioService {
       final effects = buildEffects();
       await player.setVolumeGain(totalGain);
       await player.setAudioEffects(effects);
-      if (idlePlayer.state.playlist.items.isNotEmpty) {
+      if (idlePlayer.state.playback.playlist.items.isNotEmpty) {
         try {
           await idlePlayer.setVolumeGain(totalGain);
           await idlePlayer.setAudioEffects(effects);

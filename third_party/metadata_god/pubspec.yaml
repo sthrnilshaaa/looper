@@ -1,0 +1,40 @@
+name: metadata_god
+description: Plugin for retrieving and writing audio tags/metadata from audio files
+version: 1.1.0
+repository: https://github.com/KRTirtho/frb_plugins/tree/main/packages/metadata_god
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  ffi: ^2.1.4
+  flutter_rust_bridge: ^2.11.1
+  uuid: ^4.5.1
+  meta: ^1.16.0
+
+dev_dependencies:
+  ffigen: ^19.1.0
+  lints: ^6.0.0
+  test: ^1.21.0
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  integration_test:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        ffiPlugin: true
+      ios:
+        ffiPlugin: true
+      linux:
+        ffiPlugin: true
+      macos:
+        ffiPlugin: true
+      windows:
+        ffiPlugin: true

@@ -135,7 +135,10 @@ class OptimizedImage extends StatelessWidget {
         fit: fit,
         placeholder: (context, url) => fallback,
         errorWidget: (context, url, error) => fallback,
-        memCacheWidth: computedCacheWidth,
+        // One side only: both squash a 16:9 YouTube thumbnail into the box
+        // before `fit` gets to crop it. By height, a wide picture keeps
+        // enough pixels to cover the box sharply.
+        memCacheWidth: computedCacheHeight == null ? computedCacheWidth : null,
         memCacheHeight: computedCacheHeight,
       );
     } else {

@@ -25,7 +25,7 @@ extension _AudioServiceSetup on AudioService {
             } else if (cmd is MediaSessionCommandSeekTo) {
               onSeekApplied?.call(cmd.position);
             } else if (cmd is MediaSessionCommandSeekBy) {
-              onSeekApplied?.call(player.state.position + cmd.offset);
+              onSeekApplied?.call(player.state.playback.position + cmd.offset);
             } else if (cmd is MediaSessionCommandSetShuffle) {
               onShuffleCommand?.call(cmd.shuffle);
             } else if (cmd is MediaSessionCommandSetRepeatMode) {

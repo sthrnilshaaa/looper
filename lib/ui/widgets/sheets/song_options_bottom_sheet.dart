@@ -1,3 +1,4 @@
+import 'package:looper_player/ui/widgets/common/queue_add_icon.dart';
 import 'package:looper_player/core/motion/app_routes.dart';
 import 'package:looper_player/core/utils/responsive.dart';
 import 'package:looper_player/core/motion/looper_scroll_physics.dart';
@@ -324,7 +325,7 @@ class _SongOptionsSheetContent extends ConsumerWidget {
                       ),
                       MenuOptionTile(
                         label: l10n.addToQueue,
-                        icon: LucideIcons.listPlus,
+                        iconWidget: QueueAddIcon(size: 22, color: accentColor),
                         iconColor: accentColor,
                         onTap: () {
                           AppHaptics.light();

@@ -9,6 +9,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:looper_player/features/playback/presentation/providers/playback/playback_notifier.dart';
 import 'package:looper_player/core/providers/navigation_provider.dart';
 import 'package:looper_player/core/services/storage/db_service.dart';
+import 'package:looper_player/core/services/haptics/app_haptics.dart';
+import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
+import 'package:looper_player/core/services/storage/import_export_service.dart';
 import 'package:isar_community/isar.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/l10n/app_localizations.dart';
@@ -101,9 +104,7 @@ class PlaylistView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final playlists = ref.watch(playlistProvider);
-    final hasActiveSong = ref.watch(
-      playbackProvider.select((s) => s.currentSong != null),
-    );
+    final accent = ref.watch(settingsProvider).accent;
 
     return Scaffold(
       // Not Colors.transparent - see the comment on CategoryDetailWrapper's
@@ -127,41 +128,47 @@ class PlaylistView extends ConsumerWidget {
                     l10n.noPlaylistsYet,
                     style: AppFonts.jostStyle(color: Colors.grey),
                   ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => _showCreateDialog(context, ref),
-                    child: Text(
-                      l10n.createPlaylist,
-                      style: AppFonts.jostStyle(),
+                  const SizedBox(height: 24),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: _PlaylistActions(
+                      accent: accent,
+                      onCreate: () => _showCreateDialog(context, ref),
                     ),
                   ),
                 ],
               ),
             )
-          : ListWave(
-              child: GridView.builder(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 180),
-                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 200,
-                  childAspectRatio: 0.85,
-                  crossAxisSpacing: 20,
-                  mainAxisSpacing: 20,
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+                  child: _PlaylistActions(
+                    accent: accent,
+                    onCreate: () => _showCreateDialog(context, ref),
+                  ),
                 ),
-                itemCount: playlists.length,
-                itemBuilder: waveItems(
-                  (context, index) => PlaylistCard(playlist: playlists[index]),
+                Expanded(
+                  child: ListWave(
+                    child: GridView.builder(
+                      padding: const EdgeInsets.fromLTRB(24, 20, 24, 180),
+                      gridDelegate:
+                          const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 200,
+                            childAspectRatio: 0.85,
+                            crossAxisSpacing: 20,
+                            mainAxisSpacing: 20,
+                          ),
+                      itemCount: playlists.length,
+                      itemBuilder: waveItems(
+                        (context, index) =>
+                            PlaylistCard(playlist: playlists[index]),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-      floatingActionButton: AnimatedPadding(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeInOut,
-        padding: EdgeInsets.only(bottom: hasActiveSong ? 160 : 90),
-        child: FloatingActionButton(
-          onPressed: () => _showCreateDialog(context, ref),
-          child: const Icon(LucideIcons.plus),
-        ),
-      ),
     );
   }
 
@@ -199,6 +206,34 @@ class PlaylistView extends ConsumerWidget {
   }
 }
 
+/// Opens [playlist]'s collection page with its songs in playlist order.
+Future<void> openPlaylist(
+  BuildContext context,
+  WidgetRef ref,
+  Playlist playlist,
+) async {
+  final subtitle = context.l10n.playlist;
+  final songs = await DbService.isar.songs
+      .filter()
+      .anyOf(playlist.songPaths, (q, path) => q.pathEqualTo(path))
+      .findAll();
+
+  final songMap = {for (var s in songs) s.path: s};
+  final orderedSongs = playlist.songPaths
+      .map((path) => songMap[path])
+      .whereType<Song>()
+      .toList();
+
+  ref
+      .read(appNavigationProvider.notifier)
+      .showCollection(
+        title: playlist.name,
+        subtitle: subtitle,
+        songs: orderedSongs,
+        playlist: playlist,
+      );
+}
+
 class PlaylistCard extends ConsumerWidget {
   final Playlist playlist;
 
@@ -215,27 +250,7 @@ class PlaylistCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return InkWell(
-      onTap: () async {
-        final songs = await DbService.isar.songs
-            .filter()
-            .anyOf(playlist.songPaths, (q, path) => q.pathEqualTo(path))
-            .findAll();
-
-        final songMap = {for (var s in songs) s.path: s};
-        final orderedSongs = playlist.songPaths
-            .map((path) => songMap[path])
-            .whereType<Song>()
-            .toList();
-
-        ref
-            .read(appNavigationProvider.notifier)
-            .showCollection(
-              title: playlist.name,
-              subtitle: context.l10n.playlist,
-              songs: orderedSongs,
-              playlist: playlist,
-            );
-      },
+      onTap: () => openPlaylist(context, ref, playlist),
       borderRadius: BorderRadius.circular(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,4 +281,82 @@ class PlaylistCard extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// New playlist and Import, side by side at the top of Playlists.
+class _PlaylistActions extends StatelessWidget {
+  final Color accent;
+  final VoidCallback onCreate;
+
+  const _PlaylistActions({required this.accent, required this.onCreate});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    Widget button({
+      required IconData icon,
+      required String label,
+      required VoidCallback onTap,
+      required bool primary,
+    }) => Expanded(
+      child: Material(
+        color: primary ? accent : Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () {
+            AppHaptics.light();
+            onTap();
+          },
+          child: SizedBox(
+            height: 52,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 18,
+                  color: primary ? _onAccent(accent) : Colors.white,
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppFonts.jostStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: primary ? _onAccent(accent) : Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    return Row(
+      children: [
+        button(
+          icon: LucideIcons.plus,
+          label: l10n.newPlaylist,
+          onTap: onCreate,
+          primary: true,
+        ),
+        const SizedBox(width: 10),
+        button(
+          icon: LucideIcons.fileInput,
+          label: l10n.importLabel,
+          onTap: () => ImportExportService.importM3uPlaylists(context),
+          primary: false,
+        ),
+      ],
+    );
+  }
+
+  static Color _onAccent(Color accent) =>
+      accent.computeLuminance() > 0.5 ? Colors.black : Colors.white;
 }

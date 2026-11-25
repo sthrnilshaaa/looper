@@ -41,7 +41,7 @@ final class EqualizerProvider
   }
 }
 
-String _$equalizerHash() => r'ee16ea79c90cf7160b9bccbe204dae7441efdc08';
+String _$equalizerHash() => r'c1e569c56bd68fa84a0f0468bbfd84112a21b97b';
 
 abstract class _$Equalizer extends $Notifier<EqualizerState> {
   EqualizerState build();

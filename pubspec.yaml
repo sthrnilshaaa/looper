@@ -4,7 +4,7 @@ description: "Looper Player - A powerful music player."
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 3.0.2+2057
+version: 3.0.3+2058
 
 environment:
   sdk: ^3.11.0
@@ -29,7 +29,7 @@ dependencies:
   riverpod_annotation: ^4.0.2
 
   # Audio Playback
-  mpv_audio_kit: ^0.4.5
+  mpv_audio_kit: ^0.8.0
 
   # Database
   isar_community: ^3.3.2
@@ -82,10 +82,10 @@ dev_dependencies:
   coverage: ^1.15.1
 
 dependency_overrides:
-  # Patched copy: the limiter and resampler run last in the filter chain
-  # (see third_party/mpv_audio_kit/LOOPER_PATCH.md).
-  mpv_audio_kit:
-    path: third_party/mpv_audio_kit
+  # Patched copy: AGP 9 reports compileSdk as "android-37.0", which crashed
+  # cargokit's integer parse (see third_party/metadata_god/LOOPER_PATCH.md).
+  metadata_god:
+    path: third_party/metadata_god
   # metadata_god 1.1.0 ships Rust and Dart glue generated with exactly
   # flutter_rust_bridge 2.11.1 and refuses to initialise on any other
   # runtime version. Left to float (its constraint is ^2.11.1) pub picks a

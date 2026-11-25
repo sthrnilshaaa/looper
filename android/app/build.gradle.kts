@@ -99,8 +99,9 @@ android {
 
     packaging {
         jniLibs {
+            // Replaces android:extractNativeLibs="true", which AGP 9 rejects.
+            useLegacyPackaging = true
             pickFirsts.add("**/libc++_shared.so")
-            pickFirsts.add("**/libmpv.so")
         }
     }
 }

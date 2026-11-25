@@ -15,12 +15,14 @@ import 'package:looper_player/core/utils/l10n.dart';
 import 'package:looper_player/core/services/haptics/app_haptics.dart';
 import 'package:looper_player/core/services/haptics/haptic_snack_bar.dart';
 import 'package:looper_player/features/playlists/data/m3u_parser.dart';
+import 'package:looper_player/features/playlists/data/playlist_formats.dart';
+import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
 
 class ImportExportService {
   // Bumped from 1 -> 2 to add play stats, custom EQ presets and excluded
   // folders. importLibraryData() still accepts a version-1 file - every new
   // section is optional there, defaulting to empty rather than failing.
-  static const _backupVersion = 2;
+  static const _backupVersion = 3;
 
   static Future<void> exportLibraryData(BuildContext context) async {
     LoggerHelper.write(
@@ -95,7 +97,12 @@ class ImportExportService {
       final excludedFolders =
           await LocalJsonStore.read('excluded_folders') ?? [];
 
-      // 5. Construct JSON structure
+      // 5. App settings (theme, player, EQ, pins...), as Isar exports them.
+      final settingsJson = await DbService.isar.appSettings
+          .where()
+          .exportJson();
+
+      // 6. Construct JSON structure
       final backup = {
         'version': _backupVersion,
         'favorites': favoritesJson,
@@ -103,6 +110,7 @@ class ImportExportService {
         'playStats': statsJson,
         'customEqPresets': customEqPresets,
         'excludedFolders': excludedFolders,
+        if (settingsJson.isNotEmpty) 'settings': _jsonSafe(settingsJson.first),
       };
 
       final jsonStr = const JsonEncoder.withIndent('  ').convert(backup);
@@ -149,10 +157,9 @@ class ImportExportService {
     final messenger = ScaffoldMessenger.of(context);
     try {
       // 1. Pick file
-      final result = await FilePicker.pickFile(
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-      );
+      // Any type: shared or saved copies often lose the JSON MIME type, and
+      // the picker then hides them. The content is checked below.
+      final result = await FilePicker.pickFile();
 
       if (result == null || result.path == null) {
         LoggerHelper.write(
@@ -168,7 +175,7 @@ class ImportExportService {
       final content = await file.readAsString();
       final Map<String, dynamic> backup = jsonDecode(content);
 
-      if (backup['version'] != 1 && backup['version'] != 2) {
+      if (!const {1, 2, 3}.contains(backup['version'])) {
         throw 'Unsupported backup version: ${backup['version']}';
       }
 
@@ -177,6 +184,18 @@ class ImportExportService {
       final statsMerged = await _importPlayStats(backup);
       await _importCustomEqPresets(ref, backup);
       await _importExcludedFolders(ref, backup);
+      final settings = backup['settings'];
+      if (settings is Map<String, dynamic> &&
+          context.mounted &&
+          await _confirmRestoreSettings(context)) {
+        await DbService.isar.writeTxn(
+          () => DbService.isar.appSettings.importJson([
+            {...settings, 'id': 0},
+          ]),
+        );
+        ref.invalidate(settingsProvider);
+        LoggerHelper.write('ImportExportService: Settings restored.');
+      }
 
       // Trigger Library ref scan / updates to sync UI
       ref
@@ -213,8 +232,9 @@ class ImportExportService {
     }
   }
 
-  /// Settings > Backups & Logs > Import Playlist (M3U): each picked
-  /// `.m3u` / `.m3u8` file becomes a new playlist named after the file
+  /// Settings > Backups & Logs > Import Playlist, and the Playlists screen:
+  /// each picked playlist file (any [PlaylistFormats] format) becomes a new
+  /// playlist named after the file
   /// ("Road trip (2)" when that name is taken), holding the tracks that
   /// are in the library, in the file's order.
   static Future<void> importM3uPlaylists(BuildContext context) async {
@@ -224,17 +244,15 @@ class ImportExportService {
       // FileType.any, not a custom extension filter: Android has no MIME
       // type for .m3u8 on every version, which makes the filter throw.
       final picked = await FilePicker.pickFiles();
-      final files = picked.where((f) {
-        final name = f.name.toLowerCase();
-        return f.path != null &&
-            (name.endsWith('.m3u') || name.endsWith('.m3u8'));
-      }).toList();
+      final files = picked
+          .where((f) => f.path != null && PlaylistFormats.isSupported(f.name))
+          .toList();
 
       if (picked.isEmpty) {
         LoggerHelper.write('ImportExportService: M3U import cancelled.');
         return;
       }
-      if (files.isEmpty) throw 'No .m3u / .m3u8 file selected';
+      if (files.isEmpty) throw 'No playlist file selected';
 
       final songs = await DbService.isar.songs.where().findAll();
       final matcher = M3uSongMatcher(songs);
@@ -247,16 +265,10 @@ class ImportExportService {
       int total = 0;
       for (final m3u in files) {
         final file = File(m3u.path!);
-        final bytes = await file.readAsBytes();
-        // Older playlists are often Latin-1 rather than UTF-8.
-        String content;
-        try {
-          content = utf8.decode(bytes);
-        } on FormatException {
-          content = latin1.decode(bytes);
-        }
-
-        final entries = M3uParser.parse(content);
+        final entries = PlaylistFormats.parse(
+          m3u.name,
+          await file.readAsBytes(),
+        );
         final paths = <String>[];
         for (final entry in entries) {
           final song = matcher.match(entry, playlistDir: file.parent.path);
@@ -334,6 +346,43 @@ class ImportExportService {
       );
     }
   }
+
+  static Future<bool> _confirmRestoreSettings(BuildContext context) async {
+    final l10n = currentL10n();
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: const Color(0xFF161616),
+            title: Text(l10n.restoreSettingsTitle),
+            content: Text(l10n.restoreSettingsDesc),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(l10n.keepMySettings),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(l10n.restoreSettings),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  /// [json] without non-finite doubles, which JSON cannot hold (unset
+  /// settings are NaN; Isar reads a missing key back as unset).
+  static Object? _jsonSafe(Object? json) => switch (json) {
+    final Map m => {
+      for (final e in m.entries)
+        if (!(e.value is double && !(e.value as double).isFinite))
+          e.key: _jsonSafe(e.value),
+    },
+    final List l => [
+      for (final v in l) v is double && !v.isFinite ? 0.0 : _jsonSafe(v),
+    ],
+    _ => json,
+  };
 
   /// Finds the local song a backup entry refers to: by path first, falling
   /// back to title+artist since a restored/moved library can have drifted

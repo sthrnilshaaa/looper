@@ -84,6 +84,15 @@ subprojects {
     }
 }
 
+// appambit_sdk_flutter 1.2.1 ships the same class twice, in two files whose
+// names differ only by case, which is a Kotlin redeclaration error.
+project(":appambit_sdk_flutter").tasks
+    .matching { it.name.startsWith("compile") && it.name.endsWith("Kotlin") }
+    .configureEach {
+        (this as org.gradle.api.tasks.util.PatternFilterable)
+            .exclude("**/AppambitSdkFlutterPlugin.kt")
+    }
+
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }

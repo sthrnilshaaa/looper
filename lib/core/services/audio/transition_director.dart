@@ -122,17 +122,17 @@ class TransitionDirector {
     try {
       idlePlayer.setVolume(0.0);
       _gainIncoming = 0.0;
-      _baseRate = activePlayer.state.rate;
+      _baseRate = activePlayer.state.settings.rate;
       await loadMedia(idlePlayer);
       // A cancel or a newer arm while loading wins.
       if (_currentPlan != plan || generation != _activeGeneration) return false;
       // DSP writes skip an empty idle player, so copy the chain over now;
       // the incoming song's own gain is applied at the swap.
       final a = activePlayer.state;
-      await idlePlayer.setAudioEffects(a.audioEffects);
-      await idlePlayer.setReplayGain(a.replayGain);
-      await idlePlayer.setVolumeGain(a.volumeGain);
-      await idlePlayer.setPitch(a.pitch);
+      await idlePlayer.setAudioEffects(a.settings.audioEffects);
+      await idlePlayer.setReplayGain(a.settings.replayGain);
+      await idlePlayer.setVolumeGain(a.settings.volumeGain);
+      await idlePlayer.setPitch(a.settings.pitch);
       await idlePlayer.setRate(_baseRate * plan.speedAdjustment);
       _isArmed = true;
       return true;
@@ -149,7 +149,7 @@ class TransitionDirector {
   bool checkGoNoGo() {
     if (!_isArmed) return false;
     final s = idlePlayer.state;
-    return s.duration > Duration.zero && !s.buffering;
+    return s.playback.duration > Duration.zero && !s.network.buffering;
   }
 
   /// Starts the running dual-player transition.
@@ -252,7 +252,7 @@ class TransitionDirector {
   /// then claim it on [to] with the same config.
   Future<void> _moveMediaSession(Player from, Player to) async {
     // A move still in flight already released [from]; reuse its config.
-    final session = from.state.mediaSession ?? _movingSession;
+    final session = from.state.settings.mediaSession ?? _movingSession;
     if (session == null) return;
     _movingSession = session;
     try {
@@ -266,7 +266,7 @@ class TransitionDirector {
       // Claim on whichever player is active now (a later swap may have
       // flipped again), unless a newer move took over.
       if (!identical(_movingSession, session)) return;
-      if (activePlayer.state.mediaSession == null) {
+      if (activePlayer.state.settings.mediaSession == null) {
         await activePlayer.setMediaSession(session);
       }
     } catch (e) {

@@ -285,6 +285,9 @@ class AppSettings {
   bool? showHomePlaylists;
   static const defaultHomeSectionOrder = AppDefaults.defaultHomeSectionOrder;
   List<String> homeSectionOrder = [...defaultHomeSectionOrder];
+  // Shortcuts pinned to the top of Library, in order: 'downloads',
+  // 'favorites' or 'playlist:<id>'.
+  List<String> libraryPins = [];
   bool enableSlideGesture = AppDefaults.enableSlideGesture;
   bool stopOnTaskRemoved = AppDefaults.stopOnTaskRemoved;
   bool persistQueue = AppDefaults.persistQueue;

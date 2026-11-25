@@ -4,17 +4,20 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class MenuOptionTile extends StatelessWidget {
   final String label;
-  final IconData icon;
+  final IconData? icon;
+  // Drawn instead of [icon], for marks that are not font glyphs.
+  final Widget? iconWidget;
   final Color iconColor;
   final VoidCallback onTap;
 
   const MenuOptionTile({
     super.key,
     required this.label,
-    required this.icon,
+    this.icon,
+    this.iconWidget,
     required this.iconColor,
     required this.onTap,
-  });
+  }) : assert(icon != null || iconWidget != null);
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +28,7 @@ class MenuOptionTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         child: Row(
           children: [
-            Icon(icon, size: 22, color: iconColor),
+            iconWidget ?? Icon(icon, size: 22, color: iconColor),
             const SizedBox(width: 16),
             Expanded(
               child: Text(

@@ -199,7 +199,7 @@ class AudioService {
   }) async {
     _interruptionPolicy = interruptionPolicy;
 
-    final current = player.state.mediaSession;
+    final current = player.state.settings.mediaSession;
     // Must be awaited: mpv_audio_kit's setMediaSession() lazily allocates its
     // native-side controller on the first non-null call, and explicitly does
     // not support a second *concurrent* non-null call racing that bootstrap
@@ -283,7 +283,7 @@ class AudioService {
         fallback: fallback,
       );
       await player.setReplayGain(settings);
-      if (idlePlayer.state.playlist.items.isNotEmpty) {
+      if (idlePlayer.state.playback.playlist.items.isNotEmpty) {
         try {
           await idlePlayer.setReplayGain(settings);
         } catch (_) {}
@@ -319,7 +319,9 @@ class AudioService {
   Future<void> selectAudioTrack(int trackId) async {
     try {
       // Find matching track
-      final activeTracks = player.state.tracks.where((t) => t.type == 'audio');
+      final activeTracks = player.state.file.tracks.where(
+        (t) => t.type == 'audio',
+      );
       final match = activeTracks.firstWhere(
         (t) => t.id == trackId,
         orElse: () => activeTracks.first,
@@ -332,7 +334,7 @@ class AudioService {
 
   Future<List<Map<String, String>>> getAudioDevices() async {
     try {
-      return player.state.audioDevices
+      return player.state.output.audioDevices
           .map<Map<String, String>>(
             (d) => {
               'name': (d.name as String?) ?? '',
@@ -347,9 +349,9 @@ class AudioService {
 
   Future<void> routeAudioDevice(String deviceName) async {
     try {
-      final match = player.state.audioDevices.firstWhere(
+      final match = player.state.output.audioDevices.firstWhere(
         (d) => d.name == deviceName,
-        orElse: () => player.state.audioDevices.first,
+        orElse: () => player.state.output.audioDevices.first,
       );
       await player.setAudioDevice(match);
     } catch (e) {}
@@ -546,7 +548,7 @@ class AudioService {
     // EQ is now applied via the playlist stream listener (deferred to FILE_LOADED)
     // so we do NOT call setEqualizerGains() here — that would race the empty playlist.
     await player.open(media, play: play);
-    if (play && !player.state.playing) {
+    if (play && !player.state.playback.playing) {
       await player.play();
     }
   }
@@ -560,7 +562,7 @@ class AudioService {
     LoggerHelper.write('AudioService: resume() requested');
     await player.play();
     await transitionDirector.sessionReady;
-    final session = player.state.mediaSession;
+    final session = player.state.settings.mediaSession;
     if (session != null) {
       await player.setMediaSession(session);
     }
@@ -568,20 +570,8 @@ class AudioService {
 
   Future<void> seek(Duration duration) async {
     LoggerHelper.write('AudioService: seek() requested to position: $duration');
+    // mpv resets the lavfi graph on seek, which clears the reverb tail.
     await player.seek(duration);
-    if (_filtersInitialized &&
-        (_lastEqualizerGains?.length ?? 0) > 42 &&
-        _lastEqualizerGains![42] == 1.0) {
-      try {
-        await player.sendRawCommand(['af-command', 'aek_aecho', 'delays', '0']);
-        await player.sendRawCommand([
-          'af-command',
-          'aek_aecho',
-          'delays',
-          '40|60',
-        ]);
-      } catch (_) {}
-    }
   }
 
   Future<void> stop() async {

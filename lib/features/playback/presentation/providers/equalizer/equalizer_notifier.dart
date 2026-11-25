@@ -447,38 +447,39 @@ class Equalizer extends _$Equalizer {
     }
 
     // Adjust Tone Shelving based on preset type
+    // Tone shelf at half strength, like the preset curves.
     void applyShelving(List<double> gains) {
       if (presetName == 'Flat') {
         gains[32] = 0.0;
         gains[33] = 0.0;
         gains[44] = 0.0; // Disabled shelving
       } else if (presetName == 'Bass Booster') {
-        gains[32] = 8.0; // Bass boost
+        gains[32] = 4.0; // Bass boost
         gains[33] = 0.0;
         gains[44] = 1.0; // Enabled shelving
       } else if (presetName == 'Treble Booster') {
         gains[32] = 0.0;
-        gains[33] = 8.0; // Treble boost
+        gains[33] = 4.0; // Treble boost
         gains[44] = 1.0;
       } else if (presetName == 'Vocal Booster') {
-        gains[32] = -2.0;
-        gains[33] = 1.0;
+        gains[32] = -1.0;
+        gains[33] = 0.5;
         gains[44] = 1.0;
       } else if (presetName == 'Electronic') {
-        gains[32] = 4.0;
-        gains[33] = 3.0;
+        gains[32] = 2.0;
+        gains[33] = 1.5;
         gains[44] = 1.0;
       } else if (presetName == 'Rock') {
-        gains[32] = 4.0;
-        gains[33] = 2.0;
+        gains[32] = 2.0;
+        gains[33] = 1.0;
         gains[44] = 1.0;
       } else if (presetName == 'Pop') {
-        gains[32] = -1.0;
-        gains[33] = 2.0;
+        gains[32] = -0.5;
+        gains[33] = 1.0;
         gains[44] = 1.0;
       } else if (presetName == 'Jazz') {
-        gains[32] = 3.0;
-        gains[33] = 1.0;
+        gains[32] = 1.5;
+        gains[33] = 0.5;
         gains[44] = 1.0;
       }
     }
@@ -505,6 +506,11 @@ class Equalizer extends _$Equalizer {
       _persistGainsDebounced(songGains: newSongGains, globalGains: null);
     }
   }
+
+  /// Sets the 18 graphic-EQ bands back to 0 dB; the preamp and DSP stay.
+  Future<void> resetBands() => _setMultipleBands({
+    for (int i = 0; i < 18; i++) i: 0.0,
+  }, applyInstant: true);
 
   /// Restores a full gains snapshot saved by the user (see [CustomEqPreset]),
   /// unlike [setPreset] which only sets the 18 visible bands plus a

@@ -440,6 +440,7 @@ class Settings extends _$Settings {
       ..showHomeGenres = s.showHomeGenres
       ..showHomeRecent = s.showHomeRecent
       ..showHomePlaylists = s.showHomePlaylists
+      ..libraryPins = List<String>.from(s.libraryPins)
       ..homeSectionOrder = List.from(
         s.homeSectionOrder.isEmpty
             ? AppSettings.defaultHomeSectionOrder
@@ -539,6 +540,16 @@ class Settings extends _$Settings {
 
   Future<void> updateHomeSectionOrder(List<String> newOrder) =>
       _update((s) => s..homeSectionOrder = newOrder);
+
+  Future<void> updateLibraryPins(List<String> pins) =>
+      _update((s) => s..libraryPins = List<String>.from(pins));
+
+  /// Pins [key] to the end of Library's pinned shortcuts, or unpins it.
+  Future<void> toggleLibraryPin(String key) => _update((s) {
+    final pins = List<String>.from(s.libraryPins);
+    if (!pins.remove(key)) pins.add(key);
+    return s..libraryPins = pins;
+  });
 
   Future<void> updateIncludeSystemAndMessagingAudio(bool value) =>
       _update((s) => s..includeSystemAndMessagingAudio = value);

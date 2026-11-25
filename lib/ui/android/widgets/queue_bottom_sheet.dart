@@ -1,3 +1,4 @@
+import 'package:looper_player/ui/widgets/common/queue_add_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/core/services/haptics/app_haptics.dart';
@@ -708,11 +709,7 @@ class _QueueBottomSheetState extends ConsumerState<QueueBottomSheet>
                   children: [
                     IconButton(
                       tooltip: l10n.addToQueue,
-                      icon: Icon(
-                        LucideIcons.listPlus,
-                        color: accentColor,
-                        size: 20,
-                      ),
+                      icon: QueueAddIcon(color: accentColor),
                       onPressed: () {
                         AppHaptics.light();
                         ref.read(playbackProvider.notifier).addToQueue(song);

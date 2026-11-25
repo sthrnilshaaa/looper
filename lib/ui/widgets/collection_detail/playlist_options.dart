@@ -225,6 +225,29 @@ extension _CollectionPlaylistOptions on CollectionDetailView {
                             },
                           ),
                         ],
+                        const SizedBox(height: 13),
+                        () {
+                          final key = 'playlist:${playlist.id}';
+                          final pinned = ref
+                              .read(settingsProvider)
+                              .libraryPins
+                              .contains(key);
+                          return rowTile(
+                            Icon(
+                              pinned ? LucideIcons.pinOff : LucideIcons.pin,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                            pinned ? l10n.unpinFromLibrary : l10n.pinToLibrary,
+                            () {
+                              AppHaptics.light();
+                              Navigator.pop(context);
+                              ref
+                                  .read(settingsProvider.notifier)
+                                  .toggleLibraryPin(key);
+                            },
+                          );
+                        }(),
                         const SizedBox(height: 16),
                         rowTile(
                           SvgPicture.asset(

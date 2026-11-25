@@ -16,6 +16,11 @@ import 'package:looper_player/features/playback/presentation/providers/playback/
 import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/features/library/domain/models/models.dart';
 import 'package:looper_player/core/services/haptics/app_haptics.dart';
+import 'package:looper_player/features/playlists/presentation/screens/playlist_view.dart'
+    show openPlaylist;
+import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
+
+part 'library_pins.dart';
 
 // Panel = the dark rounded group; tile = the lighter card inside it.
 final _panelColor = Colors.white.withValues(alpha: 0.06);
@@ -67,6 +72,7 @@ class AndroidLibraryTab extends ConsumerWidget {
                   ),
                   padding: const EdgeInsets.fromLTRB(17, 8, 17, 200),
                   children: [
+                    const _PinnedPanel(),
                     _Panel(
                       padding: const EdgeInsets.only(bottom: 10),
                       child: _RecentlyPlayed(
@@ -157,6 +163,15 @@ class AndroidLibraryTab extends ConsumerWidget {
                             count: genreCount,
                           ),
                         ],
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    _Panel(
+                      padding: EdgeInsets.zero,
+                      child: _LinkRow(
+                        icon: LucideIcons.pin,
+                        title: l10n.customizeLibrary,
+                        onTap: () => _showCustomizeLibrary(context),
                       ),
                     ),
                   ],

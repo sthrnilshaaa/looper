@@ -202,6 +202,9 @@ class Playback extends _$Playback {
       sub.cancel();
     }
     _subscriptions.clear();
+    // State streams replay the current value to a new listener
+    // (mpv_audio_kit 0.5+); skip(1) keeps these change-only, as on 0.4, so
+    // rebinding to the incoming player at a crossfade fires nothing.
 
     _subscriptions.add(
       p.stream.error.listen((err) {
@@ -222,13 +225,13 @@ class Playback extends _$Playback {
     );
 
     _subscriptions.add(
-      p.stream.playing.listen((playing) {
+      p.stream.playing.skip(1).listen((playing) {
         // Safety net: a faded pause leaves the fade gain at 0, so if mpv
         // starts playing through any path that didn't fade back in
         // (plugin auto-resume, repeat-one, ...) it would play silently.
         // Only while the fader is idle - a running fade owns the gain.
         if (playing &&
-            p.state.playWhenReady &&
+            p.state.playback.playWhenReady &&
             !_fader.isFading &&
             _fader.factor < 1.0) {
           _fadeIn();
@@ -280,7 +283,7 @@ class Playback extends _$Playback {
     );
 
     _subscriptions.add(
-      p.stream.position.listen((position) {
+      p.stream.position.skip(1).listen((position) {
         if (!state.isScrubbing) {
           // seek() already set state.position to the seek target the
           // instant it was called, before the native player actually
@@ -358,12 +361,16 @@ class Playback extends _$Playback {
       }),
     );
 
-    _subscriptions.add(p.stream.buffering.listen((_) => _updateBuffering()));
-
-    _subscriptions.add(p.stream.seeking.listen((_) => _updateBuffering()));
+    _subscriptions.add(
+      p.stream.buffering.skip(1).listen((_) => _updateBuffering()),
+    );
 
     _subscriptions.add(
-      p.stream.demuxerCacheState.listen((cacheState) {
+      p.stream.seeking.skip(1).listen((_) => _updateBuffering()),
+    );
+
+    _subscriptions.add(
+      p.stream.demuxerCacheState.skip(1).listen((cacheState) {
         if (!state.isStreaming) return;
         if (cacheState.eofCached && !_eofCached) {
           _eofCached = true;
@@ -376,7 +383,7 @@ class Playback extends _$Playback {
     );
 
     _subscriptions.add(
-      p.stream.buffer.listen((buf) {
+      p.stream.buffer.skip(1).listen((buf) {
         if (!state.isStreaming || _eofCached) return;
         final dur = state.duration;
         if (dur <= Duration.zero) return;
@@ -394,7 +401,7 @@ class Playback extends _$Playback {
     );
 
     _subscriptions.add(
-      p.stream.duration.listen((duration) {
+      p.stream.duration.skip(1).listen((duration) {
         if (duration != Duration.zero) {
           state = state.copyWith(
             duration: duration,
@@ -405,12 +412,12 @@ class Playback extends _$Playback {
     );
 
     _subscriptions.add(
-      p.stream.completed.listen((completed) {
+      p.stream.completed.skip(1).listen((completed) {
         debugPrint("======== COMPLETED ========");
         debugPrint("completed = $completed");
-        debugPrint("position  = ${p.state.position}");
-        debugPrint("duration  = ${p.state.duration}");
-        debugPrint("playlist completed = ${p.state.completed}");
+        debugPrint("position  = ${p.state.playback.position}");
+        debugPrint("duration  = ${p.state.playback.duration}");
+        debugPrint("playlist completed = ${p.state.playback.completed}");
 
         if (!completed) {
           _completedResetSinceLoad = true;
@@ -528,7 +535,8 @@ class Playback extends _$Playback {
 
   void _updateBuffering() {
     final raw =
-        player.state.buffering || (state.isStreaming && player.state.seeking);
+        player.state.network.buffering ||
+        (state.isStreaming && player.state.playback.seeking);
     if (raw == _rawBuffering) return;
     _rawBuffering = raw;
 
@@ -980,7 +988,7 @@ class Playback extends _$Playback {
     final loadId = ++_loadGeneration;
     _isTransitioning = true;
     _pendingCompletion = false;
-    _completedResetSinceLoad = !player.state.completed;
+    _completedResetSinceLoad = !player.state.playback.completed;
 
     try {
       await _playDirect(
@@ -1018,7 +1026,7 @@ class Playback extends _$Playback {
         int attempts = 0;
 
         while (!_pendingCompletion &&
-            (player.state.completed || (play && !state.isPlaying)) &&
+            (player.state.playback.completed || (play && !state.isPlaying)) &&
             attempts < 40) {
           await Future.delayed(const Duration(milliseconds: 25));
           attempts++;
@@ -1026,7 +1034,7 @@ class Playback extends _$Playback {
 
         _isTransitioning = false;
         // The new song already ended while it was loading - advance now.
-        if (_pendingCompletion && player.state.completed) {
+        if (_pendingCompletion && player.state.playback.completed) {
           _pendingCompletion = false;
           _onTrackCompleted(immediate: true);
         }
@@ -1232,14 +1240,14 @@ class Playback extends _$Playback {
 
     if (effectivePosition != null && effectivePosition > Duration.zero) {
       int attempts = 0;
-      while (player.state.duration == Duration.zero && attempts < 40) {
+      while (player.state.playback.duration == Duration.zero && attempts < 40) {
         await Future.delayed(const Duration(milliseconds: 50));
         attempts++;
       }
       // Defensively clamp against a stale/corrupt saved value outliving the
       // song's actual duration (e.g. re-tagged file) rather than seeking
       // past the end.
-      final dur = player.state.duration;
+      final dur = player.state.playback.duration;
       final target = (dur > Duration.zero && effectivePosition > dur)
           ? Duration.zero
           : effectivePosition;
@@ -1532,7 +1540,7 @@ class Playback extends _$Playback {
       await _disarmAutoResumeAfterFocusGain();
     } catch (e, stack) {
       LoggerHelper.write('Playback pause failed', e, stack);
-      state = state.copyWith(isPlaying: player.state.playWhenReady);
+      state = state.copyWith(isPlaying: player.state.playback.playWhenReady);
       _updateNotification();
     }
   }
@@ -1557,7 +1565,7 @@ class Playback extends _$Playback {
       await _resumeCurrent(mpvAlreadyPlaying: false);
     } catch (e, stack) {
       LoggerHelper.write('Playback resume failed', e, stack);
-      state = state.copyWith(isPlaying: player.state.playWhenReady);
+      state = state.copyWith(isPlaying: player.state.playback.playWhenReady);
       _updateNotification();
     }
   }
@@ -1598,10 +1606,11 @@ class Playback extends _$Playback {
     }
 
     if (songToPlay != null &&
-        (player.state.completed || player.state.playlist.items.isEmpty)) {
+        (player.state.playback.completed ||
+            player.state.playback.playlist.items.isEmpty)) {
       await play(
         songToPlay,
-        initialPosition: player.state.completed
+        initialPosition: player.state.playback.completed
             ? null
             : _resumePositionAfterStop,
         // An OS play (e.g. resume after a call) may land while the audio
@@ -1617,7 +1626,7 @@ class Playback extends _$Playback {
     }
     // Start from silence only if mpv is really paused; a pause fade that
     // was cut short is still audible and just reverses from where it is.
-    if (!player.state.playWhenReady && _fadeLength() > Duration.zero) {
+    if (!player.state.playback.playWhenReady && _fadeLength() > Duration.zero) {
       _fader.set(0.0);
     }
     await ref.read(audioServiceProvider).resume();
@@ -1654,13 +1663,20 @@ class Playback extends _$Playback {
       await _resumeCurrent(mpvAlreadyPlaying: true);
     } catch (e, stack) {
       LoggerHelper.write('Remote play reconcile failed', e, stack);
-      state = state.copyWith(isPlaying: player.state.playWhenReady);
+      state = state.copyWith(isPlaying: player.state.playback.playWhenReady);
       _updateNotification();
     }
   }
 
   void _onRemotePause() {
-    _lastRemotePauseAt = DateTime.now();
+    // Only a pause that stopped playback: the plugin also sends one at the
+    // start of a call while already paused, and stamping that made the
+    // call's Bluetooth route switch read as an unplug that stopped us, so
+    // Resume on Bluetooth Connect played the paused song after the call.
+    if (state.isPlaying) _lastRemotePauseAt = DateTime.now();
+    // The plugin paused only the player that holds the media session; mid
+    // crossfade the other song would play on through a call.
+    ref.read(audioServiceProvider).transitionDirector.pauseTransition();
     _silenceTimer?.cancel();
     _songCompletionTimer?.cancel();
     if (state.isPlaying) {
@@ -1684,7 +1700,7 @@ class Playback extends _$Playback {
     // applies it asynchronously; let that land, then follow whichever way
     // it went instead of toggling our own flag (the two can disagree).
     await Future<void>.delayed(Duration.zero);
-    if (player.state.playWhenReady) {
+    if (player.state.playback.playWhenReady) {
       await _onRemotePlay();
     } else {
       _onRemotePause();
@@ -1955,7 +1971,7 @@ class Playback extends _$Playback {
     } else {
       state = state.copyWith(
         isScrubbing: false,
-        position: player.state.position,
+        position: player.state.playback.position,
       );
       _applyVolume();
     }
@@ -2678,7 +2694,10 @@ class Playback extends _$Playback {
   void onBecomingNoisy() {
     final pausedJustNow =
         DateTime.now().difference(_lastRemotePauseAt) <
-        const Duration(seconds: 2);
+        // The plugin's own unplug pause lands within milliseconds; a longer
+        // window also caught a headset-button pause just before switching
+        // the headphones off, which then resumed on the next connect.
+        const Duration(seconds: 1);
     if (!state.isPlaying && !pausedJustNow) return;
     if (state.isPlaying) {
       unawaited(ref.read(audioServiceProvider).pause());
@@ -2686,10 +2705,20 @@ class Playback extends _$Playback {
     }
     _pausedForRouteChange = true;
     _routeChangePausedAt = DateTime.now();
+    // A call moves Bluetooth audio to the headset profile, which Android
+    // also reports as "becoming noisy". That is no unplug: the call's own
+    // pause and Resume after call own what happens next.
+    unawaited(() async {
+      if (await ref.read(audioServiceProvider).isOnCall()) {
+        _pausedForRouteChange = false;
+      }
+    }());
   }
 
   Future<void> resumeOnBluetoothConnect() async {
     if (state.isPlaying || !_pausedForRouteChange) return;
+    // Headsets reconnect during calls too; the call's end decides then.
+    if (await ref.read(audioServiceProvider).isOnCall()) return;
     // A reconnect long after the disconnect shouldn't start music by surprise.
     if (DateTime.now().difference(_routeChangePausedAt) >
         const Duration(minutes: 30)) {
@@ -2705,7 +2734,7 @@ class Playback extends _$Playback {
       await _resumeCurrent(mpvAlreadyPlaying: false);
     } catch (e, stack) {
       LoggerHelper.write('Resume on Bluetooth connect failed', e, stack);
-      state = state.copyWith(isPlaying: player.state.playWhenReady);
+      state = state.copyWith(isPlaying: player.state.playback.playWhenReady);
       _updateNotification();
     }
   }

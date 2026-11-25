@@ -8,21 +8,21 @@ part of 'apk_update_notifier.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// In-app update for the Android `github` build: finds the newest GitHub
-/// release, downloads the APK for this device and hands it to the system
-/// installer. Other builds never leave [ApkUpdatePhase.idle].
+/// In-app update for the Android `github` build and Linux: finds the newest
+/// GitHub release, downloads the file for this install and installs it.
+/// Other builds never leave [ApkUpdatePhase.idle].
 
 @ProviderFor(ApkUpdate)
 final apkUpdateProvider = ApkUpdateProvider._();
 
-/// In-app update for the Android `github` build: finds the newest GitHub
-/// release, downloads the APK for this device and hands it to the system
-/// installer. Other builds never leave [ApkUpdatePhase.idle].
+/// In-app update for the Android `github` build and Linux: finds the newest
+/// GitHub release, downloads the file for this install and installs it.
+/// Other builds never leave [ApkUpdatePhase.idle].
 final class ApkUpdateProvider
     extends $NotifierProvider<ApkUpdate, ApkUpdateState> {
-  /// In-app update for the Android `github` build: finds the newest GitHub
-  /// release, downloads the APK for this device and hands it to the system
-  /// installer. Other builds never leave [ApkUpdatePhase.idle].
+  /// In-app update for the Android `github` build and Linux: finds the newest
+  /// GitHub release, downloads the file for this install and installs it.
+  /// Other builds never leave [ApkUpdatePhase.idle].
   ApkUpdateProvider._()
     : super(
         from: null,
@@ -50,11 +50,11 @@ final class ApkUpdateProvider
   }
 }
 
-String _$apkUpdateHash() => r'fdc2c34feabebeff90741c6fda52d5a209b41ee7';
+String _$apkUpdateHash() => r'101c6729f610bb0abffe77d57c1b8deb5dd5e5f1';
 
-/// In-app update for the Android `github` build: finds the newest GitHub
-/// release, downloads the APK for this device and hands it to the system
-/// installer. Other builds never leave [ApkUpdatePhase.idle].
+/// In-app update for the Android `github` build and Linux: finds the newest
+/// GitHub release, downloads the file for this install and installs it.
+/// Other builds never leave [ApkUpdatePhase.idle].
 
 abstract class _$ApkUpdate extends $Notifier<ApkUpdateState> {
   ApkUpdateState build();

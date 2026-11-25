@@ -1,3 +1,4 @@
+import 'package:looper_player/ui/widgets/common/queue_add_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/core/services/haptics/app_haptics.dart';
@@ -73,8 +74,8 @@ class QueueToggle extends ConsumerWidget {
               alignment: alignment,
               child: SizedBox(
                 width: 20,
-                child: Icon(
-                  queued ? LucideIcons.listCheck : LucideIcons.listPlus,
+                child: QueueAddIcon(
+                  queued: queued,
                   size: 18,
                   color: queued
                       ? Colors.white
