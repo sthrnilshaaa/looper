@@ -1,0 +1,101 @@
+name: mpv_audio_kit
+description: Audio player on mpv v0.42.0 with filters, equalizer, visualizer and waveform, for Android, iOS, macOS, Windows, Linux, web, Android TV, tvOS, Wear OS, Tizen, webOS and HarmonyOS.
+version: 0.8.0
+homepage: https://github.com/ales-drnz/mpv_audio_kit
+repository: https://github.com/ales-drnz/mpv_audio_kit
+issue_tracker: https://github.com/ales-drnz/mpv_audio_kit/issues
+documentation: https://pub.dev/documentation/mpv_audio_kit/latest/topics/Playback-topic.html
+
+funding:
+  - https://www.patreon.com/cw/ales_drnz
+  - https://www.buymeacoffee.com/ales.drnz
+
+topics:
+  - audio
+  - audio-player
+  - music
+  - ffmpeg
+  - tv
+
+platforms:
+  android:
+  ios:
+  linux:
+  macos:
+  web:
+  windows:
+
+screenshots:
+  - description: 'The mpv_audio_kit package logo.'
+    path: imgs/mpv_audio_kit.png
+
+environment:
+  sdk: ^3.10.0
+  # 3.38.10 is the Flutter of flutter-webOS. Before 3.41 the web/ assets
+  # below ship on every platform, as `platforms` is not read there.
+  flutter: '>=3.38.10'
+
+dependencies:
+  code_assets: '>=1.1.0 <3.0.0'
+  crypto: ^3.0.7
+  ffi: ^2.1.3
+  fftea: ^1.5.0
+  flutter:
+    sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
+  hooks: ^2.0.0
+  meta: ^1.15.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+  kiri_check: ^1.4.0
+  test: ^1.25.0
+
+flutter:
+  # The web module (libmpv.mjs, libmpv.wasm, mak_webaudio_processor.js)
+  # and its license texts (THIRD_PARTY_LICENSES.txt), installed in web/ by
+  # scripts/update_libmpv.sh and kept out of git. A folder, not the
+  # files: `flutter test` bundles every listed asset, whatever its
+  # platforms, and fails on a missing one.
+  assets:
+    - path: web/
+      platforms: [web]
+  plugin:
+    platforms:
+      android:
+        package: com.alesdrnz.mpv_audio_kit
+        pluginClass: MpvAudioKitPlugin
+        ffiPlugin: true
+      ios:
+        pluginClass: MpvAudioKitPlugin
+        ffiPlugin: true
+        sharedDarwinSource: true
+      linux:
+        pluginClass: MpvAudioKitPlugin
+        ffiPlugin: true
+      macos:
+        pluginClass: MpvAudioKitPlugin
+        ffiPlugin: true
+        sharedDarwinSource: true
+      # Flutter-OH (https://gitcode.com/CPF-Flutter/flutter_flutter) builds
+      # ohos/ as a HAR into the app: the media session (AVSession) and the
+      # continuous task of audio playback. Flutter itself skips the key.
+      ohos:
+        pluginClass: MpvAudioKitPlugin
+      # flutter-tvos (https://fluttertv.dev) reads the plugin from
+      # tvos/Package.swift, which also links libmpv: see there.
+      tvos:
+        pluginClass: MpvAudioKitPlugin
+      web:
+        pluginClass: MpvAudioKitWeb
+        fileName: src/web/mpv_audio_kit_web.dart
+      # flutter-webos (https://github.com/lg-flutter-webos/flutter-webos)
+      # runs no build hook: webos/CMakeLists.txt bundles libmpv.
+      webos:
+        ffiPlugin: true
+      windows:
+        pluginClass: MpvAudioKitPluginCApi
+        ffiPlugin: true

@@ -136,13 +136,9 @@ class Playback extends _$Playback {
       if (previous?.audioFocus != next.audioFocus ||
           previous?.resumeAfterCall != next.resumeAfterCall ||
           previous?.resumeOnBluetoothConnect != next.resumeOnBluetoothConnect) {
-        // While paused, keep auto-resume disarmed (see
-        // _disarmAutoResumeAfterFocusGain) - toggling a setting mustn't
-        // re-arm it behind a deliberate pause.
-        final policy = next.audioFocus && !state.isPlaying
-            ? InterruptionPolicy.pauseOnly
-            : _getInterruptionPolicy();
-        ref.read(audioServiceProvider).applyAudioFocusPolicy(policy);
+        ref
+            .read(audioServiceProvider)
+            .applyAudioFocusPolicy(_getInterruptionPolicy());
         if (Platform.isAndroid) {
           ref.read(androidAudioFocusManagerProvider).syncSettings();
         }
@@ -1496,11 +1492,8 @@ class Playback extends _$Playback {
     }
     _resumePositionAfterStop = state.position;
     state = state.copyWith(isPlaying: false);
+    // player.stop() also disarms mpv_audio_kit's resume after a call.
     await ref.read(audioServiceProvider).stop();
-    // The user explicitly stopped playback: disarm mpv_audio_kit's
-    // auto-resume-on-focus-gain latch so an unrelated transient focus
-    // loss/gain cycle (e.g. a notification sound) can't resurrect the song.
-    await _disarmAutoResumeAfterFocusGain();
   }
 
   Future<void> togglePlay() async {
@@ -1533,11 +1526,8 @@ class Playback extends _$Playback {
         );
         if (!finished) return;
       }
+      // player.pause() also disarms mpv_audio_kit's resume after a call.
       await ref.read(audioServiceProvider).pause();
-      // Deliberate user pause: disarm mpv_audio_kit's auto-resume-on-focus-
-      // gain latch (see _disarmAutoResumeAfterFocusGain doc) so it doesn't
-      // resume this track behind the user's back later.
-      await _disarmAutoResumeAfterFocusGain();
     } catch (e, stack) {
       LoggerHelper.write('Playback pause failed', e, stack);
       state = state.copyWith(isPlaying: player.state.playback.playWhenReady);
@@ -1579,10 +1569,6 @@ class Playback extends _$Playback {
   Future<void> _resumeCurrent({required bool mpvAlreadyPlaying}) async {
     ref.read(audioServiceProvider).transitionDirector.resumeTransition();
     _pausedForRouteChange = false;
-    // About to (re)start playback: restore whatever interruption policy the
-    // settings actually dictate, undoing any disarm from a previous manual
-    // pause/stop.
-    await _reapplyInterruptionPolicy();
 
     final settings = ref.read(settingsProvider);
     Song? songToPlay = state.currentSong;
@@ -1644,10 +1630,8 @@ class Playback extends _$Playback {
     _pausedForRouteChange = false;
     state = state.copyWith(isPlaying: false);
     _updateNotification();
+    // player.pause() also disarms mpv_audio_kit's resume after a call.
     await ref.read(audioServiceProvider).pause();
-    // Nothing should auto-resume after the queue ended or the listener
-    // fell asleep, e.g. once a voice note's transient focus is released.
-    await _disarmAutoResumeAfterFocusGain();
   }
 
   // --- OS media-session commands (already applied to mpv, see build()) ---
@@ -1683,16 +1667,9 @@ class Playback extends _$Playback {
       state = state.copyWith(isPlaying: false);
       _updateNotification();
     }
-    // A pause from the notification or a headset should stop a later
-    // transient focus loss/gain from resuming us, same as an in-app pause.
-    // Not when the pause came from a call, though: the plugin armed its
-    // resume-after-call latch under the current policy and a second
-    // transient loss while paused would clear it under pauseOnly.
-    unawaited(() async {
-      if (await ref.read(audioServiceProvider).isOnCall()) return;
-      if (state.isPlaying) return; // resumed again meanwhile
-      await _disarmAutoResumeAfterFocusGain();
-    }());
+    // No disarm needed here: mpv_audio_kit 0.8 only resumes after a call
+    // that paused a playing player, and a controller's pause disarms it
+    // natively.
   }
 
   Future<void> _onRemotePlayPause() async {
@@ -2672,25 +2649,13 @@ class Playback extends _$Playback {
     );
   }
 
-  // mpv_audio_kit keeps holding audio focus across a pause/stop (by design,
-  // so a quick manual resume doesn't re-duck other apps) and, under
-  // InterruptionPolicy.pauseAndResume, arms auto-resume on the *next*
-  // transient focus loss/gain cycle regardless of why playback isn't
-  // running. Without this, an unrelated notification chime arriving after
-  // the user has explicitly paused/stopped would silently resume this app's
-  // playback. Forcing the policy to pauseOnly disarms that latch; the next
-  // deliberate play/resume restores whatever policy the settings dictate
-  // via _reapplyInterruptionPolicy().
-  Future<void> _disarmAutoResumeAfterFocusGain() async {
-    if (!ref.read(settingsProvider).audioFocus) return;
-    await _applyInterruptionPolicy(InterruptionPolicy.pauseOnly);
-  }
-
   /// Headphones unplugged / Bluetooth audio dropped. mpv_audio_kit pauses
   /// for this itself; this broadcast only races that pause, so it records
   /// that playback stopped for a route change (for "Resume on Bluetooth
-  /// Connect") whichever arrived first, and pauses too in case it came
-  /// first (a second pause is a no-op).
+  /// Connect") whichever arrived first. It pauses mpv itself only while no
+  /// player holds the session (mid crossfade hand-over): an app pause
+  /// would disarm the plugin's resume after a call that follows a
+  /// Bluetooth route switch.
   void onBecomingNoisy() {
     final pausedJustNow =
         DateTime.now().difference(_lastRemotePauseAt) <
@@ -2700,7 +2665,9 @@ class Playback extends _$Playback {
         const Duration(seconds: 1);
     if (!state.isPlaying && !pausedJustNow) return;
     if (state.isPlaying) {
-      unawaited(ref.read(audioServiceProvider).pause());
+      if (player.state.settings.mediaSession == null) {
+        unawaited(ref.read(audioServiceProvider).pause());
+      }
       _onRemotePause();
     }
     _pausedForRouteChange = true;
@@ -2716,6 +2683,8 @@ class Playback extends _$Playback {
   }
 
   Future<void> resumeOnBluetoothConnect() async {
+    // The setting is hidden while Manage Audio Focus is off.
+    if (!ref.read(settingsProvider).audioFocus) return;
     if (state.isPlaying || !_pausedForRouteChange) return;
     // Headsets reconnect during calls too; the call's end decides then.
     if (await ref.read(audioServiceProvider).isOnCall()) return;
@@ -2887,15 +2856,6 @@ class Playback extends _$Playback {
     return settings.resumeAfterCall
         ? InterruptionPolicy.pauseAndResume
         : InterruptionPolicy.pauseOnly;
-  }
-
-  Future<void> _applyInterruptionPolicy(InterruptionPolicy policy) async {
-    await ref.read(audioServiceProvider).applyAudioFocusPolicy(policy);
-  }
-
-  Future<void> _reapplyInterruptionPolicy() async {
-    if (!ref.read(settingsProvider).audioFocus) return;
-    await _applyInterruptionPolicy(_getInterruptionPolicy());
   }
 
   /// Persists [song]'s current listening position for "Keep Song Progress".

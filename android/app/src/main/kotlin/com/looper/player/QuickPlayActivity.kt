@@ -50,12 +50,25 @@ class QuickPlayActivity : Activity() {
 
     private val audioManager by lazy { getSystemService(AUDIO_SERVICE) as AudioManager }
 
+    // A call paused the preview: play on once it ends.
+    private var resumeOnFocusGain = false
+
+    // No CAN_DUCK case: since Android 8 the system ducks a request that
+    // doesn't set willPauseWhenDucked, and never delivers that loss.
     private val focusListener = AudioManager.OnAudioFocusChangeListener { change ->
         when (change) {
-            AudioManager.AUDIOFOCUS_LOSS,
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> pause()
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> player?.setVolume(0.3f, 0.3f)
-            AudioManager.AUDIOFOCUS_GAIN -> player?.setVolume(1f, 1f)
+            AudioManager.AUDIOFOCUS_LOSS -> {
+                resumeOnFocusGain = false
+                pause()
+            }
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                if (player?.isPlaying == true) resumeOnFocusGain = true
+                pause()
+            }
+            AudioManager.AUDIOFOCUS_GAIN -> if (resumeOnFocusGain) {
+                resumeOnFocusGain = false
+                play()
+            }
         }
     }
 
@@ -201,6 +214,7 @@ class QuickPlayActivity : Activity() {
     private fun togglePlayPause() {
         val mp = player ?: return
         if (!prepared) return
+        resumeOnFocusGain = false
         if (mp.isPlaying) pause() else play()
     }
 

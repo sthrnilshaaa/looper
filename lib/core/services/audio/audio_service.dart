@@ -31,6 +31,20 @@ class AudioService {
   int _mediaMetadataGeneration = 0;
   InterruptionPolicy _interruptionPolicy = InterruptionPolicy.pauseAndResume;
 
+  // One set for every publish, so the notification's buttons stay put.
+  // No stop: it takes a button slot on the notification.
+  static const _sessionActions = {
+    MediaAction.play,
+    MediaAction.pause,
+    MediaAction.playPause,
+    MediaAction.next,
+    MediaAction.previous,
+    MediaAction.seek,
+    MediaAction.like,
+    MediaAction.setShuffle,
+    MediaAction.setRepeatMode,
+  };
+
   Timer? _liveEqThrottleTimer;
   List<double>? _throttledGains;
   bool _throttledEnabled = false;
@@ -215,18 +229,7 @@ class AudioService {
         appName: 'Looper Player',
         desktopEntry: 'looper_player',
         autoApplyPlaylistNavigation: false,
-        actions: const {
-          MediaAction.play,
-          MediaAction.pause,
-          MediaAction.playPause,
-          MediaAction.stop,
-          MediaAction.next,
-          MediaAction.previous,
-          MediaAction.seek,
-          MediaAction.like,
-          MediaAction.setShuffle,
-          MediaAction.setRepeatMode,
-        },
+        actions: _sessionActions,
         interruptionPolicy: _interruptionPolicy,
       ),
     );
@@ -450,18 +453,10 @@ class AudioService {
           appName: 'Looper Player',
           desktopEntry: 'looper_player',
           autoApplyPlaylistNavigation: false,
-          actions: const {
-            MediaAction.play,
-            MediaAction.pause,
-            MediaAction.playPause,
-            MediaAction.next,
-            MediaAction.previous,
-            MediaAction.seek,
-            MediaAction.like,
-            MediaAction.setShuffle,
-            MediaAction.setRepeatMode,
-          },
-          interruptionPolicy: policy,
+          actions: _sessionActions,
+          // Read now, not before the artwork loaded: a policy change may
+          // have landed meanwhile.
+          interruptionPolicy: _interruptionPolicy,
         ),
       );
       if (generation == _mediaMetadataGeneration) {

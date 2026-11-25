@@ -1,0 +1,11 @@
+{
+  "name": "mpv_audio_kit",
+  "version": "0.8.0",
+  "description": "The OHOS side of mpv_audio_kit: the media session (AVSession) and the continuous task of audio playback.",
+  "main": "index.ets",
+  "author": "Alessandro Di Ronza",
+  "license": "BSD-3-Clause",
+  "dependencies": {
+    "@ohos/flutter_ohos": "file:./har/flutter.har"
+  }
+}
