@@ -1,4 +1,6 @@
 {
+  "newNavbar": "Yeni Gezinme Çubuğu",
+  "newNavbarDesc": "Looper Music’in dört sekmeli gezinme çubuğu, Arama kendi sekmesinde",
   "headerProfilePhoto": "Üst çubuklarda fotoğraf",
   "headerProfilePhotoDesc": "Ana sayfa, Şarkılar ve Kitaplık'ta kişi simgesi yerine profil fotoğrafını göster",
   "customizeLibraryDesc": "Çalma listelerini veya Favorileri kitaplığın üstüne sabitle ve sürükleyerek sırala.",

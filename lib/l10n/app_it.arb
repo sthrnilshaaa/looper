@@ -1,4 +1,6 @@
 {
+  "newNavbar": "Nuova barra di navigazione",
+  "newNavbarDesc": "La barra a quattro schede di Looper Music, con Cerca come scheda a sé",
   "headerProfilePhoto": "Foto nelle barre superiori",
   "headerProfilePhotoDesc": "Mostra la tua foto profilo in Home, Brani e Libreria al posto dell'icona della persona",
   "customizeLibraryDesc": "Fissa playlist o Preferiti in cima alla libreria e trascinali per ordinarli.",

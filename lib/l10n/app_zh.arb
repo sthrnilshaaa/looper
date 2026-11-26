@@ -1,4 +1,6 @@
 {
+  "newNavbar": "新导航栏",
+  "newNavbarDesc": "Looper Music 的四标签导航栏，搜索拥有独立标签",
   "headerProfilePhoto": "顶部栏显示照片",
   "headerProfilePhotoDesc": "在主页、歌曲和媒体库中以你的头像代替人物图标",
   "customizeLibraryDesc": "将播放列表或收藏置顶到媒体库顶部,并拖动调整顺序。",
