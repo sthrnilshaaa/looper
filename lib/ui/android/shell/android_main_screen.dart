@@ -701,7 +701,19 @@ class _AndroidMainScreenState extends ConsumerState<AndroidMainScreen>
                           return PageRouteBuilder(
                             pageBuilder:
                                 (context, animation, secondaryAnimation) =>
-                                    _buildTabStack(newNavbar),
+                                    // This page is built once, so it watches
+                                    // the setting itself: a captured value
+                                    // would keep the start-up tab set.
+                                    Consumer(
+                                      builder: (context, ref, _) =>
+                                          _buildTabStack(
+                                            ref.watch(
+                                              settingsProvider.select(
+                                                (s) => s.newNavbar,
+                                              ),
+                                            ),
+                                          ),
+                                    ),
                             // The tab stack gets the same covered/uncovered parallax
                             // as pushed pages, so popping back to it eases it in
                             // instead of snapping it on in the last frame.

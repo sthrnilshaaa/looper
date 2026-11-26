@@ -23,8 +23,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  FLUTTER_VERSION: '3.47.7'
-  FLUTTER_COMMIT: 'abaf9c523780a608bd46686fd5e53740a07077f8'
+  FLUTTER_VERSION: '3.50.1'
+  FLUTTER_COMMIT: 'ae9b586f34a8443573f82ef57c3bf914a908cbf7'
   SIGNING_CERT_SHA256: '3bd6ad7d7a9ebefadfec703800b40d76e397b10a305d1e0213c0c9c9f9d74976'
 
 jobs:
