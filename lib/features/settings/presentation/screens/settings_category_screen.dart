@@ -91,6 +91,7 @@ class SettingsCategoryScreen extends ConsumerWidget {
               const FrostedMusicBarTile(),
               const FrostedNavbarTile(),
             ],
+            const NewNavbarTile(),
             const StatusBarBlurTile(),
             // Dynamic theming paints its own background.
             if (!dynamicTheming) ...[
@@ -551,6 +552,7 @@ const _androidOnlyTiles = <Type>{
   AlwaysBlurSheetsTile,
   FrostedMusicBarTile,
   FrostedNavbarTile,
+  NewNavbarTile,
   StatusBarBlurTile,
   AnimateBackgroundGradientTile,
   HomeDarknessSlider,

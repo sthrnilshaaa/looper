@@ -206,6 +206,9 @@ class AppSettings {
   // Blur on just the music bar / navbar while Dynamic Theming is off.
   bool frostedMusicBar = AppDefaults.frostedMusicBar;
   bool frostedNavbar = AppDefaults.frostedNavbar;
+  // Looper Music's flat four-tab navbar, Search as its own tab. Off by
+  // default.
+  bool newNavbar = false;
   // Blur behind the status bar on Home and collection top bars.
   bool statusBarBlur = AppDefaults.statusBarBlur;
   // The Dynamic Theming art background on the player screen only, without

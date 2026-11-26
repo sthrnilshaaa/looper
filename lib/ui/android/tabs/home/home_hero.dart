@@ -810,14 +810,17 @@ class _HeaderRow extends ConsumerWidget {
             child: Center(child: SelectedAvatar(size: 38, maxWidth: 130)),
           ),
         const Spacer(),
-        HomeRoundButton(
-          size: 42,
-          color: _fill,
-          semanticLabel: l10n.search,
-          onTap: onSearch,
-          child: HomeIcons.search(),
-        ),
-        const SizedBox(width: 6),
+        // The New Navbar has its own Search tab.
+        if (!ref.watch(settingsProvider.select((s) => s.newNavbar))) ...[
+          HomeRoundButton(
+            size: 42,
+            color: _fill,
+            semanticLabel: l10n.search,
+            onTap: onSearch,
+            child: HomeIcons.search(),
+          ),
+          const SizedBox(width: 6),
+        ],
         HomeRoundButton(
           size: 42,
           color: _fill,

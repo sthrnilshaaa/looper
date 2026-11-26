@@ -600,6 +600,8 @@
   "tapFieldToEdit": "Tap a field to edit",
   "frostedMusicBar": "Frosted Music Bar",
   "frostedMusicBarDesc": "Blur behind the music bar, nothing else",
+  "newNavbar": "New Navbar",
+  "newNavbarDesc": "Looper Music's four-tab navbar, with Search as its own tab",
   "frostedNavbar": "Frosted Navbar",
   "frostedNavbarDesc": "Blur behind the navigation bar, nothing else",
   "alwaysBlurSheets": "Always Blur Sheets",

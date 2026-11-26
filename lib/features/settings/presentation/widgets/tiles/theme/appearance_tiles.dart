@@ -124,6 +124,25 @@ class FrostedNavbarTile extends ConsumerWidget {
   }
 }
 
+/// Looper Music's four-tab navbar (Home, Search, Songs, Library).
+class NewNavbarTile extends ConsumerWidget {
+  const NewNavbarTile({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final value = ref.watch(settingsProvider.select((s) => s.newNavbar));
+    return SwitchListTile(
+      secondary: const Icon(LucideIcons.layoutPanelTop),
+      title: Text(l10n.newNavbar, style: _tileTitleStyle()),
+      subtitle: Text(l10n.newNavbarDesc, style: _tileSubtitleStyle()),
+      value: value,
+      onChanged: (value) =>
+          ref.read(settingsProvider.notifier).updateNewNavbar(value),
+    );
+  }
+}
+
 /// Blur behind the status bar on Home and album/playlist top bars.
 class StatusBarBlurTile extends ConsumerWidget {
   const StatusBarBlurTile({super.key});

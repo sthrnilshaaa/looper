@@ -62,9 +62,13 @@ class _AndroidSearchTabState extends ConsumerState<AndroidSearchTab> {
   void initState() {
     super.initState();
     _controller = TextEditingController(text: ref.read(searchQueryProvider));
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) ref.read(searchFocusNodeProvider).requestFocus();
-    });
+    // With the New Navbar this stays mounted as a root tab from app start:
+    // focus only when opened, not on mount.
+    if (ref.read(appNavigationProvider).activeItem == NavItem.search) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) ref.read(searchFocusNodeProvider).requestFocus();
+      });
+    }
   }
 
   @override
@@ -146,6 +150,22 @@ class _AndroidSearchTabState extends ConsumerState<AndroidSearchTab> {
       if (_controller.text != next) _controller.text = next;
       if (_selected.isNotEmpty) _clearSelection();
     });
+
+    // As a root tab (New Navbar): focus the field when the tab is opened,
+    // and drop the keyboard when it is left.
+    ref.listen(
+      appNavigationProvider.select((n) => n.activeItem == NavItem.search),
+      (previous, active) {
+        final focus = ref.read(searchFocusNodeProvider);
+        if (!active) {
+          focus.unfocus();
+        } else {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) focus.requestFocus();
+          });
+        }
+      },
+    );
 
     if (query.isEmpty) {
       _shown = null;

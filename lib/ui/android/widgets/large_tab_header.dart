@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/core/providers/navigation_provider.dart';
+import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
 import 'package:looper_player/core/services/haptics/app_haptics.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/features/settings/presentation/screens/account_view.dart'
@@ -53,12 +54,15 @@ class LargeTabHeader extends ConsumerWidget {
               ],
             ),
           ),
-          RoundIconButton(
-            icon: Icons.search_rounded,
-            tooltip: MaterialLocalizations.of(context).searchFieldLabel,
-            onTap: () => go(NavItem.search),
-          ),
-          const SizedBox(width: 6),
+          // The New Navbar has its own Search tab.
+          if (!ref.watch(settingsProvider.select((s) => s.newNavbar))) ...[
+            RoundIconButton(
+              icon: Icons.search_rounded,
+              tooltip: MaterialLocalizations.of(context).searchFieldLabel,
+              onTap: () => go(NavItem.search),
+            ),
+            const SizedBox(width: 6),
+          ],
           RoundIconButton(
             icon: Icons.person_rounded,
             onTap: () => go(NavItem.account),

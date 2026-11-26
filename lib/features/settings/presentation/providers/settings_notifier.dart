@@ -399,6 +399,7 @@ class Settings extends _$Settings {
       ..alwaysBlurSheets = s.alwaysBlurSheets
       ..frostedMusicBar = s.frostedMusicBar
       ..frostedNavbar = s.frostedNavbar
+      ..newNavbar = s.newNavbar
       ..statusBarBlur = s.statusBarBlur
       ..playerDynamicBackground = s.playerDynamicBackground
       ..enableInternet = s.enableInternet
@@ -799,6 +800,9 @@ class Settings extends _$Settings {
 
   Future<void> updateFrostedMusicBar(bool value) =>
       _update((s) => s..frostedMusicBar = value);
+
+  Future<void> updateNewNavbar(bool value) =>
+      _update((s) => s..newNavbar = value);
 
   Future<void> updateFrostedNavbar(bool value) =>
       _update((s) => s..frostedNavbar = value);
