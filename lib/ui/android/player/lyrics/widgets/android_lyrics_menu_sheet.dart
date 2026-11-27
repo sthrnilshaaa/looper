@@ -19,12 +19,16 @@ import 'package:looper_player/features/playback/presentation/providers/lyrics/ly
 import 'package:looper_player/features/playback/presentation/widgets/lyrics/desktop_lyrics_toolbar.dart';
 import 'package:looper_player/features/playback/presentation/widgets/lyrics/lyrics_scale.dart';
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
+import 'package:looper_player/features/settings/presentation/widgets/tiles/theme/theme_settings_tiles.dart'
+    show LyricsTextPanelTile;
 import 'package:looper_player/l10n/app_localizations.dart';
 import 'package:looper_player/ui/widgets/sheets/app_bottom_sheet.dart';
 import 'package:looper_player/ui/widgets/common/optimized_image.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'lyrics_gestures_tutorial_sheet.dart';
+import '../lyrics_screen_style.dart';
+import '../lyrics_style_picker.dart';
 import 'package:looper_player/core/services/haptics/app_haptics.dart';
 import 'package:looper_player/core/services/haptics/haptic_snack_bar.dart';
 
@@ -303,6 +307,24 @@ class _LyricsMenuSheetContent extends ConsumerWidget {
                           );
                         },
                       )
+                    else if (!hasLyrics &&
+                        LyricsFetcher.isInstrumentalTitle(song))
+                      _MenuActionTile(
+                        icon: LucideIcons.search,
+                        iconColor: accent,
+                        title: l10n.lyricsSearchAnyway,
+                        onTap: () {
+                          AppHaptics.medium();
+                          Navigator.pop(context);
+                          ref
+                              .read(lyricsProvider.notifier)
+                              .fetchForSong(
+                                song,
+                                force: true,
+                                includeInstrumental: true,
+                              );
+                        },
+                      )
                     else
                       _MenuActionTile(
                         icon: LucideIcons.sparkles,
@@ -541,6 +563,41 @@ class _LyricsMenuSheetContent extends ConsumerWidget {
                   children: [
                     // Only the Android lyrics screen has an ambient background.
                     if (!desktop) ...[
+                      _MenuActionTile(
+                        icon: LucideIcons.layoutTemplate,
+                        iconColor: accent,
+                        title: l10n.lyricsStyle,
+                        subtitle: lyricsStyleLabel(
+                          l10n,
+                          LyricsScreenStyle.fromSetting(settings.lyricsStyle),
+                        ),
+                        onTap: () {
+                          AppHaptics.medium();
+                          final nav = Navigator.of(
+                            context,
+                            rootNavigator: true,
+                          );
+                          Navigator.pop(context);
+                          nav.push(
+                            PageRouteBuilder<void>(
+                              transitionDuration: const Duration(
+                                milliseconds: 320,
+                              ),
+                              reverseTransitionDuration: const Duration(
+                                milliseconds: 240,
+                              ),
+                              pageBuilder: (_, _, _) =>
+                                  const LyricsStylePickerScreen(),
+                              transitionsBuilder: (_, a, _, child) =>
+                                  FadeTransition(opacity: a, child: child),
+                            ),
+                          );
+                        },
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(12, 8, 12, 8),
+                        child: LyricsTextPanelTile(compact: true),
+                      ),
                       _MenuSwitchTile(
                         icon: LucideIcons.sparkles,
                         title: l10n.enableLyricsGradient,

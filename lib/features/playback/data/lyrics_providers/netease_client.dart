@@ -68,6 +68,8 @@ class NetEaseClient {
           'id': '${song['id']}',
           'lv': '1',
           'yv': '1',
+          'tv': '1',
+          'rv': '1',
         });
         final lrc = _toLrc(lyric, cleanTitle);
         if (lrc != null) return lrc;
@@ -86,7 +88,70 @@ class NetEaseClient {
     var lines = KrcLyricsParser.parseYrc(text('yrc'));
     if (lines.isEmpty) lines = _parseLrc(text('lrc'));
     if (lines.isEmpty) return null;
-    return TimedLrcWriter.write(withoutCreditLines(lines, title: title));
+    final clean = withoutCreditLines(lines, title: title);
+    final written = TimedLrcWriter.write(clean);
+    if (written == null) return null;
+
+    final translations = _parseLrc(text('tlyric'));
+    final romanizations = _parseLrc(text('romalrc'));
+    if (translations.isEmpty && romanizations.isEmpty) return written;
+
+    return _attachExtras(written, clean, translations, romanizations);
+  }
+
+  /// Appends matching [tlyric] / [romalrc] lines with the exact same timestamp
+  /// directly after each main line block (standard enhanced-LRC style).
+  static String _attachExtras(
+    String written,
+    List<TimedLyricLine> mainLines,
+    List<TimedLyricLine> translations,
+    List<TimedLyricLine> romanizations,
+  ) {
+    final tsMatch = RegExp(r'^\[(\d{1,3}:\d{2}\.\d{3})\]');
+    final trByTs = <String, String>{};
+    final roByTs = <String, String>{};
+    for (final line in mainLines) {
+      final ts = TimedLrcWriter.formatTimestamp(line.startMs);
+      final tr = _nearestText(translations, line.startMs);
+      if (tr != null) trByTs[ts] = tr;
+      final ro = _nearestText(romanizations, line.startMs);
+      if (ro != null) roByTs[ts] = ro;
+    }
+
+    final rawLines = written.split('\n');
+    final out = <String>[];
+    for (var i = 0; i < rawLines.length; i++) {
+      final raw = rawLines[i];
+      out.add(raw);
+      final m = tsMatch.firstMatch(raw);
+      if (m == null) continue;
+      final ts = m.group(1)!;
+      // Keep [w:], [v:2], [bg:] lines attached to the main line before extras.
+      while (i + 1 < rawLines.length &&
+          (rawLines[i + 1].startsWith('[w:') ||
+              rawLines[i + 1].startsWith('[v:') ||
+              rawLines[i + 1].startsWith('[bg:'))) {
+        out.add(rawLines[++i]);
+      }
+      final tr = trByTs.remove(ts);
+      if (tr != null) out.add('[$ts]$tr');
+      final ro = roByTs.remove(ts);
+      if (ro != null) out.add('[$ts]$ro');
+    }
+    return out.join('\n');
+  }
+
+  static String? _nearestText(List<TimedLyricLine> pool, int targetMs) {
+    String? best;
+    var bestDiff = 250; // NetEase yrc vs tlyric/romalrc can differ by ~100 ms.
+    for (final item in pool) {
+      final diff = (item.startMs - targetMs).abs();
+      if (diff <= bestDiff) {
+        bestDiff = diff;
+        best = item.text;
+      }
+    }
+    return best;
   }
 
   static List<TimedLyricLine> _parseLrc(String lrc) {

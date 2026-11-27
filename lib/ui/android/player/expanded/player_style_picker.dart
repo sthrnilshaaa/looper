@@ -12,6 +12,19 @@ import 'package:looper_player/l10n/app_localizations.dart';
 import 'android_expanded_player.dart';
 import 'styled_player_layout.dart';
 
+/// Opens the full-screen Player Style picker.
+void openPlayerStylePicker(BuildContext context) {
+  Navigator.of(context, rootNavigator: true).push(
+    PageRouteBuilder<void>(
+      transitionDuration: const Duration(milliseconds: 320),
+      reverseTransitionDuration: const Duration(milliseconds: 240),
+      pageBuilder: (_, _, _) => const PlayerStylePickerScreen(),
+      transitionsBuilder: (_, a, _, child) =>
+          FadeTransition(opacity: a, child: child),
+    ),
+  );
+}
+
 /// Holding the artwork for ~3 s opens the style picker. A shorter hold
 /// still runs [onLongPress] (on release, so the two never both fire).
 class HoldForPlayerStyles extends StatefulWidget {
@@ -35,15 +48,7 @@ class _HoldForPlayerStylesState extends State<HoldForPlayerStyles> {
       _timer = null;
       if (!mounted) return;
       AppHaptics.success();
-      Navigator.of(context, rootNavigator: true).push(
-        PageRouteBuilder<void>(
-          transitionDuration: const Duration(milliseconds: 320),
-          reverseTransitionDuration: const Duration(milliseconds: 240),
-          pageBuilder: (_, _, _) => const PlayerStylePickerScreen(),
-          transitionsBuilder: (_, a, _, child) =>
-              FadeTransition(opacity: a, child: child),
-        ),
-      );
+      openPlayerStylePicker(context);
     });
   }
 
@@ -95,7 +100,8 @@ class _PlayerStylePickerScreenState
   static const double _cardFraction = 270 / 402;
   static const double _gapFraction = 30 / 402;
 
-  late final PageController _pages;
+  PageController? _pages;
+  bool? _wasLandscape;
   late int _index;
   late final int _initialStyleIndex;
 
@@ -106,15 +112,26 @@ class _PlayerStylePickerScreenState
       ref.read(settingsProvider).playerStyle,
     ).index;
     _index = _initialStyleIndex;
-    _pages = PageController(
-      initialPage: _index,
-      viewportFraction: _cardFraction + _gapFraction,
-    );
+  }
+
+  PageController _controllerFor(bool isLandscape) {
+    if (_pages == null || _wasLandscape != isLandscape) {
+      final old = _pages;
+      if (old != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => old.dispose());
+      }
+      _wasLandscape = isLandscape;
+      _pages = PageController(
+        initialPage: _index,
+        viewportFraction: isLandscape ? 0.62 : (_cardFraction + _gapFraction),
+      );
+    }
+    return _pages!;
   }
 
   @override
   void dispose() {
-    _pages.dispose();
+    _pages?.dispose();
     super.dispose();
   }
 
@@ -123,6 +140,14 @@ class _PlayerStylePickerScreenState
     PlayerLayoutStyle.arc => l10n.playerStyleArc,
     PlayerLayoutStyle.linear => l10n.playerStyleLinear,
     PlayerLayoutStyle.card => l10n.playerStyleCard,
+    PlayerLayoutStyle.disc => l10n.playerStyleDisc,
+    PlayerLayoutStyle.asymmetric => l10n.playerStyleAsymmetric,
+    PlayerLayoutStyle.fullbleed => l10n.playerStyleFullbleed,
+    PlayerLayoutStyle.capsule => l10n.playerStyleCapsule,
+    PlayerLayoutStyle.m3wavy => l10n.playerStyleM3Wavy,
+    PlayerLayoutStyle.m3scallop => l10n.playerStyleM3Scallop,
+    PlayerLayoutStyle.m3clover => l10n.playerStyleM3Clover,
+    PlayerLayoutStyle.m3burst => l10n.playerStyleM3Burst,
   };
 
   void _save() {
@@ -139,10 +164,10 @@ class _PlayerStylePickerScreenState
     final duration = reduced
         ? Duration.zero
         : const Duration(milliseconds: 240);
-    // Previews are always the portrait layout, at the phone's own shape.
-    final Size frame = mq.size.width < mq.size.height
-        ? mq.size
-        : const Size(402, 874);
+    final bool isLandscape = mq.size.width > mq.size.height;
+    final PageController pages = _controllerFor(isLandscape);
+    // Previews match the phone's current orientation & aspect ratio in real time.
+    final Size frame = mq.size;
 
     return Scaffold(
       backgroundColor: const Color(0xFF080808),
@@ -150,7 +175,7 @@ class _PlayerStylePickerScreenState
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              padding: EdgeInsets.fromLTRB(16, isLandscape ? 10 : 16, 16, 0),
               child: Row(
                 children: [
                   _CircleButton(
@@ -177,10 +202,11 @@ class _PlayerStylePickerScreenState
                 ],
               ),
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: isLandscape ? 12 : 32),
             Expanded(
               child: PageView.builder(
-                controller: _pages,
+                key: ValueKey(isLandscape),
+                controller: pages,
                 itemCount: _styles.length,
                 onPageChanged: (i) {
                   AppHaptics.selection();
@@ -191,7 +217,9 @@ class _PlayerStylePickerScreenState
                   final isAlreadySet = i == _initialStyleIndex;
                   return Padding(
                     padding: EdgeInsets.symmetric(
-                      horizontal: mq.size.width * _gapFraction / 2,
+                      horizontal:
+                          mq.size.width *
+                          (isLandscape ? 0.025 : _gapFraction / 2),
                     ),
                     child: Center(
                       child: AspectRatio(
@@ -201,7 +229,7 @@ class _PlayerStylePickerScreenState
                           onTap: () {
                             if (_index != i) {
                               AppHaptics.selection();
-                              _pages.animateToPage(
+                              pages.animateToPage(
                                 i,
                                 duration: const Duration(milliseconds: 280),
                                 curve: Curves.easeOutCubic,
@@ -229,9 +257,12 @@ class _PlayerStylePickerScreenState
                                     width: 2.0,
                                   ),
                                 ),
-                                child: _StylePreview(
-                                  style: _styles[i],
-                                  frame: frame,
+                                child: TickerMode(
+                                  enabled: isSelected,
+                                  child: _StylePreview(
+                                    style: _styles[i],
+                                    frame: frame,
+                                  ),
                                 ),
                               ),
                             ),
@@ -243,7 +274,7 @@ class _PlayerStylePickerScreenState
                 },
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: isLandscape ? 10 : 18),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -263,9 +294,98 @@ class _PlayerStylePickerScreenState
                   ),
               ],
             ),
-            const SizedBox(height: 40),
+            SizedBox(height: isLandscape ? 8 : 16),
+            _PickerQuickToggles(l10n: l10n),
+            SizedBox(height: isLandscape ? 8 : 20),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PickerQuickToggles extends ConsumerWidget {
+  final AppLocalizations l10n;
+  const _PickerQuickToggles({required this.l10n});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lyricsOn = ref.watch(
+      settingsProvider.select((s) => s.playerLyricLine),
+    );
+    final accentOn = ref.watch(
+      settingsProvider.select((s) => s.cardAccentColors || s.playerStyleAccent),
+    );
+    final blurOn = ref.watch(settingsProvider.select((s) => s.playerStyleBlur));
+    final notifier = ref.read(settingsProvider.notifier);
+
+    Widget pill({
+      required IconData icon,
+      required String label,
+      required bool active,
+      required VoidCallback onTap,
+    }) => Material(
+      color: active
+          ? Colors.white.withValues(alpha: 0.16)
+          : Colors.white.withValues(alpha: 0.06),
+      borderRadius: BorderRadius.circular(20),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () {
+          AppHaptics.selection();
+          onTap();
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 14,
+                color: active ? Colors.white : Colors.white54,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: AppFonts.jostStyle(
+                  color: active ? Colors.white : Colors.white60,
+                  fontSize: 12,
+                  fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          pill(
+            icon: Icons.lyrics_outlined,
+            label: l10n.lyrics,
+            active: lyricsOn,
+            onTap: () => notifier.updatePlayerLyricLine(!lyricsOn),
+          ),
+          pill(
+            icon: Icons.palette_outlined,
+            label: l10n.playerStyleAccent,
+            active: accentOn,
+            onTap: () => notifier.updateCardAccentColors(!accentOn),
+          ),
+          pill(
+            icon: Icons.blur_on_rounded,
+            label: l10n.playerStyleBlurBackground,
+            active: blurOn,
+            onTap: () => notifier.updatePlayerStyleBlur(!blurOn),
+          ),
+        ],
       ),
     );
   }

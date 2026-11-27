@@ -1,3 +1,4 @@
+import 'package:metadata_god/src/quality_checker.dart';
 import 'package:metadata_god/src/rust/api/api.dart';
 import 'package:metadata_god/src/rust/api/api.dart' as api;
 import 'package:metadata_god/src/rust/frb_generated.dart';
@@ -65,6 +66,11 @@ abstract class MetadataGod {
   }) {
     return api.writeMetadata(file: file, metadata: metadata);
   }
+
+  /// Checks a FLAC file for transcodes (MP3/AAC/Vorbis), upsampling,
+  /// 16-bit padding into 24-bit, or STREAMINFO integrity errors.
+  static Future<QualityReport> checkQuality(String path, {bool full = false}) =>
+      checkQualityNative(path, full: full);
 }
 
 extension MetadataDuration on Metadata {

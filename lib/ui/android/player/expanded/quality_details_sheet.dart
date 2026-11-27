@@ -16,6 +16,8 @@ import 'package:looper_player/core/utils/l10n.dart';
 import 'package:looper_player/features/library/domain/models/models.dart';
 import 'package:looper_player/features/playback/data/audio_analyzer.dart';
 import 'package:looper_player/features/playback/data/device_audio_info.dart';
+import 'package:looper_player/features/playback/data/quality_check_service.dart';
+import 'package:metadata_god/metadata_god.dart' show QualityReport;
 import 'package:looper_player/features/playback/data/crossmix/crossmix_settings.dart';
 import 'package:looper_player/core/services/audio/bit_perfect_manager.dart';
 import 'package:looper_player/core/services/audio/audio_service.dart';
@@ -306,6 +308,20 @@ class _QualityDetailsSheetState extends ConsumerState<_QualityDetailsSheet>
   late int? _fileSize = widget.fileSize;
   Timer? _recheckTimer;
   bool _hasBlockerBackup = false;
+  QualityReport? _qualityReport;
+  bool _checkingQuality = false;
+
+  Future<void> _runQualityCheck() async {
+    final file = widget.song.path;
+    if (_checkingQuality) return;
+    setState(() => _checkingQuality = true);
+    final report = await QualityCheckService.check(file, full: true);
+    if (!mounted) return;
+    setState(() {
+      _qualityReport = report;
+      _checkingQuality = false;
+    });
+  }
 
   void _refreshDevice() {
     DeviceAudioInfo.fetch().then((info) {
@@ -354,6 +370,11 @@ class _QualityDetailsSheetState extends ConsumerState<_QualityDetailsSheet>
       });
     }
     final path = widget.song.path;
+    if (QualityCheckService.isCheckableFlac(path)) {
+      QualityCheckService.loadCached(path).then((report) {
+        if (mounted && report != null) setState(() => _qualityReport = report);
+      });
+    }
     if (AudioAnalyzer.getCachedAnalysis(path) == null) {
       AudioAnalyzer.analyze(path).then((_) {
         if (mounted) setState(() {});
@@ -593,9 +614,35 @@ class _QualityDetailsSheetState extends ConsumerState<_QualityDetailsSheet>
                   if ((song.duration ?? 0) > 0)
                     (l10n.duration, _duration(song.duration!)),
                   if (_fileSize != null) (l10n.fileSize, _bytes(_fileSize!)),
+                  if (_checkingQuality)
+                    (l10n.qualityCheckLabel, l10n.qualityCheckRunning)
+                  else if (_qualityReport != null)
+                    (
+                      l10n.qualityCheckLabel,
+                      QualityCheckService.describe(_qualityReport!, l10n),
+                    ),
                 ],
               ),
             ),
+            if (!_checkingQuality &&
+                QualityCheckService.isCheckableFlac(song.path))
+              _stagger(
+                block++,
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: OutlinedButton.icon(
+                    onPressed: _runQualityCheck,
+                    icon: const Icon(LucideIcons.shieldCheck, size: 16),
+                    label: Text(l10n.checkQuality),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.16),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             _stagger(
               block++,
               _Section(

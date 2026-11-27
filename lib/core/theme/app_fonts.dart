@@ -14,6 +14,8 @@ class AppFonts {
 
   static const String poppins = 'Poppins';
   static const String notoSansDevanagari = 'Noto Sans Devanagari';
+  static const String playfairDisplay = 'Playfair Display';
+  static const String jetBrainsMono = 'JetBrains Mono';
 
   /// Fonts used per glyph when [family] lacks one, so mixed Hindi/English
   /// text keeps [family] for Latin. Stack Sans and most pickable families
@@ -238,26 +240,32 @@ class AppFonts {
 
   static TextStyle getLyricsStyle({
     required bool useNewFontLyrics,
-    required String family,
+    required String? family,
     required int weightDelta,
     required int activeWeightDelta,
     required bool isActive,
+    FontWeight? fontWeight,
+    FontStyle? fontStyle,
+    double? letterSpacing,
     Color? color,
     double? fontSize,
     double? height,
     List<Shadow>? shadows,
   }) {
-    final activeFamily = useNewFontLyrics ? family : stackSansText;
+    final activeFamily = useNewFontLyrics
+        ? (family ?? spaceGrotesk)
+        : stackSansText;
     final style = familyStyle(activeFamily);
 
-    FontWeight weight;
-    // Use a uniform weight (w600/SemiBold) to completely eliminate text wrapping jumps and layout transition glitches
     final delta = useNewFontLyrics ? activeWeightDelta : 0;
-    weight = getAdjustedWeight(FontWeight.w600, delta);
+    final weight =
+        fontWeight ?? getAdjustedWeight(FontWeight.w600, delta);
 
     return style.copyWith(
       fontSize: fontSize,
       fontWeight: weight,
+      fontStyle: fontStyle,
+      letterSpacing: letterSpacing,
       color: color,
       height: height,
       shadows: shadows,

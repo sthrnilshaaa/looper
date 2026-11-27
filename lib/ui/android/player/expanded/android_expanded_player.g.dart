@@ -47,4 +47,4 @@ final class CurrentSongAnalysisProvider
 }
 
 String _$currentSongAnalysisHash() =>
-    r'c1124e3179374b2a5ffac93693aa1f617c48f1b6';
+    r'7f84a3a02a4bd171844d6d803d15318c7f122f3b';

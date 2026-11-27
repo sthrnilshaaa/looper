@@ -325,71 +325,13 @@ class _AndroidHomeTabState extends ConsumerState<AndroidHomeTab>
     }
 
     final genres = genresMap.keys.toList();
-    switch (genreSort) {
-      case GenreSortOption.nameAsc:
-        genres.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
-        break;
-      case GenreSortOption.nameDesc:
-        genres.sort((a, b) => b.toLowerCase().compareTo(a.toLowerCase()));
-        break;
-      case GenreSortOption.songCountDesc:
-        genres.sort(
-          (a, b) => genresMap[b]!.length.compareTo(genresMap[a]!.length),
-        );
-        break;
-      case GenreSortOption.songCountAsc:
-        genres.sort(
-          (a, b) => genresMap[a]!.length.compareTo(genresMap[b]!.length),
-        );
-        break;
-    }
+    sortGenresList(genres, genresMap, genreSort);
 
     final artists = List<Artist>.from(rawArtists);
-    if (artistSort == ArtistSortOption.nameAsc) {
-      artists.sort(
-        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-      );
-    } else {
-      artists.sort(
-        (a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()),
-      );
-    }
+    sortArtistsList(artists, songs, artistSort);
 
     final albums = List<Album>.from(rawAlbums);
-    switch (albumSort) {
-      case AlbumSortOption.nameAsc:
-        albums.sort(
-          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-        );
-        break;
-      case AlbumSortOption.nameDesc:
-        albums.sort(
-          (a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()),
-        );
-        break;
-      case AlbumSortOption.dateAddedNewest:
-        albums.sort((a, b) => b.dateAdded.compareTo(a.dateAdded));
-        break;
-      case AlbumSortOption.dateAddedOldest:
-        albums.sort((a, b) => a.dateAdded.compareTo(b.dateAdded));
-        break;
-      case AlbumSortOption.yearNewest:
-        albums.sort((a, b) {
-          if (a.year == null && b.year == null) return 0;
-          if (a.year == null) return 1;
-          if (b.year == null) return -1;
-          return b.year!.compareTo(a.year!);
-        });
-        break;
-      case AlbumSortOption.yearOldest:
-        albums.sort((a, b) {
-          if (a.year == null && b.year == null) return 0;
-          if (a.year == null) return 1;
-          if (b.year == null) return -1;
-          return a.year!.compareTo(b.year!);
-        });
-        break;
-    }
+    sortAlbumsList(albums, songs, albumSort);
 
     // Reopening the app: the saved library is still loading from the
     // database - show the layout it's about to fill.

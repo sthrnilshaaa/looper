@@ -26,6 +26,7 @@ import '../../providers/lyrics/lyrics_selection_notifier.dart';
 
 import 'package:looper_player/core/utils/l10n.dart';
 import 'package:looper_player/core/services/haptics/app_haptics.dart';
+import 'package:looper_player/ui/android/player/lyrics/lyrics_screen_style.dart';
 
 class AdvancedLyricRenderer extends ConsumerStatefulWidget {
   final List<LyricLine> lines;
@@ -47,6 +48,7 @@ class AdvancedLyricRenderer extends ConsumerStatefulWidget {
   /// Left/right and bottom padding of the list. Null keeps the defaults.
   final double? horizontalPadding;
   final double? bottomPadding;
+  final LyricsScreenStyle? previewStyle;
 
   const AdvancedLyricRenderer({
     super.key,
@@ -58,6 +60,7 @@ class AdvancedLyricRenderer extends ConsumerStatefulWidget {
     this.onFontScaleChanged,
     this.horizontalPadding,
     this.bottomPadding,
+    this.previewStyle,
   });
 
   @override
@@ -602,7 +605,92 @@ class _AdvancedLyricRendererState extends ConsumerState<AdvancedLyricRenderer>
           return false;
         },
         child: LayoutBuilder(
-          builder: (context, constraints) => ListView.builder(
+          builder: (context, constraints) {
+            final screenStyle =
+                widget.previewStyle ??
+                LyricsScreenStyle.fromSetting(
+                  ref.watch(settingsProvider.select((s) => s.lyricsStyle)),
+                );
+            final bool isCenteredWindow =
+                widget.synced &&
+                _currentLineIndex >= 0 &&
+                !browsing &&
+                (screenStyle == LyricsScreenStyle.zen ||
+                    screenStyle == LyricsScreenStyle.bigtype);
+
+            if (isCenteredWindow) {
+              final int cur = _currentLineIndex.clamp(
+                0,
+                widget.lines.length - 1,
+              );
+              final List<int> indices =
+                  screenStyle == LyricsScreenStyle.bigtype
+                  ? [cur, if (cur + 1 < widget.lines.length) cur + 1]
+                  : [
+                      if (cur - 1 >= 0) cur - 1,
+                      cur,
+                      if (cur + 1 < widget.lines.length) cur + 1,
+                    ];
+              return Padding(
+                padding: EdgeInsets.fromLTRB(
+                  widget.horizontalPadding ?? 24.s,
+                  0,
+                  widget.horizontalPadding ?? 24.s,
+                  (widget.bottomPadding ?? 90.s) * 0.45,
+                ),
+                child: Center(
+                  child: SingleChildScrollView(
+                    physics: const NeverScrollableScrollPhysics(),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (final idx in indices)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 7),
+                            child: AdvancedLyricLine(
+                              line: widget.lines[idx],
+                              mode: widget.mode,
+                              previewStyle: widget.previewStyle,
+                              isActive: idx == cur,
+                              held:
+                                  idx != cur && idx == _anchorIndexOf(cur),
+                              distance: (idx - cur).abs(),
+                              synced: widget.synced,
+                              fontScale: _effectiveFontScale,
+                              isSelected: selection.contains(idx),
+                              selectionActive: selection.isActive,
+                              onTap: () {
+                                if (selection.isActive) {
+                                  AppHaptics.selection();
+                                  ref
+                                      .read(lyricsSelectionProvider.notifier)
+                                      .extendTo(idx);
+                                } else {
+                                  _tappedIndex = idx;
+                                  _tappedAt = DateTime.now();
+                                  _updateActiveLine(
+                                    widget.lines[idx].startTime,
+                                  );
+                                  widget.onSeek(widget.lines[idx].startTime);
+                                }
+                              },
+                              onLongPress: () {
+                                AppHaptics.medium();
+                                ref
+                                    .read(lyricsSelectionProvider.notifier)
+                                    .startSelection(idx);
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            return ListView.builder(
             controller: _scrollController,
             physics: const LooperScrollPhysics(),
             itemCount: widget.lines.length + 1,
@@ -677,6 +765,7 @@ class _AdvancedLyricRendererState extends ConsumerState<AdvancedLyricRenderer>
                   child: AdvancedLyricLine(
                     line: line,
                     mode: widget.mode,
+                    previewStyle: widget.previewStyle,
                     isActive: isActive,
                     held: !isActive && index == pairHead,
                     // While the user scrolls around on their own, every
@@ -738,7 +827,8 @@ class _AdvancedLyricRendererState extends ConsumerState<AdvancedLyricRenderer>
                     : row,
               );
             },
-          ),
+          );
+          },
         ),
       ),
     );

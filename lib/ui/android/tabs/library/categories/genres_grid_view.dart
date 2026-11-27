@@ -34,24 +34,7 @@ class GenresGridView extends ConsumerWidget {
     final genres = genresMap.keys
         .where((g) => CategorySearch.matches(q, [g]))
         .toList();
-    switch (sortOption) {
-      case GenreSortOption.nameAsc:
-        genres.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
-        break;
-      case GenreSortOption.nameDesc:
-        genres.sort((a, b) => b.toLowerCase().compareTo(a.toLowerCase()));
-        break;
-      case GenreSortOption.songCountDesc:
-        genres.sort(
-          (a, b) => genresMap[b]!.length.compareTo(genresMap[a]!.length),
-        );
-        break;
-      case GenreSortOption.songCountAsc:
-        genres.sort(
-          (a, b) => genresMap[a]!.length.compareTo(genresMap[b]!.length),
-        );
-        break;
-    }
+    sortGenresList(genres, genresMap, sortOption);
 
     return ListWave(
       child: GridView.builder(

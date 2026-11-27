@@ -125,6 +125,15 @@ class _LyricsServicesSheet extends ConsumerWidget {
                           fontSize: 14,
                         ),
                       ),
+                      subtitle: LyricsFetcher.isCoolingDown(id)
+                          ? Text(
+                              l10n.lyricsServicePaused,
+                              style: AppFonts.settingsStyle(
+                                color: Colors.orangeAccent,
+                                fontSize: 12,
+                              ),
+                            )
+                          : null,
                       trailing: Switch(
                         value: isOn,
                         activeThumbColor: accent,

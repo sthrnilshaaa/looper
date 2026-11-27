@@ -33,9 +33,13 @@
   "restoreSettings": "Restore",
   "keepMySettings": "Keep mine",
   "allSongsEyebrow": "All",
-  "@allSongsEyebrow": {"description": "Small first line above \"Songs\" in the Songs tab title"},
+  "@allSongsEyebrow": {
+    "description": "Small first line above \"Songs\" in the Songs tab title"
+  },
   "yourLibraryEyebrow": "Your",
-  "@yourLibraryEyebrow": {"description": "Small first line above \"Library\" in the Library tab title"},
+  "@yourLibraryEyebrow": {
+    "description": "Small first line above \"Library\" in the Library tab title"
+  },
   "about": "About",
   "aboutAndMaintainers": "About & Maintainers",
   "aboutApp": "About App",
@@ -1958,5 +1962,167 @@
   "homeYourOwn": "Your Own",
   "notificationPermissionRequired": "Allow notifications to continue. Looper needs them for playback controls.",
   "letterSpacing": "Letter spacing",
-  "letterSpacingDesc": "Tighten or loosen the text across the app"
+  "letterSpacingDesc": "Tighten or loosen the text across the app",
+  "skipNext": "Next",
+  "searchPlaysOnlySongTitle": "Search Plays Only That Song",
+  "searchPlaysOnlySongDesc": "A song played from search plays on its own, with no queue built around it",
+  "playerStyleDisc": "Disc",
+  "playerStyleAsymmetric": "Asymmetric",
+  "playerStyleFullbleed": "Full Bleed",
+  "playerStyleCapsule": "Capsule",
+  "playerStyleM3Wavy": "M3 Wavy",
+  "playerStyleM3Scallop": "M3 Scallop",
+  "playerStyleM3Clover": "M3 Clover",
+  "playerStyleM3Burst": "M3 Burst",
+  "blurMusicBar": "Blur Music Bar",
+  "blurMusicBarDesc": "Blur the page behind the music bar",
+  "backupPasswordTitle": "Lock backup with a password?",
+  "backupPasswordDesc": "Optional. A password encrypts the backup and includes your signed-in account, so restoring it signs you in again. Without one, the account is left out.",
+  "backupPasswordHint": "Password",
+  "backupPasswordConfirm": "Confirm password",
+  "backupPasswordMismatch": "Passwords do not match",
+  "backupWithoutPassword": "No password",
+  "enterBackupPassword": "Enter backup password",
+  "backupWrongPassword": "Wrong password",
+  "unlock": "Unlock",
+  "showCachedSongs": "Show cached songs in Songs",
+  "showCachedSongsDesc": "Online songs saved whole in the app cache appear in Songs with your device music and play from storage, without loading.",
+  "backupLockAndExport": "Lock & export",
+  "backupEncrypting": "Encrypting backup...",
+  "backupDecrypting": "Unlocking backup...",
+  "backupAccountRestored": "Signed in to your account again.",
+  "backupAccountNotRestored": "Your account could not be restored: the saved sign-in has expired. Sign in again.",
+  "classicNavbar": "Classic Navbar",
+  "classicNavbarDesc": "The old three-pill navbar (Home, Songs, Library), with Search in the top bars",
+  "pillMusicBar": "Pill Music Bar",
+  "pillMusicBarDesc": "Round the music bar into a pill with circular artwork",
+  "viewItem": "View {name}",
+  "@viewItem": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutSong": "About song",
+  "streamInfo": "Stream info",
+  "qualitySectionFormat": "Format",
+  "qualitySectionResampler": "Resampler",
+  "qualitySectionDsp": "DSP",
+  "qualityResamplerEngine": "Engine",
+  "qualityResamplerStatus": "Status",
+  "qualityResamplerConverting": "Converting",
+  "qualityResamplerNotNeeded": "Not needed",
+  "qualityAndroidMixer": "Android mixer",
+  "qualityOnlineLoudness": "Loudness Level",
+  "qualityCrossfade": "Crossfade",
+  "qualityPitch": "Pitch",
+  "qualitySourceType": "Playing from",
+  "qualitySourceLocal": "Local file",
+  "qualitySourceStream": "Streaming",
+  "qualitySourceCached": "Saved copy",
+  "qualityStreamClient": "Stream client",
+  "accountPrivacyTitle": "Your login stays private",
+  "accountPrivacyBody": "You sign in directly on Google's own page. Looper keeps the session only on this device and uses it only to load your YouTube Music library. We never collect, share or sell any of your information.",
+  "setupGenresDesc": "Select your favorite genres to help us curate your perfect playlist.",
+  "setupArtistsTitle": "Who are your\nfavorite artists?",
+  "setupArtistsDesc": "Select a few to help us personalize your recommendations.",
+  "setupSearchArtist": "Search artist",
+  "setupSearchGenre": "Search genre",
+  "setupAlmostThere": "Almost There",
+  "lyricsServicePaused": "Paused: not responding",
+  "lyricsSearchAnyway": "Search anyway",
+  "showLyricsTranslation": "Show translation",
+  "showLyricsTranslationDesc": "Display translated lyrics under the main line when available",
+  "showLyricsRomanization": "Show romanization",
+  "showLyricsRomanizationDesc": "Display romanized lyrics under the main line when available",
+  "checkQuality": "Check quality",
+  "qualityCheckLabel": "Check",
+  "qualityCheckRunning": "Checking...",
+  "qualityCheckClean": "No trace of lossy encoding found",
+  "qualityCheckLossyCodecCutoff": "Likely from a lossy source ({codec}, cut-off at {cutoff})",
+  "@qualityCheckLossyCodecCutoff": {
+    "placeholders": {
+      "codec": {
+        "type": "String"
+      },
+      "cutoff": {
+        "type": "String"
+      }
+    }
+  },
+  "qualityCheckLossyCodec": "Likely from a lossy source ({codec})",
+  "@qualityCheckLossyCodec": {
+    "placeholders": {
+      "codec": {
+        "type": "String"
+      }
+    }
+  },
+  "qualityCheckPadded24": "16-bit audio stored as 24-bit",
+  "qualityCheckSuspect": "Suspected upscaled or lossy source",
+  "qualityCheckLimitedCutoff": "Bandwidth limited (cut-off at {cutoff})",
+  "@qualityCheckLimitedCutoff": {
+    "placeholders": {
+      "cutoff": {
+        "type": "String"
+      }
+    }
+  },
+  "qualityCheckLimited": "Bandwidth limited",
+  "qualityCheckCorrupt": "File integrity error",
+  "qualityCheckInconclusive": "Inconclusive",
+  "playerArtShapeSize": "Artwork Shape Size",
+  "lyricsStyle": "Lyrics Style",
+  "lyricsStyleDesc": "Layout of the Lyrics screen",
+  "lyricsStyleClassic": "Classic",
+  "lyricsStyleArc": "Arc",
+  "lyricsStyleSpatial": "Spatial Glass",
+  "lyricsStyleVinyl": "Vinyl",
+  "lyricsStyleEditorial": "Editorial",
+  "lyricsStyleKaraoke": "Karaoke",
+  "lyricsStylePoster": "Split Poster",
+  "lyricsStyleOled": "OLED",
+  "lyricsStyleM3": "M3 Expressive",
+  "lyricsStyleTimeline": "Timeline",
+  "lyricsStyleZen": "Zen Focus",
+  "lyricsStyleTitle": "{name} Style",
+  "@lyricsStyleTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "lyricsStyleBigType": "Big Type",
+  "lyricsTextSection": "Lyrics text",
+  "lyricsTextFont": "Font",
+  "lyricsTextStyleDefault": "Style default",
+  "lyricsTextWeight": "Weight",
+  "lyricsTextAuto": "Auto",
+  "lyricsTextWeightLight": "Light",
+  "lyricsTextWeightMed": "Med",
+  "lyricsTextWeightBold": "Bold",
+  "lyricsTextWeightHeavy": "Heavy",
+  "lyricsTextItalic": "Italic",
+  "lyricsTextSize": "Size",
+  "lyricsTextLineSpacing": "Line spacing",
+  "lyricsTextAlignment": "Alignment",
+  "lyricsTextAlignLeft": "Left",
+  "lyricsTextAlignCenter": "Center",
+  "lyricsTextAlignRight": "Right",
+  "lyricsTextCase": "Case",
+  "lyricsTextReset": "Reset to style defaults",
+  "musicBarStyle": "Music Bar Style",
+  "musicBarStyleDesc": "Look of the mini player bar",
+  "musicBarStylePill": "Pill",
+  "musicBarStyleSections": "Sections",
+  "musicBarStyleArtGlow": "Art Glow",
+  "musicBarStyleBare": "Bare",
+  "navbarStyle": "Navbar Style",
+  "navbarStyleDesc": "Layout of the bottom navigation bar",
+  "navbarStylePremium": "Premium",
+  "navbarStyleClassic": "Classic",
+  "navbarStyleCapsule": "Floating Capsule",
+  "navbarStyleMinimal": "Minimal Line"
 }

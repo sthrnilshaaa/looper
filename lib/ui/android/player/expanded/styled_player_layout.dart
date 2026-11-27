@@ -27,12 +27,14 @@ import 'package:looper_player/ui/widgets/common/optimized_image.dart';
 import '../../shell/music_bar/fluid_player_motion.dart';
 import '../lyrics/lyrics_route.dart';
 import 'android_expanded_player.dart';
+import 'expressive_player_widgets.dart';
 import 'favorite_button.dart';
 import 'player_lyric_line.dart';
 import 'player_style_picker.dart';
 import 'quality_details_sheet.dart';
 import 'package:looper_player/features/playback/data/audio_analyzer.dart';
 import 'package:looper_player/features/settings/domain/quality_badge_style.dart';
+import 'package:looper_player/features/playback/data/quality_check_service.dart';
 import 'package:looper_player/ui/widgets/player/quality_badge.dart';
 
 /// The two Figma Now Playing layouts (Settings > Now Playing > Player Style).
@@ -43,12 +45,33 @@ enum PlayerLayoutStyle {
   classic,
   arc,
   linear,
-  card;
+  card,
+  disc,
+  asymmetric,
+  fullbleed,
+  capsule,
+  m3wavy,
+  m3scallop,
+  m3clover,
+  m3burst;
+
+  bool get isM3Expressive => switch (this) {
+    m3wavy || m3scallop || m3clover || m3burst => true,
+    _ => false,
+  };
 
   static PlayerLayoutStyle fromSetting(String value) => switch (value) {
     'arc' => arc,
     'linear' => linear,
     'card' || 'box' => card,
+    'disc' => disc,
+    'asymmetric' => asymmetric,
+    'fullbleed' => fullbleed,
+    'capsule' => capsule,
+    'm3wavy' => m3wavy,
+    'm3scallop' => m3scallop,
+    'm3clover' => m3clover,
+    'm3burst' => m3burst,
     _ => classic,
   };
 }
@@ -115,6 +138,16 @@ class _Spec {
     lyricsHeight: 251,
     bigTitleBottomFromBottom: 59,
   );
+  static const asymmetric = _Spec(
+    chevronFromBottom: 512,
+    starFromBottom: 336,
+    prevFromBottom: 271.5,
+    playFromBottom: 205.5,
+    nextFromBottom: 140.5,
+    lyricsTopFromBottom: 382,
+    lyricsHeight: 251,
+    bigTitleBottomFromBottom: 59,
+  );
 }
 
 class StyledPlayerLayout extends ConsumerStatefulWidget {
@@ -130,6 +163,9 @@ class StyledPlayerLayout extends ConsumerStatefulWidget {
   final VoidCallback onShowQueue;
   final VoidCallback onShowOptions;
 
+  /// Tap on the title or artist: the small song sheet.
+  final VoidCallback? onShowSongInfo;
+
   const StyledPlayerLayout({
     super.key,
     required this.style,
@@ -140,6 +176,7 @@ class StyledPlayerLayout extends ConsumerStatefulWidget {
     required this.onShowLyrics,
     required this.onShowQueue,
     required this.onShowOptions,
+    this.onShowSongInfo,
   });
 
   @override
@@ -172,9 +209,13 @@ class _StyledPlayerLayoutState extends ConsumerState<StyledPlayerLayout>
   @override
   Widget build(BuildContext context) {
     final song = widget.song;
+    if (widget.style.isM3Expressive) {
+      return _buildM3ExpressiveLayout(context, song);
+    }
     final spec = switch (widget.style) {
-      PlayerLayoutStyle.arc => _Spec.arc,
-      PlayerLayoutStyle.card => _Spec.card,
+      PlayerLayoutStyle.arc || PlayerLayoutStyle.disc => _Spec.arc,
+      PlayerLayoutStyle.card || PlayerLayoutStyle.capsule => _Spec.card,
+      PlayerLayoutStyle.asymmetric => _Spec.asymmetric,
       _ => _Spec.linear,
     };
     final hasLyrics = ref.watch(_showPlayerLyricsProvider);
@@ -216,6 +257,14 @@ class _StyledPlayerLayoutState extends ConsumerState<StyledPlayerLayout>
             // Artwork (+ the arc seek bar under it).
             if (widget.style == PlayerLayoutStyle.arc)
               ..._arcTop(context, sx, s)
+            else if (widget.style == PlayerLayoutStyle.disc)
+              ..._discTop(sx, s, w)
+            else if (widget.style == PlayerLayoutStyle.asymmetric)
+              _asymmetricArt(sx, s)
+            else if (widget.style == PlayerLayoutStyle.fullbleed)
+              _fullbleedArt(s, w)
+            else if (widget.style == PlayerLayoutStyle.capsule)
+              _capsuleArt(s, w)
             else if (widget.style == PlayerLayoutStyle.card)
               _cardArt(sx, s, w)
             else
@@ -258,7 +307,7 @@ class _StyledPlayerLayoutState extends ConsumerState<StyledPlayerLayout>
                           key: ValueKey(('big', song.id)),
                           song: song,
                           scale: s,
-                          onTap: widget.onShowOptions,
+                          onTap: widget.onShowSongInfo,
                         ),
                 ),
                 FluidSectionMotion.songInfo,
@@ -277,13 +326,14 @@ class _StyledPlayerLayoutState extends ConsumerState<StyledPlayerLayout>
                   _SmallTitle(
                     song: song,
                     scale: s,
-                    onTap: widget.onShowOptions,
+                    onTap: widget.onShowSongInfo,
                   ),
                   FluidSectionMotion.songInfo,
                 ),
               ),
 
-            if (widget.style == PlayerLayoutStyle.linear)
+            if (widget.style == PlayerLayoutStyle.linear ||
+                widget.style == PlayerLayoutStyle.fullbleed)
               Positioned(
                 left: 30 * sx,
                 right: 30 * sx,
@@ -295,14 +345,23 @@ class _StyledPlayerLayoutState extends ConsumerState<StyledPlayerLayout>
                 ),
               ),
 
-            if (widget.style == PlayerLayoutStyle.card)
+            if (widget.style == PlayerLayoutStyle.card ||
+                widget.style == PlayerLayoutStyle.asymmetric ||
+                widget.style == PlayerLayoutStyle.capsule)
               Positioned(
                 left: 32 * sx,
                 right: 32 * sx,
-                top: 457 * s,
+                top: (widget.style == PlayerLayoutStyle.card ? 457 : 434) * s,
                 height: 40 * s,
                 child: fade(
-                  _seekHero(_LinearSeekRow(scale: s)),
+                  _seekHero(
+                    _LinearSeekRow(
+                      scale: s,
+                      barHeight: widget.style == PlayerLayoutStyle.capsule
+                          ? 12
+                          : 8,
+                    ),
+                  ),
                   FluidSectionMotion.seekBar,
                 ),
               ),
@@ -539,6 +598,1775 @@ class _StyledPlayerLayoutState extends ConsumerState<StyledPlayerLayout>
     );
   }
 
+  // Capsule style: stadium-rounded artwork centered at top with 1px rim.
+  Widget _capsuleArt(double s, double w) {
+    final double artScale = ref.watch(playerArtScaleProvider);
+    final double side = (342 * s * artScale).clamp(180 * s, w - 32 * s);
+    final double top = (62 * s - (side - 342 * s) * 0.25).clamp(24 * s, 96 * s);
+    return Positioned(
+      left: (w - side) / 2,
+      top: top,
+      width: side,
+      height: side,
+      child: _reportArt(
+        _artGestures(
+          _hero(
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(side * (102 / 342)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.25),
+                    offset: Offset(0, 36 * s),
+                    blurRadius: 34 * s,
+                  ),
+                ],
+              ),
+              foregroundDecoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(102 * s),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.12),
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(102 * s),
+                child: _artImage(),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Disc style: centered circular artwork with lower-hemisphere arc seek bar.
+  List<Widget> _discTop(double sx, double s, double w) {
+    final double side = 296 * s;
+    return [
+      Positioned(
+        left: (w - side) / 2,
+        top: 62 * s,
+        width: side,
+        height: side,
+        child: _reportArt(
+          _artGestures(
+            _hero(
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      offset: Offset(0, 32 * s),
+                      blurRadius: 34 * s,
+                    ),
+                  ],
+                ),
+                foregroundDecoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.14),
+                  ),
+                ),
+                child: ClipOval(child: _artImage()),
+              ),
+            ),
+          ),
+        ),
+      ),
+      Positioned(
+        left: 0,
+        right: 0,
+        top: 250 * s,
+        height: 170 * s,
+        child: widget.fadeWithSlide(
+          _seekHero(
+            _ArcSeekBar(
+              sx: sx,
+              s: s,
+              top: 250 * s,
+              cx: _designW / 2,
+              cy: 210,
+              rx: 168,
+              ry: 168,
+              startDeg: 140,
+              endDeg: 40,
+              leftLabel: const Offset(48, 372),
+              rightLabel: const Offset(354, 372),
+            ),
+          ),
+          FluidSectionMotion.seekBar,
+        ),
+      ),
+    ];
+  }
+
+  // Asymmetric style: top-left bleed artwork with sculpted bottom-right radius.
+  Widget _asymmetricArt(double sx, double s) {
+    final double artW = 316 * sx;
+    final double artH = 412 * s;
+    final radius = BorderRadius.only(bottomRight: Radius.circular(40 * s));
+    return Positioned(
+      left: 0,
+      top: 0,
+      width: artW,
+      height: artH,
+      child: _reportArt(
+        _artGestures(
+          _hero(
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: radius,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    offset: Offset(0, 32 * s),
+                    blurRadius: 32 * s,
+                  ),
+                ],
+              ),
+              foregroundDecoration: BoxDecoration(
+                borderRadius: radius,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.10),
+                ),
+              ),
+              child: ClipRRect(borderRadius: radius, child: _artImage()),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // FullBleed style: borderless edge-to-edge art melting into the background.
+  Widget _fullbleedArt(double s, double w) {
+    return Positioned(
+      left: 0,
+      top: 0,
+      width: w,
+      height: 486 * s,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          _reportArt(
+            _hero(
+              ShaderMask(
+                blendMode: BlendMode.dstIn,
+                shaderCallback: (rect) => const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: [0.0, 0.34, 0.68, 1.0],
+                  colors: [
+                    Colors.white,
+                    Colors.white,
+                    Color(0xB8FFFFFF),
+                    Colors.transparent,
+                  ],
+                ).createShader(rect),
+                child: _artImage(),
+              ),
+            ),
+          ),
+          // Only the visible upper artwork region accepts swipe/tap gestures.
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            height: 340 * s,
+            child: _artGestures(
+              const ColoredBox(color: Colors.transparent),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Material 3 Expressive layouts (Styles 9–12: Main, Scallop, Clover, Burst).
+  Widget _buildM3ExpressiveLayout(BuildContext context, Song song) {
+    final l10n = AppLocalizations.of(context)!;
+    final hasLyrics = ref.watch(_showPlayerLyricsProvider);
+    final lyricsOn = ref.watch(
+      settingsProvider.select((s) => s.playerLyricLine),
+    );
+    final useAccent = ref.watch(
+      settingsProvider.select((s) => s.cardAccentColors || s.playerStyleAccent),
+    );
+    final accent = ref.watch(settingsProvider.select((s) => s.accent));
+    final blur = ref.watch(settingsProvider.select((s) => s.playerStyleBlur));
+    final blackBg = ref.watch(
+      settingsProvider.select((s) => s.cardBlackBackground),
+    );
+    final isPlaying = ref.watch(playbackProvider.select((p) => p.isPlaying));
+    final isStarred = ref.watch(
+      playbackProvider.select((p) => p.currentSong?.isFavorite ?? song.isFavorite),
+    );
+    final isShuffle = ref.watch(playbackProvider.select((p) => p.isShuffle));
+    final repeat = ref.watch(playbackProvider.select((p) => p.repeatMode));
+    final showBadge = ref.watch(
+      settingsProvider.select((s) => s.showQualityBadge),
+    );
+    final artScale = ref.watch(playerArtScaleProvider);
+    final c = M3StylePalette.fromAccent(accent, useAccent: useAccent);
+    final qualityInfo = _m3QualityInfo(ref, song);
+    final settings = ref.watch(settingsProvider);
+    final badgeText = QualityBadge.textFor(
+      context,
+      qualityInfo,
+      QualityBadgeStyle.fromSettings(settings),
+      shortTier: true,
+    );
+    final subtitle = (song.album?.trim().isNotEmpty ?? false)
+        ? song.album!.trim()
+        : l10n.nowPlaying;
+    final fade = widget.fadeWithSlide;
+
+    return LayoutBuilder(
+      builder: (context, box) {
+        final double w = box.maxWidth;
+        final double h = box.maxHeight;
+        final EdgeInsets safe = MediaQuery.paddingOf(context);
+        final double s = math.min(w / 390.0, (h - safe.top - safe.bottom) / 844.0);
+        final double chevronPad =
+            widget.style == PlayerLayoutStyle.m3wavy ? 28 * s : 24 * s;
+        final double chevronTopOff =
+            widget.style == PlayerLayoutStyle.m3scallop ? 16 * s : 14 * s;
+        final Offset arrowAnchor = Offset(
+          w - chevronPad - 22 * s,
+          safe.top + chevronTopOff + 24 * s,
+        );
+
+        Widget chevronBtn({Color? bg}) => GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _toggleExtras,
+          child: Container(
+            width: 44 * s,
+            height: 44 * s,
+            decoration: BoxDecoration(
+              color: bg ?? Colors.white.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: AnimatedRotation(
+              turns: _extrasOpen ? 0.5 : 0.0,
+              duration: const Duration(milliseconds: 250),
+              child: Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: Colors.white,
+                size: 22 * s,
+              ),
+            ),
+          ),
+        );
+
+        Widget starBtn({double? radius, Color? bg}) {
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              AppHaptics.selection();
+              _playback.toggleFavorite();
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 240),
+              curve: Curves.easeOutCubic,
+              width: (bg != null ? 52 : 48) * s,
+              height: (bg != null ? 52 : 48) * s,
+              decoration: BoxDecoration(
+                color: bg ?? Colors.transparent,
+                borderRadius: BorderRadius.circular(
+                  (radius ?? (isStarred ? 26 : 18)) * s,
+                ),
+              ),
+              child: AnimatedScale(
+                scale: isStarred ? 1.12 : 1.0,
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutBack,
+                child: Icon(
+                  isStarred ? Icons.star_rounded : Icons.star_outline_rounded,
+                  color: isStarred
+                      ? const Color(0xFFFFD54F)
+                      : (bg != null
+                            ? c.on
+                            : Colors.white.withValues(alpha: 0.85)),
+                  size: 22 * s,
+                ),
+              ),
+            ),
+          );
+        }
+
+        Widget iconBtn({
+          required IconData icon,
+          required VoidCallback onTap,
+          double size = 48,
+          double iconSize = 22,
+          Color? bg,
+          Color? fg,
+          BorderRadius? radius,
+          double? width,
+          double? height,
+        }) {
+          final br = radius ?? BorderRadius.circular((size / 2) * s);
+          return Material(
+            color: Colors.transparent,
+            borderRadius: br,
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onTap,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutCubic,
+                width: (width ?? size) * s,
+                height: (height ?? size) * s,
+                decoration: BoxDecoration(
+                  color: bg ?? Colors.transparent,
+                  borderRadius: br,
+                ),
+                child: Icon(
+                  icon,
+                  color: fg ?? Colors.white.withValues(alpha: 0.85),
+                  size: iconSize * s,
+                ),
+              ),
+            ),
+          );
+        }
+
+        Widget lyricsCircleBtn() => iconBtn(
+          icon: Icons.chat_bubble_outline_rounded,
+          bg: lyricsOn ? c.primary : Colors.transparent,
+          fg: lyricsOn ? c.onPrimary : Colors.white.withValues(alpha: 0.85),
+          onTap: () {
+            AppHaptics.selection();
+            ref
+                .read(settingsProvider.notifier)
+                .updatePlayerLyricLine(!lyricsOn);
+          },
+        );
+
+        Widget queueBtn() => iconBtn(
+          icon: Icons.queue_music_rounded,
+          onTap: () {
+            AppHaptics.medium();
+            widget.onShowQueue();
+          },
+        );
+
+        Widget shuffleBtn({
+          Color? fg,
+          Color? bg,
+          double? width,
+          double? height,
+          bool capsule = false,
+        }) => iconBtn(
+          icon: Icons.shuffle_rounded,
+          width: width,
+          height: height,
+          iconSize: 20,
+          bg:
+              bg ??
+              (isShuffle
+                  ? (capsule ? Colors.white.withValues(alpha: 0.16) : c.primary)
+                  : Colors.transparent),
+          fg:
+              fg ??
+              (isShuffle
+                  ? (capsule ? c.primary : c.onPrimary)
+                  : Colors.white.withValues(alpha: 0.72)),
+          onTap: () {
+            AppHaptics.selection();
+            _playback.toggleShuffle();
+          },
+        );
+
+        Widget repeatBtn({
+          Color? fg,
+          Color? bg,
+          double? width,
+          double? height,
+          bool capsule = false,
+        }) {
+          final bool active = repeat != RepeatMode.off;
+          return iconBtn(
+            icon: repeat == RepeatMode.one
+                ? Icons.repeat_one_rounded
+                : Icons.repeat_rounded,
+            width: width,
+            height: height,
+            iconSize: 20,
+            bg:
+                bg ??
+                (active
+                    ? (capsule
+                          ? Colors.white.withValues(alpha: 0.16)
+                          : c.primary)
+                    : Colors.transparent),
+            fg:
+                fg ??
+                (active
+                    ? (capsule ? c.primary : c.onPrimary)
+                    : Colors.white.withValues(alpha: 0.72)),
+            onTap: () {
+              AppHaptics.selection();
+              _playback.nextRepeatMode();
+            },
+          );
+        }
+
+        Widget body;
+        switch (widget.style) {
+          case PlayerLayoutStyle.m3scallop:
+            final double artH = ((hasLyrics ? 200 : 410) * s * artScale).clamp(
+              140 * s,
+              455 * s,
+            );
+            body = Column(
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 360),
+                  curve: Curves.easeOutCubic,
+                  height: artH + safe.top,
+                  width: double.infinity,
+                  child: ClipPath(
+                    clipper: const ScallopEdgeClipper(),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        _reportArt(_artGestures(_hero(_artImage()))),
+                        IgnorePointer(
+                          child: Align(
+                            alignment: Alignment.topCenter,
+                            child: Container(
+                              height: 120 * s + safe.top,
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [Color(0x73000000), Colors.transparent],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          left: 24 * s,
+                          right: 24 * s,
+                          top: safe.top + 16 * s,
+                          height: 48 * s,
+                          child: fade(
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    '${l10n.nowPlaying.toUpperCase()} · $subtitle',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 11 * s,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.12 * 11 * s,
+                                      color: Colors.white.withValues(alpha: 0.85),
+                                    ),
+                                  ),
+                                ),
+                                chevronBtn(
+                                  bg: Colors.black.withValues(alpha: 0.28),
+                                ),
+                              ],
+                            ),
+                            FluidSectionMotion.topBar,
+                          ),
+                        ),
+                        if (showBadge)
+                          Positioned(
+                            left: 24 * s,
+                            bottom: 40 * s,
+                            child: GestureDetector(
+                              onTap: () => showQualityDetailsSheet(context, song),
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 10 * s,
+                                  vertical: 5 * s,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.35),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  badgeText,
+                                  style: TextStyle(
+                                    fontSize: 10 * s,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.08 * 10 * s,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      28 * s,
+                      10 * s,
+                      28 * s,
+                      24 * s + safe.bottom,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 300),
+                            switchInCurve: Curves.easeOutCubic,
+                            switchOutCurve: Curves.easeInCubic,
+                            layoutBuilder: (current, previous) => Stack(
+                              fit: StackFit.expand,
+                              alignment: Alignment.bottomLeft,
+                              children: [...previous, ?current],
+                            ),
+                            child: hasLyrics
+                                ? Column(
+                                    key: const ValueKey('scallop_lyrics'),
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      GestureDetector(
+                                        onTap: widget.onShowSongInfo,
+                                        child: Text(
+                                          '${song.title} · ${artistAlbumLabel(song, l10n, showAlbum: false)}',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 14 * s,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white.withValues(
+                                              alpha: 0.6,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(height: 10 * s),
+                                      Expanded(
+                                        child: fade(
+                                          _lyricsBlock(s),
+                                          FluidSectionMotion.songInfo,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Align(
+                                    key: const ValueKey('scallop_title'),
+                                    alignment: Alignment.bottomLeft,
+                                    child: GestureDetector(
+                                      onTap: widget.onShowSongInfo,
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            song.title,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontFamily: 'Stack Sans Text',
+                                              fontSize: 42 * s,
+                                              fontWeight: FontWeight.w800,
+                                              height: 0.98,
+                                              letterSpacing: -0.04 * 42 * s,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          SizedBox(height: 8 * s),
+                                          Text(
+                                            artistAlbumLabel(
+                                              song,
+                                              l10n,
+                                              showAlbum: false,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 18 * s,
+                                              fontWeight: FontWeight.w600,
+                                              color: c.on.withValues(
+                                                alpha: 0.85,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                          ),
+                        ),
+                        SizedBox(height: 24 * s),
+                        fade(
+                          _seekHero(
+                            M3GappedSeekRow(
+                              scale: s,
+                              activeColor: c.primary,
+                              barHeight: 18,
+                              thumbHeight: 40,
+                              showStopDot: true,
+                            ),
+                          ),
+                          FluidSectionMotion.seekBar,
+                        ),
+                        SizedBox(height: 22 * s),
+                        fade(
+                          SizedBox(
+                            height: 80 * s,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 10,
+                                  child: iconBtn(
+                                    icon: Icons.skip_previous_rounded,
+                                    iconSize: 28,
+                                    height: 80,
+                                    bg: c.container,
+                                    fg: c.on,
+                                    radius: BorderRadius.horizontal(
+                                      left: Radius.circular(40 * s),
+                                      right: Radius.circular(12 * s),
+                                    ),
+                                    onTap: () {
+                                      AppHaptics.light();
+                                      _afterThisFrame(_playback.skipPrevious);
+                                    },
+                                  ),
+                                ),
+                                SizedBox(width: 4 * s),
+                                Expanded(
+                                  flex: 17,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      AppHaptics.medium();
+                                      _playback.togglePlay();
+                                    },
+                                    child: AnimatedContainer(
+                                      duration: const Duration(
+                                        milliseconds: 260,
+                                      ),
+                                      curve: Curves.easeOutCubic,
+                                      height: 80 * s,
+                                      decoration: BoxDecoration(
+                                        color: c.primary,
+                                        borderRadius: BorderRadius.circular(
+                                          (isPlaying ? 14 : 40) * s,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        isPlaying
+                                            ? Icons.pause_rounded
+                                            : Icons.play_arrow_rounded,
+                                        size: 36 * s,
+                                        color: c.onPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 4 * s),
+                                Expanded(
+                                  flex: 10,
+                                  child: iconBtn(
+                                    icon: Icons.skip_next_rounded,
+                                    iconSize: 28,
+                                    height: 80,
+                                    bg: c.container,
+                                    fg: c.on,
+                                    radius: BorderRadius.horizontal(
+                                      left: Radius.circular(12 * s),
+                                      right: Radius.circular(40 * s),
+                                    ),
+                                    onTap: () {
+                                      AppHaptics.light();
+                                      _afterThisFrame(_playback.skipNext);
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          FluidSectionMotion.transportRow,
+                        ),
+                        SizedBox(height: 20 * s),
+                        fade(
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              starBtn(),
+                              GestureDetector(
+                                onTap: () {
+                                  AppHaptics.selection();
+                                  ref
+                                      .read(settingsProvider.notifier)
+                                      .updatePlayerLyricLine(!lyricsOn);
+                                },
+                                child: Container(
+                                  height: 44 * s,
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 18 * s,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: lyricsOn
+                                        ? c.primary
+                                        : Colors.white.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(22 * s),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.chat_bubble_outline_rounded,
+                                        size: 18 * s,
+                                        color: lyricsOn
+                                            ? c.onPrimary
+                                            : Colors.white,
+                                      ),
+                                      SizedBox(width: 8 * s),
+                                      Text(
+                                        l10n.lyrics,
+                                        style: TextStyle(
+                                          fontSize: 14 * s,
+                                          fontWeight: FontWeight.w700,
+                                          color: lyricsOn
+                                              ? c.onPrimary
+                                              : Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              queueBtn(),
+                            ],
+                          ),
+                          FluidSectionMotion.utilityRow,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+
+          case PlayerLayoutStyle.m3clover:
+            final double artSide = ((hasLyrics ? 110 : 292) * s * artScale)
+                .clamp(80 * s, 326 * s);
+            body = Padding(
+              padding: EdgeInsets.fromLTRB(
+                24 * s,
+                safe.top + 14 * s,
+                24 * s,
+                24 * s + safe.bottom,
+              ),
+              child: Column(
+                children: [
+                  fade(
+                    SizedBox(
+                      height: 48 * s,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          SizedBox(width: 44 * s),
+                          Expanded(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  l10n.nowPlaying.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 11 * s,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.12 * 11 * s,
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                  ),
+                                ),
+                                Text(
+                                  subtitle,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 13 * s,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white.withValues(alpha: 0.88),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          chevronBtn(),
+                        ],
+                      ),
+                    ),
+                    FluidSectionMotion.topBar,
+                  ),
+                  SizedBox(height: 22 * s),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 360),
+                    curve: Curves.easeOutCubic,
+                    width: artSide,
+                    height: artSide,
+                    child: _reportArt(
+                      _artGestures(
+                        _hero(
+                          CounterSpinningCloverArt(
+                            playing: isPlaying,
+                            child: _artImage(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 22 * s),
+                  GestureDetector(
+                    onTap: widget.onShowSongInfo,
+                    child: Column(
+                      children: [
+                        Text(
+                          song.title,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'Stack Sans Text',
+                            fontSize: (hasLyrics ? 24 : 32) * s,
+                            fontWeight: FontWeight.w800,
+                            height: 1.05,
+                            letterSpacing: -0.03 * 32 * s,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(height: 8 * s),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                artistAlbumLabel(song, l10n, showAlbum: false),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 17 * s,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white.withValues(alpha: 0.62),
+                                ),
+                              ),
+                            ),
+                            if (showBadge) ...[
+                              SizedBox(width: 10 * s),
+                              GestureDetector(
+                                onTap: () => showQualityDetailsSheet(context, song),
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 9 * s,
+                                    vertical: 4 * s,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: c.container,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    badgeText,
+                                    style: TextStyle(
+                                      fontSize: 10 * s,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.06 * 10 * s,
+                                      color: c.on,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      layoutBuilder: (current, previous) => Stack(
+                        fit: StackFit.expand,
+                        children: [...previous, ?current],
+                      ),
+                      child: hasLyrics
+                          ? Padding(
+                              key: const ValueKey('clover_lyrics'),
+                              padding: EdgeInsets.only(top: 14 * s),
+                              child: fade(
+                                _lyricsBlock(s),
+                                FluidSectionMotion.songInfo,
+                              ),
+                            )
+                          : const SizedBox.shrink(
+                              key: ValueKey('clover_empty'),
+                            ),
+                    ),
+                  ),
+                  fade(
+                    _seekHero(
+                      M3GappedSeekRow(
+                        scale: s,
+                        activeColor: c.primary,
+                        barHeight: 12,
+                        thumbHeight: 30,
+                        showStopDot: false,
+                        inlineTimes: true,
+                      ),
+                    ),
+                    FluidSectionMotion.seekBar,
+                  ),
+                  SizedBox(height: 20 * s),
+                  fade(
+                    Container(
+                      height: 84 * s,
+                      padding: EdgeInsets.all(6 * s),
+                      decoration: BoxDecoration(
+                        color: c.container,
+                        borderRadius: BorderRadius.circular(42 * s),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          shuffleBtn(
+                            width: 50,
+                            height: 72,
+                            capsule: true,
+                            fg: isShuffle ? c.primary : c.on,
+                          ),
+                          iconBtn(
+                            icon: Icons.skip_previous_rounded,
+                            width: 58,
+                            height: 72,
+                            iconSize: 26,
+                            bg: Colors.white.withValues(alpha: 0.10),
+                            fg: Colors.white,
+                            radius: BorderRadius.horizontal(
+                              left: Radius.circular(36 * s),
+                              right: Radius.circular(12 * s),
+                            ),
+                            onTap: () {
+                              AppHaptics.light();
+                              _afterThisFrame(_playback.skipPrevious);
+                            },
+                          ),
+                          SizedBox(width: 4 * s),
+                          GestureDetector(
+                            onTap: () {
+                              AppHaptics.medium();
+                              _playback.togglePlay();
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 260),
+                              curve: Curves.easeOutCubic,
+                              width: 92 * s,
+                              height: 72 * s,
+                              decoration: BoxDecoration(
+                                color: c.primary,
+                                borderRadius: BorderRadius.circular(
+                                  (isPlaying ? 22 : 36) * s,
+                                ),
+                              ),
+                              child: Icon(
+                                isPlaying
+                                    ? Icons.pause_rounded
+                                    : Icons.play_arrow_rounded,
+                                size: 32 * s,
+                                color: c.onPrimary,
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 4 * s),
+                          iconBtn(
+                            icon: Icons.skip_next_rounded,
+                            width: 58,
+                            height: 72,
+                            iconSize: 26,
+                            bg: Colors.white.withValues(alpha: 0.10),
+                            fg: Colors.white,
+                            radius: BorderRadius.horizontal(
+                              left: Radius.circular(12 * s),
+                              right: Radius.circular(36 * s),
+                            ),
+                            onTap: () {
+                              AppHaptics.light();
+                              _afterThisFrame(_playback.skipNext);
+                            },
+                          ),
+                          repeatBtn(
+                            width: 50,
+                            height: 72,
+                            capsule: true,
+                            fg: repeat != RepeatMode.off ? c.primary : c.on,
+                          ),
+                        ],
+                      ),
+                    ),
+                    FluidSectionMotion.transportRow,
+                  ),
+                  SizedBox(height: 16 * s),
+                  fade(
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        starBtn(),
+                        lyricsCircleBtn(),
+                        queueBtn(),
+                      ],
+                    ),
+                    FluidSectionMotion.utilityRow,
+                  ),
+                ],
+              ),
+            );
+
+          case PlayerLayoutStyle.m3burst:
+            final String fmtLabel = (qualityInfo.codec ?? 'AUDIO').toUpperCase();
+            final bool hasDepth = qualityInfo.bitsPerSample > 0;
+            final String depthTitle = hasDepth ? 'Bit depth' : 'Bitrate';
+            final String depthVal = hasDepth
+                ? '${qualityInfo.bitsPerSample}-bit'
+                : (qualityInfo.bitrate > 0
+                      ? '${(qualityInfo.bitrate / 1000).round()} kbps'
+                      : 'Lossy');
+            final String rateVal = qualityInfo.sampleRate > 0
+                ? '${(qualityInfo.sampleRate / 1000).toStringAsFixed(qualityInfo.sampleRate % 1000 == 0 ? 0 : 1)} kHz'
+                : '48 kHz';
+
+            Widget specCell(String label, String val, BorderRadius radius) =>
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => showQualityDetailsSheet(context, song),
+                    child: Container(
+                      height: 60 * s,
+                      padding: EdgeInsets.only(left: 14 * s),
+                      decoration: BoxDecoration(
+                        color: c.container,
+                        borderRadius: radius,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            label.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 10 * s,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.1 * 10 * s,
+                              color: Colors.white.withValues(alpha: 0.62),
+                            ),
+                          ),
+                          Text(
+                            val,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontFamily: 'Space Grotesk',
+                              fontSize: 16 * s,
+                              fontWeight: FontWeight.w700,
+                              color: c.on,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+
+            body = Padding(
+              padding: EdgeInsets.fromLTRB(
+                24 * s,
+                safe.top + 14 * s,
+                24 * s,
+                24 * s + safe.bottom,
+              ),
+              child: Column(
+                children: [
+                  fade(
+                    SizedBox(
+                      height: 48 * s,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          if (showBadge)
+                            GestureDetector(
+                              onTap: () => showQualityDetailsSheet(context, song),
+                              child: Container(
+                                height: 32 * s,
+                                padding: EdgeInsets.symmetric(horizontal: 12 * s),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(16 * s),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 7 * s,
+                                      height: 7 * s,
+                                      decoration: BoxDecoration(
+                                        color: c.primary,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    SizedBox(width: 8 * s),
+                                    Text(
+                                      badgeText,
+                                      style: TextStyle(
+                                        fontFamily: 'Space Grotesk',
+                                        fontSize: 12 * s,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.06 * 12 * s,
+                                        color: c.on,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                          else
+                            const SizedBox.shrink(),
+                          chevronBtn(),
+                        ],
+                      ),
+                    ),
+                    FluidSectionMotion.topBar,
+                  ),
+                  SizedBox(height: 16 * s),
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      layoutBuilder: (current, previous) => Stack(
+                        fit: StackFit.expand,
+                        children: [...previous, ?current],
+                      ),
+                      child: hasLyrics
+                          ? KeyedSubtree(
+                              key: const ValueKey('burst_lyrics'),
+                              child: fade(
+                                _lyricsBlock(s),
+                                FluidSectionMotion.songInfo,
+                              ),
+                            )
+                          : Column(
+                              key: const ValueKey('burst_art'),
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Center(
+                                    child: AspectRatio(
+                                      aspectRatio: 1,
+                                      child: ConstrainedBox(
+                                        constraints: BoxConstraints(
+                                          maxWidth: 290 * s * artScale,
+                                          maxHeight: 290 * s * artScale,
+                                        ),
+                                        child: _reportArt(
+                                          _artGestures(
+                                            _hero(
+                                              ClipPath(
+                                                clipper:
+                                                    const ExpressiveShapeClipper(
+                                                      ExpressiveArtShape.burst,
+                                                    ),
+                                                child: _artImage(),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: 14 * s),
+                                Row(
+                                  children: [
+                                    specCell(
+                                      'Format',
+                                      fmtLabel,
+                                      BorderRadius.horizontal(
+                                        left: Radius.circular(20 * s),
+                                        right: Radius.circular(8 * s),
+                                      ),
+                                    ),
+                                    SizedBox(width: 4 * s),
+                                    specCell(
+                                      depthTitle,
+                                      depthVal,
+                                      BorderRadius.circular(8 * s),
+                                    ),
+                                    SizedBox(width: 4 * s),
+                                    specCell(
+                                      'Sample rate',
+                                      rateVal,
+                                      BorderRadius.horizontal(
+                                        left: Radius.circular(8 * s),
+                                        right: Radius.circular(20 * s),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+                  SizedBox(height: 20 * s),
+                  Row(
+                    children: [
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 280),
+                        curve: Curves.easeOutCubic,
+                        child: hasLyrics
+                            ? Padding(
+                                padding: EdgeInsets.only(right: 14 * s),
+                                child: SizedBox(
+                                  width: 56 * s,
+                                  height: 56 * s,
+                                  child: ClipPath(
+                                    clipper: const ExpressiveShapeClipper(
+                                      ExpressiveArtShape.burst,
+                                    ),
+                                    child: _artImage(),
+                                  ),
+                                ),
+                              )
+                            : const SizedBox.shrink(),
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: widget.onShowSongInfo,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                song.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontFamily: 'Stack Sans Text',
+                                  fontSize: 28 * s,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.05,
+                                  letterSpacing: -0.03 * 28 * s,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              SizedBox(height: 4 * s),
+                              Text(
+                                artistAlbumLabel(song, l10n, showAlbum: false),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 16 * s,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white.withValues(alpha: 0.62),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12 * s),
+                      starBtn(radius: isStarred ? 26 : 16, bg: c.container),
+                    ],
+                  ),
+                  SizedBox(height: 18 * s),
+                  fade(
+                    _seekHero(
+                      M3WavySeekRow(
+                        scale: s,
+                        activeColor: c.primary,
+                        showEndDot: false,
+                        spaceGroteskTimes: true,
+                      ),
+                    ),
+                    FluidSectionMotion.seekBar,
+                  ),
+                  SizedBox(height: 14 * s),
+                  fade(
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        lyricsCircleBtn(),
+                        iconBtn(
+                          icon: Icons.skip_previous_rounded,
+                          size: 60,
+                          iconSize: 28,
+                          fg: Colors.white,
+                          onTap: () {
+                            AppHaptics.light();
+                            _afterThisFrame(_playback.skipPrevious);
+                          },
+                        ),
+                        SpinningBurstPlayButton(
+                          playing: isPlaying,
+                          size: 104 * s,
+                          color: c.primary,
+                          iconColor: c.onPrimary,
+                          onTap: () {
+                            AppHaptics.medium();
+                            _playback.togglePlay();
+                          },
+                        ),
+                        iconBtn(
+                          icon: Icons.skip_next_rounded,
+                          size: 60,
+                          iconSize: 28,
+                          fg: Colors.white,
+                          onTap: () {
+                            AppHaptics.light();
+                            _afterThisFrame(_playback.skipNext);
+                          },
+                        ),
+                        queueBtn(),
+                      ],
+                    ),
+                    FluidSectionMotion.transportRow,
+                  ),
+                ],
+              ),
+            );
+
+          case PlayerLayoutStyle.m3wavy:
+          default:
+            final shape = expressiveShapeForSong(song.id, widget.style.index);
+            body = Padding(
+              padding: EdgeInsets.fromLTRB(
+                28 * s,
+                safe.top + 14 * s,
+                28 * s,
+                26 * s + safe.bottom,
+              ),
+              child: Column(
+                children: [
+                  fade(
+                    SizedBox(
+                      height: 48 * s,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  l10n.nowPlaying.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 11 * s,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.12 * 11 * s,
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                  ),
+                                ),
+                                Text(
+                                  subtitle,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 13 * s,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white.withValues(alpha: 0.88),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          chevronBtn(),
+                        ],
+                      ),
+                    ),
+                    FluidSectionMotion.topBar,
+                  ),
+                  SizedBox(height: 14 * s),
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      layoutBuilder: (current, previous) => Stack(
+                        fit: StackFit.expand,
+                        children: [...previous, ?current],
+                      ),
+                      child: hasLyrics
+                          ? Column(
+                              key: const ValueKey('wavy_lyrics'),
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 64 * s,
+                                      height: 64 * s,
+                                      child: ClipPath(
+                                        clipper: ExpressiveShapeClipper(shape),
+                                        child: _artImage(),
+                                      ),
+                                    ),
+                                    SizedBox(width: 14 * s),
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: widget.onShowSongInfo,
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              song.title,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontSize: 18 * s,
+                                                fontWeight: FontWeight.w700,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            Text(
+                                              '${artistAlbumLabel(song, l10n, showAlbum: false)}${showBadge ? ' · $badgeText' : ''}',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontSize: 14 * s,
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.6,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 16 * s),
+                                Expanded(
+                                  child: fade(
+                                    _lyricsBlock(s),
+                                    FluidSectionMotion.songInfo,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              key: const ValueKey('wavy_art'),
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Center(
+                                  child: AspectRatio(
+                                    aspectRatio: 1,
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        maxWidth: 334 * s * artScale,
+                                        maxHeight: 334 * s * artScale,
+                                      ),
+                                      child: _reportArt(
+                                        _artGestures(
+                                          _hero(
+                                            AnimatedSwitcher(
+                                              duration: const Duration(
+                                                milliseconds: 320,
+                                              ),
+                                              child: ClipPath(
+                                                key: ValueKey((song.id, shape)),
+                                                clipper: ExpressiveShapeClipper(
+                                                  shape,
+                                                ),
+                                                child: _artImage(),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 14 * s),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onTap: widget.onShowSongInfo,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            song.title,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontFamily: 'Stack Sans Text',
+                                              fontSize: 34 * s,
+                                              fontWeight: FontWeight.w800,
+                                              height: 1.04,
+                                              letterSpacing: -0.03 * 34 * s,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          SizedBox(height: 6 * s),
+                                          Row(
+                                            children: [
+                                              Flexible(
+                                                child: Text(
+                                                  artistAlbumLabel(
+                                                    song,
+                                                    l10n,
+                                                    showAlbum: false,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                    fontSize: 17 * s,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Colors.white
+                                                        .withValues(alpha: 0.62),
+                                                  ),
+                                                ),
+                                              ),
+                                              if (showBadge) ...[
+                                                SizedBox(width: 10 * s),
+                                                GestureDetector(
+                                                  onTap: () =>
+                                                      showQualityDetailsSheet(
+                                                        context,
+                                                        song,
+                                                      ),
+                                                  child: Container(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                          horizontal: 9 * s,
+                                                          vertical: 4 * s,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color: c.container,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            999,
+                                                          ),
+                                                    ),
+                                                    child: Text(
+                                                      badgeText,
+                                                      style: TextStyle(
+                                                        fontSize: 10 * s,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        letterSpacing:
+                                                            0.06 * 10 * s,
+                                                        color: c.on,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(width: 12 * s),
+                                  starBtn(bg: c.container),
+                                ],
+                              ),
+                            ],
+                          ),
+                    ),
+                  ),
+                  SizedBox(height: 20 * s),
+                  fade(
+                    _seekHero(
+                      M3WavySeekRow(
+                        scale: s,
+                        activeColor: c.primary,
+                        showEndDot: true,
+                      ),
+                    ),
+                    FluidSectionMotion.seekBar,
+                  ),
+                  SizedBox(height: 22 * s),
+                  fade(
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        iconBtn(
+                          icon: Icons.skip_previous_rounded,
+                          size: 72,
+                          iconSize: 26,
+                          bg: c.container,
+                          fg: c.on,
+                          onTap: () {
+                            AppHaptics.light();
+                            _afterThisFrame(_playback.skipPrevious);
+                          },
+                        ),
+                        SizedBox(width: 14 * s),
+                        GestureDetector(
+                          onTap: () {
+                            AppHaptics.medium();
+                            _playback.togglePlay();
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 260),
+                            curve: Curves.easeOutCubic,
+                            width: 128 * s,
+                            height: 88 * s,
+                            decoration: BoxDecoration(
+                              color: c.primary,
+                              borderRadius: BorderRadius.circular(
+                                (isPlaying ? 28 : 44) * s,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.35),
+                                  offset: Offset(0, 14 * s),
+                                  blurRadius: 30 * s,
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              isPlaying
+                                  ? Icons.pause_rounded
+                                  : Icons.play_arrow_rounded,
+                              size: 34 * s,
+                              color: c.onPrimary,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 14 * s),
+                        iconBtn(
+                          icon: Icons.skip_next_rounded,
+                          size: 72,
+                          iconSize: 26,
+                          bg: c.container,
+                          fg: c.on,
+                          onTap: () {
+                            AppHaptics.light();
+                            _afterThisFrame(_playback.skipNext);
+                          },
+                        ),
+                      ],
+                    ),
+                    FluidSectionMotion.transportRow,
+                  ),
+                  SizedBox(height: 22 * s),
+                  fade(
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 10 * s),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          lyricsCircleBtn(),
+                          shuffleBtn(),
+                          repeatBtn(),
+                          queueBtn(),
+                        ],
+                      ),
+                    ),
+                    FluidSectionMotion.utilityRow,
+                  ),
+                ],
+              ),
+            );
+        }
+
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            fade(
+              blackBg
+                  ? const ColoredBox(color: Colors.black)
+                  : RepaintBoundary(
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          const ColoredBox(color: Color(0xFF08080A)),
+                          _FigmaBackground(
+                            key: const ValueKey('m3_blur'),
+                            song: song,
+                            blur: blur,
+                          ),
+                          TweenAnimationBuilder<Color?>(
+                            tween: ColorTween(end: c.glow),
+                            duration: const Duration(milliseconds: 500),
+                            curve: Curves.easeInOut,
+                            builder: (_, glow, _) => DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: RadialGradient(
+                                  center: const Alignment(0, -0.52),
+                                  radius: 1.24,
+                                  colors: [
+                                    glow ?? c.glow,
+                                    Colors.transparent,
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          TweenAnimationBuilder<Color?>(
+                            tween: ColorTween(end: c.surface),
+                            duration: const Duration(milliseconds: 500),
+                            curve: Curves.easeInOut,
+                            builder: (_, surf, _) => DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  stops: const [0.0, 0.74],
+                                  colors: [
+                                    Colors.black.withValues(alpha: 0.05),
+                                    surf ?? c.surface,
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+              const FluidSectionMotion(0.25, 0.90, slide: false),
+            ),
+            body,
+            Positioned.fill(
+              child: fade(
+                _ExtrasMenu(
+                  open: _extrasOpen,
+                  anchor: arrowAnchor,
+                  scale: s,
+                  down: true,
+                  alignRight: true,
+                  onClose: _closeExtras,
+                  onShowLyrics: widget.onShowLyrics,
+                  onShowOptions: widget.onShowOptions,
+                ),
+                FluidSectionMotion.utilityRow,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // Card style: a floating card of art centered at top with shadow.
   Widget _cardArt(double sx, double s, double w) {
     final double artW = 346.735 * s;
@@ -672,33 +2500,17 @@ class _StyledArtwork extends StatelessWidget {
   final PlayerLayoutStyle style;
   const _StyledArtwork({required this.song, required this.style});
 
-  // A swipe changes the song at once; the cover cross-fades through a soft
-  // blur (as the Home header blurs what passes under it) instead of
-  // cutting, which read as a flash.
+  // A swipe changes the song at once; the cover cross-fades smoothly via GPU
+  // alpha compositing (no per-frame ImageFilter.blur saveLayers).
   @override
   Widget build(BuildContext context) => AnimatedSwitcher(
-    duration: const Duration(milliseconds: 380),
+    duration: const Duration(milliseconds: 280),
     switchInCurve: Curves.easeOutCubic,
     switchOutCurve: Curves.easeInCubic,
     layoutBuilder: (current, previous) =>
         Stack(fit: StackFit.expand, children: [...previous, ?current]),
-    transitionBuilder: (child, animation) => AnimatedBuilder(
-      animation: animation,
-      child: child,
-      builder: (context, child) {
-        final double t = animation.value;
-        final double sigma = (1 - t) * 14;
-        return Opacity(
-          opacity: t,
-          child: sigma < 0.3
-              ? child
-              : ImageFiltered(
-                  imageFilter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
-                  child: child,
-                ),
-        );
-      },
-    ),
+    transitionBuilder: (child, animation) =>
+        FadeTransition(opacity: animation, child: child),
     child: _StyledArtworkImage(
       key: ValueKey(song.id),
       song: song,
@@ -730,6 +2542,18 @@ class _StyledArtworkImage extends ConsumerWidget {
   }
 }
 
+Widget _buildStyledBackground(
+  BuildContext context,
+  WidgetRef ref,
+  Song song,
+  PlayerLayoutStyle style,
+) => AnimatedSwitcher(
+  duration: const Duration(milliseconds: 500),
+  transitionBuilder: (child, animation) =>
+      FadeTransition(opacity: animation, child: child),
+  child: _styledBackgroundFor(context, ref, song, style),
+);
+
 /// The Now Playing screen's background for [style], for screens that mirror
 /// it (lyrics with Follow Now Playing Background on). Classic matches the
 /// expanded player: blurred art, else the player gradient, else surface.
@@ -758,7 +2582,10 @@ Widget nowPlayingBackground(
             key: ValueKey(('art', song.id)),
             fit: StackFit.expand,
             children: [
-              BlurredBackgroundArt(song: song, zoom: 1.08),
+              BlurredBackgroundArt(
+                song: song,
+                zoom: 1.08,
+              ),
               ColoredBox(color: Colors.black.withValues(alpha: darkness)),
             ],
           )
@@ -777,7 +2604,8 @@ Widget nowPlayingBackground(
   );
 }
 
-Widget _buildStyledBackground(
+/// Each kind of background has its own key, so switching kinds crossfades.
+Widget _styledBackgroundFor(
   BuildContext context,
   WidgetRef ref,
   Song song,
@@ -788,7 +2616,7 @@ Widget _buildStyledBackground(
       settingsProvider.select((s) => s.cardBlackBackground),
     );
     if (black) {
-      return const ColoredBox(color: Colors.black);
+      return const ColoredBox(key: ValueKey('black'), color: Colors.black);
     }
     final accentBackground = ref.watch(
       settingsProvider.select((s) => s.cardAccentBackground),
@@ -805,16 +2633,24 @@ Widget _buildStyledBackground(
           settingsProvider.select((s) => s.musicDarkness),
         );
         return PlayerGradientBackground(
+          key: const ValueKey('gradient'),
           darkness: musicDarkness,
           animated: animated,
         );
       }
       final accent = ref.watch(settingsProvider.select((s) => s.accent));
-      return ColoredBox(color: cardAccentBackgroundColor(accent));
+      final Color accentColor = cardAccentBackgroundColor(accent);
+      return TweenAnimationBuilder<Color?>(
+        key: const ValueKey('accent'),
+        tween: ColorTween(end: accentColor),
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+        builder: (context, color, _) => ColoredBox(color: color ?? accentColor),
+      );
     }
   }
   final blur = ref.watch(settingsProvider.select((s) => s.playerStyleBlur));
-  return _FigmaBackground(song: song, blur: blur);
+  return _FigmaBackground(key: const ValueKey('figma'), song: song, blur: blur);
 }
 
 /// The card player's accent background: the accent pulled toward black, as
@@ -826,7 +2662,7 @@ Color cardAccentBackgroundColor(Color accent) =>
 class _FigmaBackground extends StatelessWidget {
   final Song song;
   final bool blur;
-  const _FigmaBackground({required this.song, this.blur = true});
+  const _FigmaBackground({super.key, required this.song, this.blur = true});
 
   @override
   Widget build(BuildContext context) {
@@ -841,20 +2677,33 @@ class _FigmaBackground extends StatelessWidget {
         // the same picture the live ImageFiltered drew: that re-blurred the
         // whole screen on every open/close frame (Impeller has no raster
         // cache).
-        if (blur && art != null)
-          BlurredBackgroundArt(
-            song: song,
-            sigma: 80,
-            saturation: 0.45,
-            tileMode: TileMode.mirror,
-            resolution: MediaQuery.devicePixelRatioOf(context),
-            artZoom: 1.6,
-            artAlignment: const Alignment(0, 0.4),
-            placeholder: false,
-          ),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 500),
+          transitionBuilder: (child, animation) =>
+              FadeTransition(opacity: animation, child: child),
+          child: blur && art != null
+              ? ColoredBox(
+                  key: ValueKey(('art', song.id)),
+                  color: Colors.black,
+                  child: BlurredBackgroundArt(
+                    song: song,
+                    sigma: 80,
+                    saturation: 0.45,
+                    tileMode: TileMode.mirror,
+                    resolution: MediaQuery.devicePixelRatioOf(context),
+                    artZoom: 1.6,
+                    artAlignment: const Alignment(0, 0.4),
+                    placeholder: false,
+                  ),
+                )
+              : const ColoredBox(key: ValueKey('none'), color: Colors.black),
+        ),
         ColoredBox(color: Colors.black.withValues(alpha: 0.35)),
-        if (blur)
-          const DecoratedBox(
+        AnimatedOpacity(
+          opacity: blur ? 1 : 0,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+          child: const DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment(0.42, -1),
@@ -863,6 +2712,7 @@ class _FigmaBackground extends StatelessWidget {
               ),
             ),
           ),
+        ),
       ],
     );
   }
@@ -1020,6 +2870,7 @@ class _ExtrasMenu extends ConsumerStatefulWidget {
   /// Landscape: items open below the chevron with labels on the right
   /// (portrait: above it, labels on the left).
   final bool down;
+  final bool alignRight;
   final VoidCallback onClose;
   final VoidCallback onShowLyrics;
   final VoidCallback onShowOptions;
@@ -1031,6 +2882,7 @@ class _ExtrasMenu extends ConsumerStatefulWidget {
     required this.onShowLyrics,
     required this.onShowOptions,
     this.down = false,
+    this.alignRight = false,
   });
 
   @override
@@ -1047,8 +2899,8 @@ class _ExtrasMenuState extends ConsumerState<_ExtrasMenu>
   );
 
   // Item centres from the chevron's, in design units (Figma: 50, 99, 148,
-  // 197 above the close button).
-  static const List<double> _offsets = [50, 99, 148, 197];
+  // 197, 246 above the close button).
+  static const List<double> _offsets = [50, 99, 148, 197, 246];
 
   @override
   void didUpdateWidget(_ExtrasMenu old) {
@@ -1146,6 +2998,20 @@ class _ExtrasMenuState extends ConsumerState<_ExtrasMenu>
             },
           ),
           (
+            label: l10n.playerStyle,
+            icon: Icon(
+              Icons.style_outlined,
+              color: Colors.white,
+              size: 16 * s,
+            ),
+            onTap: () {
+              AppHaptics.light();
+              widget.onClose();
+              openPlayerStylePicker(context);
+            },
+            onLongPress: null,
+          ),
+          (
             label: l10n.otherMenu,
             icon: icon('menu_more', 3, 14),
             onTap: () {
@@ -1211,10 +3077,11 @@ class _ExtrasMenuState extends ConsumerState<_ExtrasMenu>
                   child: item.icon,
                 );
                 final Widget text = Text(item.label, style: label);
+                final bool labelsOnLeft = !down || widget.alignRight;
                 return Positioned(
-                  left: down ? a.dx - r : 0,
-                  right: down ? 0 : null,
-                  width: down ? null : a.dx + r,
+                  left: labelsOnLeft ? 0 : a.dx - r,
+                  right: labelsOnLeft ? null : 0,
+                  width: labelsOnLeft ? a.dx + r : null,
                   top: cy - r + lag,
                   height: 2 * r,
                   child: IgnorePointer(
@@ -1222,9 +3089,9 @@ class _ExtrasMenuState extends ConsumerState<_ExtrasMenu>
                     child: Opacity(
                       opacity: it,
                       child: Align(
-                        alignment: down
-                            ? Alignment.centerLeft
-                            : Alignment.centerRight,
+                        alignment: labelsOnLeft
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
                         child: Semantics(
                           button: true,
                           child: GestureDetector(
@@ -1233,9 +3100,9 @@ class _ExtrasMenuState extends ConsumerState<_ExtrasMenu>
                             onLongPress: item.onLongPress,
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
-                              children: down
-                                  ? [circle, SizedBox(width: 16 * s), text]
-                                  : [text, SizedBox(width: 16 * s), circle],
+                              children: labelsOnLeft
+                                  ? [text, SizedBox(width: 16 * s), circle]
+                                  : [circle, SizedBox(width: 16 * s), text],
                             ),
                           ),
                         ),
@@ -1249,6 +3116,28 @@ class _ExtrasMenuState extends ConsumerState<_ExtrasMenu>
       },
     );
   }
+}
+
+QualityInfo _m3QualityInfo(WidgetRef ref, Song song) {
+  String path = '';
+  try {
+    path = song.path;
+  } catch (_) {
+    path = '';
+  }
+  final cachedAnalysis = path.isNotEmpty
+      ? AudioAnalyzer.getCachedAnalysis(path)
+      : null;
+  return cachedAnalysis != null
+      ? QualityInfo.fromAnalysis(cachedAnalysis)
+      : ref
+                .watch(currentSongAnalysisProvider)
+                .whenOrNull(
+                  data: (a) => a == null ? null : QualityInfo.fromAnalysis(a),
+                ) ??
+            (path.isNotEmpty
+                ? QualityInfo.fromPath(path)
+                : const QualityInfo(tier: QualityTier.high));
 }
 
 /// Whether the player shows the song's lyrics: it has some and the
@@ -1459,23 +3348,30 @@ class _LyricsBlockState extends ConsumerState<_LyricsBlock> {
           ),
           child: Padding(
             padding: EdgeInsets.only(bottom: 4 * s),
-            // Cross-fades into / out of word-by-word sync.
-            child: AnimatedSwitcher(
+            // Smooth scale + cross-fade when the active lyric line advances.
+            child: AnimatedScale(
+              scale: !synced || current || _browsing ? 1.0 : 0.93,
+              alignment: Alignment.centerLeft,
               duration: const Duration(milliseconds: 300),
-              layoutBuilder: (current, previous) => Stack(
-                alignment: Alignment.topLeft,
-                children: [...previous, ?current],
+              curve: Curves.easeOutCubic,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 240),
+                layoutBuilder: (current, previous) => Stack(
+                  alignment: Alignment.topLeft,
+                  children: [...previous, ?current],
+                ),
+                child: child,
               ),
-              child: child,
             ),
           ),
         ),
       );
     }
 
-    return NotificationListener<ScrollNotification>(
-      onNotification: _onScroll,
-      child: ShaderMask(
+    return RepaintBoundary(
+      child: NotificationListener<ScrollNotification>(
+        onNotification: _onScroll,
+        child: ShaderMask(
         // Lines fade out at the block's top and bottom edges as they scroll.
         blendMode: BlendMode.dstIn,
         shaderCallback: (rect) => const LinearGradient(
@@ -1499,6 +3395,7 @@ class _LyricsBlockState extends ConsumerState<_LyricsBlock> {
           ),
         ),
       ),
+    ),
     );
   }
 }
@@ -1547,6 +3444,9 @@ class _StyledQualityBadge extends ConsumerWidget {
       qualityInfo,
       style,
       shortTier: true,
+      suspectFake: QualityCheckService.isSuspect(
+        QualityCheckService.cachedSync(path),
+      ),
     );
 
     final Color? tint = QualityBadge.tintFor(
@@ -1610,12 +3510,12 @@ class _StyledQualityBadge extends ConsumerWidget {
 class _SmallTitle extends StatelessWidget {
   final Song song;
   final double scale;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final double titleAlpha;
   const _SmallTitle({
     required this.song,
     required this.scale,
-    required this.onTap,
+    this.onTap,
     this.titleAlpha = 0.5,
   });
 
@@ -1673,12 +3573,12 @@ class _SmallTitle extends StatelessWidget {
 class _BigTitle extends StatelessWidget {
   final Song song;
   final double scale;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   const _BigTitle({
     super.key,
     required this.song,
     required this.scale,
-    required this.onTap,
+    this.onTap,
   });
 
   // Design size, shrunk until the longest word fits on one line so a long
@@ -1824,7 +3724,28 @@ class _ArcSeekBar extends ConsumerStatefulWidget {
 
   /// Where this box starts on the screen, to map design y into it.
   final double top;
-  const _ArcSeekBar({required this.sx, required this.s, required this.top});
+  final double cx;
+  final double cy;
+  final double rx;
+  final double ry;
+  final double startDeg;
+  final double endDeg;
+  final Offset leftLabel;
+  final Offset rightLabel;
+
+  const _ArcSeekBar({
+    required this.sx,
+    required this.s,
+    required this.top,
+    this.cx = 198.5,
+    this.cy = 296.5,
+    this.rx = 204.25,
+    this.ry = 150.25,
+    this.startDeg = 130.7,
+    this.endDeg = 45.4,
+    this.leftLabel = const Offset(41.6, 390.2),
+    this.rightLabel = const Offset(362.9, 390.4),
+  });
 
   @override
   ConsumerState<_ArcSeekBar> createState() => _ArcSeekBarState();
@@ -1832,23 +3753,23 @@ class _ArcSeekBar extends ConsumerStatefulWidget {
 
 class _ArcSeekBarState extends ConsumerState<_ArcSeekBar>
     with _Scrubbing<_ArcSeekBar> {
-  // Figma ellipse (design units): centre, radii and the visible bottom arc.
-  static const double _cx = 198.5, _cy = 296.5, _rx = 204.25, _ry = 150.25;
-  static const double _startDeg = 130.7, _endDeg = 45.4;
-
-  Offset get _center => Offset(_cx * widget.sx, _cy * widget.s - widget.top);
+  Offset get _center =>
+      Offset(widget.cx * widget.sx, widget.cy * widget.s - widget.top);
 
   // Fraction along the arc (left end 0, right end 1) for a local point.
   double _fractionAt(Offset p) {
     final c = _center;
     final a =
         math.atan2(
-          (p.dy - c.dy) / (_ry * widget.s),
-          (p.dx - c.dx) / (_rx * widget.sx),
+          (p.dy - c.dy) / (widget.ry * widget.s),
+          (p.dx - c.dx) / (widget.rx * widget.sx),
         ) *
         180 /
         math.pi;
-    return ((_startDeg - a) / (_startDeg - _endDeg)).clamp(0.0, 1.0);
+    return ((widget.startDeg - a) / (widget.startDeg - widget.endDeg)).clamp(
+      0.0,
+      1.0,
+    );
   }
 
   @override
@@ -1896,23 +3817,23 @@ class _ArcSeekBarState extends ConsumerState<_ArcSeekBar>
               painter: _ArcPainter(
                 color: ref.watch(_activeColorProvider),
                 center: _center,
-                rx: _rx * sx,
-                ry: _ry * s,
+                rx: widget.rx * sx,
+                ry: widget.ry * s,
                 stroke: 6.5 * s,
                 fraction: f,
-                startDeg: _startDeg,
-                endDeg: _endDeg,
+                startDeg: widget.startDeg,
+                endDeg: widget.endDeg,
               ),
             ),
           ),
           label(
             UiUtils.formatPlaybackDuration(shown),
-            const Offset(41.6, 390.2),
+            widget.leftLabel,
             40.05,
           ),
           label(
             UiUtils.formatPlaybackDuration(duration),
-            const Offset(362.9, 390.4),
+            widget.rightLabel,
             -40.6,
           ),
         ],
@@ -1984,7 +3905,8 @@ class _ArcPainter extends CustomPainter {
 /// Linear style: elapsed time, a straight bar and the total time.
 class _LinearSeekRow extends ConsumerStatefulWidget {
   final double scale;
-  const _LinearSeekRow({required this.scale});
+  final double barHeight;
+  const _LinearSeekRow({required this.scale, this.barHeight = 8});
 
   @override
   ConsumerState<_LinearSeekRow> createState() => _LinearSeekRowState();
@@ -2022,10 +3944,12 @@ class _LinearSeekRowState extends ConsumerState<_LinearSeekRow>
                 onHorizontalDragCancel: scrubEnd,
                 child: Center(
                   child: Container(
-                    height: 8 * s,
+                    height: widget.barHeight * s,
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(4 * s),
+                      borderRadius: BorderRadius.circular(
+                        (widget.barHeight / 2) * s,
+                      ),
                     ),
                     alignment: Alignment.centerLeft,
                     child: FractionallySizedBox(
@@ -2033,7 +3957,9 @@ class _LinearSeekRowState extends ConsumerState<_LinearSeekRow>
                       child: Container(
                         decoration: BoxDecoration(
                           color: ref.watch(_activeColorProvider),
-                          borderRadius: BorderRadius.circular(4 * s),
+                          borderRadius: BorderRadius.circular(
+                            (widget.barHeight / 2) * s,
+                          ),
                         ),
                       ),
                     ),
@@ -2095,13 +4021,13 @@ Rect styledLandscapeArtRect(
       415.885 * f.s,
       421 * f.s,
     ),
-    PlayerLayoutStyle.linear => Rect.fromLTWH(
+    PlayerLayoutStyle.linear || PlayerLayoutStyle.fullbleed => Rect.fromLTWH(
       f.left - 2.93 * f.s,
       (h - 412.856 * f.s) / 2,
       412.856 * f.s,
       412.856 * f.s,
     ),
-    PlayerLayoutStyle.classic || PlayerLayoutStyle.card => Rect.fromLTWH(
+    _ => Rect.fromLTWH(
       f.left + 24 * f.s,
       (h - 351 * f.s) / 2,
       351 * f.s,
@@ -2122,6 +4048,9 @@ class StyledLandscapeLayout extends ConsumerStatefulWidget {
   final VoidCallback onShowQueue;
   final VoidCallback onShowOptions;
 
+  /// Tap on the title or artist: the small song sheet.
+  final VoidCallback? onShowSongInfo;
+
   const StyledLandscapeLayout({
     super.key,
     required this.style,
@@ -2131,6 +4060,7 @@ class StyledLandscapeLayout extends ConsumerStatefulWidget {
     required this.onShowLyrics,
     required this.onShowQueue,
     required this.onShowOptions,
+    this.onShowSongInfo,
   });
 
   @override
@@ -2189,6 +4119,9 @@ class _StyledLandscapeLayoutState extends ConsumerState<StyledLandscapeLayout>
   Widget build(BuildContext context) {
     final song = widget.song;
     final style = widget.style;
+    if (style.isM3Expressive) {
+      return _buildM3ExpressiveLandscapeLayout(context, song, style);
+    }
     final fade = widget.fadeWithSlide;
     final l10n = AppLocalizations.of(context)!;
     final hasLyrics = ref.watch(_showPlayerLyricsProvider);
@@ -2199,8 +4132,37 @@ class _StyledLandscapeLayoutState extends ConsumerState<StyledLandscapeLayout>
         final EdgeInsets safe = MediaQuery.paddingOf(context);
         final f = _LandFrame(size, safe);
         final double s = f.s;
-        final Rect art = styledLandscapeArtRect(size, safe, style);
-        final bool arc = style == PlayerLayoutStyle.arc;
+        final double capsuleScale = style == PlayerLayoutStyle.capsule
+            ? ref.watch(playerArtScaleProvider)
+            : 1.0;
+        final Rect baseArt = styledLandscapeArtRect(size, safe, style);
+        final Rect art = switch (style) {
+          PlayerLayoutStyle.fullbleed => Rect.fromLTWH(
+            0,
+            0,
+            baseArt.right + 20 * s,
+            size.height,
+          ),
+          PlayerLayoutStyle.asymmetric => Rect.fromLTWH(
+            0,
+            0,
+            baseArt.right,
+            baseArt.bottom,
+          ),
+          PlayerLayoutStyle.disc => Rect.fromCenter(
+            center: baseArt.center,
+            width: baseArt.width * 0.88,
+            height: baseArt.height * 0.88,
+          ),
+          PlayerLayoutStyle.capsule when capsuleScale != 1.0 => Rect.fromCenter(
+            center: baseArt.center,
+            width: baseArt.width * capsuleScale,
+            height: baseArt.height * capsuleScale,
+          ),
+          _ => baseArt,
+        };
+        final bool arc =
+            style == PlayerLayoutStyle.arc || style == PlayerLayoutStyle.disc;
 
         Widget at(double x, double y, Widget child, {double box = 60}) =>
             Positioned(
@@ -2215,19 +4177,19 @@ class _StyledLandscapeLayoutState extends ConsumerState<StyledLandscapeLayout>
         // bottom, classic / linear a column on the right.
         final ({Offset prev, Offset play, Offset next, Offset star}) t =
             switch (style) {
-              PlayerLayoutStyle.arc => (
+              PlayerLayoutStyle.arc || PlayerLayoutStyle.disc => (
                 prev: const Offset(537, 334.5),
                 play: const Offset(599.5, 334.5),
                 next: const Offset(662, 334.5),
                 star: const Offset(760.5, 334.5),
               ),
-              PlayerLayoutStyle.linear => (
+              PlayerLayoutStyle.linear || PlayerLayoutStyle.fullbleed => (
                 prev: const Offset(810, 136.5),
                 play: const Offset(810, 202.5),
                 next: const Offset(810, 267.5),
                 star: const Offset(810, 67.5),
               ),
-              PlayerLayoutStyle.card || PlayerLayoutStyle.classic => (
+              _ => (
                 prev: const Offset(810, 145.5),
                 play: const Offset(810, 211.5),
                 next: const Offset(810, 276.5),
@@ -2238,10 +4200,10 @@ class _StyledLandscapeLayoutState extends ConsumerState<StyledLandscapeLayout>
             ? const Offset(810, 335)
             : const Offset(810, 344);
         final Offset chevron = switch (style) {
-          PlayerLayoutStyle.arc => const Offset(39, 37),
-          PlayerLayoutStyle.linear => const Offset(39, 39),
-          PlayerLayoutStyle.card ||
-          PlayerLayoutStyle.classic => const Offset(54, 45),
+          PlayerLayoutStyle.arc || PlayerLayoutStyle.disc => const Offset(39, 37),
+          PlayerLayoutStyle.linear ||
+          PlayerLayoutStyle.fullbleed => const Offset(39, 39),
+          _ => const Offset(54, 45),
         };
         final double textLeft = arc ? 526 : 437;
         final double lyricsTop = arc ? 27 : 46;
@@ -2254,7 +4216,10 @@ class _StyledLandscapeLayoutState extends ConsumerState<StyledLandscapeLayout>
               FluidSectionMotion.backgroundFill,
             ),
 
-            Positioned.fromRect(rect: art, child: _art(style, s)),
+            Positioned.fromRect(
+              rect: art,
+              child: _art(style, s, artScale: capsuleScale),
+            ),
 
             if (arc)
               Positioned(
@@ -2300,7 +4265,7 @@ class _StyledLandscapeLayoutState extends ConsumerState<StyledLandscapeLayout>
                           child: _LandscapeBigTitle(
                             song: song,
                             scale: s,
-                            onTap: widget.onShowOptions,
+                            onTap: widget.onShowSongInfo,
                           ),
                         ),
                 ),
@@ -2318,7 +4283,7 @@ class _StyledLandscapeLayoutState extends ConsumerState<StyledLandscapeLayout>
                     song: song,
                     scale: s,
                     titleAlpha: 0.9,
-                    onTap: widget.onShowOptions,
+                    onTap: widget.onShowSongInfo,
                   ),
                   FluidSectionMotion.songInfo,
                 ),
@@ -2436,7 +4401,7 @@ class _StyledLandscapeLayoutState extends ConsumerState<StyledLandscapeLayout>
     );
   }
 
-  Widget _art(PlayerLayoutStyle style, double s) {
+  Widget _art(PlayerLayoutStyle style, double s, {double artScale = 1.0}) {
     final shadow = [
       BoxShadow(
         color: Colors.black.withValues(alpha: 0.2),
@@ -2460,7 +4425,7 @@ class _StyledLandscapeLayoutState extends ConsumerState<StyledLandscapeLayout>
           child: _artImage(),
         ),
       ),
-      // Fades out to the right into the background.
+      // Linear: framed 7px square fading into the background.
       PlayerLayoutStyle.linear => ShaderMask(
         blendMode: BlendMode.dstIn,
         shaderCallback: (rect) => const LinearGradient(
@@ -2477,7 +4442,62 @@ class _StyledLandscapeLayoutState extends ConsumerState<StyledLandscapeLayout>
           ),
         ),
       ),
-      PlayerLayoutStyle.card || PlayerLayoutStyle.classic => DecoratedBox(
+      // FullBleed: borderless edge-to-edge art melting into the background.
+      PlayerLayoutStyle.fullbleed => ShaderMask(
+        blendMode: BlendMode.dstIn,
+        shaderCallback: (rect) => const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          stops: [0.0, 0.34, 0.68, 1.0],
+          colors: [
+            Colors.white,
+            Colors.white,
+            Color(0xB8FFFFFF),
+            Colors.transparent,
+          ],
+        ).createShader(rect),
+        child: _artImage(),
+      ),
+      PlayerLayoutStyle.disc => DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: shadow,
+        ),
+        child: Container(
+          foregroundDecoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+          ),
+          child: ClipOval(child: _artImage()),
+        ),
+      ),
+      PlayerLayoutStyle.asymmetric => DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.only(bottomRight: Radius.circular(40 * s)),
+          boxShadow: shadow,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.only(bottomRight: Radius.circular(40 * s)),
+          child: _artImage(),
+        ),
+      ),
+      PlayerLayoutStyle.capsule => DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(102 * s * artScale),
+          boxShadow: shadow,
+        ),
+        child: Container(
+          foregroundDecoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(102 * s * artScale),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(102 * s * artScale),
+            child: _artImage(),
+          ),
+        ),
+      ),
+      _ => DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(5 * s),
           boxShadow: shadow,
@@ -2493,17 +4513,829 @@ class _StyledLandscapeLayoutState extends ConsumerState<StyledLandscapeLayout>
     // the portrait morph after rotating back.
     return _artGestures(_hero(content));
   }
+
+  Widget _buildM3ExpressiveLandscapeLayout(
+    BuildContext context,
+    Song song,
+    PlayerLayoutStyle style,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final hasLyrics = ref.watch(_showPlayerLyricsProvider);
+    final useAccent = ref.watch(
+      settingsProvider.select((s) => s.cardAccentColors || s.playerStyleAccent),
+    );
+    final accent = ref.watch(settingsProvider.select((s) => s.accent));
+    final blur = ref.watch(settingsProvider.select((s) => s.playerStyleBlur));
+    final blackBg = ref.watch(
+      settingsProvider.select((s) => s.cardBlackBackground),
+    );
+    final isPlaying = ref.watch(playbackProvider.select((p) => p.isPlaying));
+    final isStarred = ref.watch(
+      playbackProvider.select((p) => p.currentSong?.isFavorite ?? song.isFavorite),
+    );
+    final isShuffle = ref.watch(playbackProvider.select((p) => p.isShuffle));
+    final repeat = ref.watch(playbackProvider.select((p) => p.repeatMode));
+    final lyricsOn = ref.watch(
+      settingsProvider.select((s) => s.playerLyricLine),
+    );
+    final c = M3StylePalette.fromAccent(accent, useAccent: useAccent);
+    final fade = widget.fadeWithSlide;
+
+    final ExpressiveArtShape shape = expressiveShapeForSong(
+      song.id,
+      style.index,
+    );
+    final bool usesWavySeek =
+        style == PlayerLayoutStyle.m3wavy || style == PlayerLayoutStyle.m3burst;
+
+    return LayoutBuilder(
+      builder: (context, box) {
+        final Size size = Size(box.maxWidth, box.maxHeight);
+        final EdgeInsets safe = MediaQuery.paddingOf(context);
+        final f = _LandFrame(size, safe);
+        final double s = f.s;
+        final double artScale =
+            (style == PlayerLayoutStyle.capsule ||
+                style == PlayerLayoutStyle.m3wavy ||
+                style == PlayerLayoutStyle.m3scallop ||
+                style == PlayerLayoutStyle.m3clover ||
+                style == PlayerLayoutStyle.m3burst)
+            ? ref.watch(playerArtScaleProvider)
+            : 1.0;
+        final double artSide = (310 * s * artScale).clamp(
+          180 * s,
+          size.height - 48 * s,
+        );
+        final double artLeft = f.left + 20 * s;
+        final double artTop = (size.height - artSide) / 2;
+        final double rightLeft = artLeft + artSide + 36 * s;
+        final double rightRight = math.max(safe.right + 28 * s, 32 * s);
+        final Offset chevronPos = Offset(
+          f.x(39),
+          math.max(f.y(39) - 24, safe.top) + 24,
+        );
+
+        Widget buildArt() {
+          if (style == PlayerLayoutStyle.m3scallop) {
+            return ClipPath(
+              clipper: const ScallopEdgeClipper(),
+              child: _artImage(),
+            );
+          }
+          if (style == PlayerLayoutStyle.m3clover) {
+            return CounterSpinningCloverArt(
+              playing: isPlaying,
+              child: _artImage(),
+            );
+          }
+          final artShape = style == PlayerLayoutStyle.m3burst
+              ? ExpressiveArtShape.burst
+              : shape;
+          return AnimatedSwitcher(
+            duration: const Duration(milliseconds: 320),
+            child: ClipPath(
+              key: ValueKey((song.id, artShape)),
+              clipper: ExpressiveShapeClipper(artShape),
+              child: _artImage(),
+            ),
+          );
+        }
+
+        Widget playBtn() {
+          if (style == PlayerLayoutStyle.m3burst) {
+            return SpinningBurstPlayButton(
+              playing: isPlaying,
+              size: 72 * s,
+              color: c.primary,
+              iconColor: c.onPrimary,
+              onTap: () {
+                AppHaptics.medium();
+                _playback.togglePlay();
+              },
+            );
+          }
+          return GestureDetector(
+            onTap: () {
+              AppHaptics.medium();
+              _playback.togglePlay();
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 240),
+              width: 84 * s,
+              height: 58 * s,
+              decoration: BoxDecoration(
+                color: c.primary,
+                borderRadius: BorderRadius.circular(
+                  (isPlaying ? 18 : 29) * s,
+                ),
+              ),
+              child: Icon(
+                isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                size: 30 * s,
+                color: c.onPrimary,
+              ),
+            ),
+          );
+        }
+
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            fade(
+              blackBg
+                  ? const ColoredBox(color: Colors.black)
+                  : RepaintBoundary(
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          const ColoredBox(color: Color(0xFF08080A)),
+                          if (blur)
+                            _FigmaBackground(
+                              key: const ValueKey('m3_land_blur'),
+                              song: song,
+                              blur: true,
+                            ),
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: RadialGradient(
+                                center: const Alignment(-0.4, 0),
+                                radius: 1.2,
+                                colors: [c.glow, Colors.transparent],
+                              ),
+                            ),
+                          ),
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Colors.black.withValues(alpha: 0.08),
+                                  c.surface,
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+              const FluidSectionMotion(0.25, 0.90, slide: false),
+            ),
+            if (style == PlayerLayoutStyle.m3scallop)
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: artLeft + artSide,
+                child: ClipPath(
+                  clipper: const ScallopEdgeClipper(),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      _artGestures(_hero(_artImage())),
+                      if (ref.watch(
+                        settingsProvider.select((s) => s.showQualityBadge),
+                      ))
+                        Positioned(
+                          left: safe.left + 16 * s,
+                          bottom: safe.bottom + 20 * s,
+                          child: GestureDetector(
+                            onTap: () => showQualityDetailsSheet(context, song),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 10 * s,
+                                vertical: 5 * s,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.35),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                QualityBadge.textFor(
+                                  context,
+                                  _m3QualityInfo(ref, song),
+                                  QualityBadgeStyle.fromSettings(
+                                    ref.watch(settingsProvider),
+                                  ),
+                                  shortTier: true,
+                                ),
+                                style: TextStyle(
+                                  fontSize: 10 * s,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              Positioned(
+                left: artLeft,
+                top: artTop,
+                width: artSide,
+                height: artSide,
+                child: _artGestures(_hero(buildArt())),
+              ),
+            Positioned(
+              left: rightLeft,
+              right: rightRight,
+              top: math.max(safe.top + 22 * s, 28 * s),
+              bottom: math.max(safe.bottom + 18 * s, 24 * s),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: fade(
+                      hasLyrics
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _SmallTitle(
+                                  song: song,
+                                  scale: s,
+                                  titleAlpha: 0.9,
+                                  onTap: widget.onShowSongInfo,
+                                ),
+                                SizedBox(height: 10 * s),
+                                Expanded(child: _lyricsBlock(s)),
+                              ],
+                            )
+                          : Align(
+                              alignment: Alignment.centerLeft,
+                              child: _LandscapeBigTitle(
+                                song: song,
+                                scale: s,
+                                onTap: widget.onShowSongInfo,
+                              ),
+                            ),
+                      FluidSectionMotion.songInfo,
+                    ),
+                  ),
+                  SizedBox(height: 10 * s),
+                  if (style == PlayerLayoutStyle.m3burst && !hasLyrics) ...[
+                    fade(
+                      () {
+                        final q = _m3QualityInfo(ref, song);
+                        final fmt = (q.codec ?? 'AUDIO').toUpperCase();
+                        final hasDepth = q.bitsPerSample > 0;
+                        final depthTitle = hasDepth ? 'Bit depth' : 'Bitrate';
+                        final depthVal = hasDepth
+                            ? '${q.bitsPerSample}-bit'
+                            : (q.bitrate > 0 ? '${q.bitrate} kbps' : 'Hi-Res');
+                        Widget statCard(
+                          String label,
+                          String val,
+                          BorderRadius radius,
+                        ) => Expanded(
+                          child: Container(
+                            height: 46 * s,
+                            padding: EdgeInsets.symmetric(horizontal: 14 * s),
+                            decoration: BoxDecoration(
+                              color: c.container,
+                              borderRadius: radius,
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  label.toUpperCase(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 9 * s,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white.withValues(alpha: 0.62),
+                                  ),
+                                ),
+                                Text(
+                                  val,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontFamily: 'Space Grotesk',
+                                    fontSize: 13 * s,
+                                    fontWeight: FontWeight.w700,
+                                    color: c.on,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                        return Row(
+                          children: [
+                            statCard(
+                              'Format',
+                              fmt,
+                              BorderRadius.horizontal(
+                                left: Radius.circular(20 * s),
+                                right: Radius.circular(8 * s),
+                              ),
+                            ),
+                            SizedBox(width: 4 * s),
+                            statCard(
+                              depthTitle,
+                              depthVal,
+                              BorderRadius.horizontal(
+                                left: Radius.circular(8 * s),
+                                right: Radius.circular(20 * s),
+                              ),
+                            ),
+                          ],
+                        );
+                      }(),
+                      FluidSectionMotion.songInfo,
+                    ),
+                    SizedBox(height: 10 * s),
+                  ],
+                  fade(
+                    _seekHero(
+                      usesWavySeek
+                          ? M3WavySeekRow(
+                              scale: s,
+                              activeColor: c.primary,
+                              showEndDot: style == PlayerLayoutStyle.m3wavy,
+                            )
+                          : M3GappedSeekRow(
+                              scale: s,
+                              activeColor: c.primary,
+                              barHeight: style == PlayerLayoutStyle.m3scallop
+                                  ? 16
+                                  : 12,
+                              thumbHeight: style == PlayerLayoutStyle.m3scallop
+                                  ? 34
+                                  : 28,
+                              showStopDot: style == PlayerLayoutStyle.m3scallop,
+                            ),
+                    ),
+                    FluidSectionMotion.seekBar,
+                  ),
+                  SizedBox(height: 12 * s),
+                  fade(
+                    switch (style) {
+                      PlayerLayoutStyle.m3scallop => SizedBox(
+                        height: 60 * s,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 10,
+                              child: Material(
+                                color: c.container,
+                                borderRadius: BorderRadius.horizontal(
+                                  left: Radius.circular(30 * s),
+                                  right: Radius.circular(10 * s),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: InkWell(
+                                  onTap: () {
+                                    AppHaptics.light();
+                                    _afterThisFrame(_playback.skipPrevious);
+                                  },
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.skip_previous_rounded,
+                                      size: 26 * s,
+                                      color: c.on,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 4 * s),
+                            Expanded(
+                              flex: 17,
+                              child: GestureDetector(
+                                onTap: () {
+                                  AppHaptics.medium();
+                                  _playback.togglePlay();
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 240),
+                                  curve: Curves.easeOutCubic,
+                                  height: 60 * s,
+                                  decoration: BoxDecoration(
+                                    color: c.primary,
+                                    borderRadius: BorderRadius.circular(
+                                      (isPlaying ? 12 : 30) * s,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    isPlaying
+                                        ? Icons.pause_rounded
+                                        : Icons.play_arrow_rounded,
+                                    size: 30 * s,
+                                    color: c.onPrimary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 4 * s),
+                            Expanded(
+                              flex: 10,
+                              child: Material(
+                                color: c.container,
+                                borderRadius: BorderRadius.horizontal(
+                                  left: Radius.circular(10 * s),
+                                  right: Radius.circular(30 * s),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: InkWell(
+                                  onTap: () {
+                                    AppHaptics.light();
+                                    _afterThisFrame(_playback.skipNext);
+                                  },
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.skip_next_rounded,
+                                      size: 26 * s,
+                                      color: c.on,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      PlayerLayoutStyle.m3clover => Center(
+                        child: Container(
+                          height: 64 * s,
+                          padding: EdgeInsets.all(5 * s),
+                          decoration: BoxDecoration(
+                            color: c.container,
+                            borderRadius: BorderRadius.circular(32 * s),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                onPressed: () {
+                                  AppHaptics.selection();
+                                  _playback.toggleShuffle();
+                                },
+                                icon: Icon(
+                                  Icons.shuffle_rounded,
+                                  size: 19 * s,
+                                  color: isShuffle ? c.primary : c.on,
+                                ),
+                              ),
+                              Material(
+                                color: Colors.white.withValues(alpha: 0.10),
+                                borderRadius: BorderRadius.horizontal(
+                                  left: Radius.circular(27 * s),
+                                  right: Radius.circular(10 * s),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: InkWell(
+                                  onTap: () {
+                                    AppHaptics.light();
+                                    _afterThisFrame(_playback.skipPrevious);
+                                  },
+                                  child: SizedBox(
+                                    width: 48 * s,
+                                    height: 54 * s,
+                                    child: Icon(
+                                      Icons.skip_previous_rounded,
+                                      size: 24 * s,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 4 * s),
+                              playBtn(),
+                              SizedBox(width: 4 * s),
+                              Material(
+                                color: Colors.white.withValues(alpha: 0.10),
+                                borderRadius: BorderRadius.horizontal(
+                                  left: Radius.circular(10 * s),
+                                  right: Radius.circular(27 * s),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: InkWell(
+                                  onTap: () {
+                                    AppHaptics.light();
+                                    _afterThisFrame(_playback.skipNext);
+                                  },
+                                  child: SizedBox(
+                                    width: 48 * s,
+                                    height: 54 * s,
+                                    child: Icon(
+                                      Icons.skip_next_rounded,
+                                      size: 24 * s,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  AppHaptics.selection();
+                                  _playback.nextRepeatMode();
+                                },
+                                icon: Icon(
+                                  repeat == RepeatMode.one
+                                      ? Icons.repeat_one_rounded
+                                      : Icons.repeat_rounded,
+                                  size: 19 * s,
+                                  color: repeat != RepeatMode.off
+                                      ? c.primary
+                                      : c.on,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      PlayerLayoutStyle.m3wavy => Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Material(
+                            color: c.container,
+                            shape: const CircleBorder(),
+                            clipBehavior: Clip.antiAlias,
+                            child: InkWell(
+                              onTap: () {
+                                AppHaptics.light();
+                                _afterThisFrame(_playback.skipPrevious);
+                              },
+                              child: SizedBox(
+                                width: 56 * s,
+                                height: 56 * s,
+                                child: Icon(
+                                  Icons.skip_previous_rounded,
+                                  size: 24 * s,
+                                  color: c.on,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 12 * s),
+                          playBtn(),
+                          SizedBox(width: 12 * s),
+                          Material(
+                            color: c.container,
+                            shape: const CircleBorder(),
+                            clipBehavior: Clip.antiAlias,
+                            child: InkWell(
+                              onTap: () {
+                                AppHaptics.light();
+                                _afterThisFrame(_playback.skipNext);
+                              },
+                              child: SizedBox(
+                                width: 56 * s,
+                                height: 56 * s,
+                                child: Icon(
+                                  Icons.skip_next_rounded,
+                                  size: 24 * s,
+                                  color: c.on,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      _ => Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          IconButton(
+                            onPressed: () {
+                              AppHaptics.selection();
+                              _playback.toggleFavorite();
+                            },
+                            icon: Icon(
+                              isStarred
+                                  ? Icons.star_rounded
+                                  : Icons.star_outline_rounded,
+                              color: isStarred
+                                  ? const Color(0xFFFFD54F)
+                                  : Colors.white.withValues(alpha: 0.85),
+                              size: 24 * s,
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: l10n.previousLabel,
+                            onPressed: () {
+                              AppHaptics.light();
+                              _afterThisFrame(_playback.skipPrevious);
+                            },
+                            icon: Icon(
+                              Icons.skip_previous_rounded,
+                              color: Colors.white,
+                              size: 28 * s,
+                            ),
+                          ),
+                          playBtn(),
+                          IconButton(
+                            tooltip: l10n.nextLabel,
+                            onPressed: () {
+                              AppHaptics.light();
+                              _afterThisFrame(_playback.skipNext);
+                            },
+                            icon: Icon(
+                              Icons.skip_next_rounded,
+                              color: Colors.white,
+                              size: 28 * s,
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: l10n.queue,
+                            onPressed: () {
+                              AppHaptics.medium();
+                              widget.onShowQueue();
+                            },
+                            icon: Icon(
+                              Icons.queue_music_rounded,
+                              color: Colors.white.withValues(alpha: 0.85),
+                              size: 24 * s,
+                            ),
+                          ),
+                        ],
+                      ),
+                    },
+                    FluidSectionMotion.transportRow,
+                  ),
+                  SizedBox(height: 8 * s),
+                  fade(
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        if (style != PlayerLayoutStyle.m3burst)
+                          IconButton(
+                            onPressed: () {
+                              AppHaptics.selection();
+                              _playback.toggleFavorite();
+                            },
+                            icon: Icon(
+                              isStarred
+                                  ? Icons.star_rounded
+                                  : Icons.star_outline_rounded,
+                              color: isStarred
+                                  ? const Color(0xFFFFD54F)
+                                  : Colors.white.withValues(alpha: 0.85),
+                              size: 20 * s,
+                            ),
+                          ),
+                        GestureDetector(
+                          onTap: () {
+                            AppHaptics.selection();
+                            ref
+                                .read(settingsProvider.notifier)
+                                .updatePlayerLyricLine(!lyricsOn);
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            height: 34 * s,
+                            padding: EdgeInsets.symmetric(horizontal: 14 * s),
+                            decoration: BoxDecoration(
+                              color: lyricsOn
+                                  ? c.primary
+                                  : Colors.white.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(17 * s),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.chat_bubble_outline_rounded,
+                                  size: 15 * s,
+                                  color: lyricsOn ? c.onPrimary : Colors.white,
+                                ),
+                                SizedBox(width: 6 * s),
+                                Text(
+                                  l10n.lyrics,
+                                  style: TextStyle(
+                                    fontSize: 12 * s,
+                                    fontWeight: FontWeight.w700,
+                                    color: lyricsOn
+                                        ? c.onPrimary
+                                        : Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (style != PlayerLayoutStyle.m3clover) ...[
+                          GestureDetector(
+                            onTap: () {
+                              AppHaptics.selection();
+                              _playback.toggleShuffle();
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: 40 * s,
+                              height: 34 * s,
+                              decoration: BoxDecoration(
+                                color: isShuffle
+                                    ? c.primary
+                                    : Colors.white.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(17 * s),
+                              ),
+                              child: Icon(
+                                Icons.shuffle_rounded,
+                                size: 18 * s,
+                                color: isShuffle
+                                    ? c.onPrimary
+                                    : Colors.white.withValues(alpha: 0.8),
+                              ),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              AppHaptics.selection();
+                              _playback.nextRepeatMode();
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: 40 * s,
+                              height: 34 * s,
+                              decoration: BoxDecoration(
+                                color: repeat != RepeatMode.off
+                                    ? c.primary
+                                    : Colors.white.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(17 * s),
+                              ),
+                              child: Icon(
+                                repeat == RepeatMode.one
+                                    ? Icons.repeat_one_rounded
+                                    : Icons.repeat_rounded,
+                                size: 18 * s,
+                                color: repeat != RepeatMode.off
+                                    ? c.onPrimary
+                                    : Colors.white.withValues(alpha: 0.8),
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (style != PlayerLayoutStyle.m3burst)
+                          IconButton(
+                            tooltip: l10n.queue,
+                            onPressed: () {
+                              AppHaptics.medium();
+                              widget.onShowQueue();
+                            },
+                            icon: Icon(
+                              Icons.queue_music_rounded,
+                              color: Colors.white.withValues(alpha: 0.85),
+                              size: 20 * s,
+                            ),
+                          ),
+                      ],
+                    ),
+                    FluidSectionMotion.utilityRow,
+                  ),
+                ],
+              ),
+            ),
+            Positioned.fill(
+              child: fade(
+                _ExtrasMenu(
+                  open: _extrasOpen,
+                  anchor: chevronPos,
+                  scale: s,
+                  down: true,
+                  onClose: _closeExtras,
+                  onShowLyrics: widget.onShowLyrics,
+                  onShowOptions: widget.onShowOptions,
+                ),
+                FluidSectionMotion.utilityRow,
+              ),
+            ),
+            Positioned(
+              left: chevronPos.dx - 24 * s,
+              top: chevronPos.dy - 30 * s,
+              height: 60 * s,
+              child: fade(
+                _ExtrasToggle(
+                  open: _extrasOpen,
+                  scale: s,
+                  onToggle: _toggleExtras,
+                ),
+                FluidSectionMotion.utilityRow,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
 
 /// Landscape title when the song has no lyrics: title and artist at 40.
 class _LandscapeBigTitle extends StatelessWidget {
   final Song song;
   final double scale;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   const _LandscapeBigTitle({
     required this.song,
     required this.scale,
-    required this.onTap,
+    this.onTap,
   });
 
   @override

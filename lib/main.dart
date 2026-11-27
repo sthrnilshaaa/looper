@@ -16,6 +16,7 @@ import 'package:looper_player/features/settings/presentation/providers/settings_
 import 'package:permission_handler/permission_handler.dart';
 import 'package:looper_player/core/providers/providers.dart';
 import 'core/services/storage/db_service.dart';
+import 'core/services/storage/storage_access.dart';
 import 'package:looper_player/core/services/storage/local_json_store.dart';
 import 'core/theme/app_fonts.dart';
 import 'core/services/appambit_reporter.dart';
@@ -176,7 +177,7 @@ void main(List<String> args) async {
         final results = await Future.wait([
           Permission.audio.isGranted,
           Permission.storage.isGranted,
-          Permission.notification.isGranted,
+          StorageAccess.hasAllFilesAccess(),
         ]);
         permissionsGranted = results.any((granted) => granted);
       } catch (e, s) {

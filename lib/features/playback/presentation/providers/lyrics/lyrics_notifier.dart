@@ -68,11 +68,23 @@ class Lyrics extends _$Lyrics {
   @override
   LyricsState build() => LyricsState();
 
-  void fetchForSong(Song song, {bool force = false}) {
-    _fetchLyrics(song, force: force);
+  void fetchForSong(
+    Song song, {
+    bool force = false,
+    bool includeInstrumental = false,
+  }) {
+    _fetchLyrics(
+      song,
+      force: force,
+      includeInstrumental: includeInstrumental,
+    );
   }
 
-  Future<void> _fetchLyrics(Song song, {bool force = false}) async {
+  Future<void> _fetchLyrics(
+    Song song, {
+    bool force = false,
+    bool includeInstrumental = false,
+  }) async {
     if (!force && _isCurrent(song) && state.rawLrc != null) return;
 
     state = LyricsState(
@@ -84,7 +96,10 @@ class Lyrics extends _$Lyrics {
       source: null,
     );
 
-    final lrc = await LyricsFetcher.fetchLyrics(song);
+    final lrc = await LyricsFetcher.fetchLyrics(
+      song,
+      includeInstrumental: includeInstrumental,
+    );
 
     if (_isCurrent(song)) {
       _applyLrcToState(song, lrc);

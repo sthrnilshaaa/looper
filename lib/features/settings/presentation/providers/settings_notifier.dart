@@ -399,6 +399,8 @@ class Settings extends _$Settings {
       ..alwaysBlurSheets = s.alwaysBlurSheets
       ..frostedMusicBar = s.frostedMusicBar
       ..frostedNavbar = s.frostedNavbar
+      ..musicBarStylePref = s.musicBarStylePref
+      ..navbarStylePref = s.navbarStylePref
       ..newNavbar = s.newNavbar
       ..statusBarBlur = s.statusBarBlur
       ..playerDynamicBackground = s.playerDynamicBackground
@@ -464,6 +466,8 @@ class Settings extends _$Settings {
       ..activeLyricsIntensity = s.activeLyricsIntensity
       ..inactiveLyricsOpacity = s.inactiveLyricsOpacity
       ..lyricsNoLineGrouping = s.lyricsNoLineGrouping
+      ..showLyricsTranslation = s.showLyricsTranslation
+      ..showLyricsRomanization = s.showLyricsRomanization
       ..lyricsOwnBackground = s.lyricsOwnBackground
       ..enableLyricsGradient = s.enableLyricsGradient
       ..ambientColorBackground = s.ambientColorBackground
@@ -495,6 +499,10 @@ class Settings extends _$Settings {
       ..letterSpacingPercent = s.letterSpacingPercent
       ..useNewFontLyrics = s.useNewFontLyrics
       ..customFontFamilyLyrics = s.customFontFamilyLyrics
+      ..lyricsWeightOverride = s.lyricsWeightOverride
+      ..lyricsItalic = s.lyricsItalic
+      ..lyricsLineSpacing = s.lyricsLineSpacing
+      ..lyricsTextCase = s.lyricsTextCase
       ..customFontWeightLyrics = s.customFontWeightLyrics
       ..customFontWeightLyricsDelta = s.customFontWeightLyricsDelta
       ..activeLyricsFontWeightDelta = s.activeLyricsFontWeightDelta
@@ -515,6 +523,7 @@ class Settings extends _$Settings {
       ..lyricsProvidersOff = List<String>.from(s.lyricsProvidersOff)
       ..lyricsProviderWordSyncMigrated = s.lyricsProviderWordSyncMigrated
       ..lyricsSyncStyle = s.lyricsSyncStyle
+      ..lyricsStyle = s.lyricsStyle
       ..lyricsOffsetMs = s.lyricsOffsetMs
       ..lyricsOffsetEarlierMigrated = s.lyricsOffsetEarlierMigrated
       ..lyricsOffsetPerSongMigrated = s.lyricsOffsetPerSongMigrated
@@ -575,6 +584,9 @@ class Settings extends _$Settings {
 
   Future<void> updateLyricsSyncStyle(String value) =>
       _update((s) => s..lyricsSyncStyle = value);
+
+  Future<void> updateLyricsStyle(String value) =>
+      _update((s) => s..lyricsStyle = value);
 
   // Lyrics background is one of: blurred artwork, ambient colour, or
   // neither; turning one on turns the other off.
@@ -807,6 +819,15 @@ class Settings extends _$Settings {
   Future<void> updateFrostedNavbar(bool value) =>
       _update((s) => s..frostedNavbar = value);
 
+  Future<void> updateMusicBarStyle(String value) =>
+      _update((s) => s..musicBarStylePref = value);
+
+  Future<void> updateNavbarStyle(String value) => _update(
+    (s) => s
+      ..navbarStylePref = value
+      ..newNavbar = value != 'classic',
+  );
+
   Future<void> updateStatusBarBlur(bool value) =>
       _update((s) => s..statusBarBlur = value);
 
@@ -896,6 +917,12 @@ class Settings extends _$Settings {
 
   Future<void> updateLyricsLineGrouping(bool enabled) =>
       _update((s) => s..lyricsNoLineGrouping = !enabled);
+
+  Future<void> updateShowLyricsTranslation(bool enabled) =>
+      _update((s) => s..showLyricsTranslation = enabled);
+
+  Future<void> updateShowLyricsRomanization(bool enabled) =>
+      _update((s) => s..showLyricsRomanization = enabled);
 
   Future<void> updateLyricsFollowPlayerBackground(bool enabled) =>
       _update((s) => s..lyricsOwnBackground = !enabled);
@@ -991,10 +1018,33 @@ class Settings extends _$Settings {
     _updateActiveFont();
   }
 
-  Future<void> updateCustomFontFamilyLyrics(String value) async {
+  Future<void> updateCustomFontFamilyLyrics(String? value) async {
     await _update((s) => s..customFontFamilyLyrics = value);
     _updateActiveFont();
   }
+
+  Future<void> updateLyricsWeightOverride(int value) =>
+      _update((s) => s..lyricsWeightOverride = value);
+
+  Future<void> updateLyricsItalic(bool value) =>
+      _update((s) => s..lyricsItalic = value);
+
+  Future<void> updateLyricsLineSpacing(double value) =>
+      _update((s) => s..lyricsLineSpacing = value);
+
+  Future<void> updateLyricsTextCase(String value) =>
+      _update((s) => s..lyricsTextCase = value);
+
+  Future<void> resetLyricsTextToDefaults() => _update(
+    (s) => s
+      ..customFontFamilyLyrics = AppDefaults.customFontFamilyLyrics
+      ..lyricsWeightOverride = AppDefaults.lyricsWeightOverride
+      ..lyricsItalic = AppDefaults.lyricsItalic
+      ..lyricsFontScale = AppDefaults.lyricsFontScale
+      ..lyricsLineSpacing = AppDefaults.lyricsLineSpacing
+      ..lyricsAlignment = AppDefaults.lyricsAlignment
+      ..lyricsTextCase = AppDefaults.lyricsTextCase,
+  );
 
   Future<void> updateActiveLyricsFontWeightDelta(int value) async {
     await _update((s) => s..activeLyricsFontWeightDelta = value);

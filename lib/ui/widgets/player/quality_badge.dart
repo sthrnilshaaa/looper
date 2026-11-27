@@ -111,6 +111,7 @@ class QualityInfo {
 class QualityBadge extends StatelessWidget {
   final QualityInfo info;
   final QualityBadgeStyle style;
+  final bool suspectFake;
 
   /// Space above the badge. The Now Playing top bar passes zero and pads
   /// outside its Hero instead, so the hero's rect is the visible pill.
@@ -120,6 +121,7 @@ class QualityBadge extends StatelessWidget {
     super.key,
     required this.info,
     required this.style,
+    this.suspectFake = false,
     this.margin = const EdgeInsets.only(top: 6),
   });
 
@@ -174,11 +176,13 @@ class QualityBadge extends StatelessWidget {
     QualityInfo info,
     QualityBadgeStyle style, {
     bool shortTier = false,
+    bool suspectFake = false,
   }) {
     final String tierName = shortTier
         ? tierShortLabel(info.tier)
         : tierLabel(context, info.tier);
-    if (style.layout == QualityBadgeLayout.name) return tierName;
+    final suffix = suspectFake && info.isLossless ? ' ?' : '';
+    if (style.layout == QualityBadgeLayout.name) return '$tierName$suffix';
     final l10n = context.l10n;
     final String? channels = channelsLabel(context, info.channels);
     final parts = <String>[
@@ -201,7 +205,7 @@ class QualityBadge extends StatelessWidget {
     // Every enabled detail can be missing before analysis; fall back to the
     // codec so the badge is never blank.
     if (parts.isEmpty) parts.add(info.codec ?? l10n.qualityAudio);
-    return parts.join(style.separatorGlyph).trim();
+    return '${parts.join(style.separatorGlyph).trim()}$suffix';
   }
 
   String _tierLabel(BuildContext context) => tierLabel(context, info.tier);
@@ -211,7 +215,8 @@ class QualityBadge extends StatelessWidget {
   String? _channelsLabel(BuildContext context) =>
       channelsLabel(context, info.channels);
 
-  String _text(BuildContext context) => textFor(context, info, style);
+  String _text(BuildContext context) =>
+      textFor(context, info, style, suspectFake: suspectFake);
 
   /// The badge's leading icon, or null for [QualityBadgeIcon.none].
   static Widget? iconWidget(QualityBadgeIcon icon, double size, Color color) {

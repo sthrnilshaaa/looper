@@ -34,6 +34,9 @@ import 'package:looper_player/features/playback/presentation/providers/playback/
 import 'package:looper_player/core/providers/player_expand_provider.dart';
 import 'package:looper_player/core/services/storage/storage_access.dart';
 
+import 'bar_styles.dart';
+import 'capsule_navbar.dart';
+import 'minimal_navbar.dart';
 import 'new_navbar.dart';
 import 'premium_navbar.dart';
 import '../widgets/premium_section.dart';
@@ -241,14 +244,21 @@ class _AndroidMainScreenState extends ConsumerState<AndroidMainScreen>
     super.dispose();
   }
 
-  /// The navbar for [tabs]: the New Navbar's four, or the usual three.
-  Widget _navbar(NavItem rootItem, List<NavItem> tabs) {
+  /// The navbar for [tabs]: the Classic 3-pill navbar, or one of the 4-tab styles.
+  Widget _navbar(
+    NavItem rootItem,
+    List<NavItem> tabs,
+    NavbarStyle navbarStyle,
+  ) {
     final index = tabs.indexOf(rootItem).clamp(0, tabs.length - 1);
     void onTap(int i) =>
         ref.read(appNavigationProvider.notifier).setItem(tabs[i]);
-    return tabs == _rootTabs
-        ? NewNavbar(currentIndex: index, onTap: onTap)
-        : PremiumNavbar(currentIndex: index, onTap: onTap);
+    return switch (navbarStyle) {
+      NavbarStyle.classic => PremiumNavbar(currentIndex: index, onTap: onTap),
+      NavbarStyle.capsule => CapsuleNavbar(currentIndex: index, onTap: onTap),
+      NavbarStyle.minimal => MinimalNavbar(currentIndex: index, onTap: onTap),
+      NavbarStyle.premium => NewNavbar(currentIndex: index, onTap: onTap),
+    };
   }
 
   Widget _buildTabStack(bool newNavbar) {
@@ -339,7 +349,13 @@ class _AndroidMainScreenState extends ConsumerState<AndroidMainScreen>
     final l10n = AppLocalizations.of(context)!;
     final song = ref.watch(playbackProvider.select((s) => s.currentSong));
     final navigatorKey = ref.read(androidNavigatorKeyProvider);
-    final newNavbar = ref.watch(settingsProvider.select((s) => s.newNavbar));
+    final navbarStyle = ref.watch(
+      settingsProvider.select((s) => NavbarStyle.fromSetting(s.navbarStyle)),
+    );
+    final newNavbar = navbarStyle != NavbarStyle.classic;
+    final barStyle = MusicBarStyle.fromSetting(
+      ref.watch(settingsProvider.select((s) => s.musicBarStyle)),
+    );
     final navTabs = newNavbar ? _rootTabs : _classicTabs;
     NavItem rootOf(NavigationState nav) => _rootNavItem(nav, navTabs);
     final rootItem = ref.watch(appNavigationProvider.select(rootOf));
@@ -487,9 +503,17 @@ class _AndroidMainScreenState extends ConsumerState<AndroidMainScreen>
     // off-screen slide distance both still match its real height exactly.
     final bool isShortWindow = Responsive.isShort(MediaQuery.sizeOf(context));
     final double navbarHeight =
-        (newNavbar
-            ? NewNavbar.heightFor(compact: isShortWindow)
-            : (isShortWindow ? 56.0 + 10.0 : 72.0 + 18.0)) +
+        switch (navbarStyle) {
+          NavbarStyle.classic =>
+            isShortWindow ? 56.0 + 10.0 : 72.0 + 18.0,
+          NavbarStyle.capsule => CapsuleNavbar.heightFor(
+            compact: isShortWindow,
+          ),
+          NavbarStyle.minimal => MinimalNavbar.heightFor(
+            compact: isShortWindow,
+          ),
+          NavbarStyle.premium => NewNavbar.heightFor(compact: isShortWindow),
+        } +
         MediaQuery.of(context).padding.bottom;
 
     final baseTheme = Theme.of(context);
@@ -709,7 +733,11 @@ class _AndroidMainScreenState extends ConsumerState<AndroidMainScreen>
                                           _buildTabStack(
                                             ref.watch(
                                               settingsProvider.select(
-                                                (s) => s.newNavbar,
+                                                (s) =>
+                                                    NavbarStyle.fromSetting(
+                                                      s.navbarStyle,
+                                                    ) !=
+                                                    NavbarStyle.classic,
                                               ),
                                             ),
                                           ),
@@ -747,9 +775,11 @@ class _AndroidMainScreenState extends ConsumerState<AndroidMainScreen>
                         // starts behind the mini player's middle and is
                         // near-solid under them.
                         child: Container(
-                          height: newNavbar
-                              ? navbarHeight + 4.0 + musicBarHeight / 2 + 8
-                              : 180,
+                          height: !newNavbar
+                              ? 180
+                              : barStyle == MusicBarStyle.bare
+                              ? navbarHeight + musicBarHeight + 16
+                              : navbarHeight + 4.0 + musicBarHeight / 2 + 8,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topCenter,
@@ -836,7 +866,7 @@ class _AndroidMainScreenState extends ConsumerState<AndroidMainScreen>
                                         ),
                                       );
                                     },
-                                    child: _navbar(rootItem, navTabs),
+                                    child: _navbar(rootItem, navTabs, navbarStyle),
                                   ),
                                 ),
                               ),
@@ -933,7 +963,7 @@ class _AndroidMainScreenState extends ConsumerState<AndroidMainScreen>
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const SizedBox(height: 4),
-                              _navbar(rootItem, navTabs),
+                              _navbar(rootItem, navTabs, navbarStyle),
                             ],
                           ),
                         ),

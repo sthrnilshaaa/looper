@@ -266,4 +266,20 @@ flutter:
           weight: 600
         - asset: assets/fonts/stack_sans_text/StackSansText-Bold.ttf
           weight: 700
+    - family: Playfair Display
+      fonts:
+        - asset: assets/fonts/playfair_display/PlayfairDisplay-Medium.ttf
+          weight: 400
+        - asset: assets/fonts/playfair_display/PlayfairDisplay-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/playfair_display/PlayfairDisplay-Medium.ttf
+          weight: 600
+        - asset: assets/fonts/playfair_display/PlayfairDisplay-Medium.ttf
+          weight: 700
+    - family: JetBrains Mono
+      fonts:
+        - asset: assets/fonts/jetbrains_mono/JetBrainsMono-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/jetbrains_mono/JetBrainsMono-Regular.ttf
+          weight: 600
 

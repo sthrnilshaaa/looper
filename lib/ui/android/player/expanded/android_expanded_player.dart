@@ -31,6 +31,7 @@ import 'player_portrait_metrics.dart';
 import 'segmented_utility_row.dart';
 import 'quality_details_sheet.dart';
 import 'package:looper_player/features/settings/domain/quality_badge_style.dart';
+import 'package:looper_player/features/playback/data/quality_check_service.dart';
 import 'package:looper_player/ui/widgets/player/quality_badge.dart';
 import '../../shell/music_bar/fluid_player_motion.dart';
 import 'package:looper_player/ui/widgets/common/scrolling_text.dart';
@@ -186,6 +187,7 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
         ref: ref,
         song: currentSong,
         styled: true,
+        showPlayerStyleOption: true,
       );
     }
   }
@@ -376,6 +378,9 @@ class _AndroidExpandedPlayerState extends ConsumerState<AndroidExpandedPlayer>
                           child: QualityBadge(
                             info: qualityInfo,
                             style: QualityBadgeStyle.fromSettings(settings),
+                            suspectFake: QualityCheckService.isSuspect(
+                              QualityCheckService.cachedSync(song.path),
+                            ),
                             margin: EdgeInsets.zero,
                           ),
                         ),

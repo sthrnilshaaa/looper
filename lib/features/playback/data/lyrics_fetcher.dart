@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:isar_community/isar.dart';
+import 'package:looper_player/core/utils/logger_helper.dart';
 import 'package:path/path.dart' as p;
 import 'package:looper_player/core/services/storage/db_service.dart';
 import 'lrc_parser.dart';
@@ -78,7 +81,17 @@ class LyricsFetcher {
   static final RegExp _timingLine = RegExp(r'^\[w:([0-9,;]*)\]$');
   static final RegExp _bgLine = RegExp(r'^\[bg:(.*)\]$');
 
+  static final RegExp _instrumentalTitle = RegExp(
+    r'\b(instrumental|karaoke|backing track|inst\.?)\b',
+    caseSensitive: false,
+  );
+
   static String cleanTitle(Song song) => song.title.trim();
+
+  /// Whether [song]'s cleaned title marks an instrumental/karaoke cut that
+  /// should skip automatic lyrics lookup.
+  static bool isInstrumentalTitle(Song song) =>
+      _instrumentalTitle.hasMatch(cleanTitle(song));
 
   static String cleanArtist(Song song) =>
       (song.artist ?? 'Unknown Artist').trim();
@@ -282,13 +295,55 @@ class LyricsFetcher {
   static Future<String?> Function(Song song, String provider)? debugAsk;
 
   /// Tests: forgets what only lasts until the app restarts.
-  static void debugRestart() => _failedThisRun.clear();
+  static void debugRestart() {
+    _failedThisRun.clear();
+    _cooldownUntil.clear();
+    _consecutiveFailures.clear();
+  }
 
   static final Map<String, Future<_Answer>> _asking = {};
 
   /// Requests that didn't get through, per song and provider: not repeated
   /// until the app restarts.
   static final Set<String> _failedThisRun = {};
+
+  /// Per-service cooldowns for rate-limited or failing providers.
+  static final Map<String, DateTime> _cooldownUntil = {};
+  static final Map<String, int> _consecutiveFailures = {};
+
+  /// Whether [provider] is currently paused due to rate limits or failures.
+  static bool isCoolingDown(String provider) {
+    final id = provider.toUpperCase();
+    final until = _cooldownUntil[id];
+    if (until == null) return false;
+    if (DateTime.now().isBefore(until)) return true;
+    _cooldownUntil.remove(id);
+    return false;
+  }
+
+  static void _recordFailure(String provider, LyricsLookupReport report) {
+    final id = provider.toUpperCase();
+    if (report.rateLimited) {
+      _cooldownUntil[id] = DateTime.now().add(
+        report.retryAfter ?? const Duration(seconds: 60),
+      );
+      return;
+    }
+    if (report.failed) {
+      final count = (_consecutiveFailures[id] ?? 0) + 1;
+      _consecutiveFailures[id] = count;
+      final duration = count >= 3
+          ? const Duration(minutes: 10)
+          : const Duration(minutes: 2);
+      _cooldownUntil[id] = DateTime.now().add(duration);
+    }
+  }
+
+  static void _recordSuccess(String provider) {
+    final id = provider.toUpperCase();
+    _consecutiveFailures.remove(id);
+    _cooldownUntil.remove(id);
+  }
 
   /// [provider]'s answer for [song]: the saved one when there is one - its
   /// lyrics (source-tagged), or that it has none - else asked online
@@ -298,6 +353,7 @@ class LyricsFetcher {
     Song song,
     String provider, {
     bool network = true,
+    LyricsCancelToken? cancelToken,
   }) async {
     final artist = cleanArtist(song);
     final title = cleanTitle(song);
@@ -307,15 +363,25 @@ class LyricsFetcher {
       return (lrc: null, known: true);
     }
     final key = '${_songKey(song)}|$artist|$title|$provider';
-    if (!network || _failedThisRun.contains(key)) {
+    if (!network || _failedThisRun.contains(key) || isCoolingDown(provider)) {
       return (lrc: null, known: false);
     }
-    return _asking[key] ??= _ask(song, provider, key).whenComplete(() {
+    return _asking[key] ??= _ask(
+      song,
+      provider,
+      key,
+      cancelToken: cancelToken,
+    ).whenComplete(() {
       _asking.remove(key);
     });
   }
 
-  static Future<_Answer> _ask(Song song, String provider, String key) async {
+  static Future<_Answer> _ask(
+    Song song,
+    String provider,
+    String key, {
+    LyricsCancelToken? cancelToken,
+  }) async {
     final artist = cleanArtist(song);
     final title = cleanTitle(song);
     final report = LyricsLookupReport();
@@ -328,19 +394,28 @@ class LyricsFetcher {
         }
         final response = await _askOnline(song, provider);
         return response?.syncedLyrics ?? response?.plainLyrics;
-      });
+      }, cancelToken: cancelToken);
     } catch (_) {
-      report.failed = true;
+      if (cancelToken?.isCancelled != true) {
+        report.failed = true;
+      }
+    }
+    if (cancelToken?.isCancelled == true &&
+        (raw == null || raw.trim().isEmpty)) {
+      return (lrc: null, known: false);
     }
     if (raw != null && raw.trim().isNotEmpty) {
+      _recordSuccess(provider);
       final tagged = '[source:${provider.toLowerCase()}]\n$raw';
       await LyricsCache.saveProvider(artist, title, provider, tagged);
       return (lrc: tagged, known: true);
     }
-    if (report.failed) {
+    if (report.failed || report.rateLimited) {
       _failedThisRun.add(key);
+      _recordFailure(provider, report);
       return (lrc: null, known: false);
     }
+    _recordSuccess(provider);
     await LyricsCache.saveProviderMiss(artist, title, provider);
     return (lrc: null, known: true);
   }
@@ -427,12 +502,20 @@ class LyricsFetcher {
 
   /// Automatic lookup, used on play, by the song info screen and by
   /// "Sync lyrics offline". Returns source-tagged lyrics, or null.
-  static Future<String?> fetchLyrics(Song song) =>
-      _fetching[_songKey(song)] ??= _fetchLyrics(song).whenComplete(() {
-        _fetching.remove(_songKey(song));
-      });
+  static Future<String?> fetchLyrics(
+    Song song, {
+    bool includeInstrumental = false,
+  }) => _fetching[_songKey(song)] ??= _fetchLyrics(
+    song,
+    includeInstrumental: includeInstrumental,
+  ).whenComplete(() {
+    _fetching.remove(_songKey(song));
+  });
 
-  static Future<String?> _fetchLyrics(Song song) async {
+  static Future<String?> _fetchLyrics(
+    Song song, {
+    bool includeInstrumental = false,
+  }) async {
     final artist = cleanArtist(song);
     final title = cleanTitle(song);
 
@@ -481,11 +564,11 @@ class LyricsFetcher {
       return tagged;
     }
 
-    // 2. Nothing saved, or a saved "not found": walk the chain. Every
-    // service answers from what it said before, so a "not found" song only
-    // costs a request for services it was never asked on (switched on or
-    // added since) - and its own files are read again, they may have
-    // gained lyrics.
+    // 2. Nothing saved, or a saved "not found": skip instrumentals unless
+    // explicitly requested, else race the chain.
+    if (!includeInstrumental && isInstrumentalTitle(song)) {
+      return null;
+    }
     final settings = await DbService.isar.appSettings.get(0);
     final found = await firstInChain(
       song,
@@ -589,27 +672,109 @@ class LyricsFetcher {
     required bool autoFallback,
   }) => [local, ...autoFallback ? providers : providers.take(1)];
 
-  /// The first answer in [chain], whatever its level - it is shown at
-  /// once, and [upgrade] looks for a better one behind it. `known` is
-  /// false when a service couldn't be asked (with [online] false, or a
-  /// failed request), so "nothing found" isn't final.
+  /// Races [chain] in waves of 4 after checking `LOCAL` first. When the
+  /// first online answer arrives, a grace timer (5 s default, 2 s if already
+  /// word-timed) lets slower services finish; the highest [levelOf] wins,
+  /// ties broken by chain order. Losers are cancelled once the pick is made.
+  /// `known` is false when a service couldn't be asked (with [online] false,
+  /// cooling down, or a failed request), so "nothing found" isn't final.
   static Future<({String? lrc, bool known})> firstInChain(
     Song song,
     List<String> chain, {
     bool online = true,
+    Duration graceDefault = const Duration(seconds: 5),
+    Duration graceWord = const Duration(seconds: 2),
+    Duration waveTimeout = const Duration(seconds: 6),
   }) async {
-    var known = true;
-    for (final source in chain) {
-      if (source == local) {
-        final lrc = await _readLocal(song);
-        if (lrc != null) return (lrc: lrc, known: true);
-        continue;
-      }
-      final answer = await _fromProvider(song, source, network: online);
-      if (answer.lrc != null) return answer;
-      if (!answer.known) known = false;
+    if (chain.contains(local)) {
+      final lrc = await _readLocal(song);
+      if (lrc != null) return (lrc: lrc, known: true);
     }
-    return (lrc: null, known: known);
+
+    final onlineProviders = chain.where((s) => s != local).toList();
+    if (onlineProviders.isEmpty) return (lrc: null, known: true);
+
+    final sw = Stopwatch()..start();
+    final cancelToken = LyricsCancelToken();
+    final candidates = <({int index, String provider, String lrc, int level})>[];
+    var known = true;
+    Timer? graceTimer;
+    final done = Completer<void>();
+
+    void finish() {
+      graceTimer?.cancel();
+      cancelToken.cancel();
+      if (!done.isCompleted) done.complete();
+    }
+
+    const waveSize = 4;
+    for (
+      var offset = 0;
+      offset < onlineProviders.length && !done.isCompleted;
+      offset += waveSize
+    ) {
+      final end = math.min(offset + waveSize, onlineProviders.length);
+      final waveFutures = <Future<void>>[];
+      for (var i = offset; i < end; i++) {
+        final idx = i;
+        final provider = onlineProviders[idx];
+        final fut = _fromProvider(
+          song,
+          provider,
+          network: online,
+          cancelToken: cancelToken,
+        ).then((answer) {
+          if (done.isCompleted) return;
+          if (answer.lrc != null) {
+            final level = levelOf(answer.lrc);
+            candidates.add((
+              index: idx,
+              provider: provider,
+              lrc: answer.lrc!,
+              level: level,
+            ));
+            graceTimer ??= Timer(
+              level >= levelWord ? graceWord : graceDefault,
+              finish,
+            );
+          } else if (!answer.known) {
+            known = false;
+          }
+        });
+        waveFutures.add(fut);
+      }
+
+      final waveDone = Future.wait(waveFutures);
+      await Future.any([
+        waveDone,
+        Future<void>.delayed(waveTimeout),
+        done.future,
+      ]);
+
+      // If we already have a candidate, wait out either the rest of this wave
+      // or the grace timer—don't launch another wave.
+      if (candidates.isNotEmpty && !done.isCompleted) {
+        await Future.any([waveDone, done.future]);
+        finish();
+        break;
+      }
+    }
+
+    graceTimer?.cancel();
+    cancelToken.cancel();
+
+    if (candidates.isEmpty) {
+      return (lrc: null, known: known);
+    }
+    candidates.sort((a, b) {
+      final byLevel = b.level.compareTo(a.level);
+      return byLevel != 0 ? byLevel : a.index.compareTo(b.index);
+    });
+    final picked = candidates.first;
+    LoggerHelper.write(
+      'lyrics: picked ${picked.provider} in ${sw.elapsedMilliseconds} ms',
+    );
+    return (lrc: picked.lrc, known: true);
   }
 
   static Future<LyricsResponse?> _askOnline(Song song, String provider) =>
@@ -663,6 +828,8 @@ class LyricsFetcher {
   static Future<void> clearAll() async {
     await LyricsCache.clear();
     _failedThisRun.clear();
+    _cooldownUntil.clear();
+    _consecutiveFailures.clear();
     final online = {
       for (final p in allProviders) '[source:${p.toLowerCase()}]',
     };

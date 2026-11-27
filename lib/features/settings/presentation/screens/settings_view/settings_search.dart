@@ -165,11 +165,18 @@ extension _SettingsSearch on _SettingsViewState {
           widget: const FrostedNavbarTile(),
         ),
         SettingsSearchItem(
-          title: l10n.newNavbar,
-          subtitle: l10n.newNavbarDesc,
+          title: l10n.musicBarStyle,
+          subtitle: l10n.musicBarStyleDesc,
           category:
               '${l10n.catPlayerInterface} · ${l10n.themeGroupBlurBackgrounds}',
-          widget: const NewNavbarTile(),
+          widget: const MusicBarStyleTile(),
+        ),
+        SettingsSearchItem(
+          title: l10n.navbarStyle,
+          subtitle: l10n.navbarStyleDesc,
+          category:
+              '${l10n.catPlayerInterface} · ${l10n.themeGroupBlurBackgrounds}',
+          widget: const NavbarStyleTile(),
         ),
         SettingsSearchItem(
           title: l10n.statusBarBlur,
@@ -295,6 +302,18 @@ extension _SettingsSearch on _SettingsViewState {
         widget: const PlayerStyleTile(),
       ),
       SettingsSearchItem(
+        title: l10n.lyricsStyle,
+        subtitle: l10n.lyricsStyleDesc,
+        category: '${l10n.lyrics} · ${l10n.sectionLook}',
+        widget: const LyricsStyleTile(),
+      ),
+      SettingsSearchItem(
+        title: l10n.lyricsTextSection,
+        subtitle: l10n.lyricsAlignmentDesc,
+        category: '${l10n.lyrics} · ${l10n.sectionLook}',
+        widget: const LyricsTextPanelTile(),
+      ),
+      SettingsSearchItem(
         title: l10n.segmentedUtilityButtons,
         subtitle: l10n.segmentedUtilityButtonsDesc,
         category: '${l10n.nowPlaying} · ${l10n.sectionClassicLayout}',
@@ -415,7 +434,9 @@ extension _SettingsSearch on _SettingsViewState {
       if (settings.useNewFontLyrics) ...[
         SettingsSearchItem(
           title: l10n.lyricsFontFamily,
-          subtitle: l10n.activeLyricsFont(settings.customFontFamilyLyrics),
+          subtitle: l10n.activeLyricsFont(
+            settings.customFontFamilyLyrics ?? l10n.lyricsTextStyleDefault,
+          ),
           category: '${l10n.catPlayerInterface} · ${l10n.themeGroupFonts}',
           widget: const LyricsFontFamilySelectionTile(),
         ),

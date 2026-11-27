@@ -4,7 +4,6 @@ import 'dart:math' as math;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/core/utils/ui_utils.dart';
@@ -16,9 +15,9 @@ import 'package:looper_player/features/settings/presentation/providers/settings_
 import 'package:looper_player/l10n/app_localizations.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:looper_player/core/services/screen_awake.dart';
+import 'package:looper_player/ui/android/player/lyrics/lyrics_screen_style.dart';
 
 import '../widgets/lyrics/advanced_lyric_renderer.dart';
-import '../widgets/lyrics/desktop_lyrics_toolbar.dart';
 import '../widgets/lyrics/lyrics_scale.dart';
 import '../widgets/lyrics/lyrics_skeleton.dart';
 import 'package:looper_player/core/utils/l10n.dart';
@@ -42,7 +41,8 @@ enum LyricsSyncMode {
 }
 
 class LyricsView extends ConsumerStatefulWidget {
-  const LyricsView({super.key});
+  final LyricsScreenStyle? previewStyle;
+  const LyricsView({super.key, this.previewStyle});
 
   @override
   ConsumerState<LyricsView> createState() => _LyricsViewState();
@@ -76,162 +76,20 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
   @override
   Widget build(BuildContext context) {
     final syncMode = _syncMode;
-    if (!UiUtils.isDesktop) return _buildLyrics(context, syncMode);
-
-    // Read everything here, not inside the LayoutBuilder: its builder runs
-    // during layout, where providers must not be watched.
-    final lyricsState = ref.watch(lyricsProvider);
-    final userScale = LyricsScale.normalize(
-      ref.watch(settingsProvider.select((s) => s.lyricsFontScale)),
-    );
-    final song = ref.watch(playbackProvider.select((s) => s.currentSong));
-    final settingsNotifier = ref.read(settingsProvider.notifier);
-    final isFullscreen = ref.watch(lyricsFullscreenProvider);
-    // Offered once the user has scrolled the active line out of view.
-    final showResync =
-        ref.watch(lyricsManualScrollProvider) &&
-        !ref.watch(lyricsActiveLineVisibleProvider);
-    final fullscreenNotifier = ref.read(lyricsFullscreenProvider.notifier);
-    final alignment = ref.watch(
-      settingsProvider.select((s) => s.lyricsAlignment),
-    );
-
-    final lyricsPane = LayoutBuilder(
-      builder: (context, constraints) {
-        final paneWidth = constraints.maxWidth;
-        final autoScale = LyricsScale.auto(paneWidth);
-        return Stack(
-          children: [
-            Positioned.fill(
-              child: _buildLyrics(
-                context,
-                syncMode,
-                desktop: (lyricsState: lyricsState, song: song),
-                fontScale: userScale * autoScale,
-                onFontScaleChanged: (scale) =>
-                    settingsNotifier.updateLyricsFontScale(scale / autoScale),
-                // Centred lyrics keep a 900px column in the middle of the
-                // pane. Left/right aligned lyrics use the full pane width.
-                horizontalPadding: alignment == 'center'
-                    ? math.max(24.0, (paneWidth - 900) / 2)
-                    : 24.0,
-                bottomPadding: constraints.maxHeight * 0.45,
-              ),
-            ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 24,
-              child: IgnorePointer(
-                ignoring: !showResync,
-                child: AnimatedOpacity(
-                  opacity: showResync ? 1 : 0,
-                  duration: const Duration(milliseconds: 200),
-                  child: Center(
-                    child: Material(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: 0.9),
-                      shape: const StadiumBorder(),
-                      clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        key: const ValueKey('lyrics-resync'),
-                        onTap: () => ref
-                            .read(lyricsManualScrollProvider.notifier)
-                            .set(false),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 9,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                LucideIcons.refreshCw,
-                                size: 14,
-                                color: Colors.black,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                context.l10n.resync,
-                                style: AppFonts.jostStyle(
-                                  color: Colors.black,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              top: 8,
-              right: 16,
-              child: DesktopLyricsToolbar(
-                onMenu: song == null
-                    ? null
-                    : () => showLyricsMenuDialog(context, ref, song),
-                isFullscreen: isFullscreen,
-                onToggleFullscreen: () => fullscreenNotifier.set(!isFullscreen),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-    // Scrolling by hand (wheel, touchpad or drag) pauses auto-follow, as on
-    // Android; the Re-sync button or the renderer's own timer resumes it.
-    void markManualScroll() =>
-        ref.read(lyricsManualScrollProvider.notifier).set(true);
-    final pane = Listener(
-      onPointerSignal: (event) {
-        if (event is PointerScrollEvent) markManualScroll();
-      },
-      child: NotificationListener<ScrollNotification>(
-        onNotification: (notification) {
-          if ((notification is ScrollUpdateNotification &&
-                  notification.dragDetails != null) ||
-              (notification is ScrollStartNotification &&
-                  notification.dragDetails != null)) {
-            markManualScroll();
-          }
-          return false;
-        },
-        child: lyricsPane,
-      ),
-    );
-    if (!isFullscreen) return pane;
-    // Esc leaves lyrics-only full screen.
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.escape): () =>
-            fullscreenNotifier.set(false),
-      },
-      child: Focus(autofocus: true, child: pane),
-    );
+    return _buildLyrics(context, syncMode);
   }
 
-  /// The lyrics body. [desktop] carries the state the desktop branch has
-  /// already watched (its caller runs inside a LayoutBuilder); without it
-  /// the providers are watched here, as on mobile.
+  /// The lyrics body.
   Widget _buildLyrics(
     BuildContext context,
     LyricsSyncMode syncMode, {
-    ({LyricsState lyricsState, Song? song})? desktop,
     double? fontScale,
     ValueChanged<double>? onFontScaleChanged,
     double? horizontalPadding,
     double? bottomPadding,
   }) {
     final l10n = AppLocalizations.of(context)!;
-    final LyricsState lyricsState =
-        desktop?.lyricsState ?? ref.watch(lyricsProvider);
+    final LyricsState lyricsState = ref.watch(lyricsProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Stack(
@@ -260,7 +118,6 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
                           context,
                           l10n,
                           primaryColor,
-                          desktop: desktop,
                         ),
                       )
                     : AdvancedLyricRenderer(
@@ -274,6 +131,7 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
                         onFontScaleChanged: onFontScaleChanged,
                         horizontalPadding: horizontalPadding,
                         bottomPadding: bottomPadding,
+                        previewStyle: widget.previewStyle,
                       ),
               ),
             ),
@@ -288,12 +146,9 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
   Widget _buildNoLyricsState(
     BuildContext context,
     AppLocalizations l10n,
-    Color primaryColor, {
-    ({LyricsState lyricsState, Song? song})? desktop,
-  }) {
-    final song = desktop != null
-        ? desktop.song
-        : ref.watch(playbackProvider.select((s) => s.currentSong));
+    Color primaryColor,
+  ) {
+    final song = ref.watch(playbackProvider.select((s) => s.currentSong));
 
     return Center(
       child: Padding(

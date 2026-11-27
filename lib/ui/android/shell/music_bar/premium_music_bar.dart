@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:looper_player/core/utils/song_metadata.dart';
 import 'package:flutter/material.dart' hide RepeatMode;
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/rendering.dart';
 import 'package:looper_player/core/utils/motion.dart';
@@ -25,6 +26,9 @@ import 'package:looper_player/features/library/domain/models/models.dart';
 
 import 'fluid_player_motion.dart';
 import '../../widgets/premium_section.dart';
+import 'package:looper_player/ui/android/shell/bar_styles.dart';
+import 'package:looper_player/features/playback/presentation/widgets/lyrics/advanced_lyric_line/advanced_lyric_line.dart'
+    show artworkRawColorProvider;
 
 import 'package:looper_player/core/utils/l10n.dart';
 import 'package:looper_player/ui/widgets/common/song_playback_overlay.dart';
@@ -367,6 +371,8 @@ class PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
       return const SizedBox.shrink();
     }
 
+    final barStyle = MusicBarStyle.fromSetting(settings.musicBarStyle);
+
     if (!settings.enableSlideGesture) {
       final Size windowSize = MediaQuery.sizeOf(context);
       // Landscape phones are short - shrink the bar to match PremiumNavbar's
@@ -505,10 +511,12 @@ class PremiumMusicBarState extends ConsumerState<PremiumMusicBar>
     // the panel's top edge ~500dp up the screen. The clip also limits hit
     // testing to the panel, so the transparent rest of the layer never
     // swallows touches meant for the screen behind it.
-    final bool isBlurActive = useBlur
-        ? !settings.disableBlur
-        : settings.frostedMusicBar;
-    final Color minimizedBgColor = isBlurActive
+    final bool isBlurActive =
+        (useBlur ? !settings.disableBlur : settings.frostedMusicBar) &&
+        barStyle == MusicBarStyle.pill;
+    final Color minimizedBgColor = barStyle != MusicBarStyle.pill
+        ? Colors.transparent
+        : isBlurActive
         ? Colors.white.withValues(alpha: 0.05)
         : Theme.of(context).colorScheme.surfaceContainer;
     final Size windowSize = MediaQuery.sizeOf(context);

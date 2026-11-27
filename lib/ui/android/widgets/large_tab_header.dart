@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/core/providers/navigation_provider.dart';
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
 import 'package:looper_player/core/services/haptics/app_haptics.dart';
+import 'package:looper_player/ui/android/shell/bar_styles.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/features/settings/presentation/screens/account_view.dart'
     show headerProfilePhoto;
@@ -54,8 +55,13 @@ class LargeTabHeader extends ConsumerWidget {
               ],
             ),
           ),
-          // The New Navbar has its own Search tab.
-          if (!ref.watch(settingsProvider.select((s) => s.newNavbar))) ...[
+          // The Classic Navbar has no Search tab: Search opens from here.
+          if (ref.watch(
+            settingsProvider.select(
+              (s) =>
+                  NavbarStyle.fromSetting(s.navbarStyle) == NavbarStyle.classic,
+            ),
+          )) ...[
             RoundIconButton(
               icon: Icons.search_rounded,
               tooltip: MaterialLocalizations.of(context).searchFieldLabel,

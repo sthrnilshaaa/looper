@@ -1,8 +1,12 @@
 import 'dart:io';
+import 'dart:ui';
+
+import 'package:looper_player/ui/android/player/lyrics/lyrics_screen_style.dart';
 
 import 'package:looper_player/ui/widgets/common/optimized_image.dart';
 import 'package:flutter/material.dart';
 import 'package:looper_player/core/utils/motion.dart';
+import 'package:looper_player/core/utils/responsive.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/core/utils/artwork_colors.dart';
@@ -113,6 +117,7 @@ class AdvancedLyricLine extends ConsumerWidget {
   final bool isSelected;
   final bool selectionActive;
   final VoidCallback onLongPress;
+  final LyricsScreenStyle? previewStyle;
 
   const AdvancedLyricLine({
     super.key,
@@ -127,6 +132,7 @@ class AdvancedLyricLine extends ConsumerWidget {
     this.fontScale = 1.0,
     this.synced = true,
     this.distance = 1,
+    this.previewStyle,
   });
 
   /// Whether a line is a music break, shown as "♫" instead of its text.
@@ -175,7 +181,24 @@ class AdvancedLyricLine extends ConsumerWidget {
         : (ref.read(playbackProvider).position > line.endTime);
 
     final settings = ref.watch(settingsProvider);
+    final screenStyle =
+        previewStyle ?? LyricsScreenStyle.fromSetting(settings.lyricsStyle);
+    final isLandscape = Responsive.isShort(MediaQuery.sizeOf(context));
+    final resolved = ResolvedLyricsTextConfig.resolve(
+      screenStyle,
+      settings,
+      isLandscape: isLandscape,
+    );
     final inactiveNear = inactiveLyricsOpacity(settings);
+
+    final bool isBigType = screenStyle == LyricsScreenStyle.bigtype;
+    final bool isZen = screenStyle == LyricsScreenStyle.zen;
+    if (isZen && synced && distance > 1) {
+      return const SizedBox.shrink();
+    }
+    if (isBigType && synced && (isPast || (!lit && distance > 1))) {
+      return const SizedBox.shrink();
+    }
 
     // Calculate dynamic opacity based on distance from active line for a smoother transition
     double lineOpacity = 1.0;
@@ -188,50 +211,77 @@ class AdvancedLyricLine extends ConsumerWidget {
     } else if (!synced) {
       lineOpacity = 0.8; // text to read: no current line to stand out from
     } else if (!lit) {
-      lineOpacity = inactiveOpacity(distance, inactiveNear);
+      lineOpacity = switch (screenStyle) {
+        LyricsScreenStyle.oled => 0.18,
+        LyricsScreenStyle.karaoke => 0.26,
+        LyricsScreenStyle.spatial => 0.32,
+        LyricsScreenStyle.bigtype => 0.40,
+        _ => inactiveOpacity(distance, inactiveNear),
+      };
     }
 
-    // Duet partner lines sit on the opposite side (centered stays centered).
-    final alignmentString = switch ((
-      line.isOppositeSide,
-      settings.lyricsAlignment,
-    )) {
-      (true, 'left') => 'right',
-      (true, 'right') => 'left',
-      (_, final alignment) => alignment,
+    // Explicit alignment overrides duet and centered styles; Auto flips duet v2 right when left-aligned.
+    final TextAlign textAlign = resolved.explicitAlign
+        ? resolved.align
+        : (line.isOppositeSide && resolved.align == TextAlign.left
+              ? TextAlign.right
+              : resolved.align);
+
+    final iconAlignment = switch (textAlign) {
+      TextAlign.left || TextAlign.start => Alignment.centerLeft,
+      TextAlign.right || TextAlign.end => Alignment.centerRight,
+      _ => Alignment.center,
     };
+
     // Glow for colored active lines, not plain white.
-    final useDynamicColor = !activeLyricsIsWhite(settings);
+    final useDynamicColor =
+        !activeLyricsIsWhite(settings) &&
+        screenStyle != LyricsScreenStyle.oled;
 
-    final textAlign = alignmentString == 'left'
-        ? TextAlign.left
-        : alignmentString == 'right'
-        ? TextAlign.right
-        : TextAlign.center;
+    final activeColor =
+        resolved.activeColorOverride ??
+        activeLyricsColor(
+          settings,
+          accent: Theme.of(context).colorScheme.primary,
+        );
 
-    final iconAlignment = alignmentString == 'left'
-        ? Alignment.centerLeft
-        : alignmentString == 'right'
-        ? Alignment.centerRight
-        : Alignment.center;
+    double lineFontSize = resolved.activeSize * fontScale;
+    if (isZen && synced && !lit) {
+      lineFontSize = 17.0 * (resolved.activeSize / 30.0) * fontScale;
+    } else if (isBigType && synced && !lit) {
+      lineFontSize = 16.0 * (resolved.activeSize / 42.0) * fontScale;
+    }
 
-    final activeColor = activeLyricsColor(
-      settings,
-      accent: Theme.of(context).colorScheme.primary,
-    );
+    final double? letterSpacing = resolved.letterSpacingEm != null
+        ? resolved.letterSpacingEm! * lineFontSize
+        : null;
 
     // Hindi and other Indic text falls back per glyph to a bundled font that
     // matches the chosen one (see AppFonts.scriptFallbackFor).
     final baseStyle = AppFonts.getLyricsStyle(
-      useNewFontLyrics: settings.useNewFontLyrics,
-      family: settings.customFontFamilyLyrics,
+      useNewFontLyrics: true,
+      family: resolved.family,
       weightDelta: settings.customFontWeightLyricsDelta,
       activeWeightDelta: settings.activeLyricsFontWeightDelta,
       isActive: lit,
-      fontSize: 30 * fontScale, //(isActive ? 30.5 : 30) * fontScale,
-      height: 1.15,
+      fontWeight: (isBigType && synced && !lit)
+          ? FontWeight.w500
+          : resolved.weight,
+      fontStyle: resolved.fontStyle,
+      letterSpacing: letterSpacing,
+      fontSize: lineFontSize,
+      height: resolved.height,
       color: lit ? activeColor : Colors.white.withValues(alpha: lineOpacity),
-      shadows: lit && useDynamicColor ? [_glow(activeColor, 1)] : null,
+      shadows: lit && useDynamicColor
+          ? [
+              screenStyle == LyricsScreenStyle.karaoke
+                  ? Shadow(
+                      color: activeColor.withValues(alpha: 0.35),
+                      blurRadius: 30,
+                    )
+                  : _glow(activeColor, 1),
+            ]
+          : null,
     );
 
     // Unified animation duration and easeInOutCubic curve for a buttery-smooth transition
@@ -241,21 +291,121 @@ class AdvancedLyricLine extends ConsumerWidget {
     // Watch the search query for highlighting
     final searchQuery = ref.watch(lyricsSearchQueryProvider).toLowerCase();
 
-    final childWidget = _withExtraLines(
-      _buildModeContent(
-        context,
-        isPast,
-        baseStyle,
-        activeColor,
-        searchQuery,
-        textAlign,
-        iconAlignment,
-        currentPosition,
-        isPlaying,
-        inactiveNear,
-      ),
+    final content = _buildModeContent(
+      context,
+      isPast,
+      baseStyle,
+      activeColor,
+      searchQuery,
       textAlign,
+      iconAlignment,
+      currentPosition,
+      isPlaying,
+      inactiveNear,
+      textTransform: resolved.applyCase,
     );
+
+    final childWidget = (isBigType && synced && !lit)
+        ? content
+        : _withExtraLines(
+            content,
+            textAlign,
+            showTranslation: settings.showLyricsTranslation,
+            showRomanization: settings.showLyricsRomanization,
+            fontFamily: resolved.family,
+            gap: isBigType ? 12 * fontScale : 5 * fontScale,
+          );
+
+    Widget styledChild = AnimatedDefaultTextStyle(
+      duration: animDuration,
+      curve: curve,
+      style: baseStyle.copyWith(shadows: const []),
+      softWrap: true,
+      textAlign: textAlign,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(end: lit && useDynamicColor ? 1.0 : 0.0),
+        duration: animDuration,
+        curve: curve,
+        child: childWidget,
+        builder: (context, glow, child) => glow <= 0
+            ? child!
+            : DefaultTextStyle.merge(
+                style: TextStyle(
+                  shadows: [
+                    screenStyle == LyricsScreenStyle.karaoke
+                        ? Shadow(
+                            color: activeColor.withValues(alpha: 0.35 * glow),
+                            blurRadius: 30,
+                          )
+                        : _glow(activeColor, glow),
+                  ],
+                ),
+                child: child!,
+              ),
+      ),
+    );
+
+    if (screenStyle == LyricsScreenStyle.spatial && synced && !lit) {
+      styledChild = ImageFiltered(
+        imageFilter: ImageFilter.blur(sigmaX: 1.6, sigmaY: 1.6),
+        child: styledChild,
+      );
+    } else if (screenStyle == LyricsScreenStyle.karaoke && synced && !lit) {
+      styledChild = Transform.scale(scale: 0.84, child: styledChild);
+    } else if (screenStyle == LyricsScreenStyle.editorial && lit) {
+      styledChild = Container(
+        padding: const EdgeInsets.only(left: 12),
+        decoration: BoxDecoration(
+          border: Border(left: BorderSide(color: activeColor, width: 2)),
+        ),
+        child: styledChild,
+      );
+    } else if (screenStyle == LyricsScreenStyle.m3 && lit) {
+      styledChild = Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: activeColor.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: styledChild,
+      );
+    } else if (screenStyle == LyricsScreenStyle.timeline) {
+      final sec = line.startTime.inSeconds.clamp(0, 359999);
+      final ts =
+          '${(sec ~/ 60).toString().padLeft(2, '0')}:${(sec % 60).toString().padLeft(2, '0')}';
+      styledChild = Row(
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
+          SizedBox(
+            width: 46,
+            child: Text(
+              ts,
+              style: AppFonts.familyStyle(
+                AppFonts.jetBrainsMono,
+                fontSize: 11,
+                fontWeight: lit ? FontWeight.w600 : FontWeight.w400,
+                color: lit ? activeColor : Colors.white.withValues(alpha: 0.38),
+              ),
+            ),
+          ),
+          Expanded(child: styledChild),
+        ],
+      );
+    } else if (isBigType && synced && !lit) {
+      styledChild = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            height: 1,
+            margin: const EdgeInsets.only(top: 14, bottom: 14),
+            color: Colors.white.withValues(alpha: 0.10),
+          ),
+          styledChild,
+        ],
+      );
+    }
 
     return MouseRegion(
       cursor: synced ? SystemMouseCursors.click : MouseCursor.defer,
@@ -266,32 +416,7 @@ class AdvancedLyricLine extends ConsumerWidget {
         // measures where a line rests, so a line must not resize under it.
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: 8 * fontScale),
-          child: _selectionHighlight(
-            child: AnimatedDefaultTextStyle(
-              duration: animDuration,
-              curve: curve,
-              // The glow is faded below, not here: a text style animating
-              // to "no shadow" only shrinks the shadow's blur and keeps
-              // its colour, so a line that stopped being current held a
-              // sharp accent copy of itself behind the fading text - and
-              // dropped it in one frame when the animation ended.
-              style: baseStyle.copyWith(shadows: const []),
-              softWrap: true,
-              textAlign: textAlign,
-              child: TweenAnimationBuilder<double>(
-                tween: Tween(end: lit && useDynamicColor ? 1.0 : 0.0),
-                duration: animDuration,
-                curve: curve,
-                child: childWidget,
-                builder: (context, glow, child) => glow <= 0
-                    ? child!
-                    : DefaultTextStyle.merge(
-                        style: TextStyle(shadows: [_glow(activeColor, glow)]),
-                        child: child!,
-                      ),
-              ),
-            ),
-          ),
+          child: _selectionHighlight(child: styledChild),
         ),
       ),
     );
@@ -334,9 +459,12 @@ class AdvancedLyricLine extends ConsumerWidget {
     Alignment iconAlignment,
     Duration position,
     bool isPlaying,
-    double inactiveNear,
-  ) {
-    final String text = line.text;
+    double inactiveNear, {
+    String Function(String)? textTransform,
+  }) {
+    final String text = textTransform != null
+        ? textTransform(line.text)
+        : line.text;
     final bool isInstrumental = isInstrumentalText(text);
 
     // If there is a search match, always highlight it
@@ -359,6 +487,7 @@ class AdvancedLyricLine extends ConsumerWidget {
         curve: Curves.easeInOutCubic,
         builder: (context, emphasis, _) => !lit && emphasis <= 0
             ? _inactiveText(
+                text,
                 isPast,
                 baseStyle,
                 activeColor,
@@ -395,6 +524,7 @@ class AdvancedLyricLine extends ConsumerWidget {
               ),
             )
           : _inactiveText(
+              text,
               isPast,
               baseStyle,
               activeColor,
@@ -413,6 +543,7 @@ class AdvancedLyricLine extends ConsumerWidget {
               ),
             )
           : _inactiveText(
+              text,
               isPast,
               baseStyle,
               activeColor,
@@ -449,6 +580,7 @@ class AdvancedLyricLine extends ConsumerWidget {
   /// The plain text of a line that isn't current (upcoming lines can carry
   /// a search highlight; past ones never do).
   Widget _inactiveText(
+    String displayText,
     bool isPast,
     TextStyle baseStyle,
     Color activeColor,
@@ -457,7 +589,7 @@ class AdvancedLyricLine extends ConsumerWidget {
   ) {
     return _withBackgroundVocals(
       Text(
-        line.text,
+        displayText,
         style: !isPast && isSearchMatch
             ? baseStyle.copyWith(color: activeColor.withValues(alpha: 0.9))
             : null,
@@ -470,11 +602,46 @@ class AdvancedLyricLine extends ConsumerWidget {
     );
   }
 
+  static final RegExp _nonLatin = RegExp(
+    r'[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af\u0400-\u04ff\u0600-\u06ff\u0900-\u097f]',
+  );
+
+  List<String> _visibleExtraLines({
+    required bool showTranslation,
+    required bool showRomanization,
+  }) {
+    if (line.extraLines.isEmpty || (!showTranslation && !showRomanization)) {
+      return const [];
+    }
+    if (line.extraLines.length == 1) {
+      final only = line.extraLines.first;
+      final isRomaji =
+          _nonLatin.hasMatch(line.text) && !_nonLatin.hasMatch(only);
+      if (isRomaji) return showRomanization ? [only] : const [];
+      return showTranslation ? [only] : const [];
+    }
+    return [
+      if (showTranslation) line.extraLines[0],
+      if (showRomanization) ...line.extraLines.skip(1),
+    ];
+  }
+
   /// The lines sharing this line's timestamp (translation, romanization)
   /// as smaller, dimmer lines under [main]. They wear the line's animated
   /// style, so the whole block eases in and out of being current together.
-  Widget _withExtraLines(Widget main, TextAlign textAlign) {
-    if (line.extraLines.isEmpty) return main;
+  Widget _withExtraLines(
+    Widget main,
+    TextAlign textAlign, {
+    required bool showTranslation,
+    required bool showRomanization,
+    String? fontFamily,
+    double? gap,
+  }) {
+    final visible = _visibleExtraLines(
+      showTranslation: showTranslation,
+      showRomanization: showRomanization,
+    );
+    if (visible.isEmpty) return main;
     return Column(
       crossAxisAlignment: switch (textAlign) {
         TextAlign.left => CrossAxisAlignment.start,
@@ -484,8 +651,8 @@ class AdvancedLyricLine extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         main,
-        for (final extra in line.extraLines) ...[
-          SizedBox(height: 4 * fontScale),
+        for (final extra in visible) ...[
+          SizedBox(height: gap ?? (5 * fontScale)),
           Builder(
             builder: (context) {
               final style = DefaultTextStyle.of(context).style;
@@ -494,11 +661,12 @@ class AdvancedLyricLine extends ConsumerWidget {
                 textAlign: textAlign,
                 softWrap: true,
                 style: style.copyWith(
-                  fontSize: (style.fontSize ?? 30) * 0.62,
+                  fontFamily: fontFamily,
+                  fontSize: 13 * fontScale,
+                  fontWeight: FontWeight.w500,
+                  fontStyle: FontStyle.normal,
                   height: 1.2,
-                  color: (style.color ?? Colors.white).withValues(
-                    alpha: (style.color?.a ?? 1) * 0.7,
-                  ),
+                  color: Colors.white.withValues(alpha: 0.45),
                 ),
               );
             },

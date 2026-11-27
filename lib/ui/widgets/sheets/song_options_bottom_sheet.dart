@@ -24,6 +24,7 @@ import 'package:looper_player/features/playlists/data/services/playlist_service.
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
 import 'package:looper_player/core/providers/providers.dart';
 import 'package:looper_player/ui/android/player/equalizer/android_equalizer_screen.dart';
+import 'package:looper_player/ui/android/player/expanded/player_style_picker.dart';
 
 // Extracted modular components
 import 'package:looper_player/ui/widgets/common/menu_option_tile.dart';
@@ -44,6 +45,7 @@ void showSongOptionsBottomSheet({
   bool showEqualizerAndTechnicalInfoOptions = true,
   // The Now Playing menu (Figma player sheet) applied app-wide to three-dot clicks.
   bool styled = true,
+  bool showPlayerStyleOption = false,
 }) {
   showModalBottomSheet(
     context: context,
@@ -59,6 +61,7 @@ void showSongOptionsBottomSheet({
           showRenameOption: showRenameOption,
           showEqualizerAndTechnicalInfoOptions:
               showEqualizerAndTechnicalInfoOptions,
+          showPlayerStyleOption: showPlayerStyleOption,
           parentContext: context,
         ),
   );
@@ -70,6 +73,7 @@ class _SongOptionsSheetContent extends ConsumerWidget {
   final bool showDeleteOption;
   final bool showRenameOption;
   final bool showEqualizerAndTechnicalInfoOptions;
+  final bool showPlayerStyleOption;
   final BuildContext parentContext;
 
   const _SongOptionsSheetContent({
@@ -78,6 +82,7 @@ class _SongOptionsSheetContent extends ConsumerWidget {
     required this.showDeleteOption,
     required this.showRenameOption,
     required this.showEqualizerAndTechnicalInfoOptions,
+    this.showPlayerStyleOption = false,
     required this.parentContext,
   });
 
@@ -551,6 +556,7 @@ class _PlayerSongOptionsSheet extends _SongOptionsSheetContent {
     required super.showDeleteOption,
     required super.showRenameOption,
     required super.showEqualizerAndTechnicalInfoOptions,
+    super.showPlayerStyleOption,
     required super.parentContext,
   });
 
@@ -743,6 +749,16 @@ class _PlayerSongOptionsSheet extends _SongOptionsSheetContent {
               parentContext,
               riseRoute(SongInfoScreen(song: song)),
             );
+          },
+        ),
+      if (showPlayerStyleOption)
+        _rowTile(
+          const Icon(LucideIcons.layoutTemplate, size: 18, color: Colors.white),
+          l10n.playerStyle,
+          () {
+            AppHaptics.light();
+            Navigator.pop(context);
+            openPlayerStylePicker(parentContext);
           },
         ),
     ];

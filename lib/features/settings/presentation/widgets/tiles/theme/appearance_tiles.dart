@@ -124,21 +124,184 @@ class FrostedNavbarTile extends ConsumerWidget {
   }
 }
 
-/// Looper Music's four-tab navbar (Home, Search, Songs, Library).
-class NewNavbarTile extends ConsumerWidget {
-  const NewNavbarTile({super.key});
+/// Neutral skeleton-preview picker for the 4 Music Bar styles.
+class MusicBarStyleTile extends ConsumerWidget {
+  const MusicBarStyleTile({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final value = ref.watch(settingsProvider.select((s) => s.newNavbar));
-    return SwitchListTile(
-      secondary: const Icon(LucideIcons.layoutPanelTop),
-      title: Text(l10n.newNavbar, style: _tileTitleStyle()),
-      subtitle: Text(l10n.newNavbarDesc, style: _tileSubtitleStyle()),
-      value: value,
-      onChanged: (value) =>
-          ref.read(settingsProvider.notifier).updateNewNavbar(value),
+    final current = MusicBarStyle.fromSetting(
+      ref.watch(settingsProvider.select((s) => s.musicBarStyle)),
+    );
+    final options = [
+      (MusicBarStyle.pill, l10n.musicBarStylePill),
+      (MusicBarStyle.sections, l10n.musicBarStyleSections),
+      (MusicBarStyle.artglow, l10n.musicBarStyleArtGlow),
+      (MusicBarStyle.bare, l10n.musicBarStyleBare),
+    ];
+    return _SkeletonStylePickerCard(
+      icon: LucideIcons.panelBottom,
+      title: l10n.musicBarStyle,
+      currentLabel: options.firstWhere((o) => o.$1 == current).$2,
+      count: options.length,
+      labelAt: (i) => options[i].$2,
+      selectedAt: (i) => options[i].$1 == current,
+      onTapAt: (i) => ref
+          .read(settingsProvider.notifier)
+          .updateMusicBarStyle(options[i].$1.name),
+      previewAt: (i) => MusicBarStyleSkeleton(style: options[i].$1),
+    );
+  }
+}
+
+/// Neutral skeleton-preview picker for the 4 Navbar styles.
+class NavbarStyleTile extends ConsumerWidget {
+  const NavbarStyleTile({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final current = NavbarStyle.fromSetting(
+      ref.watch(settingsProvider.select((s) => s.navbarStyle)),
+    );
+    final options = [
+      (NavbarStyle.premium, l10n.navbarStylePremium),
+      (NavbarStyle.classic, l10n.navbarStyleClassic),
+      (NavbarStyle.capsule, l10n.navbarStyleCapsule),
+      (NavbarStyle.minimal, l10n.navbarStyleMinimal),
+    ];
+    return _SkeletonStylePickerCard(
+      icon: LucideIcons.navigation,
+      title: l10n.navbarStyle,
+      currentLabel: options.firstWhere((o) => o.$1 == current).$2,
+      count: options.length,
+      labelAt: (i) => options[i].$2,
+      selectedAt: (i) => options[i].$1 == current,
+      onTapAt: (i) => ref
+          .read(settingsProvider.notifier)
+          .updateNavbarStyle(options[i].$1.name),
+      previewAt: (i) => NavbarStyleSkeleton(style: options[i].$1),
+    );
+  }
+}
+
+class _SkeletonStylePickerCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String currentLabel;
+  final int count;
+  final String Function(int) labelAt;
+  final bool Function(int) selectedAt;
+  final ValueChanged<int> onTapAt;
+  final Widget Function(int) previewAt;
+
+  const _SkeletonStylePickerCard({
+    required this.icon,
+    required this.title,
+    required this.currentLabel,
+    required this.count,
+    required this.labelAt,
+    required this.selectedAt,
+    required this.onTapAt,
+    required this.previewAt,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF101010),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: Colors.white, size: 18),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(text: '$title › '),
+                      TextSpan(
+                        text: currentLabel,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.35),
+                        ),
+                      ),
+                    ],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppFonts.settingsStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: count,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: 1.9,
+            ),
+            itemBuilder: (context, i) {
+              final selected = selectedAt(i);
+              return GestureDetector(
+                onTap: () {
+                  AppHaptics.selection();
+                  onTapAt(i);
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF141414),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: selected
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.08),
+                      width: selected ? 1.8 : 1,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Expanded(child: previewAt(i)),
+                      const SizedBox(height: 4),
+                      Text(
+                        labelAt(i),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppFonts.settingsStyle(
+                          color: selected ? Colors.white : Colors.white54,
+                          fontSize: 11,
+                          fontWeight: selected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }

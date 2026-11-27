@@ -29,6 +29,7 @@ import 'account_view.dart';
 import 'package:looper_player/ui/widgets/common/setup_kit.dart';
 import 'package:looper_player/core/services/haptics/app_haptics.dart';
 import 'package:looper_player/features/playback/data/crossmix/crossmix_settings.dart';
+import 'package:looper_player/ui/android/player/expanded/expressive_player_widgets.dart';
 
 class SettingsCategoryScreen extends ConsumerWidget {
   final String categoryId;
@@ -88,10 +89,13 @@ class SettingsCategoryScreen extends ConsumerWidget {
               const DisableBlurTile()
             else ...[
               const AlwaysBlurSheetsTile(),
-              const FrostedMusicBarTile(),
+              if (settings.musicBarStyle == 'pill' ||
+                  settings.musicBarStyle == 'sections')
+                const FrostedMusicBarTile(),
               const FrostedNavbarTile(),
             ],
-            const NewNavbarTile(),
+            const MusicBarStyleTile(),
+            const NavbarStyleTile(),
             const StatusBarBlurTile(),
             // Dynamic theming paints its own background.
             if (!dynamicTheming) ...[
@@ -160,6 +164,17 @@ class SettingsCategoryScreen extends ConsumerWidget {
           UiUtils.isDesktop ||
           settings.playerStyle.isEmpty ||
           settings.playerStyle == 'classic';
+      const newStyles = {
+        'disc',
+        'asymmetric',
+        'fullbleed',
+        'capsule',
+        'm3wavy',
+        'm3scallop',
+        'm3clover',
+        'm3burst',
+      };
+      final isNewStyle = !UiUtils.isDesktop && newStyles.contains(settings.playerStyle);
       // Arc / linear / card draw their own blurred background and show lyrics from
       // the player menu, so the classic background and line options don't
       // apply there. Dynamic background and the gradient are alternatives:
@@ -172,14 +187,70 @@ class SettingsCategoryScreen extends ConsumerWidget {
           tiles: [
             if (!UiUtils.isDesktop) const FluidPlayerTile(),
             if (!UiUtils.isDesktop) const PlayerStyleTile(),
-            if (classic) ...[
-              if (!settings.enableDynamicTheming && (dynamicBg || !gradient))
+            if (classic || isNewStyle) ...[
+              if (classic &&
+                  !settings.enableDynamicTheming &&
+                  (dynamicBg || !gradient))
                 const PlayerDynamicBackgroundTile(),
               demo(SettingsDemoKind.lyricLine, const PlayerLyricLineTile()),
-              sub(settings.playerLyricLine, const [
-                PlayerLyricLineTransitionTile(),
-              ]),
+              if (classic)
+                sub(settings.playerLyricLine, const [
+                  PlayerLyricLineTransitionTile(),
+                ]),
             ],
+            if (isNewStyle) ...[
+              const ShowQualityBadgeTile(),
+              sub(settings.showQualityBadge, const [QualityBadgeStyleTile()]),
+            ],
+            if (!UiUtils.isDesktop &&
+                const {
+                  'capsule',
+                  'm3wavy',
+                  'm3scallop',
+                  'm3clover',
+                  'm3burst',
+                }.contains(settings.playerStyle))
+              Consumer(
+                builder: (context, ref, _) {
+                  final scale = ref.watch(playerArtScaleProvider);
+                  final pct = (scale * 100).round();
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              l10n.playerArtShapeSize,
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                            Text(
+                              '$pct%',
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        ),
+                        Slider(
+                          value: scale,
+                          min: 0.70,
+                          max: 1.15,
+                          divisions: 18,
+                          onChanged: (v) => ref
+                              .read(playerArtScaleProvider.notifier)
+                              .setScale(v),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             if (!UiUtils.isDesktop) const KeepScreenAwakeTile(),
           ],
         ),
@@ -219,6 +290,7 @@ class SettingsCategoryScreen extends ConsumerWidget {
         (
           title: l10n.sectionLook,
           tiles: [
+            if (!UiUtils.isDesktop) const LyricsStyleTile(),
             const DynamicColorActiveLyricsTile(),
             sub(!activeLyricsIsWhite(settings), const [
               ActiveLyricsIntensityTile(),
@@ -226,8 +298,10 @@ class SettingsCategoryScreen extends ConsumerWidget {
             // White line: no slider, but still show how it looks.
             if (activeLyricsIsWhite(settings)) const ActiveLyricsPreview(),
             const InactiveLyricsOpacityTile(),
-            const LyricsAlignmentTile(),
+            const LyricsTextPanelTile(),
             const LyricsLineGroupingTile(),
+            const LyricsTranslationTile(),
+            const LyricsRomanizationTile(),
             if (UiUtils.isDesktop) const LyricsSizeTile(),
           ],
         ),
@@ -552,7 +626,8 @@ const _androidOnlyTiles = <Type>{
   AlwaysBlurSheetsTile,
   FrostedMusicBarTile,
   FrostedNavbarTile,
-  NewNavbarTile,
+  MusicBarStyleTile,
+  NavbarStyleTile,
   StatusBarBlurTile,
   AnimateBackgroundGradientTile,
   HomeDarknessSlider,

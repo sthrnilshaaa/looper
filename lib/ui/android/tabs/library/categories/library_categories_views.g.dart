@@ -77,7 +77,7 @@ final class AlbumsSortedProvider
   }
 }
 
-String _$albumsSortedHash() => r'e307ad7f017e39524c2344f788d06bcb06839f68';
+String _$albumsSortedHash() => r'3ed974175a0ac4b5ba137178aca9408b906d93a7';
 
 /// Memoized per sort option so switching screens/rebuilding this view
 /// doesn't tear down and recreate the underlying Isar watch (which briefly
@@ -172,7 +172,7 @@ final class ArtistsSortedProvider
   }
 }
 
-String _$artistsSortedHash() => r'1a19c98190f5d01d3f8c5ce61bdd65c34ed5bf24';
+String _$artistsSortedHash() => r'56e42a83502dfbd65a3959c4c5af3848f0bb1619';
 
 /// Memoized on the library's artist list + sort option, instead of
 /// re-sorting the full artist list on every rebuild of ArtistsGridView.

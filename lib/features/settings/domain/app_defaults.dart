@@ -197,10 +197,14 @@ abstract final class AppDefaults {
   /// unit): -2 tightens every line by 2% of its size.
   static const double letterSpacingPercent = -2.0;
   static const bool useNewFontLyrics = true;
-  static const String customFontFamilyLyrics = 'Stack Sans Text';
+  static const String? customFontFamilyLyrics = null;
   static const String customFontWeightLyrics = 'Normal';
   static const int customFontWeightLyricsDelta = 0;
   static const int activeLyricsFontWeightDelta = 0;
+  static const int lyricsWeightOverride = 0;
+  static const bool lyricsItalic = false;
+  static const double lyricsLineSpacing = 1.0;
+  static const String lyricsTextCase = 'auto';
 
   // ===========================================================================
   // SECTION 4: LYRICS DEFAULTS
@@ -214,9 +218,10 @@ abstract final class AppDefaults {
   static const bool lyricsOwnBackground = false;
   static const bool enableLyricsGradient = true;
   static const bool ambientColorBackground = true;
-  static const String lyricsAlignment = 'left';
+  static const String lyricsAlignment = 'auto';
   static const bool dynamicAccentColor = true;
   static const String lyricsSyncStyle = 'char';
+  static const String lyricsStyle = 'classic';
   static const int defaultLyricsOffsetMs = 200;
   static const String defaultLyricsProvider = 'lrc.red';
   static const bool autoLyricsFallback = true;

@@ -336,6 +336,14 @@ class PlayerStyleTile extends ConsumerWidget {
       ('arc', l10n.playerStyleArc),
       ('linear', l10n.playerStyleLinear),
       ('card', l10n.playerStyleCard),
+      ('disc', l10n.playerStyleDisc),
+      ('asymmetric', l10n.playerStyleAsymmetric),
+      ('fullbleed', l10n.playerStyleFullbleed),
+      ('capsule', l10n.playerStyleCapsule),
+      ('m3wavy', l10n.playerStyleM3Wavy),
+      ('m3scallop', l10n.playerStyleM3Scallop),
+      ('m3clover', l10n.playerStyleM3Clover),
+      ('m3burst', l10n.playerStyleM3Burst),
     ];
     final styleTile = _PlayerStylesCard(
       current: current,
@@ -586,8 +594,8 @@ class _PlayerStylesCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.fromLTRB(21, 20, 20, 25),
       decoration: BoxDecoration(
-        color: SettingsCardTint.of(context, const Color(0xFF101010)),
-        borderRadius: BorderRadius.circular(UiUtils.cardCorner(15)),
+        color: const Color(0xFF101010),
+        borderRadius: BorderRadius.circular(15),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -647,20 +655,46 @@ class _PlayerStylesCard extends StatelessWidget {
           const SizedBox(height: 18),
           Container(height: 1, color: const Color(0x05FFFFFF)),
           const SizedBox(height: 20),
-          Row(
-            children: [
-              for (var i = 0; i < options.length; i++) ...[
-                if (i > 0) const SizedBox(width: 15.6),
-                Expanded(
-                  child: _StyleThumb(
-                    index: i,
-                    label: options[i].$2,
-                    selected: options[i].$1 == current,
-                    onTap: () => onSelect(options[i].$1),
+          SizedBox(
+            height: 132,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: options.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 12),
+              itemBuilder: (context, i) {
+                final selected = options[i].$1 == current;
+                return SizedBox(
+                  width: 68,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _StyleThumb(
+                        index: i,
+                        label: options[i].$2,
+                        selected: selected,
+                        onTap: () => onSelect(options[i].$1),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        options[i].$2,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: AppFonts.jostStyle(
+                          color: selected
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.48),
+                          fontSize: 11,
+                          fontWeight: selected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ],
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -809,10 +843,7 @@ class _StyleThumbPainter extends CustomPainter {
             ..strokeCap = StrokeCap.round,
         );
         sided();
-      case 2: // Linear: round cover.
-        canvas.drawCircle(const Offset(33.5, 35), 29.25, p);
-        centred();
-      default: // Card: cover fading out downward.
+      case 2: // Linear: fading top cover + bottom bar.
         canvas.drawRRect(
           RRect.fromRectAndRadius(
             const Rect.fromLTWH(5.25, 6, 57, 54),
@@ -826,6 +857,64 @@ class _StyleThumbPainter extends CustomPainter {
             ).createShader(const Rect.fromLTWH(5.25, 6, 57, 54)),
         );
         sided();
+      case 3: // Card: floating square card + mid seek.
+        r(6.5, 9, 54, 48, 3);
+        r(6.5, 60, 54, 3, 1.5);
+        sided();
+      case 4: // Disc: circular cover + lower arc.
+        canvas.drawCircle(const Offset(33.5, 31), 24, p);
+        canvas.drawArc(
+          const Rect.fromLTWH(5.5, 3, 56, 56),
+          0.4,
+          2.34,
+          false,
+          Paint()
+            ..color = _fill
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 3.2
+            ..strokeCap = StrokeCap.round,
+        );
+        sided();
+      case 5: // Asymmetric: left-bleed art + sculpted corner.
+        canvas.drawRRect(
+          RRect.fromRectAndCorners(
+            const Rect.fromLTWH(0, 0, 50, 56),
+            bottomRight: const Radius.circular(14),
+          ),
+          p,
+        );
+        r(6.5, 60, 54, 3, 1.5);
+        sided();
+      case 6: // FullBleed: edge-to-edge fading cover.
+        canvas.drawRect(
+          const Rect.fromLTWH(0, 0, 67.25, 62),
+          Paint()
+            ..shader = const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0x22D9D9D9), Color(0x00737373)],
+            ).createShader(const Rect.fromLTWH(0, 0, 67.25, 62)),
+        );
+        sided();
+      case 7: // Capsule: stadium-rounded cover + thick pill bar.
+        r(7.5, 8, 52, 48, 18);
+        r(6.5, 59, 54, 4.5, 2.25);
+        sided();
+      case 8 || 9 || 10 || 11: // M3 Expressive: organic art + bottom deck.
+        if (index == 8) {
+          r(8.5, 8, 50, 48, 12);
+        } else {
+          canvas.drawCircle(const Offset(33.6, 32), 24, p);
+        }
+        r(8, 63, 36, 6, 2);
+        r(8, 72, 24, 4, 2);
+        r(8, 81, 51, 4, 2);
+        r(25, 91, 17, 10, 4);
+        canvas.drawCircle(const Offset(14, 96), 4.5, p);
+        canvas.drawCircle(const Offset(53, 96), 4.5, p);
+      default:
+        r(5.53, 6, 57.12, 62);
+        centred();
     }
   }
 

@@ -98,6 +98,26 @@ class CategoryDetailWrapper extends ConsumerWidget {
                   LucideIcons.calendarArrowUp,
                   AlbumSortOption.yearOldest.index,
                 ),
+                item(
+                  l10n.sortMostSongs,
+                  LucideIcons.arrowDownWideNarrow,
+                  AlbumSortOption.songCountDesc.index,
+                ),
+                item(
+                  l10n.sortLeastSongs,
+                  LucideIcons.arrowUpNarrowWide,
+                  AlbumSortOption.songCountAsc.index,
+                ),
+                item(
+                  l10n.mostPlayed,
+                  LucideIcons.trendingUp,
+                  AlbumSortOption.mostPlayed.index,
+                ),
+                item(
+                  l10n.recentlyPlayed,
+                  LucideIcons.history,
+                  AlbumSortOption.recentlyPlayed.index,
+                ),
               ] else if (title == 'Artists') ...[
                 item(
                   l10n.sortAlphabeticalAZ,
@@ -108,6 +128,36 @@ class CategoryDetailWrapper extends ConsumerWidget {
                   l10n.sortAlphabeticalZA,
                   LucideIcons.arrowUpZA,
                   ArtistSortOption.nameDesc.index,
+                ),
+                item(
+                  l10n.sortMostSongs,
+                  LucideIcons.arrowDownWideNarrow,
+                  ArtistSortOption.songCountDesc.index,
+                ),
+                item(
+                  l10n.sortLeastSongs,
+                  LucideIcons.arrowUpNarrowWide,
+                  ArtistSortOption.songCountAsc.index,
+                ),
+                item(
+                  l10n.sortRecentlyAdded,
+                  LucideIcons.calendarPlus,
+                  ArtistSortOption.dateAddedNewest.index,
+                ),
+                item(
+                  l10n.sortOldestAdded,
+                  LucideIcons.calendar,
+                  ArtistSortOption.dateAddedOldest.index,
+                ),
+                item(
+                  l10n.mostPlayed,
+                  LucideIcons.trendingUp,
+                  ArtistSortOption.mostPlayed.index,
+                ),
+                item(
+                  l10n.recentlyPlayed,
+                  LucideIcons.history,
+                  ArtistSortOption.recentlyPlayed.index,
                 ),
               ] else if (title == 'Genres') ...[
                 item(
@@ -129,6 +179,26 @@ class CategoryDetailWrapper extends ConsumerWidget {
                   l10n.sortLeastSongs,
                   LucideIcons.arrowUpNarrowWide,
                   GenreSortOption.songCountAsc.index,
+                ),
+                item(
+                  l10n.sortRecentlyAdded,
+                  LucideIcons.calendarPlus,
+                  GenreSortOption.dateAddedNewest.index,
+                ),
+                item(
+                  l10n.sortOldestAdded,
+                  LucideIcons.calendar,
+                  GenreSortOption.dateAddedOldest.index,
+                ),
+                item(
+                  l10n.mostPlayed,
+                  LucideIcons.trendingUp,
+                  GenreSortOption.mostPlayed.index,
+                ),
+                item(
+                  l10n.recentlyPlayed,
+                  LucideIcons.history,
+                  GenreSortOption.recentlyPlayed.index,
                 ),
               ],
             ],

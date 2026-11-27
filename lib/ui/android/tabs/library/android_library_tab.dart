@@ -1,6 +1,5 @@
 import 'package:looper_player/core/motion/looper_scroll_physics.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:looper_player/features/playlists/presentation/widgets/playlist_artwork.dart';
 import 'package:looper_player/ui/widgets/common/song_artwork.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -88,11 +87,6 @@ class AndroidLibraryTab extends ConsumerWidget {
                               _CategoryTile(
                                 title: l10n.favorites,
                                 icon: Icons.bookmark_rounded,
-                                svg: (
-                                  'assets/icons/library/star.svg',
-                                  right: -20,
-                                  top: -29,
-                                ),
                                 onTap: () => _go(ref, NavItem.favorites),
                                 bottom: _ArtStrip(paths: favoriteArt),
                               ),
@@ -100,11 +94,6 @@ class AndroidLibraryTab extends ConsumerWidget {
                               _CategoryTile(
                                 title: l10n.playlists,
                                 icon: Icons.queue_music_rounded,
-                                svg: (
-                                  'assets/icons/library/playlist.svg',
-                                  right: -13.5,
-                                  top: -13.8,
-                                ),
                                 onTap: () => _go(ref, NavItem.playlists),
                                 bottom: _ArtStrip(paths: playlistArt),
                               ),
@@ -116,11 +105,6 @@ class AndroidLibraryTab extends ConsumerWidget {
                               _CategoryTile(
                                 title: l10n.artists,
                                 icon: Icons.mic_rounded,
-                                svg: (
-                                  'assets/icons/library/mic.svg',
-                                  right: -6,
-                                  top: -9,
-                                ),
                                 onTap: () => _go(ref, NavItem.artists),
                                 count: artists.length,
                                 bottom: _ArtStrip(
@@ -233,9 +217,16 @@ class _RecentlyPlayed extends ConsumerWidget {
             clipBehavior: Clip.none,
             children: [
               Positioned(
-                right: -7,
-                top: -18,
-                child: SvgPicture.asset('assets/icons/library/recent.svg'),
+                right: 4,
+                top: -10,
+                child: Transform.rotate(
+                  angle: -0.35,
+                  child: Icon(
+                    Icons.history_rounded,
+                    size: 56,
+                    color: _ghostColor,
+                  ),
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(17, 16, 17, 16),
@@ -383,10 +374,6 @@ class _CategoryTile extends StatelessWidget {
   final Widget? bottom;
   final bool iconAtBottom;
 
-  /// The design's icon (asset, offset from the tile's top-right), drawn
-  /// instead of [icon].
-  final (String, {double right, double top})? svg;
-
   const _CategoryTile({
     required this.title,
     required this.icon,
@@ -394,7 +381,6 @@ class _CategoryTile extends StatelessWidget {
     this.count,
     this.bottom,
     this.iconAtBottom = false,
-    this.svg,
   });
 
   @override
@@ -410,22 +396,15 @@ class _CategoryTile extends StatelessWidget {
             height: iconAtBottom ? 85 : 87,
             child: Stack(
               children: [
-                if (svg case (final asset, :final right, :final top))
-                  Positioned(
-                    right: right,
-                    top: top,
-                    child: SvgPicture.asset(asset),
-                  )
-                else
-                  Positioned(
-                    right: iconAtBottom ? 4 : -6,
-                    top: iconAtBottom ? null : -8,
-                    bottom: iconAtBottom ? -12 : null,
-                    child: Transform.rotate(
-                      angle: iconAtBottom ? 0 : -0.35,
-                      child: Icon(icon, size: 64, color: _ghostColor),
-                    ),
+                Positioned(
+                  right: iconAtBottom ? 4 : -6,
+                  top: iconAtBottom ? null : -8,
+                  bottom: iconAtBottom ? -12 : null,
+                  child: Transform.rotate(
+                    angle: iconAtBottom ? 0 : -0.35,
+                    child: Icon(icon, size: 64, color: _ghostColor),
                   ),
+                ),
                 if (count != null)
                   Positioned(
                     left: 14,

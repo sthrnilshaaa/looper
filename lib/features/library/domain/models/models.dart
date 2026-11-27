@@ -206,6 +206,15 @@ class AppSettings {
   // Blur on just the music bar / navbar while Dynamic Theming is off.
   bool frostedMusicBar = AppDefaults.frostedMusicBar;
   bool frostedNavbar = AppDefaults.frostedNavbar;
+  // Music bar style: 'pill', 'sections', 'artglow', 'bare'. Null defaults to 'pill'.
+  String? musicBarStylePref;
+  @ignore
+  String get musicBarStyle => musicBarStylePref ?? 'pill';
+  // Navbar style: 'premium', 'classic', 'capsule', 'minimal'. Null migrates from newNavbar.
+  String? navbarStylePref;
+  @ignore
+  String get navbarStyle =>
+      navbarStylePref ?? (newNavbar ? 'premium' : 'classic');
   // Looper Music's flat four-tab navbar, Search as its own tab. Off by
   // default.
   bool newNavbar = false;
@@ -327,6 +336,8 @@ class AppSettings {
   // longer shown as one (LyricLine.pairHeads). Stored inverted so grouping
   // stays on by default, also for settings saved before it existed.
   bool lyricsNoLineGrouping = AppDefaults.lyricsNoLineGrouping;
+  bool showLyricsTranslation = false;
+  bool showLyricsRomanization = false;
   // "Follow Now Playing Background" off: the lyrics screen uses its own
   // gradient / blurred-art options. Inverted so following is the default.
   bool lyricsOwnBackground = AppDefaults.lyricsOwnBackground;
@@ -380,10 +391,14 @@ class AppSettings {
   // NaN on rows saved before this field existed; read through the getter.
   double letterSpacingPercent = AppDefaults.letterSpacingPercent;
   bool useNewFontLyrics = AppDefaults.useNewFontLyrics;
-  String customFontFamilyLyrics = AppDefaults.customFontFamilyLyrics;
+  String? customFontFamilyLyrics = AppDefaults.customFontFamilyLyrics;
   String customFontWeightLyrics = AppDefaults.customFontWeightLyrics;
   int customFontWeightLyricsDelta = AppDefaults.customFontWeightLyricsDelta;
   int activeLyricsFontWeightDelta = AppDefaults.activeLyricsFontWeightDelta;
+  int lyricsWeightOverride = AppDefaults.lyricsWeightOverride;
+  bool lyricsItalic = AppDefaults.lyricsItalic;
+  double lyricsLineSpacing = AppDefaults.lyricsLineSpacing;
+  String lyricsTextCase = AppDefaults.lyricsTextCase;
   bool equalizerEnabled = AppDefaults.equalizerEnabled;
   List<double> globalEqualizerGains = [];
   bool equalizerGlobalMode = AppDefaults.equalizerGlobalMode;
@@ -416,6 +431,11 @@ class AppSettings {
   /// letters). Word/char use real word timing when the lyrics have it and
   /// approximate it otherwise.
   String lyricsSyncStyle = AppDefaults.lyricsSyncStyle;
+
+  /// Portrait Lyrics Screen layout style ('classic', 'arc', 'spatial', 'vinyl',
+  /// 'editorial', 'karaoke', 'poster', 'oled', 'm3', 'timeline', 'zen',
+  /// 'carddeck'). Empty/unknown falls back to 'classic'.
+  String lyricsStyle = AppDefaults.lyricsStyle;
 
   /// The lyrics timing offset every song starts with, in ms (positive =
   /// earlier). A song the user re-times keeps its own value in

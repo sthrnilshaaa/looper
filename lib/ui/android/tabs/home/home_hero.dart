@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:looper_player/features/settings/presentation/providers/settings_notifier.dart';
 import 'package:looper_player/ui/widgets/common/selected_avatar.dart';
 import 'package:looper_player/core/services/haptics/app_haptics.dart';
+import 'package:looper_player/ui/android/shell/bar_styles.dart';
 import 'package:looper_player/core/theme/app_fonts.dart';
 import 'package:looper_player/core/motion/pause_when_offscreen.dart';
 import 'package:looper_player/core/utils/motion.dart';
@@ -810,8 +811,12 @@ class _HeaderRow extends ConsumerWidget {
             child: Center(child: SelectedAvatar(size: 38, maxWidth: 130)),
           ),
         const Spacer(),
-        // The New Navbar has its own Search tab.
-        if (!ref.watch(settingsProvider.select((s) => s.newNavbar))) ...[
+        // The Classic Navbar has no Search tab: Search opens from here.
+        if (ref.watch(
+          settingsProvider.select(
+            (s) => NavbarStyle.fromSetting(s.navbarStyle) == NavbarStyle.classic,
+          ),
+        )) ...[
           HomeRoundButton(
             size: 42,
             color: _fill,

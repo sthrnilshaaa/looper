@@ -1,5 +1,7 @@
 import 'package:looper_player/ui/widgets/common/player_scale.dart';
 import 'package:looper_player/ui/android/player/lyrics/lyrics_route.dart';
+import 'package:looper_player/ui/android/player/lyrics/lyrics_screen_style.dart';
+import 'package:looper_player/ui/android/player/lyrics/lyrics_styled_chrome.dart';
 import 'dart:io';
 import 'dart:async';
 import 'dart:math' as math;
@@ -48,7 +50,8 @@ import 'package:looper_player/ui/android/player/expanded/styled_player_layout.da
         nowPlayingBackground;
 
 class AndroidLyricsScreen extends ConsumerStatefulWidget {
-  const AndroidLyricsScreen({super.key});
+  final LyricsScreenStyle? previewStyle;
+  const AndroidLyricsScreen({super.key, this.previewStyle});
 
   @override
   ConsumerState<AndroidLyricsScreen> createState() =>
@@ -89,6 +92,10 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
   @override
   void initState() {
     super.initState();
+    if (widget.previewStyle != null) {
+      _delayCompleted = true;
+      return;
+    }
     WidgetsBinding.instance.addObserver(this);
     _enableWakelock();
 
@@ -114,6 +121,7 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (widget.previewStyle != null) return;
     // Landscape: both system bars hidden (follows rotation, since this
     // depends on the orientation).
     SystemNavigationBar.setFullscreen(
@@ -136,6 +144,7 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
   }
 
   void _setNavBarHidden(bool hidden) {
+    if (widget.previewStyle != null) return;
     if (_navBarHidden == hidden) return;
     _navBarHidden = hidden;
     SystemNavigationBar.setHidden(hidden);
@@ -451,6 +460,14 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
       PlayerLayoutStyle.arc => BorderRadius.circular(10.s),
       PlayerLayoutStyle.linear => BorderRadius.circular(7.s),
       PlayerLayoutStyle.card => BorderRadius.circular(5.s),
+      PlayerLayoutStyle.disc => BorderRadius.circular(28.s),
+      PlayerLayoutStyle.asymmetric => BorderRadius.circular(12.s),
+      PlayerLayoutStyle.fullbleed => BorderRadius.circular(7.s),
+      PlayerLayoutStyle.capsule => BorderRadius.circular(18.s),
+      PlayerLayoutStyle.m3wavy => BorderRadius.circular(16.s),
+      PlayerLayoutStyle.m3scallop ||
+      PlayerLayoutStyle.m3clover ||
+      PlayerLayoutStyle.m3burst => BorderRadius.circular(20.s),
       PlayerLayoutStyle.classic => BorderRadius.circular(14.s),
     };
 
@@ -528,7 +545,7 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
     );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 16),
       child: Column(
         children: [
           AnimatedSize(
@@ -575,73 +592,210 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
     final settings = ref.watch(settingsProvider);
     // The seek bar and transport follow the Now Playing style.
     final style = PlayerLayoutStyle.fromSetting(settings.playerStyle);
+    final lyricsStyle =
+        widget.previewStyle ??
+        LyricsScreenStyle.fromSetting(settings.lyricsStyle);
+    final bool isCustomLyricsStyle =
+        lyricsStyle != LyricsScreenStyle.classic &&
+        lyricsStyle != LyricsScreenStyle.arc;
+    final bool isCompactHeight = Responsive.isShort(MediaQuery.sizeOf(context));
+    final bool isSideLandscape =
+        isCompactHeight && lyricsStyle.isSideLandscape;
+    final bool isBottomLandscape =
+        isCompactHeight && !lyricsStyle.isSideLandscape;
+    final double screenW = MediaQuery.sizeOf(context).width;
+    final double bottomControllerHeight = isCompactHeight ? 220.s : 350.s;
+    final Widget? customBg = buildLyricsStyledBackground(
+      context,
+      lyricsStyle,
+      isLandscape: isCompactHeight,
+    );
 
     if (song == null) return const SizedBox.shrink();
 
-    // On a short window (landscape phones - same check PlayerLandscapeMetrics
-    // uses) the bottom controller's original 350dp height, tuned for a tall
-    // portrait screen, ate a large fraction of the available height and
-    // covered the lyrics behind it. Shrink it to just fit the seek bar +
-    // transport row + safe-area padding instead of the extra gradient
-    // headroom that only looks right when there's plenty of vertical space.
-    final bool isCompactHeight = Responsive.isShort(MediaQuery.sizeOf(context));
-    final double bottomControllerHeight = isCompactHeight ? 220.s : 350.s;
-
-    final mainContent = SafeArea(
-      child: NotificationListener<ScrollNotification>(
-        onNotification: (notification) {
-          if (notification is ScrollUpdateNotification) {
-            if (notification.dragDetails != null) {
-              _onUserScrolled();
-            }
-          } else if (notification is ScrollStartNotification) {
-            if (notification.dragDetails != null) {
-              _onUserScrolled();
-            }
-          } else if (notification is UserScrollNotification) {
-            if (notification.direction != ScrollDirection.idle) {
-              _onUserScrolled();
-            }
-          }
-          return false;
-        },
-        child: Column(
-          children: [
-            _buildHeader(context, song, showAlbum, style),
-
-            // Lyrics Content. Frozen while closing so the word-sync tickers
-            // and auto-scroll don't repaint the fading layer every frame.
-            Expanded(
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: ValueListenableBuilder<bool>(
-                      valueListenable: _exiting,
-                      builder: (context, exiting, child) =>
-                          TickerMode(enabled: !exiting, child: child!),
-                      // Arrives after the shared elements land, leaves first.
-                      child: _fadeUnderControls(
-                        context,
-                        settings,
-                        bottomControllerHeight,
-                        const LyricsEntrance(
-                          child: RepaintBoundary(child: LyricsView()),
+    Widget buildLyricsBody({double? horizontalPadding}) => Stack(
+      children: [
+        Positioned.fill(
+          child: ValueListenableBuilder<bool>(
+            valueListenable: _exiting,
+            builder: (context, exiting, child) =>
+                TickerMode(enabled: !exiting, child: child!),
+            child: isSideLandscape
+                ? LyricsEntrance(
+                    child: RepaintBoundary(
+                      child: LyricsView(
+                        previewStyle: widget.previewStyle,
+                      ),
+                    ),
+                  )
+                : _fadeUnderControls(
+                    context,
+                    settings,
+                    isBottomLandscape ? 120.s : bottomControllerHeight,
+                    LyricsEntrance(
+                      child: RepaintBoundary(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: horizontalPadding ?? 0,
+                          ),
+                          child: LyricsView(
+                            previewStyle: widget.previewStyle,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                  // Where the player's lyric line flies to.
-                  if (settings.playerLyricLine)
-                    Positioned.fill(
-                      child: PlayerLyricLineLanding(horizontalPadding: 24.s),
+          ),
+        ),
+        if (settings.playerLyricLine && !isSideLandscape)
+          Positioned.fill(
+            child: PlayerLyricLineLanding(horizontalPadding: 24.s),
+          ),
+      ],
+    );
+
+    final mainContent = isSideLandscape
+        ? Padding(
+            padding: lyricsStyle == LyricsScreenStyle.poster
+                ? const EdgeInsets.fromLTRB(0, 0, 24, 16)
+                : const EdgeInsets.fromLTRB(44, 18, 24, 16),
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                if (notification is ScrollUpdateNotification &&
+                    notification.dragDetails != null) {
+                  _onUserScrolled();
+                } else if (notification is ScrollStartNotification &&
+                    notification.dragDetails != null) {
+                  _onUserScrolled();
+                } else if (notification is UserScrollNotification &&
+                    notification.direction != ScrollDirection.idle) {
+                  _onUserScrolled();
+                }
+                return false;
+              },
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: 290,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (lyricsStyle == LyricsScreenStyle.poster)
+                          Expanded(
+                            child: buildLyricsStyledHeader(
+                              context: context,
+                              ref: ref,
+                              style: lyricsStyle,
+                              song: song,
+                              showAlbum: showAlbum,
+                              onClose: _close,
+                              onOpenMenu: () {
+                                _resetHideTimer();
+                                showLyricsMenuBottomSheet(context, ref, song);
+                              },
+                              onInteract: _resetHideTimer,
+                              isLandscape: true,
+                            ),
+                          )
+                        else ...[
+                          if (isCustomLyricsStyle)
+                            buildLyricsStyledHeader(
+                              context: context,
+                              ref: ref,
+                              style: lyricsStyle,
+                              song: song,
+                              showAlbum: showAlbum,
+                              onClose: _close,
+                              onOpenMenu: () {
+                                _resetHideTimer();
+                                showLyricsMenuBottomSheet(context, ref, song);
+                              },
+                              onInteract: _resetHideTimer,
+                              isLandscape: true,
+                            )
+                          else
+                            _buildHeader(context, song, showAlbum, style),
+                          const Spacer(),
+                          if (isCustomLyricsStyle)
+                            buildLyricsStyledControls(
+                              context: context,
+                              ref: ref,
+                              style: lyricsStyle,
+                              song: song,
+                              bottomPadding: 0,
+                              onInteract: _resetHideTimer,
+                              onOpenMenu: () {
+                                _resetHideTimer();
+                                showLyricsMenuBottomSheet(context, ref, song);
+                              },
+                              isLandscape: true,
+                            )
+                          else
+                            LyricsLinearSeekRow(),
+                        ],
+                      ],
                     ),
+                  ),
+                  const SizedBox(width: 28),
+                  Expanded(child: buildLyricsBody()),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
+          )
+        : SafeArea(
+            top: !isCustomLyricsStyle,
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                if (notification is ScrollUpdateNotification) {
+                  if (notification.dragDetails != null) {
+                    _onUserScrolled();
+                  }
+                } else if (notification is ScrollStartNotification) {
+                  if (notification.dragDetails != null) {
+                    _onUserScrolled();
+                  }
+                } else if (notification is UserScrollNotification) {
+                  if (notification.direction != ScrollDirection.idle) {
+                    _onUserScrolled();
+                  }
+                }
+                return false;
+              },
+              child: Column(
+                children: [
+                  if (isCustomLyricsStyle)
+                    AnimatedOpacity(
+                      opacity: _showController ? 1.0 : 0.2,
+                      duration: const Duration(milliseconds: 250),
+                      child: buildLyricsStyledHeader(
+                        context: context,
+                        ref: ref,
+                        style: lyricsStyle,
+                        song: song,
+                        showAlbum: showAlbum,
+                        onClose: _close,
+                        onOpenMenu: () {
+                          _resetHideTimer();
+                          showLyricsMenuBottomSheet(context, ref, song);
+                        },
+                        onInteract: _resetHideTimer,
+                        isLandscape: isCompactHeight,
+                      ),
+                    )
+                  else
+                    _buildHeader(context, song, showAlbum, style),
+                  Expanded(
+                    child: buildLyricsBody(
+                      horizontalPadding: isBottomLandscape
+                          ? screenW * 0.08
+                          : null,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
 
     final lyricsDarkness = settings.lyricsDarkness.isNaN
         ? 0.55
@@ -723,9 +877,13 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                   valueListenable: _exiting,
                   builder: (context, exiting, child) =>
                       TickerMode(enabled: !exiting, child: child!),
-                  child: !settings.lyricsOwnBackground
-                      ? nowPlayingBackground(context, ref, song, style)
-                      : AnimatedSwitcher(
+                  child: Builder(
+                    builder: (context) {
+                      if (customBg != null) return customBg;
+                      if (!settings.lyricsOwnBackground) {
+                        return nowPlayingBackground(context, ref, song, style);
+                      }
+                      return AnimatedSwitcher(
                           duration: transitionDuration,
                           child: showAmbientBg
                               // Ambient Color Background: the animated gradient in the
@@ -812,7 +970,9 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                                                       context,
                                                     ).colorScheme.surface,
                                             ))),
-                        ),
+                        );
+                    },
+                  ),
                 ),
               ),
               // Foreground Content Layer: Kept outside of AnimatedSwitcher to prevent state/scroll resets
@@ -832,8 +992,9 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
               // Re-sync Pill Button
 
               // Bottom Controller Layer (Includes gradient dark shadow + controls)
-              Theme(
-                data: foregroundTheme,
+              if (!isSideLandscape)
+                Theme(
+                  data: foregroundTheme,
                 child: Positioned(
                   left: 0,
                   right: 0,
@@ -852,31 +1013,53 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
                           height: bottomControllerHeight,
                           // Following the player: no dark band, the lyrics
                           // fade out instead (_fadeUnderControls).
-                          decoration: !settings.lyricsOwnBackground
+                          decoration: isCustomLyricsStyle
                               ? null
-                              : BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      Colors.transparent.withValues(
-                                        alpha: 0.010,
-                                      ),
-                                      Colors.transparent.withValues(
-                                        alpha: 0.40,
-                                      ),
-                                      Colors.black.withValues(alpha: 0.80),
-                                      Colors.black.withValues(alpha: 0.99),
-                                    ],
-                                    stops: const [0.0, 0.2, 0.75, 1.0],
-                                  ),
+                              : (!settings.lyricsOwnBackground
+                                    ? null
+                                    : BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            Colors.transparent,
+                                            Colors.black.withValues(
+                                              alpha: 0.90,
+                                            ),
+                                            Colors.black,
+                                          ],
+                                          stops: const [0.0, 0.34, 0.60],
+                                        ),
+                                      )),
+                          padding: isCustomLyricsStyle
+                              ? EdgeInsets.zero
+                              : EdgeInsets.only(
+                                  left: 24.s,
+                                  right: 24.s,
+                                  bottom: _navBarInset + 24.s,
                                 ),
-                          padding: EdgeInsets.only(
-                            left: 24.s,
-                            right: 24.s,
-                            bottom: _navBarInset + 24.s,
-                          ),
-                          child: Column(
+                          child: isCustomLyricsStyle
+                              ? Align(
+                                  alignment: Alignment.bottomCenter,
+                                  child: buildLyricsStyledControls(
+                                    context: context,
+                                    ref: ref,
+                                    style: lyricsStyle,
+                                    song: song,
+                                    bottomPadding: _navBarInset,
+                                    isLandscape: isCompactHeight,
+                                    onInteract: _resetHideTimer,
+                                    onOpenMenu: () {
+                                      _resetHideTimer();
+                                      showLyricsMenuBottomSheet(
+                                        context,
+                                        ref,
+                                        song,
+                                      );
+                                    },
+                                  ),
+                                )
+                              : Column(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               if (style == PlayerLayoutStyle.arc)
@@ -1163,12 +1346,17 @@ class _AndroidLyricsScreenState extends ConsumerState<AndroidLyricsScreen>
               ),
 
               AnimatedPositioned(
-                bottom: _showController ? bottomControllerHeight - 50.s : 50.s,
-                left: 0,
-                right: 0,
+                bottom: isSideLandscape
+                    ? 20.0
+                    : (_showController ? bottomControllerHeight - 50.s : 50.s),
+                left: isSideLandscape ? null : 0,
+                right: isSideLandscape ? 24.0 : 0,
                 duration: const Duration(milliseconds: 350),
                 curve: Curves.easeInOutCubic,
-                child: Center(
+                child: Align(
+                  alignment: isSideLandscape
+                      ? Alignment.centerRight
+                      : Alignment.center,
                   child: AnimatedOpacity(
                     opacity: showResync ? 1.0 : 0.0,
                     duration: const Duration(milliseconds: 300),
